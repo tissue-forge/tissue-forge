@@ -459,7 +459,7 @@ int space_gpos_cellindices(struct space *s, FPTYPE x, FPTYPE y, FPTYPE z, int *i
     FPTYPE _x[] = {x, y, z};
     /* get the hypothetical cell coordinate */
     for(int k = 0 ; k < 3 ; k++) {
-        _x[k] = std::max<FPTYPE>(s->origin[k] * (1.0 + DBL_EPSILON), std::min<FPTYPE>((s->dim[k] + s->origin[k]) * (1.0 - DBL_EPSILON), _x[k]));
+        _x[k] = std::max<FPTYPE>(s->origin[k] * (1.0 + FPTYPE_EPSILON), std::min<FPTYPE>((s->dim[k] + s->origin[k]) * (1.0 - FPTYPE_EPSILON), _x[k]));
         ind[k] = (_x[k] - s->origin[k]) * s->ih[k];
         /* is this particle within the space? */
         if(ind[k] < 0 || ind[k] >= s->cdim[k])
@@ -505,7 +505,7 @@ int space_setpartp(struct space *s, struct Particle *p, FPTYPE *x, struct Partic
     
     /* get the hypothetical cell coordinate */
     for(k = 0 ; k < 3 ; k++) {
-        x[k] = std::max<FPTYPE>(s->origin[k] * (1.0 + DBL_EPSILON), std::min<FPTYPE>((s->dim[k] + s->origin[k]) * (1.0 - DBL_EPSILON), x[k]));
+        x[k] = std::max<FPTYPE>(s->origin[k] * (1.0 + FPTYPE_EPSILON), std::min<FPTYPE>((s->dim[k] + s->origin[k]) * (1.0 - FPTYPE_EPSILON), x[k]));
         ind[k] = (x[k] - s->origin[k]) * s->ih[k];
         /* is this particle within the space? */
         if(ind[k] < 0 || ind[k] >= s->cdim[k])
@@ -734,7 +734,7 @@ int TissueForge::space_setpos(struct space *s, int id, FPTYPE *x) {
 
         /* force this particle into the space */
         for(k = 0; k < 3; k++) {
-            x[k] = std::max<FPTYPE>(s->origin[k] * (1.0 + DBL_EPSILON), std::min<FPTYPE>((s->dim[k] + s->origin[k]) * (1.0 - DBL_EPSILON), x[k]));
+            x[k] = std::max<FPTYPE>(s->origin[k] * (1.0 + FPTYPE_EPSILON), std::min<FPTYPE>((s->dim[k] + s->origin[k]) * (1.0 - FPTYPE_EPSILON), x[k]));
             ind[k] = (x[k] - s->origin[k]) * s->ih[k];
             /* is this particle within the space? */
             if(ind[k] < 0 || ind[k] >= s->cdim[k])

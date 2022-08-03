@@ -21,6 +21,7 @@
 #define _MDCORE_INCLUDE_MDCORE_CONFIG_H_
 
 #include <tf_config.h>
+#include <cfloat>
 
 #ifdef MDCORE_SINGLE
 #include "mdcore_single_config.h"
