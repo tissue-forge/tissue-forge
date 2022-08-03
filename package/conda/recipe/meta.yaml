@@ -1,0 +1,73 @@
+package:
+  name: tissue-forge
+  version: {{ environ.get('TF_VERSION', '') }}
+
+about:
+  home: https://github.com/tissue-forge/tissue-forge
+  license: LGPL-3.0
+  license_family: LGPL
+  license_file: ../../../LICENSE.txt
+  summary: Interactive, particle-based physics, chemistry and biology modeling and simulation environment
+  doc_url: https://tissue-forge.readthedocs.io/en/latest/
+
+extra:
+  maintainers: T.J. Sego
+
+source:
+  path: ../../../
+
+build:
+  number: {{ environ.get('TF_BUILDNUMBER', 0) }}
+  script_env:
+    - TFBUILDQUAL={{ environ.get('TF_BUILDQUAL', '') }}
+    - CONDA_BUILD_SYSROOT={{ environ.get('TF_BUILD_SYSROOT', '') }} # [osx]
+
+requirements:
+  host:
+    - python {{ python }}
+    - numpy
+    - bzip2
+    - libxml2
+    - assimp=5
+    - nlohmann_json
+    - pthreads-win32 # [win]
+    - vs2019_win-64<=19.28 # [win]
+    - clang=12 # [win]
+    - lld # [win]
+    - xorg-libxfixes # [linux]
+    - xorg-libxrandr # [linux]
+    - xorg-libxcursor # [linux]
+    - xorg-libxinerama # [linux]
+    - xorg-libxi # [linux]
+    - xorg-libxau # [linux]
+    - xorg-libxdmcp # [linux]
+
+  build:
+    - cmake>=3.20.3
+    - git
+    - ninja
+    - swig>=4
+    - clang=12 # [linux]
+    - clangxx=12 # [linux]
+    - lld # [linux]
+    - {{ compiler('c') }} # [linux or osx]
+    - {{ compiler('cxx') }} # [linux or osx]
+    - {{ cdt('mesa-libgl-devel') }} # [linux]
+    - {{ cdt('mesa-libegl-devel') }} # [linux]
+    - {{ cdt('mesa-dri-drivers') }} # [linux]
+    - {{ cdt('libselinux') }} # [linux]
+    - {{ cdt('libxdamage') }} # [linux]
+    - {{ cdt('libxxf86vm') }} # [linux]
+    - {{ cdt('libxext') }} # [linux]
+
+  run:
+    - python
+    - {{ pin_compatible('numpy') }}
+    - matplotlib
+    - assimp=5
+    - nlohmann_json
+    - pthreads-win32 # [win]
+
+test:
+  imports:
+    - tissue_forge

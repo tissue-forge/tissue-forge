@@ -1,0 +1,64 @@
+
+# clean slate
+restart;
+
+# load some packages
+with(codegen);
+
+# define the dot-product
+dprod := ( ax , ay , az , cx , cy , cz ) -> ax*cx + ay*cy + az*cz;
+
+# define the cross-product
+cprodx := ( ax , ay , az , cx , cy , cz ) -> ay*cz - az*cy;
+cprody := ( ax , ay , az , cx , cy , cz ) -> az*cx - ax*cz;
+cprodz := ( ax , ay , az , cx , cy , cz ) -> ax*cy - ay*cx;
+
+# define the norm
+mynorm := ( ax , ay , az ) -> sqrt( ax*ax + ay*ay + az*az );
+
+# define the different vectors
+rijx := pix-pjx; rijy := piy-pjy; rijz := piz-pjz;
+rkjx := pkx-pjx; rkjy := pky-pjy; rkjz := pkz-pjz;
+rlkx := plx-pkx; rlky := ply-pky; rlkz := plz-pkz;
+
+# define the inner dot products
+dijk := dprod( rijx , rijy , rijz , rkjx , rkjy , rkjz ) / mynorm( rkjx , rkjy , rkjz );
+dlkj := dprod( rlkx , rlky , rlkz , rkjx , rkjy , rkjz ) / mynorm( rkjx , rkjy , rkjz );
+
+# the main equation (Griebel, Knapek and Zumbusch)
+# cosphi := dprod( rijx - dijk*rkjx , rijy - dijk*rkjy , rijz - dijk*rkjz ,
+#                  rlkx - dlkj*rkjx , rlky - dlkj*rkjy , rlkz - dlkj*rkjz ) / 
+#           mynorm( rijx - dijk*rkjx , rijy - dijk*rkjy , rijz - dijk*rkjz ) /
+#           mynorm( rlkx - dlkj*rkjx , rlky - dlkj*rkjy , rlkz - dlkj*rkjz );
+
+# the main equation (Schlick)
+dab := dprod( -rijx , -rijy , -rijz , rkjx , rkjy , rkjz );
+dbc := dprod( rkjx , rkjy , rkjz , rlkx , rlky , rlkz );
+dac := dprod( -rijx , -rijy , -rijz , rlkx , rlky , rlkz );
+dbb := dprod( rkjx , rkjy , rkjz , rkjx , rkjy , rkjz );
+daa := dprod( -rijx , -rijy , -rijz , -rijx , -rijy , -rijz );
+dcc := dprod( rlkx , rlky , rlkz , rlkx , rlky , rlkz );
+cosphi := ( dab * dbc - dac * dbb ) /
+          sqrt( ( daa*dbb - dab*dab ) * ( dbb*dcc - dbc*dbc ) );
+
+# again, yet in the cross-product form
+# rijkx := cprodx( rijx , rijy , rijz , -rkjx , -rkjy , -rkjz );
+# rijky := cprody( rijx , rijy , rijz , -rkjx , -rkjy , -rkjz );
+# rijkz := cprodz( rijx , rijy , rijz , -rkjx , -rkjy , -rkjz );
+# rjklx := cprodx( -rkjx , -rkjy , -rkjz , -rlkx , -rlky , -rlkz );
+# rjkly := cprody( -rkjx , -rkjy , -rkjz , -rlkx , -rlky , -rlkz );
+# rjklz := cprodz( -rkjx , -rkjy , -rkjz , -rlkx , -rlky , -rlkz );
+# cosphi := dprod( rijkx , rijky , rijkz , rjklx , rjkly , rjklz ) /
+#           mynorm( rijkx , rijky , rijkz ) / mynorm( rjklx , rjkly , rjklz );
+
+# generate the sequence of computations to get the derivatives
+ops := [ optimize( [ dpix = diff(cosphi,pix) , dpiy = diff(cosphi,piy) , dpiz = diff(cosphi,piz) ,
+            dpjx = diff(cosphi,pjx) , dpjy = diff(cosphi,pjy) , dpjz = diff(cosphi,pjz) , 
+            dplx = diff(cosphi,plx) , dply = diff(cosphi,ply) , dplz = diff(cosphi,plz) , 
+            cphi = cosphi ] , tryhard ) ];
+
+# generate C-code for the computation
+C( ops , optimized );
+
+# get the names of the variables
+lprint( indets( ops ) );

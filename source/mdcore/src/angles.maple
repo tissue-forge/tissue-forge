@@ -1,0 +1,32 @@
+
+# clean slate
+restart;
+
+# load some packages
+with(codegen);
+
+# define the dot-product
+dprod := ( ax , ay , az , cx , cy , cz ) -> ax*cx + ay*cy + az*cz;
+
+# define the norm
+mynorm := ( ax , ay , az ) -> sqrt( ax*ax + ay*ay + az*az );
+
+# define the different vectors
+rijx := pix-pjx; rijy := piy-pjy; rijz := piz-pjz;
+rkjx := pkx-pjx; rkjy := pky-pjy; rkjz := pkz-pjz;
+
+# the main equation
+dij := mynorm( rijx , rijy , rijz );
+dkj := mynorm( rkjx , rkjy , rkjz );
+costheta := dprod( rijx , rijy , rijz , rkjx , rkjy , rkjz ) / dij / dkj;
+
+# generate the sequence of computations to get the derivatives
+ops := [ optimize( [ dpix = diff(costheta,pix) , dpiy = diff(costheta,piy) , dpiz = diff(costheta,piz) ,
+            dpkx = diff(costheta,pkx) , dpky = diff(costheta,pky) , dpkz = diff(costheta,pkz) , 
+            ctheta = costheta ] , tryhard ) ];
+
+# generate C-code for the computation
+C( ops , optimized );
+
+# get the names of the variables
+lprint( indets( ops ) );

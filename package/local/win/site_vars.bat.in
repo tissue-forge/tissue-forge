@@ -1,0 +1,3 @@
+@echo off
+set TFPYSITEDIR=%~dp0@TF_SITEPACKAGES_REL@
+set TFENV=%~dp0@PY_ROOT_DIR_REL@
