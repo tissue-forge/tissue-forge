@@ -1,0 +1,68 @@
+name: tissue_forge_develop_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+    - develop
+
+pr:
+  branches:
+    include:
+    - develop
+
+variables:
+  py_minor_version: 7
+  tf_buildqual: 'develop'
+
+stages:
+
+  # Windows build: local
+
+  - stage: TissueForge-Build-Windows-Local
+    displayName: Local build for Windows
+    pool:
+      vmImage: 'windows-2019'
+    dependsOn: []
+    jobs:
+      - template: job-templates/job-build-test-package-win-local.yml
+        parameters:
+          name: 'TissueForge-Build-Windows-Local'
+          platform_name: 'win64'
+          tf_buildqual: $(tf_buildqual)
+          py_minor_version: $(py_minor_version)
+          working_dir: $(Agent.BuildDirectory)
+          staging_dir: $(Build.ArtifactStagingDirectory)
+
+  # Linux build: local
+
+  - stage: TissueForge-Build-Linux-Local
+    displayName: Local build for Linux
+    pool: 
+      vmImage: 'ubuntu-20.04'
+    dependsOn: []
+    jobs:
+      - template: job-templates/job-build-test-package-linux-local.yml
+        parameters:
+          name: 'TissueForge-Build-Linux-Local'
+          platform_name: 'linux64'
+          tf_buildqual: $(tf_buildqual)
+          py_minor_version: $(py_minor_version)
+          working_dir: $(Agent.BuildDirectory)
+          staging_dir: $(Build.ArtifactStagingDirectory)
+
+  # MacOS build: local
+
+  - stage: TissueForge-Build-Mac-Local
+    displayName: Local build for Mac
+    pool: 
+      vmImage: 'macOS-11'
+    dependsOn: []
+    jobs:
+      - template: job-templates/job-build-test-package-osx-local.yml
+        parameters:
+          name: 'TissueForge-Build-Mac-Local'
+          platform_name: 'osx64'
+          tf_buildqual: $(tf_buildqual)
+          py_minor_version: $(py_minor_version)
+          working_dir: $(Agent.BuildDirectory)
+          staging_dir: $(Build.ArtifactStagingDirectory)
