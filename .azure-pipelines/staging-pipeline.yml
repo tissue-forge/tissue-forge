@@ -19,7 +19,7 @@ stages:
 
   # Windows build: conda
 
-  - stage: TissueForge-Build-Windows-Conda
+  - stage: TissueForgeBuildWindowsConda
     displayName: Conda build for Windows
     pool:
       vmImage: 'windows-2019'
@@ -27,7 +27,7 @@ stages:
     jobs:
       - template: job-templates/job-build-test-package-win-conda.yml
         parameters:
-          name: 'TissueForge-Build-Windows-Conda'
+          name: 'TissueForgeBuildWindowsConda'
           platform_name: 'win64'
           tf_buildqual: $(tf_buildqual)
           working_dir: $(Agent.BuildDirectory)
@@ -37,7 +37,7 @@ stages:
 
   # Linux build: conda
 
-  - stage: TissueForge-Build-Linux-Conda
+  - stage: TissueForgeBuildLinuxConda
     displayName: Conda build for Linux
     pool:
       vmImage: 'ubuntu-20.04'
@@ -45,7 +45,7 @@ stages:
     jobs:
       - template: job-templates/job-build-test-package-linux-conda.yml
         parameters:
-          name: 'TissueForge-Build-Linux-Conda'
+          name: 'TissueForgeBuildLinuxConda'
           platform_name: 'linux64'
           tf_buildqual: $(tf_buildqual)
           working_dir: $(Agent.BuildDirectory)
@@ -55,7 +55,7 @@ stages:
 
   # MacOS build: conda
 
-  - stage: TissueForge-Build-Mac-Conda
+  - stage: TissueForgeBuildMacConda
     displayName: Conda build for Mac
     pool:
       vmImage: 'macOS-11'
@@ -63,7 +63,7 @@ stages:
     jobs:
       - template: job-templates/job-build-test-package-osx-conda.yml
         parameters:
-          name: 'TissueForge-Build-Mac-Conda'
+          name: 'TissueForgeBuildMacConda'
           platform_name: 'osx64'
           tf_buildqual: $(tf_buildqual)
           working_dir: $(Agent.BuildDirectory)

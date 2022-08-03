@@ -18,7 +18,7 @@ stages:
 
   # Windows build: local
 
-  - stage: TissueForge-Build-Windows-Local
+  - stage: TissueForgeBuildWindowsLocal
     displayName: Local build for Windows
     pool:
       vmImage: 'windows-2019'
@@ -26,7 +26,7 @@ stages:
     jobs:
       - template: job-templates/job-build-test-package-win-local.yml
         parameters:
-          name: 'TissueForge-Build-Windows-Local'
+          name: 'TissueForgeBuildWindowsLocal'
           platform_name: 'win64'
           tf_buildqual: $(tf_buildqual)
           py_minor_version: $(py_minor_version)
@@ -35,7 +35,7 @@ stages:
 
   # Linux build: local
 
-  - stage: TissueForge-Build-Linux-Local
+  - stage: TissueForgeBuildLinuxLocal
     displayName: Local build for Linux
     pool: 
       vmImage: 'ubuntu-20.04'
@@ -43,7 +43,7 @@ stages:
     jobs:
       - template: job-templates/job-build-test-package-linux-local.yml
         parameters:
-          name: 'TissueForge-Build-Linux-Local'
+          name: 'TissueForgeBuildLinuxLocal'
           platform_name: 'linux64'
           tf_buildqual: $(tf_buildqual)
           py_minor_version: $(py_minor_version)
@@ -52,7 +52,7 @@ stages:
 
   # MacOS build: local
 
-  - stage: TissueForge-Build-Mac-Local
+  - stage: TissueForgeBuildMacLocal
     displayName: Local build for Mac
     pool: 
       vmImage: 'macOS-11'
@@ -60,7 +60,7 @@ stages:
     jobs:
       - template: job-templates/job-build-test-package-osx-local.yml
         parameters:
-          name: 'TissueForge-Build-Mac-Local'
+          name: 'TissueForgeBuildMacLocal'
           platform_name: 'osx64'
           tf_buildqual: $(tf_buildqual)
           py_minor_version: $(py_minor_version)
