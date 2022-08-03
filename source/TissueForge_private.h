@@ -32,7 +32,7 @@
 //#include <numpy/arrayobject.h>
 
 #include <assert.h>
-
+#include <algorithm>
 
 #define TF_NOTIMPLEMENTED \
     assert("Not Implemented" && 0);\
