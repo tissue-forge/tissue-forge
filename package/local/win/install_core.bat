@@ -20,7 +20,7 @@ cmake -DCMAKE_BUILD_TYPE:STRING=%TFBUILD_CONFIG% ^
       -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld ^
       -DPython_EXECUTABLE:PATH=%TFENV%\python.exe ^
       -DPThreads_ROOT:PATH=%TFENV%\Library ^
-      -DLIBXML_INCLUDE_DIR:PATH=%TFENV%\include\libxml2 ^
+      -DLIBXML_INCLUDE_DIR:PATH=%TFENV%\Library\include\libxml2 ^
       -DCMAKE_CUDA_COMPILER_TOOLKIT_ROOT=%TFCUDAENV% ^
       "%TFSRCDIR%"
 if errorlevel 1 exit 3
