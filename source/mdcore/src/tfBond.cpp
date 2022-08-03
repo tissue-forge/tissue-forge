@@ -24,7 +24,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <string.h>
-#include <limits.h>
+#include <limits>
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
@@ -730,7 +730,14 @@ int TissueForge::BondHandle::init(
     TF_Log(LOG_DEBUG);
 
     try {
-        return _init(flags, p1->id, p2->id, half_life, bond_energy, pot);
+        return _init(
+            flags, 
+            p1->id, 
+            p2->id, 
+            half_life < FPTYPE_ZERO ? std::numeric_limits<FPTYPE>::max() : half_life, 
+            bond_energy < FPTYPE_ZERO ? std::numeric_limits<FPTYPE>::max() : bond_energy, 
+            pot
+        );
     }
     catch (const std::exception &e) {
         return tf_exp(e);

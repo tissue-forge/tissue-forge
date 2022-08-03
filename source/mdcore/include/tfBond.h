@@ -211,8 +211,8 @@ namespace TissueForge {
             TissueForge::Potential *pot, 
             TissueForge::ParticleHandle *p1, 
             TissueForge::ParticleHandle *p2, 
-            const FPTYPE &half_life=std::numeric_limits<FPTYPE>::max(), 
-            const FPTYPE &bond_energy=std::numeric_limits<FPTYPE>::max(), 
+            const FPTYPE &half_life=-FPTYPE_ONE, 
+            const FPTYPE &bond_energy=-FPTYPE_ONE, 
             uint32_t flags=0
         );
         

@@ -120,6 +120,7 @@ macro(TF_BUILD_PY_LIB main_source target_name output_py_name output_subdir)
     ${Python_INCLUDE_DIRS}
     $<INSTALL_INTERFACE:${TF_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${TF_INCLUDE_DIR}/private/mdcore>
+    $<INSTALL_INTERFACE:${TF_INCLUDE_DIR}/private/mdcore/private>
   )
 
   if(TF_WITHCUDA)
