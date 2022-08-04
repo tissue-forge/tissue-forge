@@ -380,31 +380,39 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::draw(T& camera, const 
     
     _dirty = false;
 
-    sphereMesh.setInstanceCount(_Engine.s.nr_parts);
+    int nr_parts = _Engine.s.nr_parts - _Engine.s.largeparts.count;
+
+    sphereMesh.setInstanceCount(nr_parts);
     largeSphereMesh.setInstanceCount(_Engine.s.largeparts.count);
 
     // invalidate / resize the buffer
-    sphereInstanceBuffer.setData({NULL,
-        _Engine.s.nr_parts * sizeof(SphereInstanceData)},
-            GL::BufferUsage::DynamicDraw);
+    sphereInstanceBuffer.setData(
+        {NULL, nr_parts * sizeof(SphereInstanceData)},
+        GL::BufferUsage::DynamicDraw
+    );
 
-    largeSphereInstanceBuffer.setData({NULL,
-        _Engine.s.largeparts.count * sizeof(SphereInstanceData)},
-            GL::BufferUsage::DynamicDraw);
+    largeSphereInstanceBuffer.setData(
+        {NULL, _Engine.s.largeparts.count * sizeof(SphereInstanceData)},
+        GL::BufferUsage::DynamicDraw
+    );
     
     // get pointer to data
-    SphereInstanceData* pData = (SphereInstanceData*)(void*)sphereInstanceBuffer.map(0,
-            _Engine.s.nr_parts * sizeof(SphereInstanceData),
-            GL::Buffer::MapFlag::Write|GL::Buffer::MapFlag::InvalidateBuffer);
+    SphereInstanceData* pData = (SphereInstanceData*)(void*)sphereInstanceBuffer.map(
+        0,
+        nr_parts * sizeof(SphereInstanceData),
+        GL::Buffer::MapFlag::Write|GL::Buffer::MapFlag::InvalidateBuffer
+    );
 
     parallel_for(_Engine.s.nr_cells, [&pData](int _cid) -> void {render_cell_particles(pData, _cid);});
     sphereInstanceBuffer.unmap();
 
 
     // get pointer to data
-    SphereInstanceData* pLargeData = (SphereInstanceData*)(void*)largeSphereInstanceBuffer.map(0,
-            _Engine.s.largeparts.count * sizeof(SphereInstanceData),
-            GL::Buffer::MapFlag::Write|GL::Buffer::MapFlag::InvalidateBuffer);
+    SphereInstanceData* pLargeData = (SphereInstanceData*)(void*)largeSphereInstanceBuffer.map(
+        0,
+        _Engine.s.largeparts.count * sizeof(SphereInstanceData),
+        GL::Buffer::MapFlag::Write|GL::Buffer::MapFlag::InvalidateBuffer
+    );
 
     auto func_render_large_particles = [&pLargeData](int _pid) -> void {
         Particle *p = &_Engine.s.largeparts.parts[_pid];
