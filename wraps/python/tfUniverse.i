@@ -117,7 +117,7 @@
             :param types: An optional list of :class:`Particle` types to include in the calculation. Defaults to every particle type.
             :return: virial tensor
             """
-            _origin = fVector3(origin) if origin else origin
+            _origin = FVector3(origin) if origin else origin
             if types and not isinstance(types, vectorParticleType):
                 _types = vectorParticleType()
                 [_types.push_back(pt) for pt in types]

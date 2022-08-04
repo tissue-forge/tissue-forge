@@ -141,9 +141,9 @@
             return _screenshot(filepath)
 
         if decorate is None:
-            decorate = decorated()
+            decorate = _system_decorated()
         if bgcolor is None:
-            bgcolor = get_background_color()
+            bgcolor = _system_get_background_color()
         elif not isinstance(bgcolor, FVector3):
             bgcolor = FVector3(bgcolor)
         return _screenshot2(filepath, decorate, bgcolor)
