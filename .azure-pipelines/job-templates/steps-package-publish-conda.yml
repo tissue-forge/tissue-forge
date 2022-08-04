@@ -23,7 +23,7 @@ steps:
     - task: CopyFiles@2
       inputs:
         sourceFolder: ${{ parameters.build_output }}\win-64
-        contents: tissue_forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
+        contents: tissue-forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
         targetFolder: ${{ parameters.staging_dir }}\${{ val }}
         flattenFolders: true
       displayName: Stage python ${{ val }} package
@@ -31,7 +31,7 @@ steps:
     - task: CopyFiles@2
       inputs:
         sourceFolder: ${{ parameters.build_output }}/linux-64
-        contents: tissue_forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
+        contents: tissue-forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
         targetFolder: ${{ parameters.staging_dir }}/${{ val }}
         flattenFolders: true
       displayName: Stage python ${{ val }} package
@@ -39,15 +39,15 @@ steps:
     - task: CopyFiles@2
       inputs:
         sourceFolder: ${{ parameters.build_output }}/osx-64
-        contents: tissue_forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
+        contents: tissue-forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
         targetFolder: ${{ parameters.staging_dir }}/${{ val }}
         flattenFolders: true
       displayName: Stage python ${{ val }} package
   - ${{ if eq(parameters.platform_name, 'win64') }}:
     - publish: ${{ parameters.staging_dir }}\${{ val }}
-      artifact: tissue_forge-${{ parameters.platform_name }}-conda-${{ val }}
+      artifact: tissue-forge-${{ parameters.platform_name }}-conda-${{ val }}
       displayName: Publish ${{ val }} package
   - ${{ else }}:
     - publish: ${{ parameters.staging_dir }}/${{ val }}
-      artifact: tissue_forge-${{ parameters.platform_name }}-conda-${{ val }}
+      artifact: tissue-forge-${{ parameters.platform_name }}-conda-${{ val }}
       displayName: Publish ${{ val }} package
