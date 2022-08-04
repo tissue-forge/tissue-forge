@@ -40,7 +40,7 @@ if(TF_APPLE)
 endif()
 
 set(TissueForge_py_LIBS
-  TissueForge::Static
+  mdcore
 
   glfw 
   ${GLFW_LIBRARIES} 
