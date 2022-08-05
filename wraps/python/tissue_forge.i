@@ -131,6 +131,9 @@
 // bind namespace
 %include "tf_bind.i"
 
+// metrics namespace
+%include "tf_metrics.i"
+
 // models
 %include "models/tf_models.i"
 

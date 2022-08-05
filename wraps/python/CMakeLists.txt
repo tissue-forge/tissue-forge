@@ -199,6 +199,7 @@ install(
   jwidget.py
   particle_type.py 
   bind.py 
+  metrics.py 
   system.py 
   util.py 
   DESTINATION 
