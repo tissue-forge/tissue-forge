@@ -19,6 +19,11 @@
  *
  ******************************************************************************/
 
+/**
+ * @file tfParticle.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFPARTICLE_H_
 #define _MDCORE_INCLUDE_TFPARTICLE_H_
 #include "tf_platform.h"

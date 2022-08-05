@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCForce.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCFORCE_H_
 #define _WRAPS_C_TFCFORCE_H_
 
@@ -529,7 +534,7 @@ CAPI_FUNC(HRESULT) tfGaussian_setDuration(struct tfGaussianHandle *handle, tfFlo
  * where @f$ \mathbf{v} @f$ is the velocity of a particle and @f$ \tau @f$ is a time constant. 
  * 
  * @param handle handle to populate
- * @param coef time constant
+ * @param coeff time constant
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfFriction_init(struct tfFrictionHandle *handle, tfFloatP_t coeff);

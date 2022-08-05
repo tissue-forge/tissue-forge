@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCBond.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCBOND_H_
 #define _WRAPS_C_TFCBOND_H_
 
@@ -113,7 +118,7 @@ CAPI_FUNC(HRESULT) tfBondHandle_check(struct tfBondHandleHandle *handle, bool *f
 /**
  * @brief Destroy the bond. 
  * 
- * @param populated handle
+ * @param handle populated handle
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfBondHandle_destroy(struct tfBondHandleHandle *handle);
@@ -328,7 +333,7 @@ CAPI_FUNC(HRESULT) tfAngleHandle_destroy(struct tfAngleHandleHandle *handle);
  * @param flag true when the angle should decay
  * @return S_OK on success 
  */
-CAPI_FUNC(HRESULT) tfAngleHandle_decays(struct tfAngleHandleHandle, bool *flag);
+CAPI_FUNC(HRESULT) tfAngleHandle_decays(struct tfAngleHandleHandle *handle, bool *flag);
 
 /**
  * @brief Get the current energy of the angle
@@ -533,7 +538,7 @@ CAPI_FUNC(HRESULT) tfDihedralHandle_destroy(struct tfDihedralHandleHandle *handl
  * @param flag true when the dihedral should decay
  * @return S_OK on success 
  */
-CAPI_FUNC(HRESULT) tfDihedralHandle_decays(struct tfDihedralHandleHandle, bool *flag);
+CAPI_FUNC(HRESULT) tfDihedralHandle_decays(struct tfDihedralHandleHandle *handle, bool *flag);
 
 /**
  * @brief Get the current energy of the dihedral

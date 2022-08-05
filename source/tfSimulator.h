@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfSimulator.h
+ * 
+ */
+
 #ifndef _SOURCE_TFSIMULATOR_H_
 #define _SOURCE_TFSIMULATOR_H_
 
@@ -433,7 +438,6 @@ namespace TissueForge {
         /**
          * @brief Set window size
          * @param size              Desired window size
-         * @param dpiScalingPolicy  Policy based on which DPI scaling will be set
          * @return Reference to self (for method chaining)
          *
          * Default is @cpp {800, 600} @ce. See @ref Platform-GlfwApplication-dpi

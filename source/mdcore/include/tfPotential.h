@@ -19,6 +19,11 @@
  *
  ******************************************************************************/
 
+/**
+ * @file tfPotential.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFPOTENTIAL_H_
 #define _MDCORE_INCLUDE_TFPOTENTIAL_H_
 
@@ -847,13 +852,6 @@ namespace TissueForge {
      * Creates a square well potential of the form:
      *
      * k/(r0 - r)^n
-     *
-     * @param FPTYPE k
-     * @param FPTYPE n,
-     * @param FPTYPE r0,
-     * @param FPTYPE tol,
-     * @param FPTYPE min,
-     * @param FPTYPE max
      */
     CAPI_FUNC(struct Potential *) potential_create_well(
         FPTYPE k, 

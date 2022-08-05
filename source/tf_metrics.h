@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_metrics.h
+ * 
+ */
+
 #ifndef _SOURCE_TF_METRICS_H_
 #define _SOURCE_TF_METRICS_H_
 
@@ -108,11 +113,11 @@ namespace TissueForge::metrics {
      *
      * Allocates a buffer, and stores the results there.
      *
-     * @param typeIds [optional] set of type ids to include. If not given,
-     * gets all other parts within radius.
-     * 
-     * @param nr_parts, out, number of parts
-     * @param parts, out, newly allocated buffer of particle ids.
+     * @param part the particle
+     * @param radius [optional] the radius of the neighborhood
+     * @param typeIds [optional] set of type ids to include. If not given, gets all other parts within radius.
+     * @param nr_parts [out] number of parts
+     * @param parts [out] newly allocated buffer of particle ids.
      */
     CAPI_FUNC(HRESULT) particleNeighbors(
         struct Particle *part,

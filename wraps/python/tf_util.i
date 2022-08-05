@@ -39,8 +39,6 @@
 %rename(_icosphere) TissueForge::icosphere;
 %rename(_get_features_map) TissueForge::util::getFeaturesMap;
 
-%rename(_util_CompileFlags) CompileFlags;
-
 %include "tf_util.h"
 
 %pythoncode %{
@@ -202,6 +200,6 @@
 
     set_seed = setSeed
 
-    def _util_get_features_map():
+    def get_features_map():
         return _get_features_map.asdict()
 %}

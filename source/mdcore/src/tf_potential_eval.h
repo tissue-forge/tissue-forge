@@ -1417,12 +1417,9 @@ namespace TissueForge {
      * @brief Evaluates the given potential at a set of points (interpolated).
      *
      * @param p Pointer to an array of pointers to the #potentials to be evaluated.
-     * @param r Pointer to an array of the radii at which the potentials
-     *      are to be evaluated.
-     * @param e Pointer to an array of floating-point values in which to store the
-     *      interaction energies.
-     * @param f Pointer to an array of floating-point values in which to store the
-     *      magnitude of the interaction forces.
+     * @param r_in Pointer to an array of the radii at which the potentials are to be evaluated.
+     * @param e Pointer to an array of floating-point values in which to store the interaction energies.
+     * @param f Pointer to an array of floating-point values in which to store the magnitude of the interaction forces.
      *
      * Note that for efficiency reasons, this function does not check if any
      * of the parameters are @c NULL or if @c sqrt(r2) is within the interval

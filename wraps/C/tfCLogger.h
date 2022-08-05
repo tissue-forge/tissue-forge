@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCLogger.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCLOGGER_H_
 #define _WRAPS_C_TFCLOGGER_H_
 

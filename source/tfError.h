@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfError.h
+ * 
+ */
+
 #ifndef _SOURCE_TFERROR_H_
 #define _SOURCE_TFERROR_H_
 

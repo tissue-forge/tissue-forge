@@ -49,6 +49,8 @@
 %rename(_io_ThreeDFMeshData) ThreeDFMeshData;
 %rename(_io_ThreeDFStructure) ThreeDFStructure;
 %rename(_io_fromFile3DF) TissueForge::io::fromFile3DF;
+%rename(_io_toFile3DF) TissueForge::io::toFile3DF;
+%rename(_io_toFile) TissueForge::io::toFile;
 %rename(_io_toString) TissueForge::io::toString;
 %rename(_io_mapImportParticleId) TissueForge::io::mapImportParticleId;
 %rename(_io_mapImportParticleTypeId) TissueForge::io::mapImportParticleTypeId;

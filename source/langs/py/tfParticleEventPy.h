@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfParticleEventPy.h
+ * 
+ */
+
 #ifndef _SOURCE_LANGS_PY_TFPARTICLEEVENTPY_H_
 #define _SOURCE_LANGS_PY_TFPARTICLEEVENTPY_H_
 
@@ -67,7 +72,7 @@ namespace TissueForge::py {
      * 
      * @param targetType target particle type
      * @param invokeExecutor an invoke python function executor; evaluated when an event occurs
-     * @param predicateMethod a predicate python function executor; evaluated to determine if an event occurs
+     * @param predicateExecutor a predicate python function executor; evaluated to determine if an event occurs
      * @param selector name of the function that selects the next particle
      * @return ParticleEventPy* 
      */

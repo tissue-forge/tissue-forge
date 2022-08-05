@@ -19,6 +19,11 @@
  *
  ******************************************************************************/
 
+/**
+ * @file tfEngine.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFENGINE_H_
 #define _MDCORE_INCLUDE_TFENGINE_H_
 
@@ -524,7 +529,7 @@ namespace TissueForge {
 	 * rather a new memory block is allocated, and the contents of p
 	 * get copied in there.
 	 *
-	 * @param s The space to which @c p should be added.
+	 * @param e The #engine.
 	 * @param p The #part to be added.
 	 * @param x A pointer to an array of three FPTYPEs containing the particle
 	 *      position.
@@ -581,17 +586,12 @@ namespace TissueForge {
 	 * each cell.
 	 *
 	 * @param e The #engine to initialize.
-	 * @param origin An array of three FPTYPEs containing the cartesian origin
-	 *      of the space.
+	 * @param origin An array of three FPTYPEs containing the cartesian origin of the space.
 	 * @param dim An array of three FPTYPEs containing the size of the space.
-	 *
 	 * @param cells length 3 integer vector of number of cells in each direction.
-	 *
 	 * @param cutoff The maximum interaction cutoff to use.
-	 * @param period A bitmask describing the periodicity of the domain
-	 *      (see #space_periodic_full).
-	 * @param max_type The maximum number of particle types that will be used
-	 *      by this engine.
+	 * @param boundaryConditions boundary conditions argument container
+	 * @param max_type The maximum number of particle types that will be used by this engine.
 	 * @param flags Bit-mask containing the flags for this engine.
 	 *
 	 * @return #engine_err_ok or < 0 on error (see #engine_err).

@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCCluster.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCCLUSTER_H_
 #define _WRAPS_C_TFCCLUSTER_H_
 
@@ -105,7 +110,7 @@ CAPI_FUNC(HRESULT) tfClusterParticleHandle_destroy(struct tfClusterParticleHandl
  * Automatically updates when running on a CUDA device. 
  * 
  * @param handle populated handle
- * @param partType type of particle to create
+ * @param partTypeHandle type of particle to create
  * @param pid id of created particle
  * @param position pointer to 3-element array, or NULL for a random position
  * @param velocity pointer to 3-element array, or NULL for a random velocity
@@ -127,7 +132,7 @@ CAPI_FUNC(HRESULT) tfClusterParticleHandle_createParticle(
  * Automatically updates when running on a CUDA device. 
  * 
  * @param handle populated handle
- * @param partType type of particle to create
+ * @param partTypeHandle type of particle to create
  * @param pid id of created particle
  * @param str JSON string defining a particle
  * @return S_OK on success

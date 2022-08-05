@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfParticleEventSinglePy.h
+ * 
+ */
+
 #ifndef _SOURCE_LANGS_PY_TFPARTICLEEVENTSINGLEPY_H_
 #define _SOURCE_LANGS_PY_TFPARTICLEEVENTSINGLEPY_H_
 
@@ -47,8 +52,8 @@ namespace TissueForge {
          * @brief Creates a single particle event using prescribed invoke and predicate python function executors
          * 
          * @param targetType target particle type
-         * @param invokeMethod an invoke python function executor; evaluated when an event occurs
-         * @param predicateMethod a predicate python function executor; evaluated to determine if an event occurs
+         * @param invokeExecutor an invoke python function executor; evaluated when an event occurs
+         * @param predicateExecutor a predicate python function executor; evaluated to determine if an event occurs
          * @return ParticleEventSinglePy* 
          */
         CPPAPI_FUNC(ParticleEventSinglePy*) onParticleEventSingle(

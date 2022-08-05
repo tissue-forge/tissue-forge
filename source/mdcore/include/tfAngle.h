@@ -19,6 +19,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfAngle.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFANGLE_H_
 #define _MDCORE_INCLUDE_TFANGLE_H_
 

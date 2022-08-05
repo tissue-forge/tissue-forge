@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfParticleEventSingle.h
+ * 
+ */
+
 #ifndef _SOURCE_EVENT_TFPARTICLEEVENTSINGLE_H_
 #define _SOURCE_EVENT_TFPARTICLEEVENTSINGLE_H_
 

@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_bindPy.h
+ * 
+ */
+
 #ifndef _SOURCE_LANGS_PY_TF_BINDPY_H_
 #define _SOURCE_LANGS_PY_TF_BINDPY_H_
 
@@ -71,7 +76,7 @@ namespace TissueForge::py {
      * Automatically updates when running on a CUDA device. 
      * 
      * @param p The potential
-     * @param bcs The boundary condition
+     * @param bc The boundary condition
      * @param t The particle type
      * @return HRESULT 
      */

@@ -19,6 +19,11 @@
  *
  ******************************************************************************/
 
+/**
+ * @file tfSpace.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFSPACE_H_
 #define _MDCORE_INCLUDE_TFSPACE_H_
 #include <mdcore_config.h>
@@ -314,7 +319,9 @@ namespace TissueForge {
      * get the cell id for a position,
      * negative on failure
      *
-     * @param cellids[optional] get the (i,j,k) indices of the space cell.
+     * @param s the #space
+     * @param x the position
+     * @param cellids [optional] get the (i,j,k) indices of the space cell.
      * returns the absolute cell id (index into array).
      */
     CAPI_FUNC(int) space_get_cellids_for_pos(struct space *s, FPTYPE *x, int *cellids);

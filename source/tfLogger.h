@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfLogger.h
+ * 
+ */
+
 #ifndef _SOURCE_TFLOGGER_H_
 #define _SOURCE_TFLOGGER_H_
 

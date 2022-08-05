@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfC_bind.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFC_BIND_H_
 #define _WRAPS_C_TFC_BIND_H_
 
@@ -68,7 +73,7 @@ CAPI_FUNC(HRESULT) tfBindBoundaryConditions(struct tfPotentialHandle *p, struct 
  * @brief Bind a potential to a pair of particle type and a boundary conditions. 
  * 
  * @param p The potential
- * @param bcs The boundary condition
+ * @param bc The boundary condition
  * @param t The particle type
  * @return S_OK on success 
  */

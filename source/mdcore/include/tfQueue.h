@@ -19,6 +19,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfQueue.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFQUEUE_H_
 #define _MDCORE_INCLUDE_TFQUEUE_H_
 

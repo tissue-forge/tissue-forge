@@ -19,6 +19,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfRigid.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFRIGID_H_
 #define _MDCORE_INCLUDE_TFRIGID_H_
 #include "tf_platform.h"

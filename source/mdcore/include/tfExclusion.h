@@ -19,6 +19,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfExclusion.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFEXCLUSION_H_
 #define _MDCORE_INCLUDE_TFEXCLUSION_H_
 #include "tf_platform.h"

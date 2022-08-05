@@ -19,6 +19,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_errs.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TF_ERRS_H_
 #define _MDCORE_INCLUDE_TF_ERRS_H_
 #include "tf_platform.h"

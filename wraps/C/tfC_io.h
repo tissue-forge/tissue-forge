@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfC_io.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFC_IO_H_
 #define _WRAPS_C_TFC_IO_H_
 
@@ -1122,7 +1127,7 @@ CAPI_FUNC(HRESULT) tfIoThreeDFMeshData_translate(struct tfIoThreeDFMeshDataHandl
  * @brief Translate the mesh to a position
  * 
  * @param handle populated handle
- * @param displacement translation displacement
+ * @param position new position
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfIoThreeDFMeshData_translateTo(struct tfIoThreeDFMeshDataHandle *handle, tfFloatP_t *position);
@@ -1135,7 +1140,7 @@ CAPI_FUNC(HRESULT) tfIoThreeDFMeshData_translateTo(struct tfIoThreeDFMeshDataHan
  * @param rotPt rotation point
  * @return S_OK on success 
  */
-CAPI_FUNC(HRESULT) tfIoThreeDFMeshData_rotateAt(struct tfIoThreeDFMeshDataHandle *handle, tfFloatP_t *rotMat, tfFloatP_t *rotPot);
+CAPI_FUNC(HRESULT) tfIoThreeDFMeshData_rotateAt(struct tfIoThreeDFMeshDataHandle *handle, tfFloatP_t *rotMat, tfFloatP_t *rotPt);
 
 /**
  * @brief Rotate the mesh about its centroid
@@ -1490,7 +1495,7 @@ CAPI_FUNC(HRESULT) tfIoThreeDFStructure_translateTo(struct tfIoThreeDFStructureH
  * @param rotPt rotation point
  * @return S_OK on success 
  */
-CAPI_FUNC(HRESULT) tfIoThreeDFStructure_rotateAt(struct tfIoThreeDFStructureHandle *handle, tfFloatP_t *rotMat, tfFloatP_t *rotPot);
+CAPI_FUNC(HRESULT) tfIoThreeDFStructure_rotateAt(struct tfIoThreeDFStructureHandle *handle, tfFloatP_t *rotMat, tfFloatP_t *rotPt);
 
 /**
  * @brief Rotate the structure about its centroid

@@ -22,6 +22,7 @@
 #include "tfParticle.h"
 
 #include <tfEngine.h>
+#include <tfCluster.h>
 
 %}
 
@@ -31,7 +32,7 @@
 %rename(_call) TissueForge::ParticleType::operator();
 %rename(_factory) TissueForge::ParticleType::factory(unsigned int, std::vector<FVector3>*, std::vector<FVector3>*, std::vector<int>*);
 %rename(to_cluster) TissueForge::ParticleHandle::operator ClusterParticleHandle*();
-%rename(to_cluster) TissueForge::ParticleType::operator ClusterParticleType*();
+%rename(to_cluster) TissueForge::ParticleType::operator TissueForge::ClusterParticleType*();
 
 %ignore TissueForge::Particle_Colors;
 %ignore TissueForge::Particle_Verify;

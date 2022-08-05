@@ -32,6 +32,7 @@ tfEventPyExecutor_extender(EventPyInvokePyExecutor, TissueForge::py::EventPy)
 %ignore TissueForge::event::onEvent;
 %rename(_event_onEvent) TissueForge::py::onEvent;
 
+%rename(_event_EventBase) TissueForge::event::EventBase;
 %rename(_event__Event) TissueForge::event::Event;
 %rename(_event_Event) TissueForge::py::EventPy;
 

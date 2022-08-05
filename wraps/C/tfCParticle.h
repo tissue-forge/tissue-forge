@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCParticle.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCPARTICLE_H_
 #define _WRAPS_C_TFCPARTICLE_H_
 
@@ -699,7 +704,7 @@ CAPI_FUNC(HRESULT) tfParticleType_getSpecies(struct tfParticleTypeHandle *handle
  * @brief Set the type species. 
  * 
  * @param handle populated handle
- * @param slit species list
+ * @param slist species list
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleType_setSpecies(struct tfParticleTypeHandle *handle, struct tfStateSpeciesListHandle *slist);
@@ -1085,6 +1090,7 @@ CAPI_FUNC(HRESULT) tfParticleList_insertP(struct tfParticleListHandle *handle, s
 /**
  * @brief Looks for the item with the given id and deletes it from the list
  * 
+ * @param handle populated handle
  * @param id id to remove
  * @return S_OK on success
  */
@@ -1325,6 +1331,7 @@ CAPI_FUNC(HRESULT) tfParticleTypeList_insertP(struct tfParticleTypeListHandle *h
 /**
  * @brief Looks for the item with the given id and deletes it from the list
  * 
+ * @param handle populated handle
  * @param id id to remove
  * @return S_OK on success
  */
@@ -1500,7 +1507,7 @@ CAPI_FUNC(HRESULT) tfParticleType_FindFromName(struct tfParticleTypeHandle *hand
  * @brief Get a registered particle type by type id
  * 
  * @param handle handle to populate
- * @param name name of particle type
+ * @param pid id of type
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleType_getFromId(struct tfParticleTypeHandle *handle, unsigned int pid);

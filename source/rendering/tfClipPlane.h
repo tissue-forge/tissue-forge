@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfClipPlane.h
+ * 
+ */
+
 #ifndef _SOURCE_RENDERING_TFCUTPLANE_H_
 #define _SOURCE_RENDERING_TFCUTPLANE_H_
 

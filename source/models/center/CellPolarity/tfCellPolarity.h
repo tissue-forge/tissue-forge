@@ -18,7 +18,9 @@
  ******************************************************************************/
 
 /**
- * Implements model with additional features defined in 
+ * @file tfCellPolarity.h
+ * 
+ * @brief Implements model with additional features defined in 
  * Nielsen, Bjarke Frost, et al. "Model to link cell shape and polarity with organogenesis." Iscience 23.2 (2020): 100830.
  */
 

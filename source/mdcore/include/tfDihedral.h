@@ -19,6 +19,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfDihedral.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFDIHEDRAL_H_
 #define _MDCORE_INCLUDE_TFDIHEDRAL_H_
 

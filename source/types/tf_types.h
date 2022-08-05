@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_types.h
+ * 
+ */
+
 #ifndef _SOURCE_TYPES_TF_TYPES_H_
 #define _SOURCE_TYPES_TF_TYPES_H_
 

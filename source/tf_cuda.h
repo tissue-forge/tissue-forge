@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_cuda.h
+ * 
+ */
+
 // TODO: implement support for JIT-compiled programs and kernel usage in wrapped languages
 
 #ifndef _SOURCE_TF_CUDA_H_
@@ -206,10 +211,7 @@ namespace TissueForge::cuda {
         /**
          * @brief Load a compiled program. 
          * 
-         * @param prog 
-         * @param numOptions 
-         * @param opts 
-         * @param optionalValues 
+         * @param prog the compiled program
          */
         void loadProgram(const CUDARTProgram &prog);
 

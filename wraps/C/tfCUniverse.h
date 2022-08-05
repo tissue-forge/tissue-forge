@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCUniverse.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCUNIVERSE_H_
 #define _WRAPS_C_TFCUNIVERSE_H_
 
@@ -88,7 +93,7 @@ CAPI_FUNC(HRESULT) tfUniverse_getVirialT(struct tfParticleTypeHandle **phandles,
  * @brief Get the virial tensor of a neighborhood
  * 
  * @param origin origin of neighborhood
- * @param numTypes radius of neighborhood
+ * @param radius radius of neighborhood
  * @param virial virial tensor
  * @return S_OK on success
  */
@@ -100,7 +105,7 @@ CAPI_FUNC(HRESULT) tfUniverse_getVirialO(tfFloatP_t *origin, tfFloatP_t radius, 
  * @param phandles array of types
  * @param numTypes number of types
  * @param origin origin of neighborhood
- * @param numTypes radius of neighborhood
+ * @param radius radius of neighborhood
  * @param virial virial tensor
  * @return S_OK on success 
  */

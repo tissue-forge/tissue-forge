@@ -17,13 +17,18 @@
 # 
 # ******************************************************************************
 
+from tissue_forge.tissue_forge import _event_EventBase as EventBase
+from tissue_forge.tissue_forge import _event__Event as _Event
 from tissue_forge.tissue_forge import _event_Event as Event
 from tissue_forge.tissue_forge import _event_on_event as on_event
 from tissue_forge.tissue_forge import _event_KeyEvent as KeyEvent
 from tissue_forge.tissue_forge import _event_on_keypress as on_keypress
+from tissue_forge.tissue_forge import _event__ParticleEvent as _ParticleEvent
 from tissue_forge.tissue_forge import _event_ParticleEvent as ParticleEvent
 from tissue_forge.tissue_forge import _event_on_particle as on_particle
+from tissue_forge.tissue_forge import _event__ParticleTimeEvent as _ParticleTimeEvent
 from tissue_forge.tissue_forge import _event_ParticleTimeEvent as ParticleTimeEvent
 from tissue_forge.tissue_forge import _event_on_particletime as on_particletime
+from tissue_forge.tissue_forge import _event__TimeEvent as _TimeEvent
 from tissue_forge.tissue_forge import _event_TimeEvent as TimeEvent
 from tissue_forge.tissue_forge import _event_on_time as on_time

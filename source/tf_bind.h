@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_bind.h
+ * 
+ */
+
 #pragma once
 #ifndef _SOURCE_TF_BIND_H_
 #define _SOURCE_TF_BIND_H_
@@ -72,7 +77,7 @@ namespace TissueForge::bind {
      * Automatically updates when running on a CUDA device. 
      * 
      * @param p The potential
-     * @param bcs The boundary condition
+     * @param bc The boundary condition
      * @param t The particle type
      * @return HRESULT 
      */

@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfColorMapper.h
+ * 
+ */
+
 #ifndef _SOURCE_RENDERING_TFCOLORMAPPER_H_
 #define _SOURCE_RENDERING_TFCOLORMAPPER_H_
 

@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfC_util.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFC_UTIL_H_
 #define _WRAPS_C_TFC_UTIL_H_
 
@@ -62,7 +67,7 @@ CAPI_FUNC(HRESULT) tfGetSeed(unsigned int *seed);
 /**
  * @brief Set the current seed for the pseudo-random number generator
  * 
- * @param _seed 
+ * @param seed new seed value
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfSetSeed(unsigned int seed);
@@ -145,9 +150,7 @@ CAPI_FUNC(HRESULT) tfPoints(unsigned int kind, int n, tfFloatP_t **x);
  * @param nParticlesX number of particles along x-direction of filling axes (>=2)
  * @param nParticlesY number of particles along y-direction of filling axes (>=2)
  * @param nParticlesZ number of particles along z-direction of filling axes (>=2)
- * @param x x-coordinate of points
- * @param y y-coordinate of points
- * @param z z-coordinate of points
+ * @param x coordinates of points
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfFilledCubeUniform(
@@ -165,9 +168,7 @@ CAPI_FUNC(HRESULT) tfFilledCubeUniform(
  * @param corner1 first corner of cube
  * @param corner2 second corner of cube
  * @param nParticles number of points in the cube
- * @param x x-coordinate of points
- * @param y y-coordinate of points
- * @param z z-coordinate of points
+ * @param x coordinates of points
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfFilledCubeRandom(tfFloatP_t *corner1, tfFloatP_t *corner2, int nParticles, tfFloatP_t **x);

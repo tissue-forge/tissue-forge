@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCPotential.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCPOTENTIAL_H_
 #define _WRAPS_C_TFCPOTENTIAL_H_
 
@@ -1074,6 +1079,7 @@ CAPI_FUNC(HRESULT) tfPotential_create_dpd(struct tfPotentialHandle *handle, tfFl
  * @param fp function returning the value of first derivative of the potential
  * @param f6p function returning the value of sixth derivative of the potential
  * @param tol Tolerance, defaults to 0.001.
+ * @param flags potential flags
  * @return HRESULT 
  */
 CAPI_FUNC(HRESULT) tfPotential_create_custom(

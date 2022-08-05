@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCSpecies.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCSPECIES_H_
 #define _WRAPS_C_TFCSPECIES_H_
 
@@ -309,7 +314,7 @@ CAPI_FUNC(HRESULT) tfStateSpecies_getCharge(struct tfStateSpeciesHandle *handle,
  * @brief Set the species charge
  * 
  * @param handle populated handle
- * @param charge species charge
+ * @param value species charge
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfStateSpecies_setCharge(struct tfStateSpeciesHandle *handle, int value);

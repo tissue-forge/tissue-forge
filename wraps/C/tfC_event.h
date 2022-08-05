@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfC_event.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFC_EVENT_H_
 #define _WRAPS_C_TFC_EVENT_H_
 
@@ -400,7 +405,7 @@ CAPI_FUNC(HRESULT) tfEventOnEvent(struct tfEventEventHandle *handle, tfEventEven
  * 
  * @param handle handle to populate
  * @param targetType target particle type
- * @param selectEnum particle selector enum
+ * @param selectorEnum particle selector enum
  * @param invokeMethod an invoke function; evaluated when an event occurs
  * @param predicateMethod a predicate function; evaluated to determine if an event occurs
  * @return S_OK on success 

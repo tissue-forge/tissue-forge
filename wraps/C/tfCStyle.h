@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCStyle.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TFCSTYLE_H_
 #define _WRAPS_C_TFCSTYLE_H_
 
@@ -106,6 +111,7 @@ CAPI_FUNC(HRESULT) tfRenderingStyle_setVisible(struct tfRenderingStyleHandle *ha
 /**
  * @brief Construct and apply a new color map for a particle type and species
  * 
+ * @param handle populated handle
  * @param partType particle type
  * @param speciesName name of species
  * @param name name of color map

@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfParticleTimeEventPy.h
+ * 
+ */
+
 #ifndef _SOURCE_LANGS_PY_TFPARTICLETIMEEVENTPY_H_
 #define _SOURCE_LANGS_PY_TFPARTICLETIMEEVENTPY_H_
 
@@ -75,8 +80,8 @@ namespace TissueForge {
         * 
         * @param targetType target particle type
         * @param period period of evaluations
-        * @param invokeMethod an invoke python function executor; evaluated when an event occurs
-        * @param predicateMethod a predicate python function executor; evaluated to determine if an event occurs
+        * @param invokeExecutor an invoke python function executor; evaluated when an event occurs
+        * @param predicateExecutor a predicate python function executor; evaluated to determine if an event occurs
         * @param distribution name of the function that sets the next evaulation time
         * @param start_time time at which evaluations begin
         * @param end_time time at which evaluations end

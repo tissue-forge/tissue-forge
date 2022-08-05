@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file TissueForge_c.h
+ * 
+ */
+
 #ifndef _WRAPS_C_TISSUEFORGE_C_H_
 #define _WRAPS_C_TISSUEFORGE_C_H_
 
