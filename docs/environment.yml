@@ -1,0 +1,18 @@
+name: tissue-forge-docs
+channels:
+  - conda-forge
+  - tissue-forge
+dependencies:
+  - python=3.7
+  - tissue-forge
+  - ipython
+  - notebook
+  - ipywidgets
+  - ipyevents
+  - sphinx
+  - sphinx_rtd_theme
+  - sphinxcontrib-bibtex
+  - nbsphinx
+  - sphinx-gallery
+  - doxygen
+  - graphviz

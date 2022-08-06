@@ -1,0 +1,7 @@
+Pedro Gonnet: First version of all files.
+Aidan Chalk: GPU code, METIS-enabled domain partition.
+Andy Somogyi: Generalization and continued development
+T.J. Sego: Continued development as part of the Tissue Forge project
+
+Note: mdcore contains modified versions of the file "cycle.h"
+    from the fftw distribution.

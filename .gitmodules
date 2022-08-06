@@ -1,0 +1,15 @@
+[submodule "extern/glfw"]
+	url = https://github.com/glfw/glfw.git
+	path = extern/glfw
+[submodule "extern/magnum"]
+	path = extern/magnum
+	url = https://github.com/mosra/magnum.git
+[submodule "extern/magnum-plugins"]
+	path = extern/magnum-plugins
+	url = https://github.com/mosra/magnum-plugins.git
+[submodule "extern/corrade"]
+	path = extern/corrade
+	url = https://github.com/mosra/corrade.git
+[submodule "extern/libsbml"]
+	path = extern/libsbml
+	url = https://github.com/sbmlteam/libsbml.git

@@ -1,0 +1,17 @@
+name: tissue-forge
+channels:
+  - conda-forge
+dependencies:
+  - python=@PYTHON_VERSION@
+  - numpy
+  - bzip2
+  - libxml2
+  - matplotlib
+  - assimp=5
+  - nlohmann_json
+  - xorg-libxrandr
+  - xorg-libxcursor
+  - xorg-libxinerama
+  - xorg-libxi
+  - xorg-libxau
+  - xorg-libxdmcp

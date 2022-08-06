@@ -1,0 +1,24 @@
+
+mdcore is small, self-contained Open-Source platform-independent library for
+Molecular Dynamics simulations. This project aims not to provide yet another
+full-featured simulation package, but rather to provide the core
+computational infrastructure for parallel MD in such a way that it can
+be easily integrated into existing simulation packages or be used
+directly for simple simulations. The library also provides a test bed
+for the design and development of new algorithms for new architectures 
+such as GPUs [1], the Cell/BE [2], or the Intel MIC, and to investigate
+different strategies for hybrid shared/distributed-memory parallelism,
+asynchronous communication and load balancing for multi-core architectures
+on low-bandwidth/high-latency commodity networks.
+
+mdcore currently incorporates the following functionality:
+
+    * Task-based shared-memory parallelism for multi-core computers,
+    * Hybrid shared/distributed memory parallelism for clusters of
+      multi-core computers,
+    * Support for multiple CUDA-capable GPUs,
+    * Support for the Cell/BE,
+    * Support for arbitrary potential functions.
+    
+mdcore was originally written by Pedro Gonnet, further developed by Andy Somogyi, 
+and is currently maintained by T.J. Sego as part of the Tissue Forge project. 

@@ -1,0 +1,126 @@
+.. _appendix_a:
+
+Appendix A: Exported Simulation State Data
+-------------------------------------------
+
+- Meta
+    - Tissue Forge installation version
+- Simulator
+    - Associated class(es): :class:`Simulator`
+    - Dimension
+    - Cell layout
+    - Global cutoff
+    - Integrator
+    - Timestep
+    - Pseudo-random number generator seed
+    - Simulation time at export
+    - Boundary conditions
+    - Maximum distance
+    - Clip planes
+- Universe
+    - Associated class(es): :class:`Universe`
+    - Simulation name
+    - Particles and clusters
+    - Particle types
+    - Bonds, angles and dihedrals
+    - Temperature
+    - Kinetic energy
+    - Built-in potentials
+    - Built-in forces
+- Boundary
+    - Associated class(es): :class:`xBoundaryCondition`, :class:`BoundaryConditions`
+    - Constituents (:class:`BoundaryConditions`)
+    - Kind (:class:`BoundaryCondition`)
+    - ID (:class:`BoundaryCondition`)
+    - Velocity (:class:`BoundaryCondition`)
+    - Restoration fraction (:class:`BoundaryCondition`)
+    - Name (:class:`BoundaryCondition`)
+    - Normal (:class:`BoundaryCondition`)
+    - Potential (:class:`BoundaryCondition`)
+    - Interaction cutoff (:class:`BoundaryCondition`)
+- Particle
+    - Associated class(es): :class:`Particle`, :class:`Cluster`
+    - Total and initial forces
+    - Number density
+    - Velocity
+    - Position
+    - Creation time
+    - Persistent force
+    - Radius
+    - Mass
+    - Charge
+    - ID [#f1]_
+    - Type ID
+    - Cluster ID
+    - Particle inventory
+    - Style
+    - State vector
+- Particle Type
+    - Associated class(es): :class:`ParticleType`, :class:`ClusterParticleType`
+    - ID [#f1]_
+    - Mass
+    - Charge
+    - Radius
+    - Kinetic energy
+    - Potential energy
+    - Target energy
+    - Minimum radius
+    - Dynamics
+    - Name
+    - Particle inventory
+    - Style
+    - Species
+- Potential
+    - Associated class(es): :class:`Potential`, :class:`DPDPotential`, :class:`CoulombRPotential`
+    - Minimum cutoff (all classes)
+    - Maximum cutoff (all classes)
+    - Name (all classes)
+    - Type (all classes)
+    - Interpolation coefficients (:class:`Potential`)
+    - Constituent potentials (:class:`Potential`, :class:`CoulombRPotential`)
+    - Modes (:class:`CoulombRPotential`)
+    - Charge (:class:`Potential`, :class:`CoulombRPotential`)
+    - Screening distance (:class:`CoulombRPotential`)
+    - Interaction strength coefficients (:class:`DPDPotential`)
+- Force
+    - Associated class(es): :class:`Force`, :class:`Berendsen`, :class:`Friction`, :class:`Gaussian`,
+      :class:`CustomForce`, :class:`ForceSum`
+    - Type (all classes)
+    - Mean (:class:`Friction`, :class:`Gaussian`)
+    - Standard deviation (:class:`Friction`, :class:`Gaussian`)
+    - Magnitude (:class:`Friction`)
+    - Duration (:class:`Friction`, :class:`Gaussian`)
+    - Time coefficient (:class:`Berendsen`)
+    - Constituent forces (:class:`ForceSum`)
+- Bonds
+    - Associated class(es): :class:`Bond`, :class:`Angle`, :class:`Dihedral`
+    - Particle IDs
+    - Creation time
+    - Half life
+    - Dissociation energy
+    - Potential energy
+    - Potential
+- State and species
+    - Associated class(es): :class:`state.StateVector`, :class:`state.SpeciesList`, :class:`state.SpeciesValue`, :class:`state.Species`
+    - Species inventory(:class:`state.StateVector`)
+    - Species values(:class:`state.StateVector`)
+    - Species fluxes(:class:`state.StateVector`)
+    - SBML data (:class:`state.Species`)
+        - ID
+        - Name
+        - Type
+        - Compartment
+        - Initial amount / concentration
+        - Substance units
+        - Spatial size units
+        - Units
+        - Boundary condition
+        - Charge
+        - Conversion factor
+- Style
+    - Associated class(es): :class:`rendering.Style`, :class:`rendering.ColorMapper`
+    - Color (:class:`rendering.Style`)
+    - Color map (:class:`rendering.ColorMapper`)
+
+.. footnotes::
+.. [#f1] Not conserved on import

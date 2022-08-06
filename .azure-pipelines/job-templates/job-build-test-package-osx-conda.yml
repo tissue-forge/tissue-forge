@@ -1,0 +1,70 @@
+parameters:
+  name: ''
+  platform_name: 'osx64'
+  tf_buildqual: ''
+  working_dir: ''
+  staging_dir: ''
+  tf_version: ''
+  tf_buildnum: ''
+
+jobs:
+  - job: ${{ parameters.name }}
+    displayName: ${{ parameters.name }}
+    continueOnError: false
+    timeoutInMinutes: 0
+    variables:
+      ROOT_DIR: '${{ parameters.working_dir }}'
+      SOURCE_DIR: '$(ROOT_DIR)/tissue-forge'
+      BUILD_ROOT: '$(ROOT_DIR)/tf_condabuild'
+      ENV_DIR: '$(BUILD_ROOT)/buildenv'
+      BUILD_OUTPUT: '$(BUILD_ROOT)/result'
+      OSX_SYSROOT: '10.11'
+      BASENAME_SYSROOT: ${{ format('MacOSX{0}.sdk', variables.OSX_SYSROOT) }}
+      BASENAMEDL_SYSROOT: ${{ format('{0}.tar.xz', variables.BASENAME_SYSROOT) }}
+      SOURCE_SYSROOT: ${{ format('https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/{0}', variables.BASENAMEDL_SYSROOT) }}
+      BUILD_SYSROOT: ${{ format('$(BUILD_ROOT)/{0}', variables.BASENAME_SYSROOT) }}
+    workspace:
+      clean: all
+    steps:
+
+      # Setup
+      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+        displayName: Add conda to path
+      - bash: sudo chown -R $USER $CONDA
+        displayName: Take ownership of conda installation
+      - script: |
+          mkdir $(BUILD_ROOT)
+          mkdir $(BUILD_OUTPUT)
+        displayName: Create working directories
+      - checkout: self
+        submodules: recursive
+        path: tissue-forge
+        displayName: Get source
+      - script: conda create -p $(ENV_DIR) conda-build conda-verify -y
+        displayName: Conda setup
+      - script: |
+          cd $(BUILD_ROOT)
+          curl -L -O $(SOURCE_SYSROOT)
+          tar -xf $(BASENAMEDL_SYSROOT) -C $(BUILD_ROOT)
+        displayName: Get sysroot
+      
+      # Build
+      - script: |
+          source activate $(ENV_DIR)
+          export TF_VERSION=$(tf_version)
+          export TF_BUILDNUMBER=$(tf_buildnum)
+          export TF_BUILDQUAL=${{ parameters.tf_buildqual }}
+          export TFOSX_SYSROOT=$(OSX_SYSROOT)
+          export TF_BUILD_SYSROOT=$(BUILD_SYSROOT)
+          conda build -c conda-forge --croot $(BUILD_OUTPUT) $(SOURCE_DIR)/package/conda/recipe
+        displayName: Execute build
+
+      # Conda recipe has built-in tests, so none necessary here
+
+      # Package and publish
+      - template: steps-package-publish-conda.yml
+        parameters:
+          platform_name: 'osx64'
+          tf_version: $(tf_version)
+          staging_dir: ${{ parameters.staging_dir }}
+          build_output: $(BUILD_OUTPUT)
