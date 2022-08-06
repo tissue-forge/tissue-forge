@@ -1,4 +1,4 @@
-name: tissue-forge-docs
+name: tissue_forge-docs
 channels:
   - conda-forge
   - tissue-forge
