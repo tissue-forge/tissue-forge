@@ -1,0 +1,72 @@
+name: tissue_forge_staging_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+    - staging
+
+pr:
+  branches:
+    include:
+    - staging
+
+variables:
+  tf_version: '0.0.0.s'
+  tf_buildnum: 0
+  tf_buildqual: 'staging'
+
+stages:
+
+  # Windows build: conda
+
+  - stage: TissueForgeBuildWindowsConda
+    displayName: Conda build for Windows
+    pool:
+      vmImage: 'windows-2019'
+    dependsOn: []
+    jobs:
+      - template: job-templates/job-build-test-package-win-conda.yml
+        parameters:
+          name: 'TissueForgeBuildWindowsConda'
+          platform_name: 'win64'
+          tf_buildqual: $(tf_buildqual)
+          working_dir: $(Agent.BuildDirectory)
+          staging_dir: $(Build.ArtifactStagingDirectory)
+          tf_version: $(tf_version)
+          tf_buildnum: $(tf_buildnum)
+
+  # Linux build: conda
+
+  - stage: TissueForgeBuildLinuxConda
+    displayName: Conda build for Linux
+    pool:
+      vmImage: 'ubuntu-20.04'
+    dependsOn: []
+    jobs:
+      - template: job-templates/job-build-test-package-linux-conda.yml
+        parameters:
+          name: 'TissueForgeBuildLinuxConda'
+          platform_name: 'linux64'
+          tf_buildqual: $(tf_buildqual)
+          working_dir: $(Agent.BuildDirectory)
+          staging_dir: $(Build.ArtifactStagingDirectory)
+          tf_version: $(tf_version)
+          tf_buildnum: $(tf_buildnum)
+
+  # MacOS build: conda
+
+  - stage: TissueForgeBuildMacConda
+    displayName: Conda build for Mac
+    pool:
+      vmImage: 'macOS-11'
+    dependsOn: []
+    jobs:
+      - template: job-templates/job-build-test-package-osx-conda.yml
+        parameters:
+          name: 'TissueForgeBuildMacConda'
+          platform_name: 'osx64'
+          tf_buildqual: $(tf_buildqual)
+          working_dir: $(Agent.BuildDirectory)
+          staging_dir: $(Build.ArtifactStagingDirectory)
+          tf_version: $(tf_version)
+          tf_buildnum: $(tf_buildnum)

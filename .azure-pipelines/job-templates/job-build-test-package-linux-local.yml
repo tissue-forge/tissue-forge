@@ -1,0 +1,86 @@
+parameters:
+  name: ''
+  platform_name: 'linux64'
+  tf_buildqual: ''
+  py_minor_version: 7
+  working_dir: ''
+  staging_dir: ''
+
+jobs:
+  - job: ${{ parameters.name }}
+    displayName: ${{ parameters.name }}
+    continueOnError: false
+    timeoutInMinutes: 0
+    variables:
+      PY_VERSION_DEC: ${{ format('3.{0}', parameters.py_minor_version) }}
+      PY_VERSION_LAB: ${{ format('py3{0}', parameters.py_minor_version) }}
+      ROOT_DIR: '${{ parameters.working_dir }}'
+      SOURCE_DIR: '$(ROOT_DIR)/tissue-forge'
+      INSTALL_DIR: '$(ROOT_DIR)/tissue-forge_install'
+      EXEC_PYTHON: '$(INSTALL_DIR)/env/bin/python'
+    workspace:
+      clean: all
+    steps:
+
+      # Setup
+      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+        displayName: Add conda to path
+      - script: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev
+        displayName: Install dependencies
+      - checkout: self
+        submodules: recursive
+        path: tissue-forge
+        displayName: Get source
+      - script: conda config --add channels conda-forge
+        displayName: Conda setup
+
+      # Build
+      - script: |
+          source $(SOURCE_DIR)/package/local/linux/install_vars.sh
+          bash $(SOURCE_DIR)/package/local/linux/install_env.sh
+          source activate ${TFENV}
+          conda install -y python=$(PY_VERSION_DEC)
+          export TFBUILDQUAL=${{ parameters.tf_buildqual }}
+          bash $(SOURCE_DIR)/package/local/linux/install_all.sh
+        displayName: Execute build
+
+      # Test
+      - script: |
+          source $(SOURCE_DIR)/package/local/linux/install_vars.sh
+          source activate ${TFENV}
+          conda install -y pytest
+          bash $(SOURCE_DIR)/testing/build_tests.sh
+          source $(INSTALL_DIR)/etc/vars.sh
+          bash $(SOURCE_DIR)/testing/run_tests.sh
+        displayName: Run tests
+
+      # Package
+      - script: |
+          source $(INSTALL_DIR)/etc/vars.sh
+          source activate ${TFENV}
+          $(EXEC_PYTHON) $(SOURCE_DIR)/.azure-pipelines/env-recipes/rtenv.py -v $(PY_VERSION_DEC) -p ${{ parameters.platform_name }}
+        displayName: Generate environment recipe
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: $(INSTALL_DIR)
+          contents: |
+            **/*
+            !env/**/*
+          targetFolder: ${{ parameters.staging_dir }}
+        displayName: Stage package
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: $(SOURCE_DIR)
+          contents: |
+            .azure-pipelines/env-installers/install_env.sh
+            .azure-pipelines/env-recipes/rtenv.yml
+          targetFolder: ${{ parameters.staging_dir }}
+          flattenFolders: true
+        displayName: Stage package helpers
+      
+      # Publish
+      - publish: ${{ parameters.staging_dir }}
+        artifact: tissue_forge-${{ parameters.platform_name }}-$(PY_VERSION_LAB)
+        displayName: Publish package

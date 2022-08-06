@@ -1,0 +1,53 @@
+parameters:
+- name: platform_name
+  type: string
+- name: tf_version
+  type: string
+- name: staging_dir
+  type: string
+- name: build_output
+  type: string
+- name: py_versions
+  type: object
+  default: ['py37', 'py38', 'py39']
+
+steps:
+- ${{ each val in parameters.py_versions }}:
+  - ${{ if eq(parameters.platform_name, 'win64') }}:
+    - script: mkdir ${{ parameters.staging_dir }}\${{ val }}
+      displayName: Prepare python ${{ val }} staging
+  - ${{ else }}:
+    - script: mkdir ${{ parameters.staging_dir }}/${{ val }}
+      displayName: Prepare python ${{ val }} staging
+  - ${{ if eq(parameters.platform_name, 'win64') }}:
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: ${{ parameters.build_output }}\win-64
+        contents: tissue-forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
+        targetFolder: ${{ parameters.staging_dir }}\${{ val }}
+        flattenFolders: true
+      displayName: Stage python ${{ val }} package
+  - ${{ elseif eq(parameters.platform_name, 'linux64') }}:
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: ${{ parameters.build_output }}/linux-64
+        contents: tissue-forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
+        targetFolder: ${{ parameters.staging_dir }}/${{ val }}
+        flattenFolders: true
+      displayName: Stage python ${{ val }} package
+  - ${{ elseif eq(parameters.platform_name, 'osx64') }}:
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: ${{ parameters.build_output }}/osx-64
+        contents: tissue-forge-${{ parameters.tf_version }}-${{ val }}*.tar.bz2
+        targetFolder: ${{ parameters.staging_dir }}/${{ val }}
+        flattenFolders: true
+      displayName: Stage python ${{ val }} package
+  - ${{ if eq(parameters.platform_name, 'win64') }}:
+    - publish: ${{ parameters.staging_dir }}\${{ val }}
+      artifact: tissue-forge-${{ parameters.platform_name }}-conda-${{ val }}
+      displayName: Publish ${{ val }} package
+  - ${{ else }}:
+    - publish: ${{ parameters.staging_dir }}/${{ val }}
+      artifact: tissue-forge-${{ parameters.platform_name }}-conda-${{ val }}
+      displayName: Publish ${{ val }} package

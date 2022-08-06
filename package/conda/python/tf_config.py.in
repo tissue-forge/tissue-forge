@@ -1,0 +1,43 @@
+# ******************************************************************************
+# This file is part of Tissue Forge.
+# Copyright (c) 2022 T.J. Sego
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# 
+# ******************************************************************************
+
+import os
+import sys
+
+tf_dir_bin_rel = @TFPY_RPATH_BIN_SITE@
+"""Path to tissue_forge installation bin directory"""
+
+tf_dir_root = os.path.dirname(os.path.abspath(__file__))
+tf_dir_bin = None
+if tf_dir_bin_rel is not None:
+    tf_dir_bin = os.path.abspath(os.path.join(tf_dir_root, tf_dir_bin_rel))
+
+if sys.platform.startswith('win'):
+    if tf_dir_bin is not None:
+        if sys.version_info >= (3, 8):
+            os.add_dll_directory(tf_dir_bin)
+        else:
+            try:
+                env_str = os.environ['PATH']
+            except KeyError:
+                env_str = ''
+            env_str_list = env_str.split(';')
+
+            if tf_dir_bin not in env_str_list:
+                os.environ['PATH'] = ';'.join([tf_dir_bin] + env_str_list)

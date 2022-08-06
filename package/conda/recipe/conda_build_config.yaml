@@ -1,0 +1,15 @@
+c_compiler:
+  - gcc # [linux]
+  - clang # [osx]
+
+cxx_compiler:
+  - gxx # [linux]
+  - clangxx # [osx]
+
+python:
+  - 3.7
+  - 3.8
+  - 3.9
+
+pin_run_as_build:
+  python: x.x
