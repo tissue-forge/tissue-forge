@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,32 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+#ifndef _MODELS_VERTEX_SOLVER_TF_MESH_H_
+#define _MODELS_VERTEX_SOLVER_TF_MESH_H_
+
+#include "tfMeshObj.h"
+
+
+namespace TissueForge::models::vertex {
+
+
+    TF_ALWAYS_INLINE bool check(MeshObj *obj, const MeshObj::Type &typeEnum) {
+        return obj->objType() == typeEnum;
+    }
+
+    template<typename T>
+    std::vector<MeshObj*> vectorToBase(const std::vector<T*> &implVec) {
+        return std::vector<MeshObj*>(implVec.begin(), implVec.end());
+    }
+
+    template<typename T> 
+    std::vector<T*> vectorToDerived(const std::vector<MeshObj*> &baseVec) {
+        std::vector<T*> result(baseVec.size(), 0);
+        for(unsigned int i = 0; i < baseVec.size(); i++) 
+            result[i] = dynamic_cast<T*>(baseVec[i]);
+        return result;
+    }
+
+}
+
+#endif // _MODELS_VERTEX_SOLVER_TF_MESH_H_

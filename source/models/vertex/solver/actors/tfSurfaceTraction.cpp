@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,30 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+#include "tfSurfaceTraction.h"
+
+#include <models/vertex/solver/tfVertex.h>
+#include <models/vertex/solver/tfSurface.h>
+
+#include <tfEngine.h>
+
+
+using namespace TissueForge::models::vertex;
+
+
+HRESULT SurfaceTraction::energy(MeshObj *source, MeshObj *target, float &e) {
+    FVector3 fv;
+    force(source, target, fv.data());
+    e = fv.dot(((Vertex*)target)->particle()->getVelocity()) * _Engine.dt;
+    return S_OK;
+}
+
+HRESULT SurfaceTraction::force(MeshObj *source, MeshObj *target, float *f) {
+    Surface *s = (Surface*)source;
+    Vertex *v = (Vertex*)target;
+    FVector3 vForce = comps * s->getVertexArea(v);
+    f[0] += vForce[0];
+    f[1] += vForce[1];
+    f[2] += vForce[2];
+    return S_OK;
+}

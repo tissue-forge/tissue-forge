@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,43 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+#include "tf_mesh_bind.h"
+
+
+using namespace TissueForge::models::vertex;
+
+
+namespace TissueForge::models::vertex::bind { 
+
+
+    HRESULT structure(StructureType *s, MeshObjActor *a) {
+        s->actors.push_back(a);
+        return S_OK;
+    }
+
+    HRESULT structure(Structure *s, MeshObjActor *a) {
+        s->actors.push_back(a);
+        return S_OK;
+    }
+
+    HRESULT body(BodyType *b, MeshObjActor *a) {
+        b->actors.push_back(a);
+        return S_OK;
+    }
+
+    HRESULT body(Body *b, MeshObjActor *a) {
+        b->actors.push_back(a);
+        return S_OK;
+    }
+
+    HRESULT surface(SurfaceType *s, MeshObjActor *a) { 
+        s->actors.push_back(a);
+        return S_OK;
+    }
+
+    HRESULT surface(Surface *s, MeshObjActor *a) { 
+        s->actors.push_back(a);
+        return S_OK;
+    }
+
+}

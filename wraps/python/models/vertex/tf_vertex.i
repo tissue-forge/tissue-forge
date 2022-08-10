@@ -17,5 +17,4 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+%include "solver/tf_solver.i"

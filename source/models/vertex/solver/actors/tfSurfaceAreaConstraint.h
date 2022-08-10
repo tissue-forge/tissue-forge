@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,30 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+#ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACEAREACONSTRAINT_H_
+#define _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACEAREACONSTRAINT_H_
+
+#include <models/vertex/solver/tfMeshObj.h>
+
+
+namespace TissueForge::models::vertex { 
+
+
+    struct SurfaceAreaConstraint : MeshObjActor {
+
+        float lam;
+        float constr;
+
+        SurfaceAreaConstraint(const float &_lam, const float &_constr) {
+            lam = _lam;
+            constr = _constr;
+        }
+
+        HRESULT energy(MeshObj *source, MeshObj *target, float &e);
+
+        HRESULT force(MeshObj *source, MeshObj *target, float *f);
+    };
+
+}
+
+#endif // _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACEAREACONSTRAINT_H_

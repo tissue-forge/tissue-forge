@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,31 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+#ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACENORMAL_H_
+#define _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACENORMAL_H_
+
+#include <models/vertex/solver/tfMeshObj.h>
+
+#include <types/tf_types.h>
+
+
+namespace TissueForge::models::vertex { 
+
+
+    struct NormalStress : MeshObjActor {
+
+        float mag;
+
+        NormalStress(const float &_mag) {
+            mag = _mag;
+        }
+
+        HRESULT energy(MeshObj *source, MeshObj *target, float &e);
+
+        HRESULT force(MeshObj *source, MeshObj *target, float *f);
+
+    };
+
+}
+
+#endif // _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACENORMAL_H_

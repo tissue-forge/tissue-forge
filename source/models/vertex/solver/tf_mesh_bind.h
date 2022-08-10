@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,36 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+#ifndef _MODELS_VERTEX_SOLVER_TF_MESH_BIND_H_
+#define _MODELS_VERTEX_SOLVER_TF_MESH_BIND_H_
+
+#include "tfMeshObj.h"
+#include "tfVertex.h"
+#include "tfSurface.h"
+#include "tfBody.h"
+#include "tfStructure.h"
+
+
+namespace TissueForge::models::vertex { 
+
+
+    namespace bind { 
+
+
+        CPPAPI_FUNC(HRESULT) structure(StructureType *st, MeshObjActor *a);
+
+        CPPAPI_FUNC(HRESULT) structure(Structure *s, MeshObjActor *a);
+
+        CPPAPI_FUNC(HRESULT) body(BodyType *b, MeshObjActor *a);
+
+        CPPAPI_FUNC(HRESULT) body(Body *b, MeshObjActor *a);
+
+        CPPAPI_FUNC(HRESULT) surface(SurfaceType *s, MeshObjActor *a);
+
+        CPPAPI_FUNC(HRESULT) surface(Surface *s, MeshObjActor *a);
+
+    }
+
+}
+
+#endif // _MODELS_VERTEX_SOLVER_TF_MESH_BIND_H_

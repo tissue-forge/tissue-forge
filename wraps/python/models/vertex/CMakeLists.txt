@@ -1,4 +1,4 @@
-# ******************************************************************************
+#*******************************************************************************
 # This file is part of Tissue Forge.
 # Copyright (c) 2022 T.J. Sego
 # 
@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # 
-# ******************************************************************************
+#*******************************************************************************
 
-from . import center
-from . import vertex
+add_subdirectory(solver)
+
+install(FILES __init__.py DESTINATION ${TF_SITEPACKAGES}/tissue_forge/models/vertex)

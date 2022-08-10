@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,30 @@
  * 
  ******************************************************************************/
 
-%include "center/tf_center.i"
-%include "vertex/tf_vertex.i"
+#include "tfMeshObj.h"
+
+#include "tfMeshSolver.h"
+
+
+using namespace TissueForge::models::vertex;
+
+
+MeshObj::MeshObj() : 
+    mesh{NULL}, 
+    objId{-1}
+{}
+
+bool MeshObj::in(MeshObj *obj) {
+    if(!obj || objType() > obj->objType()) 
+        return false;
+
+    for(auto &p : obj->parents()) 
+        if(p == this || in(p)) 
+            return true;
+
+    return false;
+}
+
+bool MeshObj::has(MeshObj *obj) {
+    return obj && obj->in(this);
+}

@@ -1,6 +1,6 @@
 # ******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022 T.J. Sego
+# Copyright (c) 2022 T.J. Sego and Tien Comlekoglu
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -17,5 +17,4 @@
 # 
 # ******************************************************************************
 
-from . import center
-from . import vertex
+from . import solver
