@@ -135,6 +135,42 @@ namespace TissueForge::metrics {
 
     CAPI_FUNC(HRESULT) particleGrid(const iVector3 &shape, ParticleList **result);
 
+    /**
+     * @brief Compute the eigenvalues of a 3x3 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues
+     */
+    CPPAPI_FUNC(FVector3) eigenVals(const FMatrix3 &mat, const bool &symmetric=false);
+
+    /**
+     * @brief Compute the eigenvalues of a 4x4 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues
+     */
+    CPPAPI_FUNC(FVector4) eigenVals(const FMatrix4 &mat, const bool &symmetric=false);
+
+    /**
+     * @brief Compute the eigenvectors and eigenvalues of a 3x3 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues, eigenvectors
+     */
+    CPPAPI_FUNC(std::pair<FVector3, FMatrix3>) eigenVecsVals(const FMatrix3 &mat, const bool &symmetric=false);
+
+    /**
+     * @brief Compute the eigenvectors and eigenvalues of a 4x4 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues, eigenvectors 
+     */
+    CPPAPI_FUNC(std::pair<FVector4, FMatrix4>) eigenVecsVals(const FMatrix4 &mat, const bool &symmetric=false);
+
 };
 
 

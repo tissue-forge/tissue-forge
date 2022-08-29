@@ -26,3 +26,5 @@ from tissue_forge.tissue_forge import _metrics_particles_center_of_geometry as p
 from tissue_forge.tissue_forge import _metrics_particles_moment_of_inertia as particles_moment_of_inertia
 from tissue_forge.tissue_forge import _metrics_cartesian_to_spherical as cartesian_to_spherical
 from tissue_forge.tissue_forge import _metrics_particle_neighbors as particle_neighbors
+from tissue_forge.tissue_forge import _metrics_eigenvals as eigenvals
+from tissue_forge.tissue_forge import _metrics_eigenvecs_vals as eigenvecs_vals

@@ -24,6 +24,7 @@
 #include <tfRunner.h>
 #include <tf_potential_eval.h>
 
+#include <eigen3/Eigen/Eigen>
 
 using namespace TissueForge;
 
@@ -912,4 +913,78 @@ HRESULT metrics::particleGrid(const iVector3 &shape, ParticleList **result) {
                 result[idx] = pl[i0][i1][i2];
 
     return S_OK;
+}
+
+
+template <typename TFV, typename TFM> 
+HRESULT _eigenVals(const TFM &mat, TFV &evals, const bool &symmetric) {
+    Eigen::Vector<FloatP_t, TFV::Size> _evals;
+
+    if(symmetric) {
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size> > es;
+        es.compute(Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size>(mat.data()));
+        _evals = es.eigenvalues();
+    } 
+    else {
+        Eigen::EigenSolver<Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size> > es;
+        es.compute(Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size>(mat.data()), false);
+        _evals = es.eigenvalues().real();
+    }
+
+    evals = TFV::from(_evals.data());
+
+    return S_OK;
+}
+
+
+template <typename TFV, typename TFM> 
+HRESULT _eigenVecsVals(const TFM &mat, TFV &evals, TFM &evecs, const bool &symmetric) {
+    Eigen::Vector<FloatP_t, TFV::Size> _evals;
+    Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size> _evecs;
+
+    if(symmetric) {
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size> > es(Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size>(mat.data()));
+        _evals = es.eigenvalues();
+        _evecs = es.eigenvectors();
+    } 
+    else {
+        Eigen::EigenSolver<Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size> > es(Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size>(mat.data()));
+        _evals = es.eigenvalues().real();
+        _evecs = es.eigenvectors().real();
+    }
+
+    evals = TFV::from(_evals.data());
+    evecs = TFM::from(_evecs.data());
+
+    return S_OK;
+}
+
+FVector3 metrics::eigenVals(const FMatrix3 &mat, const bool &symmetric) {
+    FVector3 evals;
+    if(_eigenVals(mat, evals, symmetric) != S_OK) 
+        tf_error(E_FAIL, "Error computing eigenvalues");
+    return evals;
+}
+
+FVector4 metrics::eigenVals(const FMatrix4 &mat, const bool &symmetric) {
+    FVector4 evals;
+    if(_eigenVals(mat, evals, symmetric) != S_OK) 
+        tf_error(E_FAIL, "Error computing eigenvalues");
+    return evals;
+}
+
+std::pair<FVector3, FMatrix3> metrics::eigenVecsVals(const FMatrix3 &mat, const bool &symmetric) {
+    FVector3 evals;
+    FMatrix3 evecs;
+    if(_eigenVecsVals(mat, evals, evecs, symmetric) != S_OK) 
+        tf_error(E_FAIL, "Error computing eigenvectors and eigenvalues");
+    return {evals, evecs};
+}
+
+std::pair<FVector4, FMatrix4> metrics::eigenVecsVals(const FMatrix4 &mat, const bool &symmetric) {
+    FVector4 evals;
+    FMatrix4 evecs;
+    if(_eigenVecsVals(mat, evals, evecs, symmetric) != S_OK) 
+        tf_error(E_FAIL, "Error computing eigenvectors and eigenvalues");
+    return {evals, evecs};
 }

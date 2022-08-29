@@ -510,6 +510,11 @@ matrix_list_cast_add(TissueForge::types::TMatrix4, double,   vectordMatrix4)
 matrix_list_cast_add(TissueForge::types::TMatrix3, float,    vectorfMatrix3)
 matrix_list_cast_add(TissueForge::types::TMatrix4, float,    vectorfMatrix4)
 
+%template(pairfVecMat3) std::pair<TissueForge::types::TVector3<float>,  TissueForge::types::TMatrix3<float> >;
+%template(pairfVecMat4) std::pair<TissueForge::types::TVector4<float>,  TissueForge::types::TMatrix4<float> >;
+%template(pairdVecMat3) std::pair<TissueForge::types::TVector3<double>, TissueForge::types::TMatrix3<double> >;
+%template(pairdVecMat4) std::pair<TissueForge::types::TVector4<double>, TissueForge::types::TMatrix4<double> >;
+
 
 #ifdef TF_FPTYPE_SINGLE
 %pythoncode %{
@@ -531,6 +536,9 @@ pairFF = pairff
 vectorF = vectorf
 vector2F = vector2f
 
+pairFVecMat3 = pairfVecMat3
+pairFVecMat4 = pairfVecMat4
+
 %}
 #else
 %pythoncode %{
@@ -551,6 +559,9 @@ vectorFMatrix4 = vectordMatrix4
 pairFF = pairdd
 vectorF = vectord
 vector2F = vector2d
+
+pairFVecMat3 = pairdVecMat3
+pairFVecMat4 = pairdVecMat4
 
 %}
 #endif

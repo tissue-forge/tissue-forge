@@ -9,4 +9,5 @@ dependencies:
   - matplotlib
   - assimp=5
   - nlohmann_json
+  - eigen
   - pthreads-win32

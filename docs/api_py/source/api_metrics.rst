@@ -20,3 +20,7 @@ Metrics
 .. autofunction:: cartesian_to_spherical
 
 .. autofunction:: particle_neighbors
+
+.. autofunction:: eigenvals
+
+.. autofunction:: eigenvecs_vals

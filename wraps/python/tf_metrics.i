@@ -32,5 +32,7 @@
 %rename(_metrics_particles_moment_of_inertia) TissueForge::metrics::particlesMomentOfInertia;
 %rename(_metrics_cartesian_to_spherical) TissueForge::metrics::cartesianToSpherical;
 %rename(_metrics_particle_neighbors) TissueForge::metrics::particleNeighbors;
+%rename(_metrics_eigenvals) TissueForge::metrics::eigenVals;
+%rename(_metrics_eigenvecs_vals) TissueForge::metrics::eigenVecsVals;
 
 %include "tf_metrics.h"
