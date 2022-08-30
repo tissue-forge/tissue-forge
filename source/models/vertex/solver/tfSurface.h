@@ -66,6 +66,8 @@ namespace TissueForge::models::vertex {
 
         FVector3 centroid;
 
+        FVector3 velocity;
+
         float area;
 
         /** Volume contributed by this surface to its child bodies */
@@ -107,6 +109,8 @@ namespace TissueForge::models::vertex {
 
         SurfaceType *type();
 
+        HRESULT insert(Vertex *toInsert, Vertex *v1, Vertex *v2);
+
         std::vector<Structure*> getStructures();
 
         std::vector<Body*> getBodies();
@@ -127,6 +131,8 @@ namespace TissueForge::models::vertex {
         FVector3 getNormal() { return normal; }
 
         FVector3 getCentroid() { return centroid; }
+
+        FVector3 getVelocity() { return velocity; }
 
         float getArea() { return area; }
 

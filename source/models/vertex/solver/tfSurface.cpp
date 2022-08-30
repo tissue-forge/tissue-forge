@@ -256,6 +256,24 @@ SurfaceType *Surface::type() {
     return solver->getSurfaceType(typeId);
 }
 
+HRESULT Surface::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
+    // Handle wrap
+    Vertex *ve = *vertices.rbegin();
+    if((*vertices.begin() == v1 && *vertices.rbegin() == v2) || (*vertices.begin() == v2 && *vertices.rbegin() == v1)) {
+        vertices.insert(vertices.begin(), toInsert);
+        return S_OK;
+    }
+
+    for(std::vector<Vertex*>::iterator itr = vertices.begin(); itr != vertices.end(); itr++) {
+        if(*itr == v1 || *itr == v2) {
+            vertices.insert(itr + 1, toInsert);
+            return S_OK;
+        }
+    }
+    TF_Log(LOG_ERROR) << "Vertices not found.";
+    return E_FAIL;
+}
+
 std::vector<Structure*> Surface::getStructures() {
     std::vector<Structure*> result;
     if(b1) 
@@ -409,12 +427,17 @@ FVector3 Surface::triangleNormal(const unsigned int &idx) {
 HRESULT Surface::positionChanged() {
     normal = FVector3(0.f);
     centroid = FVector3(0.f);
+    velocity = FVector3(0.f);
     area = 0.f;
     _volumeContr = 0.f;
 
-    for(auto &v : vertices) 
-        centroid += v->getPosition();
-    centroid /= (float)vertices.size();
+    for(auto &v : vertices) {
+        ParticleHandle *p = v->particle();
+        centroid += p->getPosition();
+        velocity += p->getVelocity();
+    }
+    centroid /= (FloatP_t)vertices.size();
+    velocity /= (FloatP_t)vertices.size();
 
     for(unsigned int i = 0; i < vertices.size(); i++) {
         FVector3 triNormal = triangleNormal(i);
@@ -488,6 +511,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const float &distCf) {
             vj->removeChild(c);
         if(vj->mesh && vj->mesh->remove(vj) != S_OK) 
             return E_FAIL;
+        delete vj;
     }
     return S_OK;
 }
