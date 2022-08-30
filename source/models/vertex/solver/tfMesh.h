@@ -109,10 +109,7 @@ namespace TissueForge::models::vertex {
         /** Replace a vertex with a surface. Vertices are created for the surface along every destroyed edge. */
         Surface *replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<float> lenCfs);
 
-        /** Merge two vertices. 
-         * 
-         * Vertices must be adjacent and on the same surface. 
-        */
+        /** Merge two vertices. */
         HRESULT merge(Vertex *toKeep, Vertex *toRemove, const float &lenCf=0.5f);
 
         /** Merge two surfaces. 

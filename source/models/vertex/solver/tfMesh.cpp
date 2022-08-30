@@ -510,36 +510,27 @@ Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<flo
 }
 
 HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const float &lenCf) {
-    // Impose that vertices with shared surfaces must be adjacent
-    auto sharedSurfaces = toKeep->sharedSurfaces(toRemove);
-    if(sharedSurfaces.size() == 0) {
-        TF_Log(LOG_ERROR) << "Vertices must be adjacent on shared surfaces";
-        return E_FAIL;
-    }
-    auto s = sharedSurfaces[0];
-    Vertex *vt;
-    for(unsigned int i = 0; i < s->vertices.size(); i++) {
-        auto v = s->vertices[i];
-        vt = v == toKeep ? toRemove : (v == toRemove ? toKeep : NULL);
 
-        if(vt) {
-            if(vt != s->vertices[i + 1 >= s->vertices.size() ? i + 1 - s->vertices.size() : i + 1]) {
-                TF_Log(LOG_ERROR) << "Vertices with shared surfaces must be adjacent";
-                return E_FAIL;
-            } 
-            else 
-                break;
-        }
+    // In common surfaces, just remove; in different surfaces, replace
+    std::vector<Surface*> common_s, different_s;
+    common_s.reserve(toRemove->surfaces.size());
+    different_s.reserve(toRemove->surfaces.size());
+    for(auto &s : toRemove->surfaces) {
+        if(std::find(s->vertices.begin(), s->vertices.end(), toKeep) == s->vertices.end()) 
+            different_s.push_back(s);
+        else 
+            common_s.push_back(s);
     }
-
-    // Disconnect and remove vertex
-    auto childrenToRemove = toRemove->children();
-    for(auto &c : childrenToRemove) {
-        if(toRemove->removeChild(c) != S_OK) 
-            return E_FAIL;
-        if(c->removeParent(toRemove) != S_OK) 
-            return E_FAIL;
+    for(auto &s : common_s) {
+        s->removeParent(toRemove);
+        toRemove->removeChild(s);
     }
+    for(auto &s : different_s) {
+        toRemove->removeChild(s);
+        toKeep->addChild(s);
+        std::replace(s->vertices.begin(), s->vertices.end(), toRemove, toKeep);
+    }
+    
     if(remove(toRemove) != S_OK) 
         return E_FAIL;
     
@@ -555,6 +546,8 @@ HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const float &lenCf) {
 
         _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
     }
+
+    delete toRemove;
 
     return S_OK;
 }
