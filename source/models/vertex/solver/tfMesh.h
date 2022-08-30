@@ -26,7 +26,9 @@
 #include "tfSurface.h"
 #include "tfBody.h"
 #include "tfStructure.h"
+#include "tfMeshQuality.h"
 
+#include <mutex>
 #include <set>
 #include <vector>
 
@@ -48,14 +50,30 @@ namespace TissueForge::models::vertex {
         std::set<unsigned int> vertexIdsAvail, surfaceIdsAvail, bodyIdsAvail, structureIdsAvail;
         bool isDirty;
         MeshSolver *_solver = NULL;
+        MeshQuality *_quality;
+        std::mutex meshLock;
 
     public:
+
+        Mesh();
+
+        ~Mesh();
+
+        bool hasQuality() { return _quality; }
+        TissueForge::models::vertex::MeshQuality &getQuality() { return *_quality; }
+        HRESULT setQuality(TissueForge::models::vertex::MeshQuality *quality);
 
         HRESULT add(Vertex *obj);
         HRESULT add(Surface *obj);
         HRESULT add(Body *obj);
         HRESULT add(Structure *obj);
         HRESULT removeObj(MeshObj *obj);
+
+        /** Locks the mesh for thread-safe operations */
+        void lock() { this->meshLock.lock(); }
+        
+        /** Unlocks the mesh for thread-safe operations */
+        void unlock() { this->meshLock.unlock(); }
 
         Vertex *findVertex(const FVector3 &pos, const float &tol = 0.0001);
 

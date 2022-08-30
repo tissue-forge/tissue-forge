@@ -32,6 +32,9 @@
 #define TF_MESHSOLVER_CHECKINIT { if(!_solver) return E_FAIL; }
 
 
+static std::mutex _meshEngineLock;
+
+
 using namespace TissueForge::models::vertex;
 
 
@@ -69,6 +72,20 @@ HRESULT MeshSolver::compact() {
         _forces = (float*)malloc(3 * sizeof(float));
     }
 
+    return S_OK;
+}
+
+HRESULT MeshSolver::engineLock() {
+    TF_MESHSOLVER_CHECKINIT
+
+    _solver->_engineLock.lock();
+    return S_OK;
+}
+
+HRESULT MeshSolver::engineUnlock() {
+    TF_MESHSOLVER_CHECKINIT
+
+    _solver->_engineLock.unlock();
     return S_OK;
 }
 
@@ -301,7 +318,15 @@ HRESULT MeshSolver::preStepJoin() {
 
 HRESULT MeshSolver::postStepStart() {
     setDirty(true);
-    return positionChanged();
+
+    if(positionChanged() != S_OK) 
+        return E_FAIL;
+
+    for(auto &m : meshes) 
+        if(m->hasQuality()) 
+            m->getQuality().doQuality();
+
+    return S_OK;
 }
 
 HRESULT MeshSolver::postStepJoin() {

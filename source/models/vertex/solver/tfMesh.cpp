@@ -124,6 +124,30 @@ HRESULT Mesh_addObj(Mesh *mesh, std::vector<T*> &inv, std::set<unsigned int> &av
     return S_OK;
 }
 
+
+//////////
+// Mesh //
+//////////
+
+
+Mesh::Mesh() : 
+    _quality{new MeshQuality(this)}
+{}
+
+Mesh::~Mesh() { 
+    if(_quality) { 
+        delete _quality;
+        _quality = 0;
+    }
+}
+
+HRESULT Mesh::setQuality(MeshQuality *quality) {
+    if(_quality) delete _quality;
+
+    _quality = quality;
+    return S_OK;
+}
+
 HRESULT Mesh::add(Vertex *obj) { 
     isDirty = true;
     if(_solver) 

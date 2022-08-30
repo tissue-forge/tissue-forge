@@ -44,6 +44,12 @@ namespace TissueForge::models::vertex {
         static MeshSolver *get();
         HRESULT compact();
 
+        /** Locks the engine for thread-safe engine operations */
+        static HRESULT engineLock();
+        
+        /** Unlocks the engine for thread-safe engine operations */
+        static HRESULT engineUnlock();
+
         bool isDirty();
         HRESULT setDirty(const bool &_isDirty);
 
@@ -80,6 +86,7 @@ namespace TissueForge::models::vertex {
         unsigned int _surfaceVertices;
         unsigned int _totalVertices;
         bool _isDirty;
+        std::mutex _engineLock;
 
         std::vector<StructureType*> _structureTypes;
         std::vector<BodyType*> _bodyTypes;
