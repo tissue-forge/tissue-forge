@@ -29,11 +29,15 @@ from tissue_forge.tissue_forge import _vertex_solver_Surface as Surface
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceType as SurfaceType
 from tissue_forge.tissue_forge import _vertex_solver_Vertex as Vertex
 from tissue_forge.tissue_forge import _vertex_solver_Logger as Logger
+from tissue_forge.tissue_forge import _vertex_solver_Quality as Quality
 from tissue_forge.tissue_forge import _vertex_solver_BodyForce as BodyForce
 from tissue_forge.tissue_forge import _vertex_solver_NormalStress as NormalStress
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceAreaConstraint as SurfaceAreaConstraint
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceTraction as SurfaceTraction
 from tissue_forge.tissue_forge import _vertex_solver_VolumeConstraint as VolumeConstraint
+from tissue_forge.tissue_forge import _vertex_solver_EdgeTension as EdgeTension
+from tissue_forge.tissue_forge import _vertex_solver_edgeStrain as edge_strain
+from tissue_forge.tissue_forge import _vertex_solver_vertexStrain as vertex_strain
 
 from tissue_forge.tissue_forge import _vertex_solver__MeshParticleType_get as MeshParticleType_get;
 

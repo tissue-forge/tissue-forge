@@ -25,16 +25,19 @@
 #include <models/vertex/solver/tfBody.h>
 #include <models/vertex/solver/tfMesh.h>
 #include <models/vertex/solver/tfMeshLogger.h>
+#include <models/vertex/solver/tfMeshQuality.h>
 #include <models/vertex/solver/tfMeshSolver.h>
 #include <models/vertex/solver/tfStructure.h>
 #include <models/vertex/solver/tfSurface.h>
 #include <models/vertex/solver/tfVertex.h>
+#include <models/vertex/solver/tf_mesh_metrics.h>
 #include <models/vertex/solver/tf_mesh_bind.h>
 #include <models/vertex/solver/actors/tfBodyForce.h>
 #include <models/vertex/solver/actors/tfNormalStress.h>
 #include <models/vertex/solver/actors/tfSurfaceAreaConstraint.h>
 #include <models/vertex/solver/actors/tfSurfaceTraction.h>
 #include <models/vertex/solver/actors/tfVolumeConstraint.h>
+#include <models/vertex/solver/actors/tfEdgeTension.h>
 %}
 
 
@@ -43,6 +46,9 @@
 %template(vectorMeshBody) std::vector<TissueForge::models::vertex::Body*>;
 %template(vectorMeshStructure) std::vector<TissueForge::models::vertex::Structure*>;
 %template(vectorMesh) std::vector<TissueForge::models::vertex::Mesh*>;
+
+%ignore TissueForge::models::vertex::MeshQualityOperation;
+%ignore TissueForge::models::vertex::CustomQualityOperation;
 
 // todo: correct so that this block isn't necessary
 %ignore TissueForge::models::vertex::MeshObjActor::energy(MeshObj *, MeshObj *, float &);
@@ -57,6 +63,8 @@
 %ignore TissueForge::models::vertex::SurfaceTraction::force(MeshObj *, MeshObj *, float *);
 %ignore TissueForge::models::vertex::NormalStress::energy(MeshObj *, MeshObj *, float &);
 %ignore TissueForge::models::vertex::NormalStress::force(MeshObj *, MeshObj *, float *);
+%ignore TissueForge::models::vertex::EdgeTension::energy(MeshObj *, MeshObj *, float &);
+%ignore TissueForge::models::vertex::EdgeTension::force(MeshObj *, MeshObj *, float *);
 
 
 %rename(_vertex_solver_Body) TissueForge::models::vertex::Body;
@@ -69,11 +77,15 @@
 %rename(_vertex_solver_SurfaceType) TissueForge::models::vertex::SurfaceType;
 %rename(_vertex_solver_Vertex) TissueForge::models::vertex::Vertex;
 %rename(_vertex_solver_Logger) TissueForge::models::vertex::MeshLogger;
+%rename(_vertex_solver_Quality) TissueForge::models::vertex::MeshQuality;
 %rename(_vertex_solver_BodyForce) TissueForge::models::vertex::BodyForce;
 %rename(_vertex_solver_NormalStress) TissueForge::models::vertex::NormalStress;
 %rename(_vertex_solver_SurfaceAreaConstraint) TissueForge::models::vertex::SurfaceAreaConstraint;
 %rename(_vertex_solver_SurfaceTraction) TissueForge::models::vertex::SurfaceTraction;
 %rename(_vertex_solver_VolumeConstraint) TissueForge::models::vertex::VolumeConstraint;
+%rename(_vertex_solver_EdgeTension) TissueForge::models::vertex::EdgeTension;
+%rename(_vertex_solver_edgeStrain) TissueForge::models::vertex::edgeStrain;
+%rename(_vertex_solver_vertexStrain) TissueForge::models::vertex::vertexStrain;
 
 %rename(_vertex_solver__MeshParticleType_get) TissueForge::models::vertex::MeshParticleType_get;
 
@@ -93,10 +105,13 @@
 %include <models/vertex/solver/tfStructure.h>
 %include <models/vertex/solver/tfMesh.h>
 %include <models/vertex/solver/tfMeshLogger.h>
+%include <models/vertex/solver/tfMeshQuality.h>
 %include <models/vertex/solver/tfMeshSolver.h>
 %include <models/vertex/solver/tf_mesh_bind.h>
+%include <models/vertex/solver/tf_mesh_metrics.h>
 %include <models/vertex/solver/actors/tfBodyForce.h>
 %include <models/vertex/solver/actors/tfNormalStress.h>
 %include <models/vertex/solver/actors/tfSurfaceAreaConstraint.h>
 %include <models/vertex/solver/actors/tfSurfaceTraction.h>
 %include <models/vertex/solver/actors/tfVolumeConstraint.h>
+%include <models/vertex/solver/actors/tfEdgeTension.h>
