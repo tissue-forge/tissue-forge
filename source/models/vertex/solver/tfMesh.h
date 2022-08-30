@@ -102,6 +102,9 @@ namespace TissueForge::models::vertex {
 
         /** Inserts a vertex between two vertices */
         HRESULT insert(Vertex *toInsert, Vertex *v1, Vertex *v2);
+
+        /** Insert a vertex between a vertex and each of a set of vertices */
+        HRESULT insert(Vertex *toInsert, Vertex *vf, std::vector<Vertex*> nbs);
         
         /** Replace a surface with a vertex */
         HRESULT replace(Vertex *toInsert, Surface *toReplace);
@@ -151,6 +154,16 @@ namespace TissueForge::models::vertex {
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
         */
         HRESULT sew(std::vector<Surface*> _surfaces, const float &distCf=0.01);
+
+        /** Split a vertex into an edge
+         * 
+         * The vertex must define at least one surface.
+         * 
+         * New topology is governed by a cut plane at the midpoint of, and orthogonal to, the new edge. 
+         * Each first-order neighbor vertex is connected to the vertex of the new edge on the same side of 
+         * the cut plane. 
+         */
+        Vertex *split(Vertex *v, const FVector3 &sep);
 
         friend MeshRenderer;
         friend MeshSolver;

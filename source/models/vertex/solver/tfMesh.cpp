@@ -377,7 +377,7 @@ HRESULT Mesh::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
         }
     }
 
-    if(add(toInsert) != S_OK) 
+    if(toInsert->objId < 0 && add(toInsert) != S_OK) 
         return E_FAIL;
 
     if(_solver) { 
@@ -387,6 +387,13 @@ HRESULT Mesh::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
         _solver->log(this, MeshLogEventType::Create, {v1->objId, v2->objId}, {v1->objType(), v2->objType()}, "insert");
     }
 
+    return S_OK;
+}
+
+HRESULT Mesh::insert(Vertex *toInsert, Vertex *vf, std::vector<Vertex*> nbs) {
+    for(auto &v : nbs) 
+        if(insert(toInsert, vf, v) != S_OK) 
+            return E_FAIL;
     return S_OK;
 }
 
@@ -821,4 +828,99 @@ HRESULT Mesh::sew(std::vector<Surface*> _surfaces, const float &distCf) {
             if(si != sj && sew(si, sj, distCf) != S_OK) 
                 return E_FAIL;
     return S_OK;
+}
+
+Vertex *Mesh::split(Vertex *v, const FVector3 &sep) {
+    
+    std::vector<Vertex*> nbs = v->neighborVertices();
+
+    // Verify that 
+    //  1. the vertex is in the mesh
+    //  2. the vertex defines at least one surface
+    if(v->mesh != this) {
+        tf_error(E_FAIL, "Vertex not in this mesh");
+        return 0;
+    } 
+    else if(nbs.size() == 0) {
+        tf_error(E_FAIL, "Vertex must define a surface");
+        return 0;
+    }
+    
+    // Define a cut plane at the midpoint of and orthogonal to the new edge
+    FVector3 v_pos0 = v->getPosition();
+    FVector3 hsep = sep * 0.5;
+    FVector3 v_pos1 = v_pos0 - hsep;
+    FVector3 u_pos = v_pos0 + hsep;
+    FVector4 planeEq = FVector4::planeEquation(sep.normalized(), v_pos0);
+
+    // Determine which neighbors will be connected to each vertex
+    std::vector<Vertex*> u_nbs, v_nbs;
+    u_nbs.reserve(nbs.size());
+    v_nbs.reserve(nbs.size());
+    for(auto nv : nbs) {
+        if(planeEq.distance(nv->getPosition()) >= 0) 
+            u_nbs.push_back(nv);
+        else 
+            v_nbs.push_back(nv);
+    }
+
+    // Reject if either side of the plane has no vertices
+    if(u_nbs.empty() || v_nbs.empty()) {
+        TF_Log(LOG_DEBUG) << "No vertices on both sides of cut plane; ignoring";
+        return 0;
+    }
+
+    // Determine which surfaces the target vertex will no longer partially define
+    // A surface remains partially defined by the target vertex if the target vertex has 
+    // a neighbor on its own side of the cut plane that also partially defines the surface
+    std::set<Surface*> u_surfs, vn_surfs;
+    for(auto &nv : v_nbs) 
+        for(auto &s : nv->sharedSurfaces(v)) 
+            vn_surfs.insert(s);
+    for(auto &nv : u_nbs) 
+        for(auto &s : nv->sharedSurfaces(v)) 
+            u_surfs.insert(s);
+    std::set<Surface*> surfs_keep_v, surfs_remove_v;
+    for(auto &s : u_surfs) {
+        if(std::find(vn_surfs.begin(), vn_surfs.end(), s) == vn_surfs.end()) 
+            surfs_remove_v.insert(s);
+        else 
+            surfs_keep_v.insert(s);
+    }
+
+    // Create and insert the new vertex
+    Vertex *u = new Vertex(u_pos);
+    v->setPosition(v_pos1);
+    if(add(u) != S_OK) {
+        tf_error(E_FAIL, "Could not add vertex");
+        delete u;
+        return 0;
+    }
+
+    //  Replace v with u where removing
+    for(auto &s : surfs_remove_v) {
+        v->removeChild(s);
+        u->addChild(s);
+        std::replace(s->vertices.begin(), s->vertices.end(), v, u);
+    }
+
+    //  Insert u between v and neighbor where not removing
+    for(auto &s : surfs_keep_v) {
+        u->addChild(s);
+        for(auto &nv : u_nbs) {
+            std::vector<Vertex*>::iterator u_nbs_itr = std::find(s->vertices.begin(), s->vertices.end(), nv);
+            if(u_nbs_itr != s->vertices.end()) { 
+                s->insert(u, v, *u_nbs_itr);
+                break;
+            }
+        }
+    }
+
+    if(_solver) {
+        _solver->positionChanged();
+
+        _solver->log(this, MeshLogEventType::Create, {v->objId, u->objId}, {v->objType(), u->objType()}, "split");
+    }
+
+    return u;
 }
