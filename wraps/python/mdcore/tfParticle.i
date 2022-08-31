@@ -258,6 +258,19 @@
             return self._call(pos, vel, cluster_id)
 
         def factory(self, nr_parts=0, positions=None, velocities=None, cluster_ids=None):
+            """
+            Particle factory constructor, for making lots of particles quickly. 
+
+            At minimum, arguments must specify the number of particles to create, whether 
+            specified explicitly or through one or more vector arguments.
+
+            :param nr_parts: number of particles to create, optional
+            :param positions: initial particle positions, optional
+            :param velocities: initial particle velocities, optional
+            :param clusterIds: parent cluster ids, optional
+            :return: ids of created particles
+            """
+
             _positions = None
             if positions is not None:
                 _positions = vectorFVector3()

@@ -616,7 +616,7 @@ namespace TissueForge {
          * 
          * @f[
          * 
-         *      k (r-r_0)^{\alpha}
+         *      k \lvert r-r_0 \rvert ^{\alpha}
          * 
          * @f]
          * 

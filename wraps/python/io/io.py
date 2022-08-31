@@ -17,15 +17,34 @@
 # 
 # ******************************************************************************
 
-from tissue_forge.tissue_forge import _io_ThreeDFVertexData as ThreeDFVertexData
-from tissue_forge.tissue_forge import _io_ThreeDFEdgeData as ThreeDFEdgeData
-from tissue_forge.tissue_forge import _io_ThreeDFFaceData as ThreeDFFaceData
-from tissue_forge.tissue_forge import _io_ThreeDFMeshData as ThreeDFMeshData
-from tissue_forge.tissue_forge import _io_ThreeDFStructure as ThreeDFStructure
+from tissue_forge.tissue_forge import _io_ThreeDFVertexData
+from tissue_forge.tissue_forge import _io_ThreeDFEdgeData
+from tissue_forge.tissue_forge import _io_ThreeDFFaceData
+from tissue_forge.tissue_forge import _io_ThreeDFMeshData
+from tissue_forge.tissue_forge import _io_ThreeDFStructure
 from tissue_forge.tissue_forge import _io_fromFile3DF as fromFile3DF
 from tissue_forge.tissue_forge import _io_toFile3DF as toFile3DF
 from tissue_forge.tissue_forge import _io_toFile as toFile
 from tissue_forge.tissue_forge import _io_toString as toString
 from tissue_forge.tissue_forge import _io_mapImportParticleId as mapImportParticleId
 from tissue_forge.tissue_forge import _io_mapImportParticleTypeId as mapImportParticleTypeId
-from tissue_forge.tissue_forge import _io_ThreeDFRenderData as ThreeDFRenderData
+from tissue_forge.tissue_forge import _io_ThreeDFRenderData
+
+class ThreeDFVertexData(_io_ThreeDFVertexData):
+    pass
+
+class ThreeDFEdgeData(_io_ThreeDFEdgeData):
+    pass
+
+class ThreeDFFaceData(_io_ThreeDFFaceData):
+    pass
+
+class ThreeDFMeshData(_io_ThreeDFMeshData):
+    pass
+
+class ThreeDFStructure(_io_ThreeDFStructure):
+    pass
+
+class ThreeDFRenderData(_io_ThreeDFRenderData):
+    pass
+

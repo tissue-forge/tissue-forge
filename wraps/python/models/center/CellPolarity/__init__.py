@@ -17,29 +17,38 @@
 # 
 # ******************************************************************************
 
-from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorAB as getVectorAB;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorPCP as getVectorPCP;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setVectorAB as setVectorAB;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setVectorPCP as setVectorPCP;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_update as update;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_registerParticle as registerParticle;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_unregister as unregister;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_registerType as registerType;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_getInitMode as getInitMode;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setInitMode as setInitMode;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_getInitPolarAB as getInitPolarAB;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setInitPolarAB as setInitPolarAB;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_getInitPolarPCP as getInitPolarPCP;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setInitPolarPCP as setInitPolarPCP;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_PersistentForce as PersistentForce;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_createPersistentForce as createPersistentForce;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_PolarityArrowData as PolarityArrowData;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setDrawVectors as setDrawVectors;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setArrowColors as setArrowColors;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setArrowScale as setArrowScale;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_setArrowLength as setArrowLength;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorArrowAB as getVectorArrowAB;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorArrowPCP as getVectorArrowPCP;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_load as load;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_ContactPotential as ContactPotential;
-from tissue_forge.tissue_forge import _models_center_CellPolarity_createContactPotential as createContactPotential;
+from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorAB as getVectorAB
+from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorPCP as getVectorPCP
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setVectorAB as setVectorAB
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setVectorPCP as setVectorPCP
+from tissue_forge.tissue_forge import _models_center_CellPolarity_update as update
+from tissue_forge.tissue_forge import _models_center_CellPolarity_registerParticle as registerParticle
+from tissue_forge.tissue_forge import _models_center_CellPolarity_unregister as unregister
+from tissue_forge.tissue_forge import _models_center_CellPolarity_registerType as registerType
+from tissue_forge.tissue_forge import _models_center_CellPolarity_getInitMode as getInitMode
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setInitMode as setInitMode
+from tissue_forge.tissue_forge import _models_center_CellPolarity_getInitPolarAB as getInitPolarAB
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setInitPolarAB as setInitPolarAB
+from tissue_forge.tissue_forge import _models_center_CellPolarity_getInitPolarPCP as getInitPolarPCP
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setInitPolarPCP as setInitPolarPCP
+from tissue_forge.tissue_forge import _models_center_CellPolarity_PersistentForce
+from tissue_forge.tissue_forge import _models_center_CellPolarity_createPersistentForce as createPersistentForce
+from tissue_forge.tissue_forge import _models_center_CellPolarity_PolarityArrowData
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setDrawVectors as setDrawVectors
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setArrowColors as setArrowColors
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setArrowScale as setArrowScale
+from tissue_forge.tissue_forge import _models_center_CellPolarity_setArrowLength as setArrowLength
+from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorArrowAB as getVectorArrowAB
+from tissue_forge.tissue_forge import _models_center_CellPolarity_getVectorArrowPCP as getVectorArrowPCP
+from tissue_forge.tissue_forge import _models_center_CellPolarity_load as load
+from tissue_forge.tissue_forge import _models_center_CellPolarity_ContactPotential
+from tissue_forge.tissue_forge import _models_center_CellPolarity_createContactPotential as createContactPotential
+
+class PersistentForce(_models_center_CellPolarity_PersistentForce):
+    pass
+
+class PolarityArrowData(_models_center_CellPolarity_PolarityArrowData):
+    pass
+
+class ContactPotential(_models_center_CellPolarity_ContactPotential):
+    pass
