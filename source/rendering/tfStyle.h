@@ -20,9 +20,6 @@
 #ifndef _SOURCE_RENDERING_TFSTYLE_H_
 #define _SOURCE_RENDERING_TFSTYLE_H_
 
-#include <Magnum/Magnum.h>
-#include <Magnum/Math/Color.h>
-
 #include <io/tf_io.h>
 #include <TissueForge_private.h>
 
@@ -39,14 +36,14 @@ namespace TissueForge {
     namespace rendering {
 
 
-        typedef Magnum::Color4 (*ColorMapperFunc)(struct ColorMapper *mapper, struct Particle *p);
+        typedef fVector4 (*ColorMapperFunc)(struct ColorMapper *mapper, struct Particle *p);
 
         /**
          * @brief The Tissue Forge style type
          */
         struct CAPI_EXPORT Style
         {
-            Magnum::Color3 color;
+            fVector3 color;
             uint32_t flags;
             
             /**
@@ -56,7 +53,7 @@ namespace TissueForge {
             
             ColorMapperFunc mapper_func;
 
-            Style(const Magnum::Color3 *color=NULL, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
+            Style(const fVector3 *color=NULL, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
 
             /**
              * @brief Construct a new style
@@ -69,7 +66,7 @@ namespace TissueForge {
             Style(const std::string &color, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
             Style(const Style &other);
 
-            int init(const Magnum::Color3 *color=NULL, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
+            int init(const fVector3 *color=NULL, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
 
             /**
              * @brief Set the color by name
@@ -80,7 +77,7 @@ namespace TissueForge {
             HRESULT setColor(const std::string &colorName);
             HRESULT setFlag(StyleFlags flag, bool value);
             
-            Magnum::Color4 map_color(struct Particle *p);
+            fVector4 map_color(struct Particle *p);
 
             const bool getVisible() const;
             void setVisible(const bool &visible);

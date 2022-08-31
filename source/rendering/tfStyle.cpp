@@ -43,21 +43,21 @@ HRESULT rendering::Style::setFlag(StyleFlags flag, bool value) {
     return tf_error(E_FAIL, "invalid flag id");
 }
 
-Magnum::Color4 rendering::Style::map_color(struct Particle *p) {
+fVector4 rendering::Style::map_color(struct Particle *p) {
     if(mapper_func) {
         return mapper_func(mapper, p);
     }
-    return Magnum::Color4{color, 1};
+    return fVector4{color, 1};
 };
 
-rendering::Style::Style(const Magnum::Color3 *color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) : mapper_func(NULL) {
+rendering::Style::Style(const fVector3 *color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) : mapper_func(NULL) {
     init(color, visible, flags, cmap);
 }
 
 rendering::Style::Style(const std::string &color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) : 
     rendering::Style()
 {
-    auto c = util::Color3_Parse(color);
+    fVector3 c = util::Color3_Parse(color);
     init(&c, visible, flags, cmap);
 }
 
@@ -108,10 +108,10 @@ void rendering::Style::newColorMapper(
     setColorMapper(new rendering::ColorMapper(partType, speciesName, name, min, max));
 }
 
-int rendering::Style::init(const Magnum::Color3 *color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) {
+int rendering::Style::init(const fVector3 *color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) {
     this->flags = flags;
 
-    this->color = color ? *color : util::Color3_Parse("steelblue");
+    this->color = color ? *color : fVector3(util::Color3_Parse("steelblue"));
 
     setVisible(visible);
     setColorMapper(cmap);

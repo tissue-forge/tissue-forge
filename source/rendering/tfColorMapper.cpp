@@ -39,9 +39,9 @@ struct ColormapItem {
     (part->state_vector->fvec[cm->species_index] - cm->min_val) / (cm->max_val - cm->min_val)
 
 #define COLORMAP_FUNCTION(CMAP) \
-static Magnum::Color4 CMAP (rendering::ColorMapper *cm, struct ::TissueForge::Particle *part) { \
+static fVector4 CMAP (rendering::ColorMapper *cm, struct ::TissueForge::Particle *part) { \
     float s = COLORMAP_REGULARIZE(cm, part);                              \
-    return Magnum::Color4{colormaps::all:: CMAP (s), 1};                  \
+    return fVector4{colormaps::all:: CMAP (s), 1};                  \
 }\
 
 

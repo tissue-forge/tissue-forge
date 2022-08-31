@@ -500,7 +500,7 @@ TissueForge::ParticleType::ParticleType(const bool &noReg) {
     type_flags = PARTICLE_TYPE_NONE;
     particle_flags = PARTICLE_NONE;
     
-    auto c = Magnum::Color3::fromSrgb(colors[(_Engine.nr_types - 1) % (sizeof(colors)/sizeof(unsigned))]);
+    fVector3 c = Magnum::Color3::fromSrgb(colors[(_Engine.nr_types - 1) % (sizeof(colors)/sizeof(unsigned))]);
     style = new rendering::Style(&c);
 
     ::strncpy(name, "Particle", ParticleType::MAX_NAME);
@@ -1607,7 +1607,7 @@ namespace TissueForge::io {
                 return E_FAIL;
         } 
         else {
-            auto c = Magnum::Color3::fromSrgb(colors[(dataElement->id - 1) % (sizeof(colors)/sizeof(unsigned))]);
+            fVector3 c = Magnum::Color3::fromSrgb(colors[(dataElement->id - 1) % (sizeof(colors)/sizeof(unsigned))]);
             dataElement->style = new rendering::Style(&c);
         }
         

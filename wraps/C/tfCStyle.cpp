@@ -21,6 +21,8 @@
 
 #include "TissueForge_c_private.h"
 
+#include <Magnum/Math/Color.h>
+
 #include <rendering/tfStyle.h>
 #include <tfParticle.h>
 
@@ -57,7 +59,7 @@ HRESULT tfRenderingStyle_init(struct tfRenderingStyleHandle *handle) {
 HRESULT tfRenderingStyle_initC(struct tfRenderingStyleHandle *handle, float *color, bool visible) {
     TFC_PTRCHECK(handle);
     TFC_PTRCHECK(color);
-    Magnum::Color3 _color = Magnum::Color3::from(color);
+    fVector3 _color = Magnum::Color3::from(color);
     rendering::Style *style = new rendering::Style(&_color, visible);
     handle->tfObj = (void*)style;
     return S_OK;
