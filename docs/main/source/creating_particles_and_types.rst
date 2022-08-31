@@ -269,12 +269,12 @@ cluster type property :py:attr:`types <ClusterParticleType.types>`.
 
     import tissue_forge as tf
 
-    class ConstitutiveType(tf.ParticleType):
+    class ConstitutiveType(tf.ParticleTypeSpec):
         radius = 0.1
 
     constitutive_type = ConstitutiveType.get()
 
-    class MyClusterType(tf.ClusterParticleType):
+    class MyClusterType(tf.ClusterParticleTypeSpec):
         radius = 1.0
         types = [constitutive_type]
 
