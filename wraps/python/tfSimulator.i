@@ -67,6 +67,14 @@
             return _SimulatorPy._run(args, kwargs)
 
         @staticmethod
+        def irun():
+            """
+            Interactive python version of the run loop. This checks the ipython context and lets
+            ipython process keyboard input, while we also running the simulator and processing window messages.
+            """
+            return _SimulatorPy.irun()
+
+        @staticmethod
         def show():
             """
             Shows any windows that were specified in the config. This works just like
