@@ -50,6 +50,15 @@ forces consisting of multiple constituent forces, ::
     Changes to constituent forces during simulation are reflected in forces
     that have been constructed from them using summation operations.
 
+.. note::
+
+    Tissue Forge uses force objects directly to allow modification to forces
+    during simulation. This capability comes at the expense of that special
+    care must be taken to not delete force objects from memory during simulation
+    (*e.g.* when binding a force in a function call). In Python, deletion of
+    force objects can be prevented by setting the force object attribute
+    ``thisown`` to ``0``.
+
 Built-in Forces
 ^^^^^^^^^^^^^^^^
 

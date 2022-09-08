@@ -137,8 +137,18 @@
             """Potential r2 value"""
             return self.getRSquare()
 
-        def plot(self, s=None, force=True, potential=False, show=True, ymin=None, ymax=None, *args, **kwargs):
-            """Potential plot function"""
+        def plot(self, s=1.0, force=True, potential=False, show=True, ymin=None, ymax=None, *args, **kwargs):
+            """
+            Potential plot function
+
+            :param s: sum of theoretical radii of two interacting particles
+            :param force: flag to plot evaluations of the force magnitude
+            :param potential: flag to plot evaluations of the potential
+            :param show: flag to show the plot
+            :param ymin: minimum vertical plot value
+            :param ymax: maximum vertical plot value
+            :return: plot lines
+            """
             import matplotlib.pyplot as plt
             import numpy as n
             import warnings
@@ -160,26 +170,12 @@
             yforce = None
             ypot = None
 
-            if self.flags & POTENTIAL_SCALED or self.flags & POTENTIAL_SHIFTED:
-                if not s:
-                    warnings.warn("""plotting scaled function,
-                    but no 's' parameter for sum of radii given,
-                    using value of 1 as s""")
-                    s = 1
+            if force:
+                sh = s / 2
+                yforce = [self.force(x, sh, sh) for x in xx]
 
-                if force:
-                    yforce = [self.force(x, s) for x in xx]
-
-                if potential:
-                    ypot = [self(x, s) for x in xx]
-
-            else:
-
-                if force:
-                    yforce = [self.force(x) for x in xx]
-
-                if potential:
-                    ypot = [self(x) for x in xx]
+            if potential:
+                ypot = [self(x, s) for x in xx]
 
             if not isinstance(xx[0], float):
                 xx = [FVector3(xxx).length() for xxx in xx]

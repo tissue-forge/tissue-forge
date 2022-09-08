@@ -85,6 +85,13 @@ an invoke method. ::
 
     tf.event.on_event(invoke_method=split_to_onehundred)
 
+.. note::
+
+    In Python, unhandled exceptions that occur in invoke and predicate methods only stop
+    execution of the method, and might not produce any notification of an error. Basic
+    exception handling is strongly encouraged to detect and report when errors occur in
+    custom functions.
+
 Timed Events
 ^^^^^^^^^^^^^
 

@@ -26,8 +26,6 @@
 #define _SOURCE_RENDERING_TFCOLORMAPPER_H_
 
 #include "tfStyle.h"
-#include <Magnum/Magnum.h>
-#include <Magnum/Math/Color.h>
 
 #include <vector>
 

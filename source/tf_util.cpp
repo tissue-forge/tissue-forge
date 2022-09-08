@@ -1112,7 +1112,7 @@ void energy_minimize(EnergyMinimizer *p, std::vector<FVector3> &points) {
         de[1] = etot[1] - etot[2];
         de[2] = etot[2] - etot[0];
         de_avg = (de[0]*de[0] + de[1]*de[1] + de[2]*de[2])/3;
-        std::cout << "n:" << ntot << ", de:" << de_avg << std::endl;
+        TF_Log(LOG_DEBUG) << "n:" << ntot << ", de:" << de_avg;
     }
     while(ntot < 3 && (ntot < p->max_outer_iter));
 }

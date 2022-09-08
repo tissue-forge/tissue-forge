@@ -377,6 +377,20 @@ vector_template_prep_float(TissueForge::types::TVector4, dataType, wrappedName)
 %ignore name<dataType>::projected;
 %ignore name<dataType>::projectedOntoNormalized;
 
+%copyctor name<dataType>;
+
+%template(wrappedName) name<dataType>;
+%enddef
+
+%define matrix_template_init(name, dataType, wrappedName) 
+%copyctor name<dataType>;
+
+%template(wrappedName) name<dataType>;
+%enddef
+
+%define quaternion_template_init(name, dataType, wrappedName) 
+%copyctor name<dataType>;
+
 %template(wrappedName) name<dataType>;
 %enddef
 
@@ -421,14 +435,13 @@ vector4_template_init(double, dVector4)
 vector4_template_init(float, fVector4)
 vector4_template_init(int, iVector4)
 
-%template(dMatrix3) TissueForge::types::TMatrix3<double>;
-%template(fMatrix3) TissueForge::types::TMatrix3<float>;
+matrix_template_init(TissueForge::types::TMatrix3, double, dMatrix3)
+matrix_template_init(TissueForge::types::TMatrix3, float,  fMatrix3)
+matrix_template_init(TissueForge::types::TMatrix4, double, dMatrix4)
+matrix_template_init(TissueForge::types::TMatrix4, float,  fMatrix4)
 
-%template(dMatrix4) TissueForge::types::TMatrix4<double>;
-%template(fMatrix4) TissueForge::types::TMatrix4<float>;
-
-%template(dQuaternion) TissueForge::types::TQuaternion<double>;
-%template(fQuaternion) TissueForge::types::TQuaternion<float>;
+quaternion_template_init(TissueForge::types::TQuaternion, double, dQuaternion)
+quaternion_template_init(TissueForge::types::TQuaternion, float, fQuaternion)
 
 %define vector_list_cast_add(name, dataType, vectorName)
 
