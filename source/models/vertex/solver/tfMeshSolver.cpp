@@ -35,7 +35,40 @@
 static std::mutex _meshEngineLock;
 
 
+using namespace TissueForge;
 using namespace TissueForge::models::vertex;
+
+
+HRESULT TissueForge::models::vertex::VertexForce(Vertex *v, FloatP_t *f) {
+    // Surfaces
+    for(auto &s : v->getSurfaces()) {
+        for(auto &a : s->type()->actors) 
+            a->force(s, v, f);
+        
+        for(auto &a : s->actors) 
+            a->force(s, v, f);
+    }
+
+    // Bodies
+    for(auto &b : v->getBodies()) {
+        for(auto &a : b->type()->actors) 
+            a->force(b, v, f);
+
+        for(auto &a : b->actors) 
+            a->force(b, v, f);
+    }
+
+    // Structures
+    for(auto &st : v->getStructures()) {
+        for(auto &a : st->type()->actors) 
+            a->force(st, v, f);
+
+        for(auto &a : st->actors) 
+            a->force(st, v, f);
+    }
+
+    return S_OK;
+}
 
 
 static MeshSolver *_solver = NULL;
@@ -253,37 +286,10 @@ HRESULT MeshSolver::preStepStart() {
             
             if(!v) 
                 continue;
-            
-            float *buff = &_forces[j * 3];
 
-            // Surfaces
-            for(auto &s : v->getSurfaces()) {
-                for(auto &a : s->type()->actors) 
-                    a->force(s, v, buff);
-                
-                for(auto &a : s->actors) 
-                    a->force(s, v, buff);
+            _surfaceVertices += v->children().size();
 
-                _surfaceVertices++;
-            }
-
-            // Bodies
-            for(auto &b : v->getBodies()) {
-                for(auto &a : b->type()->actors) 
-                    a->force(b, v, buff);
-
-                for(auto &a : b->actors) 
-                    a->force(b, v, buff);
-            }
-
-            // Structures
-            for(auto &st : v->getStructures()) {
-                for(auto &a : st->type()->actors) 
-                    a->force(st, v, buff);
-
-                for(auto &a : st->actors) 
-                    a->force(st, v, buff);
-            }
+            VertexForce(v, &_forces[j * 3]);
         }
     }
 

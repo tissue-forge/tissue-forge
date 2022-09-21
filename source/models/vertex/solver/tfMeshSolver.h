@@ -34,6 +34,9 @@ namespace TissueForge::models::vertex {
     class MeshRenderer;
 
 
+    HRESULT VertexForce(Vertex *v, FloatP_t *f);
+
+
     struct CAPI_EXPORT MeshSolver : SubEngine { 
 
         const char *name = "MeshSolver";
