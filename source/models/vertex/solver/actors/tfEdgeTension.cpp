@@ -43,11 +43,8 @@ HRESULT EdgeTension::energy(MeshObj *source, MeshObj *target, float &e) {
 
     FVector3 posc = v->getPosition();
     
-    FVector3 rel_pos = metrics::relativePosition(vp->getPosition(), posc);
-    float _e = rel_pos.dot(rel_pos);
-
-    rel_pos = metrics::relativePosition(posc, vn->getPosition());
-    _e += rel_pos.dot(rel_pos);
+    float _e = metrics::relativePosition(vp->getPosition(), posc).length();
+    _e += metrics::relativePosition(posc, vn->getPosition()).length();
 
     e += lam * _e;
     return S_OK;
@@ -68,9 +65,7 @@ HRESULT EdgeTension::force(MeshObj *source, MeshObj *target, float *f) {
     FVector3 posc = v->getPosition();
     FVector3 force;
 
-    force += metrics::relativePosition(vp->getPosition(), posc);
-    force += metrics::relativePosition(vn->getPosition(), posc);
-    force *= 2 * lam;
+    force = (metrics::relativePosition(vp->getPosition(), posc).normalized() + metrics::relativePosition(vn->getPosition(), posc).normalized()) * lam;
 
     f[0] += force[0];
     f[1] += force[1];
