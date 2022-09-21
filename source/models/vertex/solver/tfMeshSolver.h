@@ -84,7 +84,7 @@ namespace TissueForge::models::vertex {
 
     private:
 
-        float *_forces;
+        FloatP_t *_forces;
         unsigned int _bufferSize;
         unsigned int _surfaceVertices;
         unsigned int _totalVertices;

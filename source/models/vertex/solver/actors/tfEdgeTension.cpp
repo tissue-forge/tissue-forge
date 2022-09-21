@@ -29,7 +29,7 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT EdgeTension::energy(MeshObj *source, MeshObj *target, float &e) {
+HRESULT EdgeTension::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
@@ -40,14 +40,14 @@ HRESULT EdgeTension::energy(MeshObj *source, MeshObj *target, float &e) {
 
     FVector3 posc = v->getPosition();
     
-    float _e = metrics::relativePosition(vp->getPosition(), posc).length();
+    FloatP_t _e = metrics::relativePosition(vp->getPosition(), posc).length();
     _e += metrics::relativePosition(posc, vn->getPosition()).length();
 
     e += lam * _e;
     return S_OK;
 }
 
-HRESULT EdgeTension::force(MeshObj *source, MeshObj *target, float *f) {
+HRESULT EdgeTension::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 

@@ -28,15 +28,15 @@ namespace TissueForge::models::vertex {
 
     struct EdgeTension : MeshObjActor {
 
-        float lam;
+        FloatP_t lam;
 
-        EdgeTension(const float &_lam) {
+        EdgeTension(const FloatP_t &_lam) {
             lam = _lam;
         }
 
-        HRESULT energy(MeshObj *source, MeshObj *target, float &e);
+        HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e);
 
-        HRESULT force(MeshObj *source, MeshObj *target, float *f);
+        HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f);
     };
 
 }

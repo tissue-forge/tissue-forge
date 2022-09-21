@@ -139,7 +139,7 @@ static inline HRESULT render_meshFacesEdges(MeshFaceInstanceData *faceData,
             if(shiftkj[k] > 1) shiftkj[k] = -1;
             else if (shiftkj[k] < -1) shiftkj[k] = 1;
 
-            FloatP_t h = _Engine.s.h[k];
+            float h = _Engine.s.h[k];
             pixij[k] = pi->x[k] + h * shiftij[k];
             pixkj[k] = pk->x[k] + h * shiftkj[k];
         }

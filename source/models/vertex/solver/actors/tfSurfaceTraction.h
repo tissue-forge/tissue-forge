@@ -36,9 +36,9 @@ namespace TissueForge::models::vertex {
             comps = _force;
         }
 
-        HRESULT energy(MeshObj *source, MeshObj *target, float &e);
+        HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e);
 
-        HRESULT force(MeshObj *source, MeshObj *target, float *f);
+        HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f);
 
     };
 

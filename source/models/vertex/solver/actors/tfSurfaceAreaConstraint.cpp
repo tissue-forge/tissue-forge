@@ -28,13 +28,13 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-static HRESULT SurfaceAreaConstraint_energy_Body(Body *b, const float &lam, const float &constr, float &e) {
-    float darea = b->getArea() - constr;
+static HRESULT SurfaceAreaConstraint_energy_Body(Body *b, const FloatP_t &lam, const FloatP_t &constr, FloatP_t &e) {
+    FloatP_t darea = b->getArea() - constr;
     e = lam * darea * darea;
     return S_OK;
 }
 
-static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const float &lam, const float &constr, float *f) {
+static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const FloatP_t &lam, const FloatP_t &constr, FloatP_t *f) {
     FVector3 ftotal;
 
     for(auto &s : v->getSurfaces()) {
@@ -72,13 +72,13 @@ static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const float 
     return S_OK;
 }
 
-static HRESULT SurfaceAreaConstraint_energy_Surface(Surface *s, const float &lam, const float &constr, float &e) {
-    float darea = s->getArea() - constr;
+static HRESULT SurfaceAreaConstraint_energy_Surface(Surface *s, const FloatP_t &lam, const FloatP_t &constr, FloatP_t &e) {
+    FloatP_t darea = s->getArea() - constr;
     e = lam * darea * darea;
     return S_OK;
 }
 
-static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const float &lam, const float &constr, float *f) {
+static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const FloatP_t &lam, const FloatP_t &constr, FloatP_t *f) {
     FVector3 ftotal;
 
     auto svertices = s->getVertices();
@@ -112,7 +112,7 @@ static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const 
 }
 
 
-HRESULT SurfaceAreaConstraint::energy(MeshObj *source, MeshObj *target, float &e) {
+HRESULT SurfaceAreaConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     if(source->objType() == MeshObj::Type::BODY) 
         return SurfaceAreaConstraint_energy_Body((Body*)source, lam, constr, e);
     else if(source->objType() == MeshObj::Type::SURFACE) 
@@ -120,7 +120,7 @@ HRESULT SurfaceAreaConstraint::energy(MeshObj *source, MeshObj *target, float &e
     return S_OK;
 }
 
-HRESULT SurfaceAreaConstraint::force(MeshObj *source, MeshObj *target, float *f) {
+HRESULT SurfaceAreaConstraint::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
     if(source->objType() == MeshObj::Type::BODY) 
         return SurfaceAreaConstraint_force_Body((Body*)source, (Vertex*)target, lam, constr, f);
     else if(source->objType() == MeshObj::Type::SURFACE) 

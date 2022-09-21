@@ -59,13 +59,13 @@ namespace TissueForge::models::vertex {
         FVector3 centroid;
 
         /** current surface area */
-        float area;
+        FloatP_t area;
 
         /** current volume */
-        float volume;
+        FloatP_t volume;
 
         /** mass density */
-        float density;
+        FloatP_t density;
 
         void _updateInternal();
 
@@ -113,20 +113,20 @@ namespace TissueForge::models::vertex {
         std::vector<Body*> neighborBodies();
         std::vector<Surface*> neighborSurfaces(Surface *s);
 
-        float getDensity() const { return density; }
-        void setDensity(const float &_density) { density = _density; }
+        FloatP_t getDensity() const { return density; }
+        void setDensity(const FloatP_t &_density) { density = _density; }
 
         FVector3 getCentroid() const { return centroid; }
         FVector3 getVelocity();
-        float getArea() const { return area; }
-        float getVolume() const { return volume; }
-        float getMass() const { return volume * density; }
+        FloatP_t getArea() const { return area; }
+        FloatP_t getVolume() const { return volume; }
+        FloatP_t getMass() const { return volume * density; }
 
-        float getVertexArea(Vertex *v);
-        float getVertexVolume(Vertex *v);
-        float getVertexMass(Vertex *v) { return getVertexVolume(v) * density; }
+        FloatP_t getVertexArea(Vertex *v);
+        FloatP_t getVertexVolume(Vertex *v);
+        FloatP_t getVertexMass(Vertex *v) { return getVertexVolume(v) * density; }
 
-        float contactArea(Body *other);
+        FloatP_t contactArea(Body *other);
 
         
         friend Mesh;
@@ -137,7 +137,7 @@ namespace TissueForge::models::vertex {
 
     struct CAPI_EXPORT BodyType : MeshObjType {
 
-        float density;
+        FloatP_t density;
 
         MeshObj::Type objType() { return MeshObj::Type::BODY; }
 

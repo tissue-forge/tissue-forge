@@ -27,14 +27,14 @@
 using namespace TissueForge::models::vertex;
 
 
-HRESULT VolumeConstraint::energy(MeshObj *source, MeshObj *target, float &e) {
+HRESULT VolumeConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     Body *b = (Body*)source;
-    float dvol = b->getVolume() - constr;
+    FloatP_t dvol = b->getVolume() - constr;
     e = lam * dvol * dvol;
     return S_OK;
 }
 
-HRESULT VolumeConstraint::force(MeshObj *source, MeshObj *target, float *f) {
+HRESULT VolumeConstraint::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
     Body *b = (Body*)source;
     Vertex *v = (Vertex*)target;
     
@@ -58,9 +58,9 @@ HRESULT VolumeConstraint::force(MeshObj *source, MeshObj *target, float *f) {
         ftotal += sftotal * s->volumeSense(b);
     }
     
-    // float pressure = 2 * lam * (constr - b->getVolume());
-    // float fmag = - pressure / 6.f;
-    // float fmag = lam * (constr - b->getVolume()) / 3.f;
+    // FloatP_t pressure = 2 * lam * (constr - b->getVolume());
+    // FloatP_t fmag = - pressure / 6.f;
+    // FloatP_t fmag = lam * (constr - b->getVolume()) / 3.f;
     ftotal *= (lam * (b->getVolume() - constr) / 3.f);
 
     f[0] += ftotal[0];

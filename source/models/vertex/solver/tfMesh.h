@@ -75,7 +75,7 @@ namespace TissueForge::models::vertex {
         /** Unlocks the mesh for thread-safe operations */
         void unlock() { this->meshLock.unlock(); }
 
-        Vertex *findVertex(const FVector3 &pos, const float &tol = 0.0001);
+        Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001);
 
         Vertex *getVertex(const unsigned int &idx);
         Surface *getSurface(const unsigned int &idx);
@@ -128,16 +128,16 @@ namespace TissueForge::models::vertex {
         HRESULT replace(Vertex *toInsert, Surface *toReplace);
 
         /** Replace a vertex with a surface. Vertices are created for the surface along every destroyed edge. */
-        Surface *replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<float> lenCfs);
+        Surface *replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<FloatP_t> lenCfs);
 
         /** Merge two vertices. */
-        HRESULT merge(Vertex *toKeep, Vertex *toRemove, const float &lenCf=0.5f);
+        HRESULT merge(Vertex *toKeep, Vertex *toRemove, const FloatP_t &lenCf=0.5f);
 
         /** Merge two surfaces. 
          * 
          * Surfaces must have the same number of vertices. Vertices are paired by nearest distance.
         */
-        HRESULT merge(Surface *toKeep, Surface *toRemove, const std::vector<float> &lenCfs);
+        HRESULT merge(Surface *toKeep, Surface *toRemove, const std::vector<FloatP_t> &lenCfs);
 
         /** Create a surface from two vertices of a surface in the mesh and a position */
         Surface *extend(Surface *base, const unsigned int &vertIdxStart, const FVector3 &pos);
@@ -149,13 +149,13 @@ namespace TissueForge::models::vertex {
          * 
          * todo: add support for extruding at an angle w.r.t. the center of the edge and centroid of the base surface
         */
-        Surface *extrude(Surface *base, const unsigned int &vertIdxStart, const float &normLen);
+        Surface *extrude(Surface *base, const unsigned int &vertIdxStart, const FloatP_t &normLen);
 
         /** Create a body from a surface in a mesh by extruding along the outward-facing normal of the surface
          * 
          * todo: add support for extruding at an angle
         */
-        Body *extrude(Surface *base, BodyType *btype, const float &normLen);
+        Body *extrude(Surface *base, BodyType *btype, const FloatP_t &normLen);
 
         /** Sew two surfaces 
          * 
@@ -163,7 +163,7 @@ namespace TissueForge::models::vertex {
          * 
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
         */
-        HRESULT sew(Surface *s1, Surface *s2, const float &distCf=0.01);
+        HRESULT sew(Surface *s1, Surface *s2, const FloatP_t &distCf=0.01);
 
         /** Sew a set of surfaces 
          * 
@@ -171,7 +171,7 @@ namespace TissueForge::models::vertex {
          * 
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
         */
-        HRESULT sew(std::vector<Surface*> _surfaces, const float &distCf=0.01);
+        HRESULT sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf=0.01);
 
         /** Calculate the topology of a vertex split without implementing the split */
         HRESULT splitPlan(Vertex *v, const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v);

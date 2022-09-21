@@ -28,16 +28,16 @@
 using namespace TissueForge::models::vertex;
 
 
-HRESULT BodyForce::energy(MeshObj *source, MeshObj *target, float &e) {
+HRESULT BodyForce::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     FVector3 fv;
     force(source, target, fv.data());
     e = fv.dot(((Vertex*)target)->particle()->getVelocity()) * _Engine.dt;
     return S_OK;
 }
 
-HRESULT BodyForce::force(MeshObj *source, MeshObj *target, float *f) {
+HRESULT BodyForce::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
     Body *b = (Body*)source;
-    float bArea = b->getArea();
+    FloatP_t bArea = b->getArea();
     if(bArea == 0.f) {
         return S_OK;
     }

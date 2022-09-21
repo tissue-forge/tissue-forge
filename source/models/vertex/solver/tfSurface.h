@@ -70,10 +70,10 @@ namespace TissueForge::models::vertex {
 
         FVector3 velocity;
 
-        float area;
+        FloatP_t area;
 
         /** Volume contributed by this surface to its child bodies */
-        float _volumeContr;
+        FloatP_t _volumeContr;
 
     public:
 
@@ -136,12 +136,12 @@ namespace TissueForge::models::vertex {
 
         FVector3 getVelocity() { return velocity; }
 
-        float getArea() { return area; }
+        FloatP_t getArea() { return area; }
 
-        float volumeSense(Body *body);
-        float getVolumeContr(Body *body) { return _volumeContr * volumeSense(body); }
+        FloatP_t volumeSense(Body *body);
+        FloatP_t getVolumeContr(Body *body) { return _volumeContr * volumeSense(body); }
 
-        float getVertexArea(Vertex *v);
+        FloatP_t getVertexArea(Vertex *v);
 
         FVector3 triangleNormal(const unsigned int &idx);
 
@@ -153,7 +153,7 @@ namespace TissueForge::models::vertex {
          * 
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
         */
-        static HRESULT sew(Surface *s1, Surface *s2, const float &distCf=0.01);
+        static HRESULT sew(Surface *s1, Surface *s2, const FloatP_t &distCf=0.01);
 
 
         friend Body;

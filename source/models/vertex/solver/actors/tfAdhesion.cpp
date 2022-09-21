@@ -36,8 +36,8 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-static HRESULT Adhesion_energy_Body(Body *b, Vertex *v, const float &lam, const std::unordered_set<int> &targetTypes, float &e) {
-    float _e = 0.0;
+static HRESULT Adhesion_energy_Body(Body *b, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t &e) {
+    FloatP_t _e = 0.0;
 
     fVector3 posv = v->getPosition();
 
@@ -64,7 +64,7 @@ static HRESULT Adhesion_energy_Body(Body *b, Vertex *v, const float &lam, const 
     return S_OK;
 }
 
-static HRESULT Adhesion_force_Body(Body *b, Vertex *v, const float &lam, const std::unordered_set<int> &targetTypes, float *f) {
+static HRESULT Adhesion_force_Body(Body *b, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t *f) {
     fVector3 _f(0.0);
 
     fVector3 posv = v->getPosition();
@@ -96,7 +96,7 @@ static HRESULT Adhesion_force_Body(Body *b, Vertex *v, const float &lam, const s
         _f += (1.0 / s->getVertices().size() - 1.0) * (Magnum::Math::cross(normvp, posv - posvp) + Magnum::Math::cross(normvn, posvn - posv));
     }
 
-    float fact = 0.5 * lam;
+    FloatP_t fact = 0.5 * lam;
     f[0] += fact * _f[0];
     f[1] += fact * _f[1];
     f[2] += fact * _f[2];
@@ -104,8 +104,8 @@ static HRESULT Adhesion_force_Body(Body *b, Vertex *v, const float &lam, const s
     return S_OK;
 }
 
-static HRESULT Adhesion_energy_Surface(Surface *s, Vertex *v, const float &lam, const std::unordered_set<int> &targetTypes, float &e) {
-    float _e = 0.0;
+static HRESULT Adhesion_energy_Surface(Surface *s, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t &e) {
+    FloatP_t _e = 0.0;
     fVector3 posv = v->getPosition();
 
     for(auto &sv : v->getSurfaces()) 
@@ -116,7 +116,7 @@ static HRESULT Adhesion_energy_Surface(Surface *s, Vertex *v, const float &lam, 
     return S_OK;
 }
 
-static HRESULT Adhesion_force_Surface(Surface *s, Vertex *v, const float &lam, const std::unordered_set<int> &targetTypes, float *f) {
+static HRESULT Adhesion_force_Surface(Surface *s, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t *f) {
     fVector3 _f(0.0);
     fVector3 posv = v->getPosition();
 
@@ -130,7 +130,7 @@ static HRESULT Adhesion_force_Surface(Surface *s, Vertex *v, const float &lam, c
             _f += posvp_rel + posvn_rel;
         }
 
-    float fact = 0.5 * lam;
+    FloatP_t fact = 0.5 * lam;
     f[0] += fact * _f[0];
     f[1] += fact * _f[1];
     f[2] += fact * _f[2];
@@ -139,7 +139,7 @@ static HRESULT Adhesion_force_Surface(Surface *s, Vertex *v, const float &lam, c
 }
 
 
-HRESULT Adhesion::energy(MeshObj *source, MeshObj *target, float &e) {
+HRESULT Adhesion::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     if(source->objType() == MeshObj::Type::BODY) { 
         Body *b = (Body*)source;
         auto itr = typePairs.find(b->typeId);
@@ -157,7 +157,7 @@ HRESULT Adhesion::energy(MeshObj *source, MeshObj *target, float &e) {
     return S_OK;
 }
 
-HRESULT Adhesion::force(MeshObj *source, MeshObj *target, float *f) {
+HRESULT Adhesion::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
     if(source->objType() == MeshObj::Type::BODY) { 
         Body *b = (Body*)source;
         auto itr = typePairs.find(b->typeId);

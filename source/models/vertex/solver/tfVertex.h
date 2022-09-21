@@ -103,8 +103,8 @@ namespace TissueForge::models::vertex {
 
         std::vector<Surface*> sharedSurfaces(Vertex *other);
 
-        float getVolume();
-        float getMass();
+        FloatP_t getVolume();
+        FloatP_t getMass();
 
         HRESULT positionChanged();
         HRESULT updateProperties();

@@ -80,7 +80,7 @@ HRESULT MeshSolver::init() {
 
     _solver = new MeshSolver();
     _solver->_bufferSize = 1;
-    _solver->_forces = (float*)malloc(3 * sizeof(float));
+    _solver->_forces = (FloatP_t*)malloc(3 * sizeof(FloatP_t));
     _solver->registerEngine();
 
     // Launches and registers renderer
@@ -102,7 +102,7 @@ HRESULT MeshSolver::compact() {
     if(_solver->_bufferSize > 1) {
         free(_forces);
         _bufferSize = 1;
-        _forces = (float*)malloc(3 * sizeof(float));
+        _forces = (FloatP_t*)malloc(3 * sizeof(FloatP_t));
     }
 
     return S_OK;
@@ -196,7 +196,7 @@ SurfaceType *MeshSolver::getSurfaceType(const unsigned int &typeId) {
 }
 
 template <typename T> 
-void Mesh_actRecursive(MeshObj *vertex, T *source, float *f) {
+void Mesh_actRecursive(MeshObj *vertex, T *source, FloatP_t *f) {
     for(auto &a : source->type()->actors) 
         a->force(source, vertex, f);
     for(auto &c : source->children()) 
@@ -275,9 +275,9 @@ HRESULT MeshSolver::preStepStart() {
     if(_totalVertices > _bufferSize) {
         free(_solver->_forces);
         _bufferSize = _totalVertices;
-        _solver->_forces = (float*)malloc(3 * sizeof(float) * _bufferSize);
+        _solver->_forces = (FloatP_t*)malloc(3 * sizeof(FloatP_t) * _bufferSize);
     }
-    memset(_solver->_forces, 0.f, 3 * sizeof(float) * _bufferSize);
+    memset(_solver->_forces, 0.f, 3 * sizeof(FloatP_t) * _bufferSize);
 
     for(i = 0, j = 0; i < meshes.size(); i++) { 
         m = meshes[i];
@@ -298,7 +298,7 @@ HRESULT MeshSolver::preStepStart() {
 
 HRESULT MeshSolver::preStepJoin() {
     unsigned int i, j;
-    float *buff;
+    FloatP_t *buff;
     Mesh *m;
     Particle *p;
 

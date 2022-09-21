@@ -73,15 +73,15 @@ std::vector<Surface*> Vertex::sharedSurfaces(Vertex *other) {
     return result;
 }
 
-float Vertex::getVolume() {
-    float result = 0.f;
+FloatP_t Vertex::getVolume() {
+    FloatP_t result = 0.f;
     for(auto &b : getBodies()) 
         result += b->getVertexVolume(this);
     return result;
 }
 
-float Vertex::getMass() {
-    float result = 0.f;
+FloatP_t Vertex::getMass() {
+    FloatP_t result = 0.f;
     for(auto &b : getBodies()) 
         result += b->getVertexMass(this);
     return result;
@@ -93,7 +93,7 @@ HRESULT Vertex::positionChanged() {
 
 HRESULT Vertex::updateProperties() {
     ParticleHandle *p = particle();
-    const float vMass = getMass();
+    const FloatP_t vMass = getMass();
     if(p && vMass > 0.f) {
         p->setMass(vMass);
     }
@@ -230,11 +230,11 @@ Surface *Vertex::findSurface(const FVector3 &dir) {
 
     FVector3 pta = getPosition();
     FVector3 ptb = pta + dir;
-    float bestDist2 = 0;
+    FloatP_t bestDist2 = 0;
 
     for(auto &s : getSurfaces()) {
         FVector3 pt = s->getCentroid();
-        float dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
+        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
         if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
             result = s;
             bestDist2 = dist2;
@@ -249,11 +249,11 @@ Body *Vertex::findBody(const FVector3 &dir) {
 
     FVector3 pta = getPosition();
     FVector3 ptb = pta + dir;
-    float bestDist2 = 0;
+    FloatP_t bestDist2 = 0;
 
     for(auto &b : getBodies()) {
         FVector3 pt = b->getCentroid();
-        float dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
+        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
         if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
             result = b;
             bestDist2 = dist2;

@@ -28,14 +28,14 @@
 using namespace TissueForge::models::vertex;
 
 
-HRESULT SurfaceTraction::energy(MeshObj *source, MeshObj *target, float &e) {
+HRESULT SurfaceTraction::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     FVector3 fv;
     force(source, target, fv.data());
     e = fv.dot(((Vertex*)target)->particle()->getVelocity()) * _Engine.dt;
     return S_OK;
 }
 
-HRESULT SurfaceTraction::force(MeshObj *source, MeshObj *target, float *f) {
+HRESULT SurfaceTraction::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
     FVector3 vForce = comps * s->getVertexArea(v);

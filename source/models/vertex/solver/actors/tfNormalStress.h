@@ -30,15 +30,15 @@ namespace TissueForge::models::vertex {
 
     struct NormalStress : MeshObjActor {
 
-        float mag;
+        FloatP_t mag;
 
-        NormalStress(const float &_mag) {
+        NormalStress(const FloatP_t &_mag) {
             mag = _mag;
         }
 
-        HRESULT energy(MeshObj *source, MeshObj *target, float &e);
+        HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e);
 
-        HRESULT force(MeshObj *source, MeshObj *target, float *f);
+        HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f);
 
     };
 

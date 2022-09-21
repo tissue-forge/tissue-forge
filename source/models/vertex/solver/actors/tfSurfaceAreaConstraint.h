@@ -28,17 +28,17 @@ namespace TissueForge::models::vertex {
 
     struct SurfaceAreaConstraint : MeshObjActor {
 
-        float lam;
-        float constr;
+        FloatP_t lam;
+        FloatP_t constr;
 
-        SurfaceAreaConstraint(const float &_lam, const float &_constr) {
+        SurfaceAreaConstraint(const FloatP_t &_lam, const FloatP_t &_constr) {
             lam = _lam;
             constr = _constr;
         }
 
-        HRESULT energy(MeshObj *source, MeshObj *target, float &e);
+        HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e);
 
-        HRESULT force(MeshObj *source, MeshObj *target, float *f);
+        HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f);
     };
 
 }

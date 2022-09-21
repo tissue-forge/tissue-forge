@@ -85,9 +85,9 @@ namespace TissueForge::models::vertex {
 
     struct MeshObjActor { 
 
-        virtual HRESULT energy(MeshObj *source, MeshObj *target, float &e) = 0;
+        virtual HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e) = 0;
 
-        virtual HRESULT force(MeshObj *source, MeshObj *target, float *f) = 0;
+        virtual HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f) = 0;
 
     };
 
@@ -110,9 +110,9 @@ namespace TissueForge::models::vertex {
 
         bool hasPair(MeshObjType *type1, MeshObjType *type2);
 
-        virtual HRESULT energy(MeshObj *source, MeshObj *target, float &e) = 0;
+        virtual HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e) = 0;
 
-        virtual HRESULT force(MeshObj *source, MeshObj *target, float *f) = 0;
+        virtual HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f) = 0;
 
     protected:
 

@@ -271,7 +271,7 @@ HRESULT Mesh::removeObj(MeshObj *obj) {
     return S_OK;
 }
 
-Vertex *Mesh::findVertex(const FVector3 &pos, const float &tol) {
+Vertex *Mesh::findVertex(const FVector3 &pos, const FloatP_t &tol) {
 
     for(auto &v : vertices)
         if(v->particle()->relativePosition(pos).length() <= tol) 
@@ -483,7 +483,7 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
     return S_OK;
 }
 
-Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<float> lenCfs) {
+Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<FloatP_t> lenCfs) {
     std::vector<Vertex*> neighbors = toReplace->neighborVertices();
     if(lenCfs.size() != neighbors.size()) {
         TF_Log(LOG_ERROR) << "Length coefficients are inconsistent with connectivity";
@@ -500,7 +500,7 @@ Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<flo
     FVector3 pos0 = toReplace->getPosition();
     std::vector<Vertex*> insertedVertices;
     for(unsigned int i = 0; i < neighbors.size(); i++) {
-        float cf = lenCfs[i];
+        FloatP_t cf = lenCfs[i];
         if(cf <= 0.f || cf >= 1.f) {
             TF_Log(LOG_ERROR) << "Length coefficients must be in (0, 1)";
             return NULL;
@@ -540,7 +540,7 @@ Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<flo
     return inserted;
 }
 
-HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const float &lenCf) {
+HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const FloatP_t &lenCf) {
 
     // In common surfaces, just remove; in different surfaces, replace
     std::vector<Surface*> common_s, different_s;
@@ -583,7 +583,7 @@ HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const float &lenCf) {
     return S_OK;
 }
 
-HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<float> &lenCfs) {
+HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
     if(toKeep->vertices.size() != toRemove->vertices.size()) {
         TF_Log(LOG_ERROR) << "Surfaces must have the same number of vertices to merge";
         return E_FAIL;
@@ -596,7 +596,7 @@ HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<float>
             toKeepExcl.push_back(v);
 
     // Ensure sufficient length cofficients
-    std::vector<float> _lenCfs = lenCfs;
+    std::vector<FloatP_t> _lenCfs = lenCfs;
     if(_lenCfs.size() < toKeepExcl.size()) {
         TF_Log(LOG_DEBUG) << "Insufficient provided length coefficients. Assuming 0.5";
         for(unsigned int i = _lenCfs.size(); i < toKeepExcl.size(); i++) 
@@ -608,9 +608,9 @@ HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<float>
     for(auto &kv : toKeepExcl) {
         Vertex *mv = NULL;
         FVector3 kp = kv->getPosition();
-        float bestDist = 0.f;
+        FloatP_t bestDist = 0.f;
         for(auto &rv : toRemove->vertices) {
-            float dist = (rv->getPosition() - kp).length();
+            FloatP_t dist = (rv->getPosition() - kp).length();
             if((!mv || dist < bestDist) && std::find(toRemoveOrdered.begin(), toRemoveOrdered.end(), rv) == toRemoveOrdered.end()) {
                 bestDist = dist;
                 mv = rv;
@@ -712,7 +712,7 @@ Surface *Mesh::extend(Surface *base, const unsigned int &vertIdxStart, const FVe
     return s;
 }
 
-Surface *Mesh::extrude(Surface *base, const unsigned int &vertIdxStart, const float &normLen) {
+Surface *Mesh::extrude(Surface *base, const unsigned int &vertIdxStart, const FloatP_t &normLen) {
     // Validate indices
     if(vertIdxStart >= base->vertices.size()) {
         TF_Log(LOG_ERROR) << "Invalid vertex indices (" << vertIdxStart << ", " << base->vertices.size() << ")";
@@ -780,7 +780,7 @@ Body *Mesh::extend(Surface *base, BodyType *btype, const FVector3 &pos) {
     return b;
 }
 
-Body *Mesh::extrude(Surface *base, BodyType *btype, const float &normLen) {
+Body *Mesh::extrude(Surface *base, BodyType *btype, const FloatP_t &normLen) {
     unsigned int i, j;
     FVector3 normal;
 
@@ -830,7 +830,7 @@ Body *Mesh::extrude(Surface *base, BodyType *btype, const float &normLen) {
     return b;
 }
 
-HRESULT Mesh::sew(Surface *s1, Surface *s2, const float &distCf) {
+HRESULT Mesh::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     // Verify that surfaces are in the mesh
     if(s1->mesh != this || s2->mesh != this) {
         TF_Log(LOG_ERROR) << "Surface not in this mesh";
@@ -846,7 +846,7 @@ HRESULT Mesh::sew(Surface *s1, Surface *s2, const float &distCf) {
     return S_OK;
 }
 
-HRESULT Mesh::sew(std::vector<Surface*> _surfaces, const float &distCf) {
+HRESULT Mesh::sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf) {
     for(auto &si : _surfaces) 
         for(auto &sj : _surfaces) 
             if(si != sj && sew(si, sj, distCf) != S_OK) 

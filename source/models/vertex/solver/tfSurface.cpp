@@ -299,11 +299,11 @@ Vertex *Surface::findVertex(const FVector3 &dir) {
 
     FVector3 pta = centroid;
     FVector3 ptb = pta + dir;
-    float bestDist2 = 0;
+    FloatP_t bestDist2 = 0;
 
     for(auto &v : getVertices()) {
         FVector3 pt = v->getPosition();
-        float dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
+        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
         if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
             result = v;
             bestDist2 = dist2;
@@ -318,11 +318,11 @@ Body *Surface::findBody(const FVector3 &dir) {
 
     FVector3 pta = centroid;
     FVector3 ptb = pta + dir;
-    float bestDist2 = 0;
+    FloatP_t bestDist2 = 0;
 
     for(auto &b : getBodies()) {
         FVector3 pt = b->getCentroid();
-        float dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
+        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
         if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
             result = b;
             bestDist2 = dist2;
@@ -395,7 +395,7 @@ unsigned int Surface::numSharedContiguousEdges(Surface *other) {
     return result;
 }
 
-float Surface::volumeSense(Body *body) {
+FloatP_t Surface::volumeSense(Body *body) {
     if(body == b1) 
         return 1.f;
     else if(body == b2) 
@@ -403,8 +403,8 @@ float Surface::volumeSense(Body *body) {
     return 0.f;
 }
 
-float Surface::getVertexArea(Vertex *v) {
-    float result = 0.f;
+FloatP_t Surface::getVertexArea(Vertex *v) {
+    FloatP_t result = 0.f;
     
     for(unsigned int i = 0; i < vertices.size(); i++) {
         Vertex *vc = vertices[i];
@@ -455,7 +455,7 @@ HRESULT Surface::positionChanged() {
     return S_OK;
 }
 
-HRESULT Surface::sew(Surface *s1, Surface *s2, const float &distCf) {
+HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     if(s1 == s2) 
         return S_OK;
 
@@ -463,7 +463,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const float &distCf) {
         return E_FAIL;
 
     // Find vertices to merge
-    float distCrit = distCf * std::sqrtf(0.5 * (s1->area + s2->area));
+    FloatP_t distCrit = distCf * std::sqrtf(0.5 * (s1->area + s2->area));
     std::vector<int> indicesMatched(s1->vertices.size(), -1);
     for(int i = 0; i < s1->vertices.size(); i++) {
         Vertex *vi = s1->vertices[i];
@@ -471,7 +471,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const float &distCf) {
             continue;
         
         auto posi = vi->getPosition();
-        float minDist = distCrit;
+        FloatP_t minDist = distCrit;
         for(int j = 0; j < s2->vertices.size(); j++) { 
             Vertex *vj = s2->vertices[j];
             if(vj->in(s1)) 

@@ -29,14 +29,14 @@
 using namespace TissueForge::models::vertex;
 
 
-HRESULT NormalStress::energy(MeshObj *source, MeshObj *target, float &e) {
+HRESULT NormalStress::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     FVector3 fv;
     force(source, target, fv.data());
     e = fv.dot(((Vertex*)target)->particle()->getVelocity()) * _Engine.dt;
     return S_OK;
 }
 
-HRESULT NormalStress::force(MeshObj *source, MeshObj *target, float *f) {
+HRESULT NormalStress::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
     

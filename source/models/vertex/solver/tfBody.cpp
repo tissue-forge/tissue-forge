@@ -220,11 +220,11 @@ Vertex *Body::findVertex(const FVector3 &dir) {
 
     FVector3 pta = centroid;
     FVector3 ptb = pta + dir;
-    float bestDist2 = 0;
+    FloatP_t bestDist2 = 0;
 
     for(auto &v : getVertices()) {
         FVector3 pt = v->getPosition();
-        float dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
+        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
         if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
             result = v;
             bestDist2 = dist2;
@@ -239,11 +239,11 @@ Surface *Body::findSurface(const FVector3 &dir) {
 
     FVector3 pta = centroid;
     FVector3 ptb = pta + dir;
-    float bestDist2 = 0;
+    FloatP_t bestDist2 = 0;
 
     for(auto &s : getSurfaces()) {
         FVector3 pt = s->getCentroid();
-        float dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
+        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
         if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
             result = s;
             bestDist2 = dist2;
@@ -283,21 +283,21 @@ FVector3 Body::getVelocity() {
     return result / getMass();
 }
 
-float Body::getVertexArea(Vertex *v) {
-    float result;
+FloatP_t Body::getVertexArea(Vertex *v) {
+    FloatP_t result;
     for(auto &s : surfaces) 
         result += s->getVertexArea(v);
     return result;
 }
 
-float Body::getVertexVolume(Vertex *v) {
+FloatP_t Body::getVertexVolume(Vertex *v) {
     if(area == 0.f) 
         return 0.f;
     return getVertexArea(v) / area * volume;
 }
 
-float Body::contactArea(Body *other) {
-    float result = 0.f;
+FloatP_t Body::contactArea(Body *other) {
+    FloatP_t result = 0.f;
     for(auto &s : surfaces) 
         if(std::find(other->surfaces.begin(), other->surfaces.end(), s) != other->surfaces.end()) 
             result += s->area;
