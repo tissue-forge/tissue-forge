@@ -37,6 +37,7 @@ TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/actors/tfSurfaceAreaConstraint.cpp
 TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/actors/tfSurfaceTraction.cpp)
 TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/actors/tfVolumeConstraint.cpp)
 TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/actors/tfEdgeTension.cpp)
+TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/actors/tfAdhesion.cpp)
 
 TF_MODEL_TREE_HDR(vertex/solver/tf_mesh.h)
 TF_MODEL_TREE_HDR(vertex/solver/tf_mesh_bind.h)
@@ -57,3 +58,4 @@ TF_MODEL_TREE_HDR(vertex/solver/actors/tfSurfaceAreaConstraint.h)
 TF_MODEL_TREE_HDR(vertex/solver/actors/tfSurfaceTraction.h)
 TF_MODEL_TREE_HDR(vertex/solver/actors/tfVolumeConstraint.h)
 TF_MODEL_TREE_HDR(vertex/solver/actors/tfEdgeTension.h)
+TF_MODEL_TREE_HDR(vertex/solver/actors/tfAdhesion.h)

@@ -36,6 +36,7 @@ from tissue_forge.tissue_forge import _vertex_solver_SurfaceAreaConstraint as Su
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceTraction as SurfaceTraction
 from tissue_forge.tissue_forge import _vertex_solver_VolumeConstraint as VolumeConstraint
 from tissue_forge.tissue_forge import _vertex_solver_EdgeTension as EdgeTension
+from tissue_forge.tissue_forge import _vertex_solver_Adhesion as Adhesion
 from tissue_forge.tissue_forge import _vertex_solver_edgeStrain as edge_strain
 from tissue_forge.tissue_forge import _vertex_solver_vertexStrain as vertex_strain
 

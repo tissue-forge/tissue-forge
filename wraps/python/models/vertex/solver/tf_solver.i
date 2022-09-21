@@ -38,6 +38,7 @@
 #include <models/vertex/solver/actors/tfSurfaceTraction.h>
 #include <models/vertex/solver/actors/tfVolumeConstraint.h>
 #include <models/vertex/solver/actors/tfEdgeTension.h>
+#include <models/vertex/solver/actors/tfAdhesion.h>
 %}
 
 
@@ -65,6 +66,8 @@
 %ignore TissueForge::models::vertex::NormalStress::force(MeshObj *, MeshObj *, float *);
 %ignore TissueForge::models::vertex::EdgeTension::energy(MeshObj *, MeshObj *, float &);
 %ignore TissueForge::models::vertex::EdgeTension::force(MeshObj *, MeshObj *, float *);
+%ignore TissueForge::models::vertex::Adhesion::energy(MeshObj *, MeshObj *, float &);
+%ignore TissueForge::models::vertex::Adhesion::force(MeshObj *, MeshObj *, float *);
 
 
 %rename(_vertex_solver_Body) TissueForge::models::vertex::Body;
@@ -84,6 +87,7 @@
 %rename(_vertex_solver_SurfaceTraction) TissueForge::models::vertex::SurfaceTraction;
 %rename(_vertex_solver_VolumeConstraint) TissueForge::models::vertex::VolumeConstraint;
 %rename(_vertex_solver_EdgeTension) TissueForge::models::vertex::EdgeTension;
+%rename(_vertex_solver_Adhesion) TissueForge::models::vertex::Adhesion;
 %rename(_vertex_solver_edgeStrain) TissueForge::models::vertex::edgeStrain;
 %rename(_vertex_solver_vertexStrain) TissueForge::models::vertex::vertexStrain;
 
@@ -116,3 +120,4 @@
 %include <models/vertex/solver/actors/tfSurfaceTraction.h>
 %include <models/vertex/solver/actors/tfVolumeConstraint.h>
 %include <models/vertex/solver/actors/tfEdgeTension.h>
+%include <models/vertex/solver/actors/tfAdhesion.h>
