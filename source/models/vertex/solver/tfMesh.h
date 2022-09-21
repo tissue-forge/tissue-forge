@@ -173,6 +173,12 @@ namespace TissueForge::models::vertex {
         */
         HRESULT sew(std::vector<Surface*> _surfaces, const float &distCf=0.01);
 
+        /** Calculate the topology of a vertex split without implementing the split */
+        HRESULT splitPlan(Vertex *v, const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v);
+
+        /** Implement a pre-calculated vertex split, as determined by splitPlan */
+        Vertex *splitExecute(Vertex *v, const FVector3 &sep, const std::vector<Vertex*> &verts_v, const std::vector<Vertex*> &verts_new_v);
+
         /** Split a vertex into an edge
          * 
          * The vertex must define at least one surface.

@@ -854,8 +854,10 @@ HRESULT Mesh::sew(std::vector<Surface*> _surfaces, const float &distCf) {
     return S_OK;
 }
 
-Vertex *Mesh::split(Vertex *v, const FVector3 &sep) {
-    
+HRESULT Mesh::splitPlan(Vertex *v, const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v) {
+    verts_v.clear();
+    verts_new_v.clear();
+
     std::vector<Vertex*> nbs = v->neighborVertices();
 
     // Verify that 
@@ -872,36 +874,42 @@ Vertex *Mesh::split(Vertex *v, const FVector3 &sep) {
     
     // Define a cut plane at the midpoint of and orthogonal to the new edge
     FVector3 v_pos0 = v->getPosition();
-    FVector3 hsep = sep * 0.5;
-    FVector3 v_pos1 = v_pos0 - hsep;
-    FVector3 u_pos = v_pos0 + hsep;
     FVector4 planeEq = FVector4::planeEquation(sep.normalized(), v_pos0);
 
     // Determine which neighbors will be connected to each vertex
-    std::vector<Vertex*> u_nbs, v_nbs;
-    u_nbs.reserve(nbs.size());
-    v_nbs.reserve(nbs.size());
+    verts_new_v.reserve(nbs.size());
+    verts_v.reserve(nbs.size());
     for(auto nv : nbs) {
         if(planeEq.distance(nv->getPosition()) >= 0) 
-            u_nbs.push_back(nv);
+            verts_new_v.push_back(nv);
         else 
-            v_nbs.push_back(nv);
+            verts_v.push_back(nv);
     }
 
     // Reject if either side of the plane has no vertices
-    if(u_nbs.empty() || v_nbs.empty()) {
+    if(verts_new_v.empty() || verts_v.empty()) {
         TF_Log(LOG_DEBUG) << "No vertices on both sides of cut plane; ignoring";
-        return 0;
+        return S_OK;
     }
+
+    return S_OK;
+
+}
+
+Vertex *Mesh::splitExecute(Vertex *v, const FVector3 &sep, const std::vector<Vertex*> &verts_v, const std::vector<Vertex*> &verts_new_v) {
+    FVector3 v_pos0 = v->getPosition();
+    FVector3 hsep = sep * 0.5;
+    FVector3 v_pos1 = v_pos0 - hsep;
+    FVector3 u_pos = v_pos0 + hsep;
 
     // Determine which surfaces the target vertex will no longer partially define
     // A surface remains partially defined by the target vertex if the target vertex has 
     // a neighbor on its own side of the cut plane that also partially defines the surface
     std::set<Surface*> u_surfs, vn_surfs;
-    for(auto &nv : v_nbs) 
+    for(auto &nv : verts_v) 
         for(auto &s : nv->sharedSurfaces(v)) 
             vn_surfs.insert(s);
-    for(auto &nv : u_nbs) 
+    for(auto &nv : verts_new_v) 
         for(auto &s : nv->sharedSurfaces(v)) 
             u_surfs.insert(s);
     std::set<Surface*> surfs_keep_v, surfs_remove_v;
@@ -931,14 +939,30 @@ Vertex *Mesh::split(Vertex *v, const FVector3 &sep) {
     //  Insert u between v and neighbor where not removing
     for(auto &s : surfs_keep_v) {
         u->addChild(s);
-        for(auto &nv : u_nbs) {
-            std::vector<Vertex*>::iterator u_nbs_itr = std::find(s->vertices.begin(), s->vertices.end(), nv);
-            if(u_nbs_itr != s->vertices.end()) { 
-                s->insert(u, v, *u_nbs_itr);
+        for(auto &nv : verts_new_v) {
+            std::vector<Vertex*>::iterator verts_new_v_itr = std::find(s->vertices.begin(), s->vertices.end(), nv);
+            if(verts_new_v_itr != s->vertices.end()) { 
+                s->insert(u, v, *verts_new_v_itr);
                 break;
             }
         }
     }
+
+    if(_solver) {
+        _solver->positionChanged();
+
+        _solver->log(this, MeshLogEventType::Create, {v->objId, u->objId}, {v->objType(), u->objType()}, "split");
+    }
+
+    return u;
+}
+
+Vertex *Mesh::split(Vertex *v, const FVector3 &sep) {
+    
+    std::vector<Vertex*> verts_v, new_verts_v;
+    Vertex *u = NULL;
+    if(splitPlan(v, sep, verts_v, new_verts_v))
+        u = splitExecute(v, sep, verts_v, new_verts_v);
 
     if(_solver) {
         _solver->positionChanged();

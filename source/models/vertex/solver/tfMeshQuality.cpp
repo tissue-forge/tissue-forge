@@ -281,25 +281,66 @@ struct EdgeInsertOperation : MeshQualityOperation {
 
 };
 
+
+static bool MeshQuality_vertexSplitTest(
+    Vertex *v, 
+    Mesh *m, 
+    const FloatP_t &edgeSplitDist, 
+    FVector3 &sep, 
+    std::vector<Vertex*> &vert_nbs, 
+    std::vector<Vertex*> &new_vert_nbs
+) {
+    const FVector3 v_force = v->particle()->getForce();
+
+    // Calculate current relative force
+    std::vector<Vertex*> v_nbs = v->neighborVertices();
+    FVector3 force_rel(0);
+    for(auto &vn : v_nbs) {
+        force_rel += vn->particle()->getForce();
+    }
+    force_rel -= v_force * v_nbs.size();
+    sep = force_rel.normalized() * edgeSplitDist;
+
+    // Get split plan along direction of force
+    m->splitPlan(v, sep, vert_nbs, new_vert_nbs);
+
+    // Calculate relative force on each vertex of a new edge
+    FVector3 vert_force_rel, new_vert_force_rel;
+    for(auto &vn : vert_nbs) 
+        vert_force_rel += vn->particle()->getForce();
+    for(auto &vn : new_vert_nbs) 
+        new_vert_force_rel += vn->particle()->getForce();
+    vert_force_rel -= v_force * 0.5 * vert_nbs.size();
+    new_vert_force_rel -= v_force * 0.5 * new_vert_nbs.size();
+
+    // Test whether the new edge would be in tension and return true if so
+    return sep.dot(vert_force_rel) < 0 && sep.dot(new_vert_force_rel) > 0;
+}
+
 /** Splits a vertex into an edge */
 struct VertexSplitOperation : MeshQualityOperation { 
 
     FVector3 sep;
+    std::vector<Vertex*> vert_nbs, new_vert_nbs;
 
-    VertexSplitOperation(Mesh *_mesh, Vertex *_source, const FVector3 &_sep) : 
+    VertexSplitOperation(Mesh *_mesh, Vertex *_source, const FVector3 &_sep, std::vector<Vertex*> _vert_nbs, std::vector<Vertex*> _new_vert_nbs) : 
         MeshQualityOperation(_mesh), 
-        sep{_sep}
+        sep{_sep}, 
+        vert_nbs{_vert_nbs}, 
+        new_vert_nbs{_new_vert_nbs}
     {
         flags = MeshQualityOperation::Flag::Active;
         source = _source;
-        targets = vectorToBase(_source->neighborVertices());
+        targets = vectorToBase(_vert_nbs);
+        for(auto &mo : vectorToBase(_new_vert_nbs)) 
+            targets.push_back(mo);
     }
 
     HRESULT implement() override { 
+
+        // Create a candidate vertex
         MeshSolver::engineLock();
-
-        Vertex *new_v = mesh->split((Vertex*)source, sep);
-
+        Vertex *new_v = mesh->splitExecute((Vertex*)source, sep, vert_nbs, new_vert_nbs);
         MeshSolver::engineUnlock();
 
         // Only invalidate if a vertex was created, since some requested configurations are invalid and subsequently ignored
@@ -349,8 +390,10 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsVertex(
             if(nv->objId < v->objId) 
                 continue;
 
-            FVector3 relPos = metrics::relativePosition(vpos, nv->getPosition());
-            if(relPos.dot(relPos) < vertexMergeDist2) {
+            FVector3 nvpos = nv->getPosition();
+            FVector3 relPos = metrics::relativePosition(vpos, nvpos);
+            FloatP_t dist2 = relPos.dot();
+            if(dist2 < vertexMergeDist2) {
                 TF_Log(LOG_TRACE) << relPos;
                 
                 ops[i] = new VertexMergeOperation(mesh, v, nv);
@@ -361,26 +404,10 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsVertex(
         // Check for vertex split if the vertex defines four or more surfaces
 
         if(v->getSurfaces().size() >= 4) {
-
-            FVector3 evals;
-            FMatrix3 evecs;
-            std::tie(evals, evecs) = metrics::eigenVecsVals(vertexStrain(v));
-
-            size_t ei;
-            FloatP_t ev = 0.0;
-            for(size_t i = 0; i < 3; i++) {
-                FloatP_t evi = evals[i];
-                if(evi > ev) {
-                    ei = i;
-                    ev = evi;
-                }
-            }
-            if(ev > edgeSplitStrain) {
-                TF_Log(LOG_TRACE) << evals;
-                TF_Log(LOG_TRACE) << evecs;
-                TF_Log(LOG_TRACE) << ei;
-
-                ops[i] = new VertexSplitOperation(mesh, v, evecs[ei] * edgeSplitDist);
+            FVector3 sep;
+            std::vector<Vertex*> vert_nbs, new_vert_nbs;
+            if(MeshQuality_vertexSplitTest(v, mesh, edgeSplitDist, sep, vert_nbs, new_vert_nbs)) {
+                ops[i] = new VertexSplitOperation(mesh, v, sep, vert_nbs, new_vert_nbs);
                 return;
             }
 
@@ -576,7 +603,7 @@ HRESULT MeshQuality::setEdgeSplitStrain(const FloatP_t &_val) {
 }
 
 HRESULT MeshQuality::setEdgeSplitDist(const FloatP_t &_val) {
-    if(_val <= 1.0) 
+    if(_val <= 0) 
         return E_FAIL;
     edgeSplitDist = _val;
     return S_OK;
