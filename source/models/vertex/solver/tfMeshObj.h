@@ -22,6 +22,8 @@
 
 #include <tf_platform.h>
 
+#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 
@@ -98,6 +100,23 @@ namespace TissueForge::models::vertex {
         std::vector<MeshObjActor*> actors;
 
         virtual MeshObj::Type objType() = 0;
+
+    };
+
+
+    struct MeshObjTypePairActor : MeshObjActor {
+
+        HRESULT registerPair(MeshObjType *type1, MeshObjType *type2);
+
+        bool hasPair(MeshObjType *type1, MeshObjType *type2);
+
+        virtual HRESULT energy(MeshObj *source, MeshObj *target, float &e) = 0;
+
+        virtual HRESULT force(MeshObj *source, MeshObj *target, float *f) = 0;
+
+    protected:
+
+        std::unordered_map<int, std::unordered_set<int> > typePairs;
 
     };
 

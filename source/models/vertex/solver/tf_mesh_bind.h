@@ -45,6 +45,8 @@ namespace TissueForge::models::vertex {
 
         CPPAPI_FUNC(HRESULT) surface(Surface *s, MeshObjActor *a);
 
+        CPPAPI_FUNC(HRESULT) types(MeshObjType *type1, MeshObjType *type2, MeshObjTypePairActor *a);
+
     }
 
 }

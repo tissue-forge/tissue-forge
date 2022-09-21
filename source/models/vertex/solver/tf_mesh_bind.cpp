@@ -56,4 +56,13 @@ namespace TissueForge::models::vertex::bind {
         return S_OK;
     }
 
+    HRESULT types(MeshObjType *type1, MeshObjType *type2, MeshObjTypePairActor *a) {
+        if(a->registerPair(type1, type2) != S_OK) 
+            return E_FAIL;
+        type1->actors.push_back(a);
+        if(type1->id != type2->id) 
+            type2->actors.push_back(a);
+        return S_OK;
+    }
+
 }

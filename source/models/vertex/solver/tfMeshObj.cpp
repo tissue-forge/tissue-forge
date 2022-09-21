@@ -20,8 +20,9 @@
 #include "tfMeshObj.h"
 
 #include "tfMeshSolver.h"
+#include <tfError.h>
 
-
+using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
@@ -43,4 +44,27 @@ bool MeshObj::in(MeshObj *obj) {
 
 bool MeshObj::has(MeshObj *obj) {
     return obj && obj->in(this);
+}
+
+HRESULT MeshObjTypePairActor::registerPair(MeshObjType *type1, MeshObjType *type2) {
+    if(type1->id < 0 || type2->id < 0) {
+        tf_error(E_FAIL, "Object type not registered");
+        return E_FAIL;
+    }
+
+    auto &v1 = typePairs[type1->id];
+    v1.insert(type2->id);
+
+    auto &v2 = typePairs[type2->id];
+    v2.insert(type1->id);
+
+    return S_OK;
+}
+
+bool MeshObjTypePairActor::hasPair(MeshObjType *type1, MeshObjType *type2) {
+    auto itr1 = typePairs.find(type1->id);
+    if(itr1 != typePairs.end()) 
+        return itr1->second.find(type2->id) != itr1->second.end();
+    else 
+        return false;
 }
