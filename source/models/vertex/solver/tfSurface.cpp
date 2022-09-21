@@ -542,3 +542,20 @@ Surface *SurfaceType::operator() (io::ThreeDFFaceData *face) {
     
     return (*this)(_positions);
 }
+
+Surface *SurfaceType::nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2) {
+    const FVector3 ax3 = Magnum::Math::cross(ax1, ax2);
+    FMatrix4 t = FMatrix4::translation(center) * FMatrix4::from(FMatrix3(ax1.normalized(), ax2.normalized(), ax3.normalized()), FVector3(0));
+
+    std::vector<FVector3> positions;
+    positions.reserve(n);
+    
+    FloatP_t fact = M_PI * (FloatP_t)2 / (FloatP_t)n;
+    for(size_t i = 0; i < n; i++) {
+        FMatrix4 rot = FMatrix4::rotationZ(fact * (FloatP_t)i);
+        FVector4 pos(radius, 0, 0, 1);
+        positions.push_back((t * rot * pos).xyz());
+    }
+
+    return (*this)(positions);
+}

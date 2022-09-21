@@ -181,6 +181,9 @@ namespace TissueForge::models::vertex {
         /** Construct a surface of this type from a face */
         Surface *operator() (io::ThreeDFFaceData *face);
 
+        /** Construct a polygon with n vertices circumscribed on a circle */
+        Surface *nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2);
+
     };
 
 }
