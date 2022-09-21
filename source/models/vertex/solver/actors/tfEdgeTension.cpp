@@ -33,13 +33,10 @@ HRESULT EdgeTension::energy(MeshObj *source, MeshObj *target, float &e) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
-    std::vector<Vertex*> vertices = s->getVertices();
-    std::vector<Vertex*>::iterator vc_itr = std::find(vertices.begin(), vertices.end(), v);
-    if(vc_itr == vertices.end()) 
+    Vertex *vp, *vn;
+    std::tie(vp, vn) = s->neighborVertices(v);
+    if(!vp || !vn) 
         return S_OK;
-
-    Vertex *vn = vc_itr == vertices.begin()   ? *(vertices.end() - 1) : *(vc_itr - 1);
-    Vertex *vp = vc_itr == vertices.end() - 1 ? *(vertices.begin())   : *(vc_itr + 1);
 
     FVector3 posc = v->getPosition();
     
@@ -54,13 +51,10 @@ HRESULT EdgeTension::force(MeshObj *source, MeshObj *target, float *f) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
-    std::vector<Vertex*> vertices = s->getVertices();
-    std::vector<Vertex*>::iterator vc_itr = std::find(vertices.begin(), vertices.end(), v);
-    if(vc_itr == vertices.end()) 
+    Vertex *vp, *vn;
+    std::tie(vp, vn) = s->neighborVertices(v);
+    if(!vp || !vn) 
         return S_OK;
-
-    Vertex *vn = vc_itr == vertices.begin()   ? *(vertices.end() - 1) : *(vc_itr - 1);
-    Vertex *vp = vc_itr == vertices.end() - 1 ? *(vertices.begin())   : *(vc_itr + 1);
 
     FVector3 posc = v->getPosition();
     FVector3 force;

@@ -41,14 +41,16 @@ HRESULT VolumeConstraint::force(MeshObj *source, MeshObj *target, float *f) {
     FVector3 posc = v->getPosition();
     FVector3 ftotal(0.f);
 
+    Vertex *vp, *vn;
+
     for(auto &s : v->getSurfaces()) {
         if(!s->in(b)) 
             continue;
         
         auto svertices = s->getVertices();
-        auto nbs_verts = s->neighborVertices(v);
+        std::tie(vp, vn) = s->neighborVertices(v);
 
-        FVector3 sftotal = Magnum::Math::cross(s->getCentroid(), nbs_verts[0]->getPosition() - nbs_verts[1]->getPosition());
+        FVector3 sftotal = Magnum::Math::cross(s->getCentroid(), vp->getPosition() - vn->getPosition());
         for(unsigned int i = 0; i < svertices.size(); i++) {
             sftotal -= s->triangleNormal(i) / svertices.size();
         }

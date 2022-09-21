@@ -23,6 +23,7 @@ from tissue_forge.tissue_forge import _vertex_solver_bind_body_type as _bind_bod
 from tissue_forge.tissue_forge import _vertex_solver_bind_body_inst as _bind_body_inst
 from tissue_forge.tissue_forge import _vertex_solver_bind_surface_type as _bind_surface_type
 from tissue_forge.tissue_forge import _vertex_solver_bind_surface_inst as _bind_surface_inst
+from tissue_forge.tissue_forge import _vertex_solver_bind_types as types
 
 
 def structure(*args):

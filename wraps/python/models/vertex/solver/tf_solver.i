@@ -96,6 +96,7 @@
 %rename(_vertex_solver_bind_body_inst) TissueForge::models::vertex::bind::body(Body*, MeshObjActor*);
 %rename(_vertex_solver_bind_surface_type) TissueForge::models::vertex::bind::surface(SurfaceType*, MeshObjActor*);
 %rename(_vertex_solver_bind_surface_inst) TissueForge::models::vertex::bind::surface(Surface*, MeshObjActor*);
+%rename(_vertex_solver_bind_types) TissueForge::models::vertex::bind::types(MeshObjType*, MeshObjType*, MeshObjTypePairActor*);
 
 %import <models/vertex/solver/tfMeshObj.h>
 

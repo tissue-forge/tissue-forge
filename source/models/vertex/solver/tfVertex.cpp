@@ -55,10 +55,13 @@ MeshParticleType *TissueForge::models::vertex::MeshParticleType_get() {
 
 std::vector<Vertex*> Vertex::neighborVertices() {
     std::vector<Vertex*> result;
+    Vertex *vp, *vn;
 
-    for(auto &s : surfaces) 
-        for(auto &v : s->neighborVertices(this)) 
-            result.push_back(v);
+    for(auto &s : surfaces) {
+        std::tie(vp, vn) = s->neighborVertices(this);
+        result.push_back(vp);
+        result.push_back(vn);
+    }
     return util::unique(result);
 }
 

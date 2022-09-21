@@ -29,6 +29,8 @@
 
 #include <io/tfThreeDFFaceData.h>
 
+#include <tuple>
+
 
 namespace TissueForge::models::vertex { 
 
@@ -120,7 +122,7 @@ namespace TissueForge::models::vertex {
         Vertex *findVertex(const FVector3 &dir);
         Body *findBody(const FVector3 &dir);
 
-        std::vector<Vertex*> neighborVertices(Vertex *v);
+        std::tuple<Vertex*, Vertex*> neighborVertices(Vertex *v);
 
         std::vector<Surface*> neighborSurfaces();
 

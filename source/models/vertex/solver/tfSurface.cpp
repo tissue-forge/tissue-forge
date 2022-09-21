@@ -332,19 +332,20 @@ Body *Surface::findBody(const FVector3 &dir) {
     return result;
 }
 
-std::vector<Vertex*> Surface::neighborVertices(Vertex *v) {
-    std::vector<Vertex*> result(2, 0);
+std::tuple<Vertex*, Vertex*> Surface::neighborVertices(Vertex *v) {
+    Vertex *vp = NULL;
+    Vertex *vn = NULL; 
 
     Vertex *vo;
     for(auto itr = vertices.begin(); itr != vertices.end(); itr++) {
         if(*itr == v) {
-            result[0] = itr + 1 == vertices.end() ? *vertices.begin() : *(itr + 1);
-            result[1] = itr == vertices.begin() ? *(vertices.end() - 1) : *(itr - 1);
+            vp = itr + 1 == vertices.end() ? *vertices.begin()     : *(itr + 1);
+            vn = itr == vertices.begin()   ? *(vertices.end() - 1) : *(itr - 1);
             break;
         }
     }
 
-    return result;
+    return {vp, vn};
 }
 
 std::vector<Surface*> Surface::neighborSurfaces() { 
