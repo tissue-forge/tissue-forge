@@ -27,6 +27,7 @@
 #include <tfEngine.h>
 #include <tf_util.h>
 #include <tfLogger.h>
+#include <tfTaskScheduler.h>
 
 
 #define TF_MESHSOLVER_CHECKINIT { if(!_solver) return E_FAIL; }
@@ -279,18 +280,34 @@ HRESULT MeshSolver::preStepStart() {
     }
     memset(_solver->_forces, 0.f, 3 * sizeof(FloatP_t) * _bufferSize);
 
+    static int stride = ThreadPool::size();
+    std::vector<int> local_surfaceVertices(stride, 0);
     for(i = 0, j = 0; i < meshes.size(); i++) { 
         m = meshes[i];
-        for(k = 0; k < m->sizeVertices(); k++, j++) {
-            v = m->getVertex(k);
-            
-            if(!v) 
-                continue;
 
-            _surfaceVertices += v->children().size();
+        std::vector<Vertex*> &m_vertices = m->vertices;
+        FloatP_t *_forces_j = &_forces[j * 3];
+        auto func = [&m_vertices, &local_surfaceVertices, &_forces_j](int tid) -> void {
+            int surfaceVertices_sum = 0;
+            for(int k = tid; k < m_vertices.size(); ) {
+                Vertex *v = m_vertices[k];
+                
+                if(v) { 
+                    surfaceVertices_sum += v->children().size();
 
-            VertexForce(v, &_forces[j * 3]);
-        }
+                    VertexForce(v, &_forces_j[k * 3]);
+                }
+
+                k += stride;
+            }
+            local_surfaceVertices[tid] = surfaceVertices_sum;
+        };
+        parallel_for(stride, func);
+
+        for(int k = 0; k < stride; k++) 
+            _surfaceVertices += local_surfaceVertices[k];
+        
+        j += m->vertices.size();
     }
 
     return S_OK;
@@ -304,19 +321,23 @@ HRESULT MeshSolver::preStepJoin() {
 
     for(i = 0, j = 0; i < meshes.size(); i++) { 
         m = meshes[i];
-        for(auto &v : m->vertices) {
+
+        FloatP_t *_forces_j = &_forces[j * 3];
+        std::vector<Vertex*> &m_vertices = m->vertices;
+        auto func = [&m_vertices, &_forces_j](int k) -> void {
+            Vertex *v = m_vertices[k];
             if(!v) {
-                j++;
-                continue;
+                return;
             }
 
-            p = v->particle()->part();
-            buff = &_forces[j * 3];
+            Particle *p = v->particle()->part();
+            FloatP_t *buff = &_forces_j[k * 3];
             p->f[0] += buff[0];
             p->f[1] += buff[1];
             p->f[2] += buff[2];
-            j++;
-        }
+        };
+        parallel_for(m_vertices.size(), func);
+        j += m->vertices.size();
     }
 
     return S_OK;
