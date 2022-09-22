@@ -847,10 +847,11 @@ HRESULT Mesh::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
 }
 
 HRESULT Mesh::sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf) {
-    for(auto &si : _surfaces) 
-        for(auto &sj : _surfaces) 
-            if(si != sj && sew(si, sj, distCf) != S_OK) 
+    for(std::vector<Surface*>::iterator itri = _surfaces.begin(); itri != _surfaces.end() - 1; itri++) 
+        for(std::vector<Surface*>::iterator itrj = itri + 1; itrj != _surfaces.end(); itrj++) 
+            if(*itri != *itrj && sew(*itri, *itrj, distCf) != S_OK) 
                 return E_FAIL;
+
     return S_OK;
 }
 

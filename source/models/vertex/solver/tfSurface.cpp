@@ -462,32 +462,43 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     if(s1->positionChanged() != S_OK || s2->positionChanged() != S_OK) 
         return E_FAIL;
 
+    // Pre-calculate vertex positions
+    std::vector<FVector3> s2_positions;
+    s2_positions.reserve(s2->vertices.size());
+    for(auto &v : s2->vertices) 
+        s2_positions.push_back(v->getPosition());
+
     // Find vertices to merge
-    FloatP_t distCrit = distCf * std::sqrtf(0.5 * (s1->area + s2->area));
+    FloatP_t distCrit2 = distCf * distCf * 0.5 * (s1->area + s2->area);
     std::vector<int> indicesMatched(s1->vertices.size(), -1);
+    size_t numMatched = 0;
     for(int i = 0; i < s1->vertices.size(); i++) {
         Vertex *vi = s1->vertices[i];
         if(vi->in(s2)) 
             continue;
         
         auto posi = vi->getPosition();
-        FloatP_t minDist = distCrit;
+        FloatP_t minDist2 = distCrit2;
+        int matchedIdx = -1;
         for(int j = 0; j < s2->vertices.size(); j++) { 
             Vertex *vj = s2->vertices[j];
-            if(vj->in(s1)) 
-                continue;
-            
-            auto posj = vj->getPosition();
-            auto dist = (posj - posi).length();
-            if(dist < minDist) {
-                minDist = dist;
-                indicesMatched[i] = j;
+            auto dist2 = (s2_positions[j] - posi).dot();
+            if(dist2 < minDist2 && !vj->in(s1)) {
+                minDist2 = dist2;
+                matchedIdx = j;
             }
         }
+        indicesMatched[i] = matchedIdx;
+        if(matchedIdx >= 0) 
+            numMatched++;
     }
+
+    if(numMatched == 0) 
+        return S_OK;
 
     // Merge matched vertices
     std::vector<Vertex*> toRemove;
+    toRemove.reserve(s1->vertices.size());
     for(int i = 0; i < s1->vertices.size(); i++) {
         Vertex *vi = s1->vertices[i];
         int j = indicesMatched[i];
@@ -497,9 +508,9 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
                 for(int k = 0; k < s->vertices.size(); k++) 
                     if(s->vertices[k] == vj) {
                         s->vertices[k] = vi;
-                        if(!vi->has(s))
-                            if(vi->addChild(s) != S_OK) 
-                                return E_FAIL;
+                        if(!vi->has(s) && vi->addChild(s) != S_OK)
+                            return E_FAIL;
+                        break;
                     }
             if(vj->objId >= 0)
                 toRemove.push_back(vj);
@@ -514,6 +525,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
             return E_FAIL;
         delete vj;
     }
+
     return S_OK;
 }
 
