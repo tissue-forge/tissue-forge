@@ -34,6 +34,8 @@
 #include <io/tfThreeDFVertexData.h>
 #include <io/tfThreeDFEdgeData.h>
 
+#include <unordered_set>
+
 
 #define Surface_VERTEXINDEX(vertices, idx) idx >= vertices.size() ? idx - vertices.size() : (idx < 0 ? idx + vertices.size() : idx)
 
@@ -275,14 +277,14 @@ HRESULT Surface::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
 }
 
 std::vector<Structure*> Surface::getStructures() {
-    std::vector<Structure*> result;
+    std::unordered_set<Structure*> result;
     if(b1) 
         for(auto &s : b1->getStructures()) 
-            result.push_back(s);
+            result.insert(s);
     if(b2) 
         for(auto &s : b2->getStructures()) 
-            result.push_back(s);
-    return util::unique(result);
+            result.insert(s);
+    return std::vector<Structure*>(result.begin(), result.end());
 }
 
 std::vector<Body*> Surface::getBodies() {
@@ -336,27 +338,24 @@ std::tuple<Vertex*, Vertex*> Surface::neighborVertices(Vertex *v) {
     Vertex *vp = NULL;
     Vertex *vn = NULL; 
 
-    Vertex *vo;
-    for(auto itr = vertices.begin(); itr != vertices.end(); itr++) {
-        if(*itr == v) {
-            vp = itr + 1 == vertices.end() ? *vertices.begin()     : *(itr + 1);
-            vn = itr == vertices.begin()   ? *(vertices.end() - 1) : *(itr - 1);
-            break;
-        }
+    auto itr = std::find(vertices.begin(), vertices.end(), v);
+    if(itr != vertices.end()) {
+        vp = itr + 1 == vertices.end() ? *vertices.begin()     : *(itr + 1);
+        vn = itr == vertices.begin()   ? *(vertices.end() - 1) : *(itr - 1);
     }
 
     return {vp, vn};
 }
 
 std::vector<Surface*> Surface::neighborSurfaces() { 
-    std::vector<Surface*> result;
+    std::unordered_set<Surface*> result;
     if(b1) 
         for(auto &s : b1->neighborSurfaces(this)) 
-            result.push_back(s);
+            result.insert(s);
     if(b2) 
         for(auto &s : b2->neighborSurfaces(this)) 
-            result.push_back(s);
-    return util::unique(result);
+            result.insert(s);
+    return std::vector<Surface*>(result.begin(), result.end());
 }
 
 std::vector<unsigned int> Surface::contiguousEdgeLabels(Surface *other) {

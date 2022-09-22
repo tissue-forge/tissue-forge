@@ -28,6 +28,8 @@
 #include <tfEngine.h>
 #include <tf_util.h>
 
+#include <unordered_set>
+
 
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
@@ -54,15 +56,15 @@ MeshParticleType *TissueForge::models::vertex::MeshParticleType_get() {
 }
 
 std::vector<Vertex*> Vertex::neighborVertices() {
-    std::vector<Vertex*> result;
+    std::unordered_set<Vertex*> result;
     Vertex *vp, *vn;
 
     for(auto &s : surfaces) {
         std::tie(vp, vn) = s->neighborVertices(this);
-        result.push_back(vp);
-        result.push_back(vn);
+        result.insert(vp);
+        result.insert(vn);
     }
-    return util::unique(result);
+    return std::vector<Vertex*>(result.begin(), result.end());
 }
 
 std::vector<Surface*> Vertex::sharedSurfaces(Vertex *other) {
@@ -210,19 +212,19 @@ HRESULT Vertex::removeChild(MeshObj *obj) {
 }
 
 std::vector<Structure*> Vertex::getStructures() {
-    std::vector<Structure*> result;
+    std::unordered_set<Structure*> result;
     for(auto &s : surfaces) 
         for(auto &ss : s->getStructures()) 
-            result.push_back(ss);
-    return util::unique(result);
+            result.insert(ss);
+    return std::vector<Structure*>(result.begin(), result.end());
 }
 
 std::vector<Body*> Vertex::getBodies() {
-    std::vector<Body*> result;
+    std::unordered_set<Body*> result;
     for(auto &s : surfaces) 
         for(auto &b : s->getBodies()) 
-            result.push_back(b);
-    return util::unique(result);
+            result.insert(b);
+    return std::vector<Body*>(result.begin(), result.end());
 }
 
 Surface *Vertex::findSurface(const FVector3 &dir) {
