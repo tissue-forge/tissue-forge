@@ -146,18 +146,6 @@ namespace TissueForge::models::vertex {
         FloatP_t surfaceDemoteArea;
 
         /**
-         * Edge split strain criterion.
-         * 
-         * A vertex splits into an edge when the tensile strain exceeds 
-         * this value for two connected edges. 
-         * 
-         * The newly created edge is defined by extending a distance 
-         * equal to a coefficient times the vertex merge distance
-         * along the tensile strain direction from the split vertex. 
-         */
-        FloatP_t edgeSplitStrain;
-
-        /**
          * Initial length of an edge created by splitting a vertex.
          */
         FloatP_t edgeSplitDist;
@@ -171,7 +159,6 @@ namespace TissueForge::models::vertex {
             Mesh *_mesh, 
             const FloatP_t &vertexMergeDistCf=0.0001, 
             const FloatP_t &surfaceDemoteAreaCf=0.0001, 
-            const FloatP_t &_edgeSplitStrain=0.01, 
             const FloatP_t &_edgeSplitDistCf=2.0
         );
 
@@ -184,10 +171,6 @@ namespace TissueForge::models::vertex {
         FloatP_t getSurfaceDemoteArea() const { return surfaceDemoteArea; };
 
         HRESULT setSurfaceDemoteArea(const FloatP_t &_val);
-
-        FloatP_t getEdgeSplitStrain() const { return edgeSplitStrain; };
-
-        HRESULT setEdgeSplitStrain(const FloatP_t &_val);
 
         FloatP_t getEdgeSplitDist() const { return edgeSplitDist; };
 

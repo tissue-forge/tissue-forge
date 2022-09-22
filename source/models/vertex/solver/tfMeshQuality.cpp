@@ -246,6 +246,32 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
     }
 };
 
+/** Converts a surface edge to a vertex */
+struct EdgeDemoteOperation : MeshQualityOperation {
+
+    Vertex *v2;
+
+    EdgeDemoteOperation(Mesh *_mesh, Vertex *_v1, Vertex *_v2) : MeshQualityOperation(_mesh) {
+        flags = MeshQualityOperation::Flag::Active;
+        source = _v1;
+        v2 = _v2;
+
+        std::unordered_set<MeshObj*> targets_set;
+        for(auto &c : _v1->children()) 
+            targets_set.insert(c);
+        for(auto &c : _v2->children()) 
+            targets_set.insert(c);
+        targets = std::vector<MeshObj*>(targets_set.begin(), targets_set.end());
+    }
+
+    HRESULT implement() override {
+        MeshSolver::engineLock();
+        HRESULT res = mesh->merge((Vertex*)source, v2);
+        MeshSolver::engineUnlock();
+        return res;
+    }
+};
+
 /** Converts a vertex to an edge */
 struct EdgeInsertOperation : MeshQualityOperation {
 
@@ -369,37 +395,15 @@ static HRESULT MeshQuality_constructChains(std::vector<MeshQualityOperation*> &o
 
 static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsVertex(
     Mesh *mesh, 
-    const FloatP_t &vertexMergeDist, 
-    const FloatP_t &edgeSplitStrain, 
     const FloatP_t &edgeSplitDist
 ) {
     std::vector<MeshQualityOperation*> ops(mesh->sizeVertices(), 0);
-    auto vertexMergeDist2 = vertexMergeDist * vertexMergeDist;
 
-    auto check_verts = [&mesh, &ops, vertexMergeDist2, edgeSplitStrain, edgeSplitDist](int i) -> void {
+    auto check_verts = [&mesh, &ops, edgeSplitDist](int i) -> void {
         Vertex *v = mesh->getVertex(i);
         if(!v) return;
 
         MeshQualityOperation *op = NULL;
-
-        FVector3 vpos = v->getPosition();
-
-        // Check for vertex merge
-
-        for(auto &nv : v->neighborVertices()) { 
-            if(nv->objId < v->objId) 
-                continue;
-
-            FVector3 nvpos = nv->getPosition();
-            FVector3 relPos = metrics::relativePosition(vpos, nvpos);
-            FloatP_t dist2 = relPos.dot();
-            if(dist2 < vertexMergeDist2) {
-                TF_Log(LOG_TRACE) << relPos;
-                
-                ops[i] = new VertexMergeOperation(mesh, v, nv);
-                return;
-            }
-        }
 
         // Check for vertex split if the vertex defines four or more surfaces
 
@@ -426,11 +430,13 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsVertex(
 
 static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface(
     Mesh *mesh, 
-    const FloatP_t &surfaceDemoteArea
+    const FloatP_t &surfaceDemoteArea, 
+    const FloatP_t &vertexMergeDist
 ) {
     std::vector<MeshQualityOperation*> ops(mesh->sizeSurfaces(), 0);
+    const FloatP_t vertexMergeDist2 = vertexMergeDist * vertexMergeDist;
 
-    auto check_surfs = [&mesh, &ops, surfaceDemoteArea](int i) -> void {
+    auto check_surfs = [&mesh, &ops, surfaceDemoteArea, vertexMergeDist2](int i) -> void {
         Surface *s = mesh->getSurface(i);
         if(!s) return;
 
@@ -443,6 +449,26 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
 
             ops[i] = new SurfaceDemoteOperation(mesh, s);
             return;
+        }
+
+        // Check vertex merge distance for vertices where this surface is the first child
+        auto vertices = s->getVertices();
+        for(auto itr = vertices.begin(); itr != vertices.end(); itr++) {
+            Vertex *v = *itr;
+            if((MeshObj*)s != *(v->children().begin())) 
+                continue;
+            Vertex *nv = itr + 1 == vertices.end() ? *vertices.begin() : *(itr + 1);
+
+            FVector3 vpos = v->getPosition();
+            FVector3 nvpos = nv->getPosition();
+            FVector3 relPos = metrics::relativePosition(vpos, nvpos);
+            FloatP_t dist2 = relPos.dot();
+            if(dist2 < vertexMergeDist2) {
+                TF_Log(LOG_TRACE) << relPos;
+                
+                ops[i] = new EdgeDemoteOperation(mesh, v, nv);
+                return;
+            }
         }
 
     };
@@ -541,11 +567,9 @@ MeshQuality::MeshQuality(
     Mesh *_mesh, 
     const FloatP_t &vertexMergeDistCf, 
     const FloatP_t &surfaceDemoteAreaCf, 
-    const FloatP_t &_edgeSplitStrain, 
     const FloatP_t &_edgeSplitDistCf
 ) : 
-    mesh{_mesh}, 
-    edgeSplitStrain{_edgeSplitStrain}
+    mesh{_mesh}
 {
     FloatP_t uvolu = Universe::dim().product();
     FloatP_t uleng = std::cbrt(uvolu);
@@ -562,13 +586,13 @@ HRESULT MeshQuality::doQuality() {
 
     // Vertex checks
     
-    std::vector<MeshQualityOperation*> op_verts = MeshQuality_constructOperationsVertex(mesh, vertexMergeDist, edgeSplitStrain, edgeSplitDist);
+    std::vector<MeshQualityOperation*> op_verts = MeshQuality_constructOperationsVertex(mesh, edgeSplitDist);
     if(MeshQuality_doOperations(op_verts) != S_OK || MeshQuality_clearOperations(op_verts) != S_OK) 
         return E_FAIL;
 
     // Surface checks
     
-    std::vector<MeshQualityOperation*> op_surfs = MeshQuality_constructOperationsSurface(mesh, surfaceDemoteArea);
+    std::vector<MeshQualityOperation*> op_surfs = MeshQuality_constructOperationsSurface(mesh, surfaceDemoteArea, vertexMergeDist);
     if(MeshQuality_doOperations(op_surfs) != S_OK || MeshQuality_clearOperations(op_surfs) != S_OK) 
         return E_FAIL;
 
@@ -592,13 +616,6 @@ HRESULT MeshQuality::setSurfaceDemoteArea(const FloatP_t &_val) {
     if(_val < 0) 
         return E_FAIL;
     surfaceDemoteArea = _val;
-    return S_OK;
-}
-
-HRESULT MeshQuality::setEdgeSplitStrain(const FloatP_t &_val) {
-    if(_val < 0) 
-        return E_FAIL;
-    edgeSplitStrain = _val;
     return S_OK;
 }
 
