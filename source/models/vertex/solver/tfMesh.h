@@ -62,6 +62,7 @@ namespace TissueForge::models::vertex {
         bool hasQuality() { return _quality; }
         TissueForge::models::vertex::MeshQuality &getQuality() { return *_quality; }
         HRESULT setQuality(TissueForge::models::vertex::MeshQuality *quality);
+        bool qualityWorking() { return hasQuality() && getQuality().working(); }
 
         HRESULT add(Vertex *obj);
         HRESULT add(Surface *obj);

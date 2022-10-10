@@ -569,7 +569,8 @@ MeshQuality::MeshQuality(
     const FloatP_t &surfaceDemoteAreaCf, 
     const FloatP_t &_edgeSplitDistCf
 ) : 
-    mesh{_mesh}
+    mesh{_mesh}, 
+    _working{false}
 {
     FloatP_t uvolu = Universe::dim().product();
     FloatP_t uleng = std::cbrt(uvolu);
@@ -582,26 +583,36 @@ MeshQuality::MeshQuality(
 
 HRESULT MeshQuality::doQuality() { 
 
+    _working = true;
+
     Mesh *_mesh = mesh;
 
     // Vertex checks
     
     std::vector<MeshQualityOperation*> op_verts = MeshQuality_constructOperationsVertex(mesh, edgeSplitDist);
-    if(MeshQuality_doOperations(op_verts) != S_OK || MeshQuality_clearOperations(op_verts) != S_OK) 
+    if(MeshQuality_doOperations(op_verts) != S_OK || MeshQuality_clearOperations(op_verts) != S_OK) {
+        _working = false;
         return E_FAIL;
+    }
 
     // Surface checks
     
     std::vector<MeshQualityOperation*> op_surfs = MeshQuality_constructOperationsSurface(mesh, surfaceDemoteArea, vertexMergeDist);
-    if(MeshQuality_doOperations(op_surfs) != S_OK || MeshQuality_clearOperations(op_surfs) != S_OK) 
+    if(MeshQuality_doOperations(op_surfs) != S_OK || MeshQuality_clearOperations(op_surfs) != S_OK) {
+        _working = false;
         return E_FAIL;
+    }
 
     // Body checks
 
     std::vector<MeshQualityOperation*> op_bodys = MeshQuality_constructOperationsBody(mesh);
-    if(MeshQuality_doOperations(op_bodys) != S_OK || MeshQuality_clearOperations(op_bodys) != S_OK) 
+    if(MeshQuality_doOperations(op_bodys) != S_OK || MeshQuality_clearOperations(op_bodys) != S_OK) {
+        _working = false;
         return E_FAIL;
+    }
 
+    _working = false;
+    
     return S_OK;
 }
 

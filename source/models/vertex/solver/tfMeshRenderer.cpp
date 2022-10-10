@@ -28,6 +28,7 @@
 #include <tfEngine.h>
 #include <tfLogger.h>
 #include <tf_system.h>
+#include <tfTaskScheduler.h>
 
 #include <Magnum/Mesh.h>
 
@@ -50,53 +51,18 @@ struct MeshEdgeInstanceData {
 };
 
 
-static inline unsigned int render_meshedge(MeshEdgeInstanceData *edgeData, unsigned int i, Vertex *v0, Vertex *v1) {
-    Magnum::Vector3 color = {0.f, 0.f, 0.f};
-    Particle *pi = v0->particle()->part();
-    Particle *pj = v1->particle()->part();
-    
-    fVector3 pj_origin = FVector3::from(_Engine.s.celllist[pj->id]->origin);
-    
-    int shift[3];
-    fVector3 pix;
-    
-    int *loci = _Engine.s.celllist[ pi->id ]->loc;
-    int *locj = _Engine.s.celllist[ pj->id ]->loc;
-    
-    for ( int k = 0 ; k < 3 ; k++ ) {
-        shift[k] = loci[k] - locj[k];
-        if ( shift[k] > 1 )
-            shift[k] = -1;
-        else if ( shift[k] < -1 )
-            shift[k] = 1;
-        pix[k] = pi->x[k] + _Engine.s.h[k]* shift[k];
-    }
-                    
-    edgeData[i].position = pix + pj_origin;
-    edgeData[i].color = color;
-    edgeData[i+1].position = pj->position + pj_origin;
-    edgeData[i+1].color = color;
-    return 2;
-}
-
 static inline HRESULT render_meshFacesEdges(MeshFaceInstanceData *faceData, 
                                             MeshEdgeInstanceData *edgeData, 
-                                            const unsigned int &iFace, 
-                                            const unsigned int &iEdge, 
-                                            Surface *s, 
-                                            unsigned int &faceIncr, 
-                                            unsigned int &edgeIncr) 
+                                            const unsigned int &idx, 
+                                            Surface *s) 
 {
-    Magnum::Vector3 color;
+    Magnum::Vector3 color_s, color_e = {0.f, 0.f, 0.f};
     
     rendering::Style *style = s->style ? s->style : s->type()->style;
     if(!style) 
-        color = {0.2f, 1.f, 1.f};
+        color_s = {0.2f, 1.f, 1.f};
     else 
-        color = style->color;
-
-    faceIncr = 0;
-    edgeIncr = 0;
+        color_s = style->color;
 
     Magnum::Vector3 centroid = s->getCentroid();
 
@@ -115,12 +81,9 @@ static inline HRESULT render_meshFacesEdges(MeshFaceInstanceData *faceData,
 
     std::vector<Vertex*> vertices = TissueForge::models::vertex::vectorToDerived<Vertex>(s->parents());
 
-    unsigned int j, k;
-    for(j = 0; j < vertices.size(); j++) {
+    for(unsigned int j = 0; j < vertices.size(); j++) {
         Vertex *vi = vertices[j];
         Vertex *vk = vertices[j == vertices.size() - 1 ? 0 : j + 1];
-
-        edgeIncr += render_meshedge(edgeData, iEdge + edgeIncr, vi, vk);
 
         Particle *pi = vi->particle()->part();
         Particle *pk = vk->particle()->part();
@@ -128,7 +91,7 @@ static inline HRESULT render_meshFacesEdges(MeshFaceInstanceData *faceData,
         int *loci = _Engine.s.celllist[pi->id]->loc;
         int *lock = _Engine.s.celllist[pk->id]->loc;
 
-        for(k = 0; k < 3; k++) {
+        for(unsigned int k = 0; k < 3; k++) {
             int locjk = locj[k];
             shiftij[k] = loci[k] - locjk;
             shiftkj[k] = lock[k] - locjk;
@@ -147,16 +110,19 @@ static inline HRESULT render_meshFacesEdges(MeshFaceInstanceData *faceData,
         fVector3 posi = pixij + pj_origin;
         fVector3 posk = pixkj + pj_origin;
 
-        k = iFace + faceIncr;
-        
-        faceData[k].position = posi;
-        faceData[k].color = color;
-        faceData[k+1].position = centroid;
-        faceData[k+1].color = color;
-        faceData[k+2].position = posk;
-        faceData[k+2].color = color;
+        MeshEdgeInstanceData *edgeData_j = &edgeData[2 * (idx + j)];
+        edgeData_j[0].position = posi;
+        edgeData_j[0].color = color_e;
+        edgeData_j[1].position = posk;
+        edgeData_j[1].color = color_e;
 
-        faceIncr += 3;
+        MeshFaceInstanceData *faceData_j = &faceData[3 * (idx + j)];
+        faceData_j[0].position = posi;
+        faceData_j[0].color = color_s;
+        faceData_j[1].position = centroid;
+        faceData_j[1].color = color_s;
+        faceData_j[2].position = posk;
+        faceData_j[2].color = color_s;
     }
 
     return S_OK;
@@ -246,20 +212,21 @@ HRESULT MeshRenderer::draw(rendering::ArcBallCamera *camera, const iVector2 &vie
         vertexCountE * sizeof(MeshEdgeInstanceData),
         GL::Buffer::MapFlag::Write|GL::Buffer::MapFlag::InvalidateBuffer
     );
-    
-    unsigned int iFaces = 0, iEdges = 0, faceIncr, edgeIncr;
-    for(auto &m : solver->meshes) {
-        for(auto &s : m->surfaces) {
-            if(s) {
-                render_meshFacesEdges(faceData, edgeData, iFaces, iEdges, s, faceIncr, edgeIncr);
-                iFaces += faceIncr;
-                iEdges += edgeIncr;
-            }
-        }
-    }
 
-    assert(iFaces == vertexCountF);
-    assert(iEdges == vertexCountE);
+    std::vector<unsigned int> surfaceVertexIndices = solver->getSurfaceVertexIndicesAsyncJoin();
+    if(surfaceVertexIndices.size() == 0) 
+        surfaceVertexIndices = solver->getSurfaceVertexIndices();
+
+    for(auto &m : solver->meshes) {
+        std::vector<Surface*> &m_surfaces = m->surfaces;
+        auto func_surfaces = [&faceData, &edgeData, &m_surfaces, &surfaceVertexIndices](int i) -> void {
+            Surface *s = m_surfaces[i];
+            if(s) {
+                render_meshFacesEdges(faceData, edgeData, surfaceVertexIndices[i], s);
+            }
+        };
+        parallel_for(m_surfaces.size(), func_surfaces);
+    }
     _bufferFaces.unmap();
     _bufferEdges.unmap();
     

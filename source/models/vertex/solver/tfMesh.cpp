@@ -405,7 +405,7 @@ HRESULT Mesh::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
         return E_FAIL;
 
     if(_solver) { 
-        if(_solver->positionChanged() != S_OK)
+        if(!qualityWorking() && _solver->positionChanged() != S_OK)
             return E_FAIL;
 
         _solver->log(this, MeshLogEventType::Create, {v1->objId, v2->objId}, {v1->objType(), v2->objType()}, "insert");
@@ -474,7 +474,7 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
         return E_FAIL;
 
     if(_solver) { 
-        if(_solver->positionChanged() != S_OK)
+        if(!qualityWorking() && _solver->positionChanged() != S_OK)
             return E_FAIL;
 
         _solver->log(this, MeshLogEventType::Create, {toInsert->objId, toReplace->objId}, {toInsert->objType(), toReplace->objType()}, "replace");
@@ -532,7 +532,8 @@ Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<Flo
     add(inserted);
 
     if(_solver) {
-        _solver->positionChanged();
+        if(!qualityWorking()) 
+            _solver->positionChanged();
 
         _solver->log(this, MeshLogEventType::Create, {inserted->objId, toReplace->objId}, {inserted->objType(), toReplace->objType()}, "replace");
     }
@@ -572,7 +573,7 @@ HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const FloatP_t &lenCf) {
         return E_FAIL;
 
     if(_solver) { 
-        if(_solver->positionChanged() != S_OK)
+        if(!qualityWorking() && _solver->positionChanged() != S_OK)
             return E_FAIL;
 
         _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
@@ -672,7 +673,7 @@ HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<FloatP
             return E_FAIL;
 
     if(_solver) { 
-        if(_solver->positionChanged() != S_OK)
+        if(!qualityWorking() && _solver->positionChanged() != S_OK)
             return E_FAIL;
 
         _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
@@ -704,7 +705,8 @@ Surface *Mesh::extend(Surface *base, const unsigned int &vertIdxStart, const FVe
     add(s);
 
     if(_solver) {
-        _solver->positionChanged();
+        if(!qualityWorking()) 
+            _solver->positionChanged();
 
         _solver->log(this, MeshLogEventType::Create, {base->objId, s->objId}, {base->objType(), s->objType()}, "extend");
     }
@@ -739,7 +741,8 @@ Surface *Mesh::extrude(Surface *base, const unsigned int &vertIdxStart, const Fl
     add(s);
 
     if(_solver) {
-        _solver->positionChanged();
+        if(!qualityWorking()) 
+            _solver->positionChanged();
 
         _solver->log(this, MeshLogEventType::Create, {base->objId, s->objId}, {base->objType(), s->objType()}, "extrude");
     }
@@ -772,7 +775,8 @@ Body *Mesh::extend(Surface *base, BodyType *btype, const FVector3 &pos) {
     add(b);
 
     if(_solver) {
-        _solver->positionChanged();
+        if(!qualityWorking()) 
+            _solver->positionChanged();
 
         _solver->log(this, MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extend");
     }
@@ -822,7 +826,8 @@ Body *Mesh::extrude(Surface *base, BodyType *btype, const FloatP_t &normLen) {
     add(b);
 
     if(_solver) {
-        _solver->positionChanged();
+        if(!qualityWorking()) 
+            _solver->positionChanged();
 
         _solver->log(this, MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extrude");
     }
@@ -950,7 +955,8 @@ Vertex *Mesh::splitExecute(Vertex *v, const FVector3 &sep, const std::vector<Ver
     }
 
     if(_solver) {
-        _solver->positionChanged();
+        if(!qualityWorking()) 
+            _solver->positionChanged();
 
         _solver->log(this, MeshLogEventType::Create, {v->objId, u->objId}, {v->objType(), u->objType()}, "split");
     }
@@ -966,7 +972,8 @@ Vertex *Mesh::split(Vertex *v, const FVector3 &sep) {
         u = splitExecute(v, sep, verts_v, new_verts_v);
 
     if(_solver) {
-        _solver->positionChanged();
+        if(!qualityWorking()) 
+            _solver->positionChanged();
 
         _solver->log(this, MeshLogEventType::Create, {v->objId, u->objId}, {v->objType(), u->objType()}, "split");
     }

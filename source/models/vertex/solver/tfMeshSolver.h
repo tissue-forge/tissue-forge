@@ -116,6 +116,10 @@ namespace TissueForge::models::vertex {
         HRESULT postStepStart();
         HRESULT postStepJoin();
 
+        std::vector<unsigned int> getSurfaceVertexIndices();
+        HRESULT getSurfaceVertexIndicesAsyncStart();
+        std::vector<unsigned int> getSurfaceVertexIndicesAsyncJoin();
+
         std::vector<MeshLogEvent> getLog() {
             return MeshLogger::events();
         }
@@ -131,6 +135,7 @@ namespace TissueForge::models::vertex {
         unsigned int _totalVertices;
         bool _isDirty;
         std::mutex _engineLock;
+        std::vector<unsigned int> _surfaceVertexIndices;
 
         std::vector<StructureType*> _structureTypes;
         std::vector<BodyType*> _bodyTypes;

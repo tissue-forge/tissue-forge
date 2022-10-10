@@ -29,11 +29,15 @@
 #include <tfLogger.h>
 #include <tfTaskScheduler.h>
 
+#include <atomic>
+#include <future>
+
 
 #define TF_MESHSOLVER_CHECKINIT { if(!_solver) return E_FAIL; }
 
 
 static std::mutex _meshEngineLock;
+static std::future<std::vector<unsigned int> > fut_surfaceVertexIndices;
 
 
 using namespace TissueForge;
@@ -234,33 +238,49 @@ HRESULT MeshSolver::positionChanged() {
     _surfaceVertices = 0;
     _totalVertices = 0;
 
+    static int stride = ThreadPool::size();
+
     for(auto &m : meshes) {
-        for(i = 0; i < m->sizeVertices(); i++) {
-            Vertex *v = m->getVertex(i);
+
+        // Update vertices
+
+        std::vector<Vertex*> &m_vertices = m->vertices;
+        auto func_vertices = [&m_vertices](int i) -> void {
+            Vertex *v = m_vertices[i];
             if(v) 
                 v->positionChanged();
-        }
+        };
+        parallel_for(m_vertices.size(), func_vertices);
         _totalVertices += m->numVertices();
 
-        for(i = 0; i < m->sizeSurfaces(); i++) {
-            Surface *s = m->getSurface(i);
-            if(s) {
-                s->positionChanged();
-                _surfaceVertices += s->parents().size();
+        // Update surfaces
+        
+        std::vector<Surface*> &m_surfaces = m->surfaces;
+        std::atomic<unsigned int> _surfaceVertices_m = 0;
+        auto func_surfaces = [&m_surfaces, &_surfaceVertices_m](int tid) -> void {
+            unsigned int _surfaceVertices_local = 0;
+            for(int i = tid; i < m_surfaces.size();) { 
+                Surface *s = m_surfaces[i];
+                if(s) {
+                    s->positionChanged();
+                    _surfaceVertices_local += s->parents().size();
+                }
+                i += stride;
             }
-        }
+            _surfaceVertices_m.fetch_add(_surfaceVertices_local);
+        };
+        parallel_for(stride, func_surfaces);
+        _surfaceVertices += _surfaceVertices_m;
 
-        for(i = 0; i < m->sizeBodies(); i++) {
-            Body *b = m->getBody(i);
+        // Update bodies
+        
+        std::vector<Body*> &m_bodies = m->bodies;
+        auto func_bodies = [&m_bodies](int i) -> void {
+            Body *b = m_bodies[i];
             if(b) 
                 b->positionChanged();
-        }
-        
-        for(i = 0; i < m->sizeVertices(); i++) {
-            Vertex *v = m->getVertex(i);
-            if(v) 
-                v->updateProperties();
-        }
+        };
+        parallel_for(m_bodies.size(), func_bodies);
 
         m->isDirty = false;
     }
@@ -283,21 +303,12 @@ HRESULT MeshSolver::preStepStart() {
 
     MeshLogger::clear();
 
-    unsigned int i, j, k;
-    Mesh *m;
-    Vertex *v;
-    Surface *s;
-    Body *b;
-
-    _surfaceVertices = 0;
     _totalVertices = 0;
 
     MeshSolverTimerInstance t(MeshSolverTimers::Section::FORCE);
 
-    for(i = 0; i < meshes.size(); i++) {
-        j = meshes[i]->sizeVertices();
-        _totalVertices += j;
-    }
+    for(auto &m : meshes) 
+        _totalVertices += m->sizeVertices();
 
     if(_totalVertices > _bufferSize) {
         free(_solver->_forces);
@@ -306,32 +317,16 @@ HRESULT MeshSolver::preStepStart() {
     }
     memset(_solver->_forces, 0.f, 3 * sizeof(FloatP_t) * _bufferSize);
 
-    static int stride = ThreadPool::size();
-    std::vector<int> local_surfaceVertices(stride, 0);
-    for(i = 0, j = 0; i < meshes.size(); i++) { 
-        m = meshes[i];
-
+    unsigned int j = 0;
+    for(auto &m : meshes) { 
         std::vector<Vertex*> &m_vertices = m->vertices;
         FloatP_t *_forces_j = &_forces[j * 3];
-        auto func = [&m_vertices, &local_surfaceVertices, &_forces_j](int tid) -> void {
-            int surfaceVertices_sum = 0;
-            for(int k = tid; k < m_vertices.size(); ) {
-                Vertex *v = m_vertices[k];
-                
-                if(v) { 
-                    surfaceVertices_sum += v->children().size();
-
-                    VertexForce(v, &_forces_j[k * 3]);
-                }
-
-                k += stride;
-            }
-            local_surfaceVertices[tid] = surfaceVertices_sum;
+        auto func = [&m_vertices, &_forces_j](int i) -> void {
+            Vertex *v = m_vertices[i];
+            if(v) 
+                VertexForce(v, &_forces_j[i * 3]);
         };
-        parallel_for(stride, func);
-
-        for(int k = 0; k < stride; k++) 
-            _surfaceVertices += local_surfaceVertices[k];
+        parallel_for(m_vertices.size(), func);
         
         j += m->vertices.size();
     }
@@ -340,16 +335,11 @@ HRESULT MeshSolver::preStepStart() {
 }
 
 HRESULT MeshSolver::preStepJoin() {
-    unsigned int i, j;
-    FloatP_t *buff;
-    Mesh *m;
-    Particle *p;
 
     MeshSolverTimerInstance t(MeshSolverTimers::Section::ADVANCE);
 
-    for(i = 0, j = 0; i < meshes.size(); i++) { 
-        m = meshes[i];
-
+    unsigned int j = 0;
+    for(auto &m : meshes) { 
         FloatP_t *_forces_j = &_forces[j * 3];
         std::vector<Vertex*> &m_vertices = m->vertices;
         auto func = [&m_vertices, &_forces_j](int k) -> void {
@@ -371,6 +361,32 @@ HRESULT MeshSolver::preStepJoin() {
     return S_OK;
 }
 
+static std::vector<unsigned int> MeshSolver_surfaceVertexIndices(const std::vector<Mesh*> &meshes) { 
+    unsigned int idx = 0;
+
+    unsigned int numSurfaces = 0;
+    for(auto &m : meshes) 
+        numSurfaces += m->sizeSurfaces();
+
+    std::vector<unsigned int> indices(numSurfaces, 0);
+    
+    unsigned int j = 0;
+    for(auto &m : meshes) {
+        unsigned int *indices_j = &indices.data()[j];
+
+        for(unsigned int i = 0; i < m->sizeSurfaces(); i++) { 
+            indices_j[i] = idx;
+            Surface *s = m->getSurface(i);
+            if(s) 
+                idx += s->parents().size();
+        }
+
+        j += m->sizeSurfaces();
+    }
+
+    return indices;
+}
+
 HRESULT MeshSolver::postStepStart() {
     setDirty(true);
 
@@ -389,11 +405,28 @@ HRESULT MeshSolver::postStepStart() {
                 m->getQuality().doQuality();
     }
 
+    getSurfaceVertexIndicesAsyncStart();
+
     return S_OK;
 }
 
 HRESULT MeshSolver::postStepJoin() {
     return S_OK;
+}
+
+std::vector<unsigned int> MeshSolver::getSurfaceVertexIndices() {
+    return MeshSolver_surfaceVertexIndices(meshes);
+}
+
+HRESULT MeshSolver::getSurfaceVertexIndicesAsyncStart() {
+    fut_surfaceVertexIndices = std::async(MeshSolver_surfaceVertexIndices, meshes);
+    return S_OK;
+}
+
+std::vector<unsigned int> MeshSolver::getSurfaceVertexIndicesAsyncJoin() {
+    if(fut_surfaceVertexIndices.valid()) 
+        _surfaceVertexIndices = fut_surfaceVertexIndices.get();
+    return _surfaceVertexIndices;
 }
 
 HRESULT MeshSolver::log(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {

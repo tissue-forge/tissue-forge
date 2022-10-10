@@ -153,6 +153,9 @@ namespace TissueForge::models::vertex {
         /** Borrowed pointer to the owning mesh */
         Mesh *mesh;
 
+        /** Flag for whether currently doing work */
+        bool _working;
+
     public:
 
         MeshQuality(
@@ -163,6 +166,8 @@ namespace TissueForge::models::vertex {
         );
 
         HRESULT doQuality();
+
+        const bool working() const { return _working; }
 
         FloatP_t getVertexMergeDistance() const { return vertexMergeDist; };
 
