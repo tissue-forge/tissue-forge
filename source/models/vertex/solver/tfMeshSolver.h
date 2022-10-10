@@ -26,6 +26,7 @@
 #include "tfMeshLogger.h"
 
 #include <tfSubEngine.h>
+#include <cycle.h>
 
 
 namespace TissueForge::models::vertex { 
@@ -37,11 +38,51 @@ namespace TissueForge::models::vertex {
     HRESULT VertexForce(Vertex *v, FloatP_t *f);
 
 
+    struct CAPI_EXPORT MeshSolverTimers {
+
+        enum Section : unsigned int {
+            FORCE=0,
+            ADVANCE,
+            UPDATE,
+            QUALITY,
+            RENDERING,
+            LAST
+        };
+
+        HRESULT append(const Section &section, const ticks _ticks) { timers[section] += _ticks; return S_OK; }
+        double ms(const Section &section, const bool &avg=true);
+        HRESULT reset() {
+            for(size_t i = 0; i < Section::LAST; i++) timers[i] = 0;
+            return S_OK;
+        }
+        std::string str();
+
+    private:
+
+        ticks timers[Section::LAST];
+        
+    };
+
+
+    class CAPI_EXPORT MeshSolverTimerInstance {
+        
+        MeshSolverTimers::Section section;
+        ticks tic;
+
+    public:
+
+        MeshSolverTimerInstance(const MeshSolverTimers::Section &_section);
+        ~MeshSolverTimerInstance();
+
+    };
+
+
     struct CAPI_EXPORT MeshSolver : SubEngine { 
 
         const char *name = "MeshSolver";
 
         std::vector<Mesh*> meshes;
+        MeshSolverTimers timers;
 
         static HRESULT init();
         static MeshSolver *get();

@@ -219,6 +219,8 @@ HRESULT MeshRenderer::draw(rendering::ArcBallCamera *camera, const iVector2 &vie
         return E_FAIL;
     }
 
+    MeshSolverTimerInstance t(MeshSolverTimers::Section::RENDERING);
+
     unsigned int vertexCountF = 3 * solver->_surfaceVertices;
     unsigned int vertexCountE = 2 * solver->_surfaceVertices;
     _meshFaces.setCount(vertexCountF);

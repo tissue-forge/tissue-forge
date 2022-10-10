@@ -39,6 +39,8 @@ static std::mutex _meshEngineLock;
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
+static MeshSolver *_solver = NULL;
+
 
 HRESULT TissueForge::models::vertex::VertexForce(Vertex *v, FloatP_t *f) {
     // Surfaces
@@ -71,9 +73,30 @@ HRESULT TissueForge::models::vertex::VertexForce(Vertex *v, FloatP_t *f) {
     return S_OK;
 }
 
+double MeshSolverTimers::ms(const Section &section, const bool &avg) {
+    double val = timers[section];
+    return avg ? val / (_Engine.time * CLOCKS_PER_SEC) : val;
+}
 
-static MeshSolver *_solver = NULL;
+std::string MeshSolverTimers::str() {
+    std::stringstream ss;
+    ss << "Force: " << ms(Section::FORCE) << ", " << std::endl;
+    ss << "Advance: " << ms(Section::ADVANCE) << ", " << std::endl;
+    ss << "Update: " << ms(Section::UPDATE) << ", " << std::endl;
+    ss << "Quality: " << ms(Section::QUALITY) << std::endl;
+    ss << "Rendering: " << ms(Section::RENDERING) << std::endl;
+    return ss.str();
+}
 
+MeshSolverTimerInstance::MeshSolverTimerInstance(const MeshSolverTimers::Section &_section) : 
+    section{_section}, 
+    tic{getticks()}
+{}
+
+MeshSolverTimerInstance::~MeshSolverTimerInstance() {
+    if(_solver) 
+        _solver->timers.append(section, getticks() - tic);
+}
 
 HRESULT MeshSolver::init() {
     if(_solver != NULL) 
@@ -82,6 +105,7 @@ HRESULT MeshSolver::init() {
     _solver = new MeshSolver();
     _solver->_bufferSize = 1;
     _solver->_forces = (FloatP_t*)malloc(3 * sizeof(FloatP_t));
+    _solver->timers.reset();
     _solver->registerEngine();
 
     // Launches and registers renderer
@@ -268,6 +292,8 @@ HRESULT MeshSolver::preStepStart() {
     _surfaceVertices = 0;
     _totalVertices = 0;
 
+    MeshSolverTimerInstance t(MeshSolverTimers::Section::FORCE);
+
     for(i = 0; i < meshes.size(); i++) {
         j = meshes[i]->sizeVertices();
         _totalVertices += j;
@@ -319,6 +345,8 @@ HRESULT MeshSolver::preStepJoin() {
     Mesh *m;
     Particle *p;
 
+    MeshSolverTimerInstance t(MeshSolverTimers::Section::ADVANCE);
+
     for(i = 0, j = 0; i < meshes.size(); i++) { 
         m = meshes[i];
 
@@ -346,12 +374,20 @@ HRESULT MeshSolver::preStepJoin() {
 HRESULT MeshSolver::postStepStart() {
     setDirty(true);
 
-    if(positionChanged() != S_OK) 
-        return E_FAIL;
+    {
+        MeshSolverTimerInstance t(MeshSolverTimers::Section::UPDATE);
 
-    for(auto &m : meshes) 
-        if(m->hasQuality()) 
-            m->getQuality().doQuality();
+        if(positionChanged() != S_OK) 
+            return E_FAIL;
+    }
+    
+    {
+        MeshSolverTimerInstance t(MeshSolverTimers::Section::QUALITY);
+        
+        for(auto &m : meshes) 
+            if(m->hasQuality()) 
+                m->getQuality().doQuality();
+    }
 
     return S_OK;
 }
