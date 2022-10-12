@@ -54,6 +54,7 @@ Surface::Surface() :
     b2{NULL}, 
     area{0.f}, 
     _volumeContr{0.f}, 
+    species{NULL}, 
     style{NULL}
 {}
 

@@ -78,7 +78,8 @@ Body::Body() :
     centroid{0.f}, 
     area{0.f}, 
     volume{0.f}, 
-    density{0.f}
+    density{0.f}, 
+    species{NULL}
 {}
 
 Body::Body(std::vector<Surface*> _surfaces) : 
