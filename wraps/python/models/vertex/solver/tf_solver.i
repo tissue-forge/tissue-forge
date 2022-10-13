@@ -41,6 +41,27 @@
 #include <models/vertex/solver/actors/tfAdhesion.h>
 %}
 
+// Helper functions to access object members
+
+%inline %{
+
+static int _vertex_solver_MeshObj_getObjId(TissueForge::models::vertex::MeshObj *self) {
+    return self->objId;
+}
+
+static TissueForge::models::vertex::Mesh *_vertex_solver_MeshObj_getMesh(TissueForge::models::vertex::MeshObj *self) {
+    return self->mesh;
+}
+
+static bool _vertex_solver_MeshObj_in(TissueForge::models::vertex::MeshObj *self, TissueForge::models::vertex::MeshObj *obj) {
+    return self->in(obj);
+}
+
+static bool _vertex_solver_MeshObj_has(TissueForge::models::vertex::MeshObj *self, TissueForge::models::vertex::MeshObj *obj) {
+    return self->has(obj);
+}
+
+%}
 
 %template(vectorMeshVertex) std::vector<TissueForge::models::vertex::Vertex*>;
 %template(vectorMeshSurface) std::vector<TissueForge::models::vertex::Surface*>;
@@ -121,3 +142,170 @@
 %include <models/vertex/solver/actors/tfVolumeConstraint.h>
 %include <models/vertex/solver/actors/tfEdgeTension.h>
 %include <models/vertex/solver/actors/tfAdhesion.h>
+
+%define vertex_solver_MeshObj_extend_py(name) 
+
+%extend name {
+    %pythoncode %{
+        @property
+        def id(self) -> int:
+            return _vertex_solver_MeshObj_getObjId(self)
+
+        @property
+        def mesh(self):
+            return _vertex_solver_MeshObj_getMesh(self)
+
+        def is_in(self, _obj) -> bool:
+            return _vertex_solver_MeshObj_in(self, _obj)
+
+        def has(self, _obj) -> bool:
+            return _vertex_solver_MeshObj_has(self, _obj)
+    %}
+}
+
+%enddef
+
+vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Vertex)
+vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Surface)
+vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Body)
+vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Structure)
+
+%extend TissueForge::models::vertex::Vertex {
+    %pythoncode %{
+        @property
+        def structures(self):
+            return self.getStructures()
+
+        @property
+        def bodies(self):
+            return self.getBodies()
+
+        @property
+        def surfaces(self):
+            return self.getSurfaces()
+
+        @property
+        def neighbor_vertices(self):
+            return self.neighborVertices()
+
+        @property
+        def volume(self) -> float:
+            return self.getVolume()
+        
+        @property
+        def mass(self) -> float:
+            return self.getMass()
+
+        @property
+        def position(self):
+            return self.getPosition()
+
+        @position.setter
+        def position(self, _position):
+            self.setPosition(_position)
+    %}
+}
+
+%extend TissueForge::models::vertex::Surface {
+    %pythoncode %{
+        @property
+        def structures(self):
+            return self.getStructures()
+
+        @property
+        def bodies(self):
+            return self.getBodies()
+
+        @property
+        def vertices(self):
+            return self.getVertices()
+
+        @property
+        def neighbor_surfaces(self):
+            return self.neighborSurfaces()
+
+        @property
+        def normal(self):
+            return self.getNormal()
+
+        @property
+        def centroid(self):
+            return self.getCentroid()
+
+        @property
+        def velocity(self):
+            return self.getVelocity()
+
+        @property
+        def area(self):
+            return self.getArea()
+    %}
+}
+
+%extend TissueForge::models::vertex::Body {
+    %pythoncode %{
+        @property
+        def structures(self):
+            return self.getStructures()
+
+        @property
+        def surfaces(self):
+            return self.getSurfaces()
+
+        @property
+        def vertices(self):
+            return self.getVertices()
+
+        @property
+        def neighbor_bodies(self):
+            return self.neighborBodies()
+
+        @property
+        def density(self):
+            return self.getDensity()
+
+        @density.setter
+        def density(self, _density):
+            self.setDensity(_density)
+
+        @property
+        def centroid(self):
+            return self.getCentroid()
+
+        @property
+        def velocity(self):
+            return self.getVelocity()
+
+        @property
+        def area(self):
+            return self.getArea()
+
+        @property
+        def volume(self):
+            return self.getVolume()
+
+        @property
+        def mass(self):
+            return self.getMass()
+    %}
+}
+
+%extend TissueForge::models::vertex::Structure {
+    %pythoncode %{
+        @property
+        def structures(self):
+            return self.getStructures()
+
+        @property
+        def bodies(self):
+            return self.getBodies()
+
+        @property
+        def surfaces(self):
+            return self.getSurfaces()
+
+        @property
+        def vertices(self):
+            return self.getVertices()
+    %}
+}
