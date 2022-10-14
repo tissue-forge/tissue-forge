@@ -311,25 +311,14 @@ static Body *BodyType_fromSurfaces(BodyType *btype, std::vector<Surface*> surfac
         TF_Log(LOG_ERROR) << "A body requires at least 4 surfaces";
         return NULL;
     }
-    // Verify that every parent vertex is in at least two given surfaces
+    // Verify that every parent vertex is in at least two surfaces
     // todo: current vertex condition is necessary for body construction, but is it sufficient?
-    for(unsigned int i = 0; i < surfaces.size(); i++) 
-        for(auto &pv : surfaces[i]->parents()) {
-            bool twiceConnected = false;
-            for(unsigned int j = 0; j < surfaces.size(); j++) {
-                if(i == j) 
-                    continue;
-
-                if(pv->in(surfaces[j])) {
-                    twiceConnected = true;
-                    break;
-                }
-            }
-            if(!twiceConnected) {
+    for(auto &s : surfaces) 
+        for(auto &v : s->getVertices()) 
+            if(v->children().size() < 2) {
                 TF_Log(LOG_ERROR) << "Detected insufficient connectivity";
                 return NULL;
             }
-        }
 
     Body *b = new Body(surfaces);
     b->typeId = btype->id;

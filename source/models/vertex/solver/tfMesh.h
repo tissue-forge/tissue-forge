@@ -190,6 +190,25 @@ namespace TissueForge::models::vertex {
          */
         Vertex *split(Vertex *v, const FVector3 &sep);
 
+        /** Split a surface into two surfaces
+         * 
+         * Both vertices must already be in the surface and not adjacent
+         * 
+         * Vertices in the winding from from vertex to second go to newly created surface
+         * 
+         * Requires updated surface members (e.g., centroid)
+        */
+        Surface *split(Surface *s, Vertex *v1, Vertex *v2);
+
+        /** Split a surface into two surfaces
+         * 
+         * Requires updated surface members (e.g., centroid)
+        */
+        Surface *split(Surface *s, const FVector3 &cp_pos, const FVector3 &cp_norm);
+
+        /** Split a body into two bodies */
+        Body *split(Body *b, const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype=NULL);
+
         friend MeshRenderer;
         friend MeshSolver;
 

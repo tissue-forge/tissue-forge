@@ -240,10 +240,20 @@ HRESULT Surface::refreshBodies() {
     }
     if(b2) {
         n = centroid - b2->getCentroid();
-        if(n.dot(normal) > 0) 
+        if(n.dot(normal) > 0) {
+            if(bo) {
+                TF_Log(LOG_ERROR) << "Two bodies registered on the same side (outside)";
+                return E_FAIL;
+            }
             bo = b2;
-        else 
+        }
+        else {
+            if(bi) {
+                TF_Log(LOG_ERROR) << "Two bodies registered on the same side (inside)";
+                return E_FAIL;
+            }
             bi = b2;
+        }
     }
 
     b1 = bo;

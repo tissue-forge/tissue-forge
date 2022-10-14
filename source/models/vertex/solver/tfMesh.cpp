@@ -25,6 +25,8 @@
 #include <tfLogger.h>
 
 #include <algorithm>
+#include <map>
+#include <Magnum/Math/Intersection.h>
 
 
 #define TF_MESH_GETPART(idx, inv) idx >= inv.size() ? NULL : inv[idx]
@@ -462,6 +464,13 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
         }
     }
 
+    // Add the inserted vertex
+    if(add(toInsert) != S_OK) 
+        return E_FAIL;
+
+    if(_solver) 
+        _solver->log(this, MeshLogEventType::Create, {toInsert->objId, toReplace->objId}, {toInsert->objType(), toReplace->objType()}, "replace");
+
     // Remove the replaced surface and its vertices
     if(removeObj(toReplace) != S_OK) 
         return E_FAIL;
@@ -469,16 +478,9 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
         if(removeObj(v) != S_OK) 
             return E_FAIL;
 
-    // Add the inserted vertex
-    if(add(toInsert) != S_OK) 
-        return E_FAIL;
-
-    if(_solver) { 
+    if(_solver) 
         if(!qualityWorking() && _solver->positionChanged() != S_OK)
             return E_FAIL;
-
-        _solver->log(this, MeshLogEventType::Create, {toInsert->objId, toReplace->objId}, {toInsert->objType(), toReplace->objType()}, "replace");
-    }
 
     return S_OK;
 }
@@ -528,15 +530,14 @@ Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<Flo
     Surface *inserted = (*toInsert)(insertedVertices);
 
     // Remove replaced vertex from the mesh and add inserted surface to the mesh
-    removeObj(toReplace);
     add(inserted);
+    if(_solver) 
+        _solver->log(this, MeshLogEventType::Create, {inserted->objId, toReplace->objId}, {inserted->objType(), toReplace->objType()}, "replace"); 
+    removeObj(toReplace);
 
-    if(_solver) {
+    if(_solver) 
         if(!qualityWorking()) 
             _solver->positionChanged();
-
-        _solver->log(this, MeshLogEventType::Create, {inserted->objId, toReplace->objId}, {inserted->objType(), toReplace->objType()}, "replace");
-    }
 
     return inserted;
 }
@@ -563,23 +564,23 @@ HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const FloatP_t &lenCf) {
         std::replace(s->vertices.begin(), s->vertices.end(), toRemove, toKeep);
     }
     
-    if(remove(toRemove) != S_OK) 
-        return E_FAIL;
-    
     // Set new position
     const FVector3 posToKeep = toKeep->getPosition();
     const FVector3 newPos = posToKeep + (toRemove->getPosition() - posToKeep) * lenCf;
     if(toKeep->setPosition(newPos) != S_OK) 
         return E_FAIL;
 
-    if(_solver) { 
-        if(!qualityWorking() && _solver->positionChanged() != S_OK)
-            return E_FAIL;
-
+    if(_solver) 
         _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
-    }
+    
+    if(remove(toRemove) != S_OK) 
+        return E_FAIL;
 
     delete toRemove;
+
+    if(_solver) 
+        if(!qualityWorking() && _solver->positionChanged() != S_OK)
+            return E_FAIL;
 
     return S_OK;
 }
@@ -664,6 +665,9 @@ HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<FloatP
         if(v->setPosition(newPos) != S_OK) 
             return E_FAIL;
     }
+
+    if(_solver) 
+        _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
     
     // Remove surface and vertices that are not shared
     if(remove(toRemove) != S_OK) 
@@ -672,12 +676,9 @@ HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<FloatP
         if(remove(v) != S_OK) 
             return E_FAIL;
 
-    if(_solver) { 
+    if(_solver) 
         if(!qualityWorking() && _solver->positionChanged() != S_OK)
             return E_FAIL;
-
-        _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
-    }
 
     return S_OK;
 }
@@ -894,6 +895,8 @@ HRESULT Mesh::splitPlan(Vertex *v, const FVector3 &sep, std::vector<Vertex*> &ve
 
     // Reject if either side of the plane has no vertices
     if(verts_new_v.empty() || verts_v.empty()) {
+        verts_v.clear();
+        verts_new_v.clear();
         TF_Log(LOG_DEBUG) << "No vertices on both sides of cut plane; ignoring";
         return S_OK;
     }
@@ -979,4 +982,423 @@ Vertex *Mesh::split(Vertex *v, const FVector3 &sep) {
     }
 
     return u;
+}
+
+Surface *Mesh::split(Surface *s, Vertex *v1, Vertex *v2) { 
+    // Verify that vertices are in surface
+    if(!v1->in(s) || !v2->in(s)) { 
+        tf_error(E_FAIL, "Vertices are not part of the splitting surface");
+        return NULL;
+    }
+
+    // Verify that vertices are not adjacent
+    const std::vector<Vertex*> v1_nbs = v1->neighborVertices();
+    if(std::find(v1_nbs.begin(), v1_nbs.end(), v2) != v1_nbs.end()) {
+        tf_error(E_FAIL, "Vertices are adjacent");
+        return NULL;
+    }
+
+    // Extract vertices for new surface
+    std::vector<Vertex*> v_new_surf;
+    v_new_surf.reserve(s->vertices.size());
+    v_new_surf.push_back(v1);
+    std::vector<Vertex*>::iterator v_itr = std::find(s->vertices.begin(), s->vertices.end(), v1);
+    while(true) {
+        v_itr++;
+        if(v_itr == s->vertices.end()) 
+            v_itr = s->vertices.begin();
+        if(*v_itr == v2) 
+            break;
+        v_new_surf.push_back(*v_itr);
+    }
+    v_new_surf.push_back(v2);
+    for(auto v_itr = v_new_surf.begin() + 1; v_itr != v_new_surf.end() - 1; v_itr++) {
+        s->removeParent(*v_itr);
+        (*v_itr)->removeChild(s);
+    }
+
+    // Build new surface
+    Surface *s_new = (*s->type())(v_new_surf);
+    if(!s_new) 
+        return NULL;
+    add(s_new);
+
+    // Continue hierarchy
+    for(auto &b : s->getBodies()) {
+        s_new->addChild(b);
+        b->addParent(s_new);
+    }
+
+    if(_solver) {
+        if(!qualityWorking()) 
+            _solver->positionChanged();
+
+        _solver->log(
+            this, MeshLogEventType::Create, 
+            {s->objId, s_new->objId, v1->objId, v2->objId}, 
+            {s->objType(), s_new->objType(), v1->objType(), v2->objType()}, 
+            "split"
+        );
+    }
+
+    return s_new;
+}
+
+/** Find a contiguous set of surface vertices partioned by a cut plane */
+static std::vector<Vertex*> Mesh_SurfaceCutPlaneVertices(Surface *s, const FVector4 &planeEq) {
+    // Calculate side of cut plane
+    auto s_vertices = s->getVertices();
+    std::vector<bool> planeEq_newSide;
+    planeEq_newSide.reserve(s_vertices.size());
+    size_t num_to_new = 0;
+    for(auto &v : s_vertices) {
+        const bool onNewSide = planeEq.distance(v->getPosition()) > 0;
+        planeEq_newSide.push_back(onNewSide);
+        if(onNewSide) 
+            num_to_new++;
+    }
+
+    // If either the new or current surface has insufficient vertices, exit out
+    if(num_to_new == 0 || num_to_new == s_vertices.size()) {
+        return {};
+    }
+
+    // Determine insertion points
+    Vertex *v_new_start = NULL;
+    Vertex *v_new_end = NULL;
+    std::vector<Vertex*> verts_new_s;
+    verts_new_s.reserve(s_vertices.size());
+    std::vector<bool>::iterator b_itr = planeEq_newSide.begin() + 1;
+    std::vector<bool>::iterator b_itr_prev = b_itr - 1;
+    std::vector<bool>::iterator b_itr_next = b_itr + 1;
+    std::vector<Vertex*>::iterator v_itr = s_vertices.begin() + 1;
+    while(!v_new_end) { 
+        if(!v_new_start) {
+            if(*b_itr && !*b_itr_prev) {
+                v_new_start = *v_itr;
+                verts_new_s.push_back(v_new_start);
+            }
+        }
+        else {
+            if(*b_itr && !*b_itr_next) 
+                v_new_end = *v_itr;
+            
+            verts_new_s.push_back(*v_itr);
+        }
+
+        b_itr_prev = b_itr;
+        b_itr = b_itr_next;
+        b_itr_next = b_itr_next + 1 == planeEq_newSide.end() ? planeEq_newSide.begin() : b_itr_next + 1;
+        v_itr = v_itr + 1 == s_vertices.end() ? s_vertices.begin() : v_itr + 1;
+    }
+
+    return verts_new_s;
+}
+
+/** Find the coordinates and adjacent vertices of the intersections of a surface and cut plane */
+static HRESULT Mesh_SurfaceCutPlanePointsPairs(
+    Surface *s, 
+    const FVector4 &planeEq, 
+    FVector3 &pos_start, 
+    FVector3 &pos_end, 
+    Vertex **v_new_start, 
+    Vertex **v_old_start, 
+    Vertex **v_new_end, 
+    Vertex **v_old_end) 
+{
+    // Determine insertion points
+    std::vector<Vertex*> verts_new_s = Mesh_SurfaceCutPlaneVertices(s, planeEq);
+    if(verts_new_s.size() == 0) 
+        return E_FAIL;
+    *v_new_start = verts_new_s.front();
+    *v_new_end = verts_new_s.back();
+
+    // Determine coordinates of new vertices where cut plane intersects the surface
+    auto s_vertices = s->getVertices();
+    *v_old_start = (*v_new_start) == s_vertices.front() ? s_vertices.back()  : *(std::find(s_vertices.begin(), s_vertices.end(), *v_new_start) - 1);
+    *v_old_end   = (*v_new_end) == s_vertices.back()    ? s_vertices.front() : *(std::find(s_vertices.begin(), s_vertices.end(), *v_new_end)   + 1);
+
+    FVector3 pos_old_start = (*v_old_start)->getPosition();
+    FVector3 pos_old_end = (*v_old_end)->getPosition();
+
+    FVector3 rel_pos_start = (*v_new_start)->getPosition() - pos_old_start;
+    FVector3 rel_pos_end   = (*v_new_end)->getPosition()   - pos_old_end;
+    
+    FloatP_t intersect_t_start = Magnum::Math::Intersection::planeLine(planeEq, pos_old_start, rel_pos_start);
+    FloatP_t intersect_t_end   = Magnum::Math::Intersection::planeLine(planeEq, pos_old_end,   rel_pos_end);
+    
+    // If new vertices are indeterminant, exit out
+    if(!(intersect_t_start > 0 && intersect_t_start < 1 && intersect_t_end > 0 && intersect_t_end < 1)) {
+        std::string msg = "Indeterminant vertices " + cast<FloatP_t, std::string>(intersect_t_start) + ", " + cast<FloatP_t, std::string>(intersect_t_end);
+        tf_error(E_FAIL, msg.c_str());
+        return E_FAIL;
+    }
+
+    // Return coordinates
+    pos_start = pos_old_start + intersect_t_start * rel_pos_start;
+    pos_end = pos_old_end   + intersect_t_end   * rel_pos_end;
+
+    return S_OK;
+}
+
+Surface *Mesh::split(Surface *s, const FVector3 &cp_pos, const FVector3 &cp_norm) {
+    FVector4 planeEq = FVector4::planeEquation(cp_norm.normalized(), cp_pos);
+
+    FVector3 pos_start, pos_end; 
+    Vertex *v_new_start, *v_old_start, *v_new_end, *v_old_end;
+    if(Mesh_SurfaceCutPlanePointsPairs(s, planeEq, pos_start, pos_end, &v_new_start, &v_old_start, &v_new_end, &v_old_end) != S_OK) 
+        return NULL;
+
+    // Create and insert new vertices
+    Vertex *v_start = new Vertex(pos_start);
+    Vertex *v_end   = new Vertex(pos_end);
+    if(insert(v_start, v_old_start, v_new_start) != S_OK || insert(v_end, v_old_end, v_new_end) != S_OK) {
+        delete v_start;
+        delete v_end;
+        return NULL;
+    }
+
+    // Create new surface
+    return split(s, v_start, v_end);
+}
+
+
+struct Mesh_BodySplitEdge {
+    Vertex *v_oldSide;  // Old side
+    Vertex *v_newSide;  // New side
+    FVector3 intersect_pt;
+    std::vector<Surface*> surfaces;
+
+    bool operator==(Mesh_BodySplitEdge o) const {
+        return v_oldSide == o.v_oldSide && v_newSide == o.v_newSide;
+    }
+
+    static bool intersects(Vertex *v1, Vertex *v2, const FVector4 &planeEq, FVector3 &intersect_pt) {
+        FVector3 pos_old = v1->getPosition();
+        FVector3 rel_pos = v2->getPosition() - pos_old;
+        FloatP_t intersect_t = Magnum::Math::Intersection::planeLine(planeEq, pos_old, rel_pos);
+        
+        // If new position is indeterminant, exit out
+        if(!(intersect_t > 0 && intersect_t < 1)) 
+            return false;
+
+        // Return coordinates
+        intersect_pt = pos_old + intersect_t * rel_pos;
+        return true;
+    }
+
+    static std::vector<Surface*> extractSurfaces(Vertex *v1, Vertex *v2, Body *b) {
+        std::vector<Surface*> surfaces;
+        for(auto &s : b->getSurfaces()) 
+            if(v1->in(s) && v2->in(s)) 
+                surfaces.push_back(s);
+        return surfaces;
+    }
+
+    static std::vector<Mesh_BodySplitEdge> construct(Body *b, const FVector4 &planeEq) {
+        std::map<std::pair<int, int>, Mesh_BodySplitEdge> edgeMap;
+        for(auto &s : b->getSurfaces()) {
+            for(auto &v : s->getVertices()) {
+                Vertex *va, *vb;
+                Vertex *v_lower, *v_upper;
+                std::tie(va, vb) = s->neighborVertices(v);
+
+                std::vector<std::pair<Vertex*, Vertex*> > edge_cases;
+                if(v->objId < va->objId) 
+                    edge_cases.push_back({v, va});
+                if(v->objId < vb->objId) 
+                    edge_cases.push_back({v, vb});
+
+                for(auto &ec : edge_cases) {
+                    std::tie(v_lower, v_upper) = ec;
+
+                    FVector3 intersect_pt;
+                    if(intersects(v_lower, v_upper, planeEq, intersect_pt)) {
+                        Mesh_BodySplitEdge edge;
+                        if(planeEq.distance(v_lower->getPosition()) > 0) {
+                            edge.v_oldSide = v_upper;
+                            edge.v_newSide = v_lower;
+                        } 
+                        else {
+                            edge.v_oldSide = v_lower;
+                            edge.v_newSide = v_upper;
+                        }
+                        edge.intersect_pt = intersect_pt;
+                        edge.surfaces = extractSurfaces(v_lower, v_upper, b);
+
+                        if(edge.surfaces.size() != 2) {
+                            tf_error(E_FAIL, "Incorrect number of extracted surfaces");
+                            return {};
+                        }
+
+                        edgeMap.insert({{v_lower->objId, v_upper->objId}, edge});
+                    }
+                }
+            }
+        }
+        
+        std::vector<Mesh_BodySplitEdge> result;
+        result.reserve(edgeMap.size());
+        for(auto &itr : edgeMap) 
+            result.push_back(itr.second);
+        
+        std::vector<Mesh_BodySplitEdge> result_sorted;
+        result_sorted.reserve(result.size());
+        result_sorted.push_back(result.back());
+        result.pop_back();
+        Surface *s_target = result_sorted[0].surfaces[1];
+        while(!result.empty()) {
+            std::vector<Mesh_BodySplitEdge>::iterator itr = result.begin();
+            while(itr != result.end()) { 
+                if(itr->surfaces[0] == s_target) { 
+                    s_target = itr->surfaces[1];
+                    result_sorted.push_back(*itr);
+                    result.erase(itr);
+                    break;
+                } 
+                else if(itr->surfaces[1] == s_target) {
+                    s_target = itr->surfaces[0];
+                    result_sorted.push_back(*itr);
+                    result.erase(itr);
+                    break;
+                }
+                itr++;
+            }
+        }
+        
+        return result_sorted;
+    }
+
+    typedef std::pair<Surface*, std::pair<Mesh_BodySplitEdge, Mesh_BodySplitEdge> > surfaceSplitPlanEl_t;
+
+    static HRESULT surfaceSplitPlan(const std::vector<Mesh_BodySplitEdge> &edges, std::vector<surfaceSplitPlanEl_t> &result) {
+        std::vector<Mesh_BodySplitEdge> edges_copy(edges);
+        edges_copy.push_back(edges.front());
+        for(size_t i = 0; i < edges.size(); i++) {
+            Mesh_BodySplitEdge edge_i = edges_copy[i];
+            Mesh_BodySplitEdge edge_j = edges_copy[i + 1];
+            Surface *s = NULL;
+            for(auto &si : edge_i.surfaces) {
+                auto itr = std::find(edge_j.surfaces.begin(), edge_j.surfaces.end(), si);
+                if(itr != edge_j.surfaces.end()) {
+                    s = *itr;
+                    break;
+                }
+            }
+            if(!s) 
+                return E_FAIL;
+            
+            Vertex *v_old = edge_i.v_oldSide;
+            Vertex *v_new = edge_i.v_newSide;
+            Vertex *v_old_na, *v_old_nb;
+            std::tie(v_old_na, v_old_nb) = s->neighborVertices(v_old);
+            if(v_old_na == v_new) 
+                result.push_back({s, {edge_i, edge_j}});
+            else 
+                result.push_back({s, {edge_j, edge_i}});
+        }
+        return S_OK;
+    }
+
+    static HRESULT vertexConstructorPlan(const std::vector<surfaceSplitPlanEl_t> &splitPlan, std::vector<Mesh_BodySplitEdge> &vertexPlan) {
+        vertexPlan.clear();
+        for(auto itr = splitPlan.begin(); itr != splitPlan.end(); itr++) {
+            auto edges = itr->second;
+            auto edges_prev = itr == splitPlan.begin() ? splitPlan.back().second : (itr - 1)->second;
+            if(edges.first == edges_prev.first || edges.first == edges_prev.second) 
+                vertexPlan.push_back(edges.first);
+            else 
+                vertexPlan.push_back(edges.second);
+        }
+        return S_OK;
+    }
+};
+
+Body *Mesh::split(Body *b, const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype) {
+    FVector4 planeEq = FVector4::planeEquation(cp_norm.normalized(), cp_pos);
+
+    // Determine which surfaces are moved to new body
+    std::vector<Surface*> surfs_moved;
+    for(auto &s : b->surfaces) {
+        size_t num_newSide = 0;
+        for(auto &v : s->vertices) 
+            if(planeEq.distance(v->getPosition()) > 0) 
+                num_newSide++;
+        if(num_newSide == s->vertices.size()) 
+            surfs_moved.push_back(s);
+    }
+
+    // Build edge list
+    std::vector<Mesh_BodySplitEdge> splitEdges = Mesh_BodySplitEdge::construct(b, planeEq);
+
+    // Split edges
+    std::vector<Mesh_BodySplitEdge::surfaceSplitPlanEl_t> sSplitPlan;
+    if(Mesh_BodySplitEdge::surfaceSplitPlan(splitEdges, sSplitPlan) != S_OK) 
+        return NULL;
+    std::vector<Mesh_BodySplitEdge> vertexPlan;
+    if(Mesh_BodySplitEdge::vertexConstructorPlan(sSplitPlan, vertexPlan) != S_OK) 
+        return NULL;
+    std::vector<Vertex*> new_vertices;
+    std::map<std::pair<int, int>, Vertex*> new_vertices_map;
+    for(auto &edge : vertexPlan) {
+        Vertex *v_new = new Vertex(edge.intersect_pt);
+        insert(v_new, edge.v_oldSide, edge.v_newSide);
+        new_vertices.push_back(v_new);
+        new_vertices_map.insert({{edge.v_oldSide->objId, edge.v_newSide->objId}, v_new});
+    }
+
+    // Split surfaces
+    std::vector<Surface*> new_surfs;
+    new_surfs.reserve(sSplitPlan.size());
+    for(size_t i = 0; i < sSplitPlan.size(); i++) {
+        Surface *s = sSplitPlan[i].first;
+        Vertex *v1 = new_vertices_map[{sSplitPlan[i].second.first.v_oldSide->objId,  sSplitPlan[i].second.first.v_newSide->objId}];
+        Vertex *v2 = new_vertices_map[{sSplitPlan[i].second.second.v_oldSide->objId, sSplitPlan[i].second.second.v_newSide->objId}];
+        Surface *s_new = split(s, v1, v2);
+        if(!s_new) 
+            return NULL;
+        new_surfs.push_back(s_new);
+    }
+
+    // Construct interface surface
+    if(!stype) 
+        stype = new_surfs[0]->type();
+    Surface *s_new = (*stype)(new_vertices);
+    if(!s_new) 
+        return NULL;
+    add(s_new);
+    b->addParent(s_new);
+    s_new->addChild(b);
+    s_new->positionChanged();
+
+    // Transfer moved and new split surfaces to new body
+    for(auto &s : surfs_moved) {
+        s->removeChild(b);
+        b->removeParent(s);
+    }
+    for(auto &s : new_surfs) {
+        s->removeChild(b);
+        b->removeParent(s);
+    }
+    b->positionChanged();
+
+    // Construct new body
+    std::vector<Surface*> new_body_surfs(surfs_moved);
+    new_body_surfs.push_back(s_new);
+    for(auto &s : new_surfs) 
+        new_body_surfs.push_back(s);
+    Body *b_new = (*b->type())(new_body_surfs);
+    if(!b_new) 
+        return NULL;
+
+    add(b_new);
+
+    if(_solver) {
+        if(!qualityWorking()) 
+            _solver->positionChanged();
+
+        _solver->log(this, MeshLogEventType::Create, {b->objId, b_new->objId}, {b->objType(), b_new->objType()}, "split");
+    }
+
+    return b_new;
 }

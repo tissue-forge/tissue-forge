@@ -42,7 +42,6 @@ static HRESULT MeshQualityOperation_checkChain(
     std::vector<MeshQualityOperation*> &ops
 ) {
     for(auto &t : op->targets) {
-        auto t_id = t->objId;
         MeshQualityOperation *t_op = ops[t->objId];
         if(t_op) 
             op->appendNext(t_op);
@@ -231,7 +230,7 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
 
     HRESULT implement() override {
         Surface *toReplace = (Surface*)source;
-        Vertex *toInsert = new Vertex();
+        Vertex *toInsert = new Vertex(toReplace->getCentroid());
         toInsert->setPosition(toReplace->getCentroid());
         
         MeshSolver::engineLock();
@@ -329,6 +328,10 @@ static bool MeshQuality_vertexSplitTest(
 
     // Get split plan along direction of force
     m->splitPlan(v, sep, vert_nbs, new_vert_nbs);
+
+    // Enforce that a split must create a new surface
+    if(vert_nbs.size() < 2 || new_vert_nbs.size() < 2) 
+        return false;
 
     // Calculate relative force on each vertex of a new edge
     FVector3 vert_force_rel, new_vert_force_rel;

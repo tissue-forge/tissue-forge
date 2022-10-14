@@ -80,7 +80,7 @@ inline std::ostream& operator<<(std::ostream& os, const TissueForge::models::ver
         break;
     
     case TissueForge::models::vertex::MeshLogEventType::Destroy:
-        os << "Destory";
+        os << "Destroy";
         break;
 
     case TissueForge::models::vertex::MeshLogEventType::Operation:
