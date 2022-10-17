@@ -427,6 +427,36 @@ HRESULT Mesh::insert(Vertex *toInsert, Vertex *vf, std::vector<Vertex*> nbs) {
     return S_OK;
 }
 
+HRESULT Mesh_SurfaceDisconnectReplace(
+    Vertex *toInsert, 
+    Surface *toReplace, 
+    Surface *targetSurf, 
+    std::vector<Vertex*> &targetSurf_vertices, 
+    std::set<Vertex*> &totalToRemove) 
+{
+    std::vector<unsigned int> edgeLabels = targetSurf->contiguousEdgeLabels(toReplace);
+    std::vector<Vertex*> toRemove;
+    for(unsigned int i = 0; i < edgeLabels.size(); i++) {
+        unsigned int lab = edgeLabels[i];
+        if(lab > 0) {
+            if(lab > 1) {
+                TF_Log(LOG_ERROR) << "Replacement cannot occur over non-contiguous contacts";
+                return E_FAIL;
+            }
+            toRemove.push_back(targetSurf_vertices[i]);
+        }
+    }
+    
+    targetSurf_vertices.insert(std::find(targetSurf_vertices.begin(), targetSurf_vertices.end(), toRemove[0]), toInsert);
+    toInsert->addChild(targetSurf);
+    for(auto &v : toRemove) {
+        targetSurf->removeParent(v);
+        v->removeChild(targetSurf);
+        totalToRemove.insert(v);
+    }
+    return S_OK;
+}
+
 HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
     // For every surface connected to the replaced surface
     //      Gather every vertex connected to the replaced surface
@@ -434,39 +464,24 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
     // Remove the replaced surface from the mesh
     // Add the inserted vertex to the mesh
 
+    // Prevent nonsensical resultant bodies
+    if(toReplace->b1 && toReplace->b1->surfaces.size() < 5) { 
+        TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << toReplace->b1->surfaces.size() << ") in first body (" << toReplace->b1->objId << ") for replace";
+        return E_FAIL;
+    }
+    else if(toReplace->b2 && toReplace->b2->surfaces.size() < 5) {
+        TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << toReplace->b2->surfaces.size() << ") in first body (" << toReplace->b2->objId << ") for replace";
+        return E_FAIL;
+    }
+
     // Gather every contacting surface
-    std::vector<Surface*> connectedSurfaces;
-    for(auto &v : toReplace->vertices) 
-        for(auto &s : v->surfaces) 
-            if(s != toReplace && std::find(connectedSurfaces.begin(), connectedSurfaces.end(), s) != connectedSurfaces.end()) 
-                connectedSurfaces.push_back(s);
+    std::vector<Surface*> connectedSurfaces = toReplace->neighborSurfaces();
 
     // Disconnect every vertex connected to the replaced surface
-    unsigned int lab;
-    std::vector<unsigned int> edgeLabels;
-    std::vector<Vertex*> totalToRemove;
-    for(auto &s : connectedSurfaces) {
-        edgeLabels = s->contiguousEdgeLabels(toReplace);
-        std::vector<Vertex*> toRemove;
-        for(unsigned int i = 0; i < edgeLabels.size(); i++) {
-            lab = edgeLabels[i];
-            if(lab > 0) {
-                if(lab > 1) {
-                    TF_Log(LOG_ERROR) << "Replacement cannot occur over non-contiguous contacts";
-                    return E_FAIL;
-                }
-                toRemove.push_back(s->vertices[i]);
-            }
-        }
-        
-        s->vertices.insert(std::find(s->vertices.begin(), s->vertices.end(), toRemove[0]), toInsert);
-        toInsert->addChild(s);
-        for(auto &v : toRemove) {
-            s->removeParent(v);
-            v->removeChild(s);
-            totalToRemove.push_back(v);
-        }
-    }
+    std::set<Vertex*> totalToRemove;
+    for(auto &s : connectedSurfaces) 
+        if(Mesh_SurfaceDisconnectReplace(toInsert, toReplace, s, s->vertices, totalToRemove) != S_OK) 
+            return E_FAIL;
 
     // Add the inserted vertex
     if(add(toInsert) != S_OK) 
@@ -476,10 +491,89 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
         _solver->log(this, MeshLogEventType::Create, {toInsert->objId, toReplace->objId}, {toInsert->objType(), toReplace->objType()}, "replace");
 
     // Remove the replaced surface and its vertices
-    if(removeObj(toReplace) != S_OK) 
+    while(!toReplace->vertices.empty()) {
+        Vertex *v = toReplace->vertices.front();
+        v->removeChild(toReplace);
+        toReplace->removeParent(v);
+    }
+    if(toReplace->b1) { 
+        Body *b1 = toReplace->b1;
+        b1->removeParent(toReplace);
+        toReplace->removeChild(b1);
+        b1->positionChanged();
+    }
+    if(toReplace->b2) { 
+        Body *b2 = toReplace->b2;
+        b2->removeParent(toReplace);
+        toReplace->removeChild(b2);
+        b2->positionChanged();
+    }
+    if(toReplace->destroy() != S_OK) 
         return E_FAIL;
     for(auto &v : totalToRemove) 
-        if(removeObj(v) != S_OK) 
+        if(v->destroy() != S_OK) 
+            return E_FAIL;
+
+    if(_solver) 
+        if(!qualityWorking() && _solver->positionChanged() != S_OK)
+            return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT Mesh::replace(Vertex *toInsert, Body *toReplace) {
+    // Detach surfaces and bodies
+    std::set<Vertex*> totalToRemove;
+    std::vector<Surface*> b_surfaces(toReplace->surfaces);
+    for(auto &s : b_surfaces) { 
+        for(auto &ns : s->neighborSurfaces()) { 
+            if(ns->in(toReplace)) 
+                continue;
+            if(Mesh_SurfaceDisconnectReplace(toInsert, s, ns, ns->vertices, totalToRemove) != S_OK) 
+                return E_FAIL;
+        }
+
+        if(s->b1 && s->b1 != toReplace) {
+            if(s->b1->surfaces.size() < 5) {
+                TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b1->surfaces.size() << ") in first body (" << s->b1->objId << ") for replace";
+                return E_FAIL;
+            }
+            s->b1->removeParent(s);
+            s->removeChild(s->b1);
+        }
+        if(s->b2 && s->b2 != toReplace) {
+            if(s->b2->surfaces.size() < 5) {
+                TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b2->surfaces.size() << ") in first body (" << s->b2->objId << ") for replace";
+                return E_FAIL;
+            }
+            s->b2->removeParent(s);
+            s->removeChild(s->b2);
+        }
+    }
+
+    // Add the vertex
+    if(add(toInsert) != S_OK) 
+        return E_FAIL;
+
+    if(_solver) 
+        _solver->log(this, MeshLogEventType::Create, {toInsert->objId, toReplace->objId}, {toInsert->objType(), toReplace->objType()}, "replace");
+
+    while(!toReplace->surfaces.empty()) {
+        Surface *s = toReplace->surfaces.front();
+        while(!s->vertices.empty()) {
+            Vertex *v = s->vertices.front();
+            s->removeParent(v);
+            v->removeChild(s);
+            totalToRemove.insert(v);
+        }
+        toReplace->removeParent(s);
+        s->removeChild(toReplace);
+        s->destroy();
+    }
+    if(toReplace->destroy() != S_OK) 
+        return E_FAIL;
+    for(auto &v : totalToRemove) 
+        if(v->destroy() != S_OK) 
             return E_FAIL;
 
     if(_solver) 

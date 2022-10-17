@@ -220,6 +220,32 @@ struct VertexInsertOperation : MeshQualityOperation {
     }
 };
 
+/** Converts a body to a vertex */
+struct BodyDemoteOperation : MeshQualityOperation {
+
+    BodyDemoteOperation(Mesh *_mesh, Body *_source) : MeshQualityOperation(_mesh) {
+        flags = MeshQualityOperation::Flag::Active;
+        source = _source;
+        targets = vectorToBase(_source->neighborBodies());
+    }
+
+    HRESULT implement() override {
+        Body *toReplace = (Body*)source;
+        Vertex *toInsert = new Vertex(toReplace->getCentroid());
+
+        MeshSolver::engineLock();
+
+        HRESULT res = mesh->replace(toInsert, toReplace);
+
+        MeshSolver::engineUnlock();
+
+        if(res == S_OK) 
+            next.clear();
+
+        return res;
+    };
+};
+
 /** Converts a surface to a vertex */
 struct SurfaceDemoteOperation : MeshQualityOperation {
 
@@ -231,7 +257,6 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
     HRESULT implement() override {
         Surface *toReplace = (Surface*)source;
         Vertex *toInsert = new Vertex(toReplace->getCentroid());
-        toInsert->setPosition(toReplace->getCentroid());
         
         MeshSolver::engineLock();
         
@@ -493,13 +518,23 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
 }
 
 static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsBody(
-    Mesh *mesh
+    Mesh *mesh, 
+    const FloatP_t &bodyDemoteVolume
 ) {
     std::vector<MeshQualityOperation*> ops(mesh->sizeBodies(), 0);
 
-    auto check_bodys = [&mesh, &ops](int i) -> void {
+    auto check_bodys = [&mesh, &ops, bodyDemoteVolume](int i) -> void {
         Body *b = mesh->getBody(i);
         if(!b) return;
+
+        FloatP_t bvol = b->getVolume();
+        
+        if(bvol < bodyDemoteVolume) {
+            TF_Log(LOG_TRACE) << bvol;
+
+            ops[i] = new BodyDemoteOperation(mesh, b);
+            return;
+        }
     };
     parallel_for(mesh->sizeBodies(), check_bodys);
     
@@ -577,6 +612,7 @@ MeshQuality::MeshQuality(
     Mesh *_mesh, 
     const FloatP_t &vertexMergeDistCf, 
     const FloatP_t &surfaceDemoteAreaCf, 
+    const FloatP_t &bodyDemoteVolumeCf, 
     const FloatP_t &_edgeSplitDistCf
 ) : 
     mesh{_mesh}, 
@@ -588,6 +624,7 @@ MeshQuality::MeshQuality(
 
     vertexMergeDist = uleng * vertexMergeDistCf;
     surfaceDemoteArea = uarea * surfaceDemoteAreaCf;
+    bodyDemoteVolume = uvolu * bodyDemoteVolumeCf;
     edgeSplitDist = _edgeSplitDistCf * vertexMergeDist;
 }
 
@@ -615,7 +652,7 @@ HRESULT MeshQuality::doQuality() {
 
     // Body checks
 
-    std::vector<MeshQualityOperation*> op_bodys = MeshQuality_constructOperationsBody(mesh);
+    std::vector<MeshQualityOperation*> op_bodys = MeshQuality_constructOperationsBody(mesh, bodyDemoteVolume);
     if(MeshQuality_doOperations(op_bodys) != S_OK || MeshQuality_clearOperations(op_bodys) != S_OK) {
         _working = false;
         return E_FAIL;
@@ -637,6 +674,13 @@ HRESULT MeshQuality::setSurfaceDemoteArea(const FloatP_t &_val) {
     if(_val < 0) 
         return E_FAIL;
     surfaceDemoteArea = _val;
+    return S_OK;
+}
+
+HRESULT MeshQuality::setBodyDemoteVolume(const FloatP_t &_val) {
+    if(_val < 0) 
+        return E_FAIL;
+    bodyDemoteVolume = _val;
     return S_OK;
 }
 

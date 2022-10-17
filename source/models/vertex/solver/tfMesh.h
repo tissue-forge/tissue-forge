@@ -131,6 +131,9 @@ namespace TissueForge::models::vertex {
         /** Replace a surface with a vertex */
         HRESULT replace(Vertex *toInsert, Surface *toReplace);
 
+        /** Replace a body with a vertex */
+        HRESULT replace(Vertex *toInsert, Body *toReplace);
+
         /** Replace a vertex with a surface. Vertices are created for the surface along every destroyed edge. */
         Surface *replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<FloatP_t> lenCfs);
 

@@ -146,6 +146,13 @@ namespace TissueForge::models::vertex {
         FloatP_t surfaceDemoteArea;
 
         /**
+         * Body demotion criterion.
+         * 
+         * A body becomes a vertex if its volume is less than this value.
+         */
+        FloatP_t bodyDemoteVolume;
+
+        /**
          * Initial length of an edge created by splitting a vertex.
          */
         FloatP_t edgeSplitDist;
@@ -162,6 +169,7 @@ namespace TissueForge::models::vertex {
             Mesh *_mesh, 
             const FloatP_t &vertexMergeDistCf=0.0001, 
             const FloatP_t &surfaceDemoteAreaCf=0.0001, 
+            const FloatP_t &bodyDemoteVolumeCf=0.0001, 
             const FloatP_t &_edgeSplitDistCf=2.0
         );
 
@@ -176,6 +184,10 @@ namespace TissueForge::models::vertex {
         FloatP_t getSurfaceDemoteArea() const { return surfaceDemoteArea; };
 
         HRESULT setSurfaceDemoteArea(const FloatP_t &_val);
+
+        FloatP_t getBodyDemoteVolume() const { return bodyDemoteVolume; }
+
+        HRESULT setBodyDemoteVolume(const FloatP_t &_val);
 
         FloatP_t getEdgeSplitDist() const { return edgeSplitDist; };
 
