@@ -495,6 +495,7 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
         Vertex *v = toReplace->vertices.front();
         v->removeChild(toReplace);
         toReplace->removeParent(v);
+        totalToRemove.insert(v);
     }
     if(toReplace->b1) { 
         Body *b1 = toReplace->b1;
@@ -1335,7 +1336,7 @@ struct Mesh_BodySplitEdge {
                 }
             }
         }
-        
+
         std::vector<Mesh_BodySplitEdge> result;
         result.reserve(edgeMap.size());
         for(auto &itr : edgeMap) 
