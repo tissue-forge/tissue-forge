@@ -315,7 +315,7 @@ static bool MeshQuality_vertexSplitTest(
     std::vector<Vertex*> &vert_nbs, 
     std::vector<Vertex*> &new_vert_nbs
 ) {
-    const FVector3 v_force = v->particle()->getForce();
+    Particle *p = v->particle()->part();
 
     // Calculate current relative force
     std::vector<Vertex*> v_nbs = v->neighborVertices();
@@ -323,8 +323,15 @@ static bool MeshQuality_vertexSplitTest(
     for(auto &vn : v_nbs) {
         force_rel += vn->particle()->getForce();
     }
-    force_rel -= v_force * v_nbs.size();
+    force_rel -= p->force * v_nbs.size();
     sep = force_rel.normalized() * edgeSplitDist;
+    
+    FPTYPE mask[] = {
+        (p->flags & PARTICLE_FROZEN_X) ? 0.0f : 1.0f,
+        (p->flags & PARTICLE_FROZEN_Y) ? 0.0f : 1.0f,
+        (p->flags & PARTICLE_FROZEN_Z) ? 0.0f : 1.0f
+    };
+    for(int k = 0; k < 3; k++) sep[k] *= mask[k];
 
     // Get split plan along direction of force
     m->splitPlan(v, sep, vert_nbs, new_vert_nbs);
@@ -339,8 +346,8 @@ static bool MeshQuality_vertexSplitTest(
         vert_force_rel += vn->particle()->getForce();
     for(auto &vn : new_vert_nbs) 
         new_vert_force_rel += vn->particle()->getForce();
-    vert_force_rel -= v_force * 0.5 * vert_nbs.size();
-    new_vert_force_rel -= v_force * 0.5 * new_vert_nbs.size();
+    vert_force_rel -= p->force * 0.5 * vert_nbs.size();
+    new_vert_force_rel -= p->force * 0.5 * new_vert_nbs.size();
 
     // Test whether the new edge would be in tension and return true if so
     return sep.dot(vert_force_rel) < 0 && sep.dot(new_vert_force_rel) > 0;
