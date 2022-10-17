@@ -119,6 +119,9 @@ namespace TissueForge::models::vertex {
         /** Remove a body from the mesh */
         HRESULT remove(Body *b);
 
+        /** Remove a structure from the mesh */
+        HRESULT remove(Structure *s);
+
         /** Inserts a vertex between two vertices */
         HRESULT insert(Vertex *toInsert, Vertex *v1, Vertex *v2);
 

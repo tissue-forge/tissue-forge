@@ -72,7 +72,6 @@ namespace TissueForge::models::vertex {
         Vertex(const unsigned int &_pid);
         Vertex(const FVector3 &position);
         Vertex(io::ThreeDFVertexData *vdata);
-        virtual ~Vertex();
 
         MeshObj::Type objType() { return MeshObj::Type::VERTEX; }
 
@@ -87,6 +86,8 @@ namespace TissueForge::models::vertex {
         HRESULT removeChild(MeshObj *obj);
 
         HRESULT removeParent(MeshObj *obj) { return E_FAIL; }
+
+        HRESULT destroy();
 
         bool validate() { return true; }
 

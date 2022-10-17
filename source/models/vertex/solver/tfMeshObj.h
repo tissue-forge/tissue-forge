@@ -71,6 +71,8 @@ namespace TissueForge::models::vertex {
 
         virtual HRESULT removeParent(MeshObj *obj) = 0;
 
+        virtual HRESULT destroy() = 0;
+
         /** Validate state of object for deployment in a mesh */
         virtual bool validate() = 0;
 

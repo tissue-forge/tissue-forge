@@ -380,6 +380,10 @@ HRESULT Mesh::remove(Body *b) {
     return removeObj(b);
 }
 
+HRESULT Mesh::remove(Structure *s) {
+    return removeObj(s);
+}
+
 HRESULT Mesh::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
     Vertex *v;
     std::vector<Vertex*>::iterator vitr;
@@ -533,7 +537,7 @@ Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<Flo
     add(inserted);
     if(_solver) 
         _solver->log(this, MeshLogEventType::Create, {inserted->objId, toReplace->objId}, {inserted->objType(), toReplace->objType()}, "replace"); 
-    removeObj(toReplace);
+    toReplace->destroy();
 
     if(_solver) 
         if(!qualityWorking()) 
@@ -573,10 +577,8 @@ HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const FloatP_t &lenCf) {
     if(_solver) 
         _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
     
-    if(remove(toRemove) != S_OK) 
+    if(toRemove->destroy() != S_OK) 
         return E_FAIL;
-
-    delete toRemove;
 
     if(_solver) 
         if(!qualityWorking() && _solver->positionChanged() != S_OK)
@@ -670,10 +672,10 @@ HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<FloatP
         _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
     
     // Remove surface and vertices that are not shared
-    if(remove(toRemove) != S_OK) 
+    if(toRemove->destroy() != S_OK) 
         return E_FAIL;
     for(auto &v : toRemoveOrdered) 
-        if(remove(v) != S_OK) 
+        if(v->destroy() != S_OK) 
             return E_FAIL;
 
     if(_solver) 
@@ -934,6 +936,7 @@ Vertex *Mesh::splitExecute(Vertex *v, const FVector3 &sep, const std::vector<Ver
     v->setPosition(v_pos1);
     if(add(u) != S_OK) {
         tf_error(E_FAIL, "Could not add vertex");
+        u->destroy();
         delete u;
         return 0;
     }
@@ -1153,6 +1156,8 @@ Surface *Mesh::split(Surface *s, const FVector3 &cp_pos, const FVector3 &cp_norm
     Vertex *v_start = new Vertex(pos_start);
     Vertex *v_end   = new Vertex(pos_end);
     if(insert(v_start, v_old_start, v_new_start) != S_OK || insert(v_end, v_old_end, v_new_end) != S_OK) {
+        v_start->destroy();
+        v_end->destroy();
         delete v_start;
         delete v_end;
         return NULL;

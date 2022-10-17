@@ -170,11 +170,6 @@ Vertex::Vertex(io::ThreeDFVertexData *vdata) :
     Vertex(vdata->position)
 {}
 
-Vertex::~Vertex() {
-    if(this->pid >= 0) 
-        this->particle()->destroy();
-}
-
 std::vector<MeshObj*> Vertex::children() {
     return TissueForge::models::vertex::vectorToBase(surfaces);
 }
@@ -208,6 +203,17 @@ HRESULT Vertex::removeChild(MeshObj *obj) {
         return E_FAIL;
     }
     surfaces.erase(itr);
+    return S_OK;
+}
+
+HRESULT Vertex::destroy() {
+    TF_Log(LOG_TRACE) << this->objId << "; " << this->pid;
+
+    if(this->mesh && this->mesh->remove(this) != S_OK) 
+        return E_FAIL;
+    if(this->pid >= 0 && this->particle()->destroy() != S_OK) 
+        return E_FAIL;
+    this->pid = -1;
     return S_OK;
 }
 

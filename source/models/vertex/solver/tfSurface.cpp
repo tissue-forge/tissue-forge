@@ -211,6 +211,12 @@ HRESULT Surface::removeParent(MeshObj *obj) {
     return S_OK;
 }
 
+HRESULT Surface::destroy() {
+    if(this->mesh && this->mesh->remove(this) != S_OK) 
+        return E_FAIL;
+    return S_OK;
+}
+
 bool Surface::validate() {
     return vertices.size() >= 3;
 }
@@ -531,7 +537,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
         auto children = vj->children();
         for(auto &c : children) 
             vj->removeChild(c);
-        if(vj->mesh && vj->mesh->remove(vj) != S_OK) 
+        if(vj->destroy() != S_OK) 
             return E_FAIL;
         delete vj;
     }

@@ -97,6 +97,8 @@ namespace TissueForge::models::vertex {
 
         HRESULT removeParent(MeshObj *obj);
 
+        HRESULT destroy();
+
         bool validate();
 
         HRESULT positionChanged();

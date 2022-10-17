@@ -170,6 +170,12 @@ HRESULT Body::removeParent(MeshObj *obj) {
     return S_OK;
 }
 
+HRESULT Body::destroy() {
+    if(this->mesh && this->mesh->remove(this) != S_OK) 
+        return E_FAIL;
+    return S_OK;
+}
+
 bool Body::validate() {
     return surfaces.size() >= 3;
 }

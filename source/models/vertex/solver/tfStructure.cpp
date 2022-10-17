@@ -125,6 +125,12 @@ HRESULT Structure::removeParent(MeshObj *obj) {
     return S_OK;
 }
 
+HRESULT Structure::destroy() {
+    if(this->mesh && this->mesh->remove(this) != S_OK) 
+        return E_FAIL;
+    return S_OK;
+}
+
 StructureType *Structure::type() {
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 

@@ -61,6 +61,8 @@ namespace TissueForge::models::vertex {
 
         HRESULT removeParent(MeshObj *obj);
 
+        HRESULT destroy();
+
         bool validate() { return true; }
 
         StructureType *type();
