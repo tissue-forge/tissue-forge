@@ -46,6 +46,7 @@ namespace TissueForge::models::vertex {
         MeshParticleType() : ParticleType(true) {
             std::memcpy(this->name, "MeshParticleType", sizeof("MeshParticleType"));
             style->setVisible(false);
+            dynamics = PARTICLE_OVERDAMPED;
             registerType();
         };
 
