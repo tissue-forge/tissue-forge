@@ -340,19 +340,25 @@ HRESULT Vertex::transferBondsTo(Vertex *other) {
         }
     }
     
+    std::unordered_set<uint32_t> bonded_ids;
+    bonded_ids.insert(other->pid);
     for(auto &bh : ph->getBonds()) {
         Bond *b = bh.get();
         if(b->i == this->pid) {
-            if(b->j == other->pid) 
+            if(std::find(bonded_ids.begin(), bonded_ids.end(), b->j) != bonded_ids.end()) 
                 bh.destroy();
-            else 
+            else {
                 b->i = other->pid;
+                bonded_ids.insert(b->j);
+            }
         } 
         else if(b->j == this->pid) {
-            if(b->i == other->pid) 
+            if(std::find(bonded_ids.begin(), bonded_ids.end(), b->i) != bonded_ids.end()) 
                 bh.destroy();
-            else 
+            else {
                 b->j = other->pid;
+                bonded_ids.insert(b->i);
+            }
         } 
     }
     
