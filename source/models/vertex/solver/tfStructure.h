@@ -67,6 +67,8 @@ namespace TissueForge::models::vertex {
 
         StructureType *type();
 
+        HRESULT become(StructureType *stype);
+
         std::vector<Structure*> getStructures() { return structures_parent; }
 
         std::vector<Body*> getBodies();

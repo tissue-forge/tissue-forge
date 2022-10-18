@@ -345,6 +345,11 @@ SurfaceType *Surface::type() {
     return solver->getSurfaceType(typeId);
 }
 
+HRESULT Surface::become(SurfaceType *stype) {
+    this->typeId = stype->id;
+    return S_OK;
+}
+
 HRESULT Surface::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
     // Handle wrap
     Vertex *ve = *vertices.rbegin();

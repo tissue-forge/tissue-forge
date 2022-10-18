@@ -126,6 +126,7 @@ namespace TissueForge::models::vertex {
 
         SurfaceType *type();
 
+        HRESULT become(SurfaceType *stype);
 
         std::vector<Structure*> getStructures();
 

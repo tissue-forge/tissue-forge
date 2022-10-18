@@ -137,6 +137,11 @@ StructureType *Structure::type() {
     return solver->getStructureType(typeId);
 }
 
+HRESULT Structure::become(StructureType *stype) {
+    this->typeId = stype->id;
+    return S_OK;
+}
+
 std::vector<Body*> Structure::getBodies() {
     std::unordered_set<Body*> result(bodies.begin(), bodies.end());
     for(auto &sp : structures_parent) 

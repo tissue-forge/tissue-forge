@@ -232,6 +232,11 @@ BodyType *Body::type() {
     return solver->getBodyType(typeId);
 }
 
+HRESULT Body::become(BodyType *btype) {
+    this->typeId = btype->id;
+    return S_OK;
+}
+
 std::vector<Structure*> Body::getStructures() {
     std::unordered_set<Structure*> result;
     for(auto &s : structures) {
