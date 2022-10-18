@@ -25,7 +25,6 @@
 #include "tfMeshSolver.h"
 
 #include <tfLogger.h>
-#include <tf_util.h>
 
 #include <Magnum/Math/Math.h>
 
@@ -61,8 +60,8 @@ void Body::_updateInternal() {
 static HRESULT Body_loadSurfaces(Body* body, std::vector<Surface*> _surfaces) { 
     if(_surfaces.size() >= 4) {
         for(auto &s : _surfaces) {
-            body->addParent(s);
-            s->addChild(body);
+            body->add(s);
+            s->add(body);
         }
         return S_OK;
     } 
@@ -170,6 +169,37 @@ HRESULT Body::removeParent(MeshObj *obj) {
     return S_OK;
 }
 
+#define BODY_RND_IDX(vec_size, idx) {       \
+while(idx < 0) idx += vec_size;             \
+while(idx >= vec_size) idx -= vec_size;     \
+}
+
+HRESULT Body::add(Surface *s) {
+    return addParent(s);
+}
+
+HRESULT Body::remove(Surface *s) {
+    return removeParent(s);
+}
+
+HRESULT Body::replace(Surface *toInsert, Surface *toRemove) {
+    std::replace(this->surfaces.begin(), this->surfaces.end(), toRemove, toInsert);
+    return toInsert->in(this) ? S_OK : E_FAIL;
+}
+
+HRESULT Body::add(Structure *s) {
+    return addChild(s);
+}
+
+HRESULT Body::remove(Structure *s) {
+    return removeChild(s);
+}
+
+HRESULT Body::replace(Structure *toInsert, Structure *toRemove) {
+    std::replace(this->structures.begin(), this->structures.end(), toRemove, toInsert);
+    return toInsert->in(this) ? S_OK : E_FAIL;
+}
+
 HRESULT Body::destroy() {
     if(this->mesh && this->mesh->remove(this) != S_OK) 
         return E_FAIL;
@@ -203,23 +233,23 @@ BodyType *Body::type() {
 }
 
 std::vector<Structure*> Body::getStructures() {
-    std::vector<Structure*> result;
+    std::unordered_set<Structure*> result;
     for(auto &s : structures) {
-        result.push_back(s);
+        result.insert(s);
         for(auto &ss : s->getStructures()) 
-            result.push_back(ss);
+            result.insert(ss);
     }
-    return util::unique(result);
+    return std::vector<Structure*>(result.begin(), result.end());
 }
 
 std::vector<Vertex*> Body::getVertices() {
-    std::vector<Vertex*> result;
+    std::unordered_set<Vertex*> result;
 
     for(auto &s : surfaces) 
         for(auto &v : s->vertices) 
-            result.push_back(v);
+            result.insert(v);
 
-    return util::unique(result);
+    return std::vector<Vertex*>(result.begin(), result.end());
 }
 
 Vertex *Body::findVertex(const FVector3 &dir) {
@@ -261,26 +291,26 @@ Surface *Body::findSurface(const FVector3 &dir) {
 }
 
 std::vector<Body*> Body::neighborBodies() {
-    std::vector<Body*> result;
+    std::unordered_set<Body*> result;
     for(auto &s : surfaces) 
         for(auto &b : s->getBodies()) 
             if(b != this) 
-                result.push_back(b);
-    return util::unique(result);
+                result.insert(b);
+    return std::vector<Body*>(result.begin(), result.end());
 }
 
 std::vector<Surface*> Body::neighborSurfaces(Surface *s) {
-    std::vector<Surface*> result;
+    std::unordered_set<Surface*> result;
     for(auto &so : surfaces) {
         if(so == s) 
             continue;
         for(auto &v : s->vertices) 
             if(v->in(so)) { 
-                result.push_back(so);
+                result.insert(so);
                 break;
             }
     }
-    return util::unique(result);
+    return std::vector<Surface*>(result.begin(), result.end());
 }
 
 FVector3 Body::getVelocity() {
@@ -303,10 +333,18 @@ FloatP_t Body::getVertexVolume(Vertex *v) {
     return getVertexArea(v) / area * volume;
 }
 
+std::vector<Surface*> Body::findInterface(Body *b) {
+    std::vector<Surface*> result;
+    for(auto &s : surfaces) 
+        if(s->in(b)) 
+            result.push_back(s);
+    return result;
+}
+
 FloatP_t Body::contactArea(Body *other) {
     FloatP_t result = 0.f;
     for(auto &s : surfaces) 
-        if(std::find(other->surfaces.begin(), other->surfaces.end(), s) != other->surfaces.end()) 
+        if(s->in(other)) 
             result += s->area;
     return result;
 }

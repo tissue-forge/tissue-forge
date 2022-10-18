@@ -97,6 +97,14 @@ namespace TissueForge::models::vertex {
 
         HRESULT removeParent(MeshObj *obj);
 
+        HRESULT add(Surface *s);
+        HRESULT remove(Surface *s);
+        HRESULT replace(Surface *toInsert, Surface *toRemove);
+
+        HRESULT add(Structure *s);
+        HRESULT remove(Structure *s);
+        HRESULT replace(Structure *toInsert, Structure *toRemove);
+
         HRESULT destroy();
 
         bool validate();
@@ -128,6 +136,7 @@ namespace TissueForge::models::vertex {
         FloatP_t getVertexVolume(Vertex *v);
         FloatP_t getVertexMass(Vertex *v) { return getVertexVolume(v) * density; }
 
+        std::vector<Surface*> findInterface(Body *b);
         FloatP_t contactArea(Body *other);
 
         

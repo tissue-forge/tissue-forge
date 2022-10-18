@@ -105,6 +105,19 @@ namespace TissueForge::models::vertex {
 
         HRESULT removeParent(MeshObj *obj);
 
+        HRESULT add(Vertex *v);
+        HRESULT insert(Vertex *v, const int &idx);
+        HRESULT insert(Vertex *v, Vertex *before);
+        HRESULT insert(Vertex *toInsert, Vertex *v1, Vertex *v2);
+        HRESULT remove(Vertex *v);
+        HRESULT replace(Vertex *toInsert, const int &idx);
+        HRESULT replace(Vertex *toInsert, Vertex *toRemove);
+
+        HRESULT add(Body *b);
+        HRESULT remove(Body *b);
+        HRESULT replace(Body *toInsert, const int &idx);
+        HRESULT replace(Body *toInsert, Body *toRemove);
+
         HRESULT destroy();
 
         bool validate();
@@ -113,7 +126,6 @@ namespace TissueForge::models::vertex {
 
         SurfaceType *type();
 
-        HRESULT insert(Vertex *toInsert, Vertex *v1, Vertex *v2);
 
         std::vector<Structure*> getStructures();
 

@@ -26,7 +26,6 @@
 
 #include <tfLogger.h>
 #include <tfEngine.h>
-#include <tf_util.h>
 
 #include <unordered_set>
 
@@ -204,6 +203,50 @@ HRESULT Vertex::removeChild(MeshObj *obj) {
     }
     surfaces.erase(itr);
     return S_OK;
+}
+
+#define VERTEX_RND_IDX(vec_size, idx) {     \
+while(idx < 0) idx += vec_size;             \
+while(idx >= vec_size) idx -= vec_size;     \
+}
+
+HRESULT Vertex::add(Surface *s) {
+    return addChild(s);
+}
+
+HRESULT Vertex::insert(Surface *s, const int &idx) { 
+    int _idx = idx;
+    VERTEX_RND_IDX(this->surfaces.size(), _idx);
+    this->surfaces.insert(this->surfaces.begin() + _idx, s);
+    return S_OK;
+}
+
+HRESULT Vertex::insert(Surface *s, Surface *before) {
+    auto itr = std::find(this->surfaces.begin(), this->surfaces.end(), before);
+    if(itr == this->surfaces.end()) 
+        return E_FAIL;
+    this->surfaces.insert(itr, s);
+    return S_OK;
+}
+
+HRESULT Vertex::remove(Surface *s) {
+    auto itr = std::find(this->surfaces.begin(), this->surfaces.end(), s);
+    if(itr == this->surfaces.end()) 
+        return E_FAIL;
+    this->surfaces.erase(itr);
+    return S_OK;
+}
+
+HRESULT Vertex::replace(Surface *toInsert, const int &idx) {
+    int _idx = idx;
+    VERTEX_RND_IDX(this->surfaces.size(), _idx);
+    std::replace(this->surfaces.begin(), this->surfaces.end(), this->surfaces[idx], toInsert);
+    return S_OK;
+}
+
+HRESULT Vertex::replace(Surface *toInsert, Surface *toRemove) {
+    std::replace(this->surfaces.begin(), this->surfaces.end(), toRemove, toInsert);
+    return this->in(toInsert) ? S_OK : E_FAIL;
 }
 
 HRESULT Vertex::destroy() {

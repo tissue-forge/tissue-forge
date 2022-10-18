@@ -28,7 +28,6 @@
 #include <Magnum/Math/Math.h>
 
 #include <tfLogger.h>
-#include <tf_util.h>
 #include <tf_metrics.h>
 
 #include <io/tfThreeDFVertexData.h>
@@ -63,8 +62,8 @@ Surface::Surface(std::vector<Vertex*> _vertices) :
 {
     if(_vertices.size() >= 3) {
         for(auto &v : _vertices) {
-            addParent(v);
-            v->addChild(this);
+            add(v);
+            v->add(this);
         }
     } 
     else {
@@ -113,8 +112,8 @@ Surface::Surface(io::ThreeDFFaceData *face) :
     if(Surface_order3DFFaceVertices(face, vverts) == S_OK) {
         for(auto &vv : vverts) {
             Vertex *v = new Vertex(vv);
-            addParent(v);
-            v->addChild(this);
+            add(v);
+            v->add(this);
         }
     }
 }
@@ -209,6 +208,76 @@ HRESULT Surface::removeParent(MeshObj *obj) {
 
     vertices.erase(itr);
     return S_OK;
+}
+
+#define SURFACE_RND_IDX(vec_size, idx) {    \
+while(idx < 0) idx += vec_size;             \
+while(idx >= vec_size) idx -= vec_size;     \
+}
+
+HRESULT Surface::add(Vertex *v) {
+    return addParent(v);
+}
+
+HRESULT Surface::insert(Vertex *v, const int &idx) {
+    int _idx = idx;
+    SURFACE_RND_IDX(this->vertices.size(), _idx);
+    this->vertices.insert(this->vertices.begin() + _idx, v);
+    return S_OK;
+}
+
+HRESULT Surface::insert(Vertex *v, Vertex *before) {
+    auto itr = std::find(this->vertices.begin(), this->vertices.end(), before);
+    if(itr == this->vertices.end()) 
+        return E_FAIL;
+    this->vertices.insert(itr, v);
+    return S_OK;
+}
+
+HRESULT Surface::remove(Vertex *v) {
+    return removeParent(v);
+}
+
+HRESULT Surface::replace(Vertex *toInsert, const int &idx) {
+    int _idx = idx;
+    SURFACE_RND_IDX(this->vertices.size(), _idx);
+    std::replace(this->vertices.begin(), this->vertices.end(), this->vertices[_idx], toInsert);
+    return S_OK;
+}
+
+HRESULT Surface::replace(Vertex *toInsert, Vertex *toRemove) {
+    std::replace(this->vertices.begin(), this->vertices.end(), toRemove, toInsert);
+    return toInsert->in(this) ? S_OK : E_FAIL;
+}
+
+HRESULT Surface::add(Body *b) {
+    return addChild(b);
+}
+
+HRESULT Surface::remove(Body *b) {
+    return removeChild(b);
+}
+
+HRESULT Surface::replace(Body *toInsert, const int &idx) {
+    int _idx = idx;
+    SURFACE_RND_IDX(2, _idx);
+    if(_idx == 0) 
+        this->b1 = toInsert;
+    else 
+        this->b2 = toInsert;
+    return S_OK;
+}
+
+HRESULT Surface::replace(Body *toInsert, Body *toRemove) {
+    if(this->b1 == toRemove) {
+        this->b1 = toInsert;
+        return S_OK;
+    } 
+    else if(this->b2 == toRemove) {
+        this->b2 = toInsert;
+        return S_OK;
+    } 
+    return E_FAIL;
 }
 
 HRESULT Surface::destroy() {
@@ -376,10 +445,9 @@ std::vector<Surface*> Surface::neighborSurfaces() {
 }
 
 std::vector<unsigned int> Surface::contiguousEdgeLabels(Surface *other) {
-    std::vector<Vertex*> overtices = TissueForge::models::vertex::vectorToDerived<Vertex>(other->parents());
     std::vector<bool> sharedVertices(vertices.size(), false);
     for(unsigned int i = 0; i < sharedVertices.size(); i++) 
-        if(std::find(overtices.begin(), overtices.end(), vertices[i]) != overtices.end()) 
+        if(vertices[i]->in(other)) 
             sharedVertices[i] = true;
 
     bool shared_c, shared_n;
@@ -524,7 +592,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
                 for(int k = 0; k < s->vertices.size(); k++) 
                     if(s->vertices[k] == vj) {
                         s->vertices[k] = vi;
-                        if(!vi->has(s) && vi->addChild(s) != S_OK)
+                        if(vi->add(s) != S_OK)
                             return E_FAIL;
                         break;
                     }

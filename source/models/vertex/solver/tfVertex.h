@@ -87,6 +87,13 @@ namespace TissueForge::models::vertex {
 
         HRESULT removeParent(MeshObj *obj) { return E_FAIL; }
 
+        HRESULT add(Surface *s);
+        HRESULT insert(Surface *s, const int &idx);
+        HRESULT insert(Surface *s, Surface *before);
+        HRESULT remove(Surface *s);
+        HRESULT replace(Surface *toInsert, const int &idx);
+        HRESULT replace(Surface *toInsert, Surface *toRemove);
+
         HRESULT destroy();
 
         bool validate() { return true; }

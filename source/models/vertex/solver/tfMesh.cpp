@@ -264,6 +264,8 @@ HRESULT Mesh::removeObj(MeshObj *obj) {
     obj->objId = -1;
     obj->mesh = NULL;
 
+    for(auto &p : std::vector<MeshObj*>(obj->parents())) 
+        p->removeChild(obj);
     for(auto &c : obj->children()) 
         if(removeObj(c) != S_OK) {
             TF_Log(LOG_ERROR);
@@ -401,7 +403,7 @@ HRESULT Mesh::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
 
             if((*vitr == v1 && vn == v2) || (*vitr == v2 && vn == v1)) {
                 s1->vertices.insert(vitr + 1 == s1->vertices.end() ? s1->vertices.begin() : vitr + 1, toInsert);
-                toInsert->addChild(s1);
+                toInsert->add(s1);
                 break;
             }
         }
@@ -448,10 +450,10 @@ HRESULT Mesh_SurfaceDisconnectReplace(
     }
     
     targetSurf_vertices.insert(std::find(targetSurf_vertices.begin(), targetSurf_vertices.end(), toRemove[0]), toInsert);
-    toInsert->addChild(targetSurf);
+    toInsert->add(targetSurf);
     for(auto &v : toRemove) {
-        targetSurf->removeParent(v);
-        v->removeChild(targetSurf);
+        targetSurf->remove(v);
+        v->remove(targetSurf);
         totalToRemove.insert(v);
     }
     return S_OK;
@@ -493,20 +495,20 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
     // Remove the replaced surface and its vertices
     while(!toReplace->vertices.empty()) {
         Vertex *v = toReplace->vertices.front();
-        v->removeChild(toReplace);
-        toReplace->removeParent(v);
+        v->remove(toReplace);
+        toReplace->remove(v);
         totalToRemove.insert(v);
     }
     if(toReplace->b1) { 
         Body *b1 = toReplace->b1;
-        b1->removeParent(toReplace);
-        toReplace->removeChild(b1);
+        b1->remove(toReplace);
+        toReplace->remove(b1);
         b1->positionChanged();
     }
     if(toReplace->b2) { 
         Body *b2 = toReplace->b2;
-        b2->removeParent(toReplace);
-        toReplace->removeChild(b2);
+        b2->remove(toReplace);
+        toReplace->remove(b2);
         b2->positionChanged();
     }
     if(toReplace->destroy() != S_OK) 
@@ -539,16 +541,16 @@ HRESULT Mesh::replace(Vertex *toInsert, Body *toReplace) {
                 TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b1->surfaces.size() << ") in first body (" << s->b1->objId << ") for replace";
                 return E_FAIL;
             }
-            s->b1->removeParent(s);
-            s->removeChild(s->b1);
+            s->b1->remove(s);
+            s->remove(s->b1);
         }
         if(s->b2 && s->b2 != toReplace) {
             if(s->b2->surfaces.size() < 5) {
                 TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b2->surfaces.size() << ") in first body (" << s->b2->objId << ") for replace";
                 return E_FAIL;
             }
-            s->b2->removeParent(s);
-            s->removeChild(s->b2);
+            s->b2->remove(s);
+            s->remove(s->b2);
         }
     }
 
@@ -563,12 +565,12 @@ HRESULT Mesh::replace(Vertex *toInsert, Body *toReplace) {
         Surface *s = toReplace->surfaces.front();
         while(!s->vertices.empty()) {
             Vertex *v = s->vertices.front();
-            s->removeParent(v);
-            v->removeChild(s);
+            s->remove(v);
+            v->remove(s);
             totalToRemove.insert(v);
         }
-        toReplace->removeParent(s);
-        s->removeChild(toReplace);
+        toReplace->remove(s);
+        s->remove(toReplace);
         s->destroy();
     }
     if(toReplace->destroy() != S_OK) 
@@ -621,8 +623,8 @@ Surface *Mesh::replace(SurfaceType *toInsert, Vertex *toReplace, std::vector<Flo
     // Disconnect replaced vertex from all surfaces
     std::vector<Surface*> toReplaceSurfaces(toReplace->surfaces.begin(), toReplace->surfaces.end());
     for(auto &s : toReplaceSurfaces) {
-        s->removeParent(toReplace);
-        toReplace->removeChild(s);
+        s->remove(toReplace);
+        toReplace->remove(s);
     }
 
     // Create new surface; its constructor should handle internal connections
@@ -648,19 +650,19 @@ HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const FloatP_t &lenCf) {
     common_s.reserve(toRemove->surfaces.size());
     different_s.reserve(toRemove->surfaces.size());
     for(auto &s : toRemove->surfaces) {
-        if(std::find(s->vertices.begin(), s->vertices.end(), toKeep) == s->vertices.end()) 
+        if(!toKeep->in(s)) 
             different_s.push_back(s);
         else 
             common_s.push_back(s);
     }
     for(auto &s : common_s) {
-        s->removeParent(toRemove);
-        toRemove->removeChild(s);
+        s->remove(toRemove);
+        toRemove->remove(s);
     }
     for(auto &s : different_s) {
-        toRemove->removeChild(s);
-        toKeep->addChild(s);
-        std::replace(s->vertices.begin(), s->vertices.end(), toRemove, toKeep);
+        toRemove->remove(s);
+        toKeep->add(s);
+        s->replace(toKeep, toRemove);
     }
     
     // Set new position
@@ -729,29 +731,29 @@ HRESULT Mesh::merge(Surface *toKeep, Surface *toRemove, const std::vector<FloatP
         std::vector<Surface*> rvSurfaces = rv->surfaces;
         for(auto &s : rvSurfaces) 
             if(s != toRemove) {
-                if(std::find(s->vertices.begin(), s->vertices.end(), rv) == s->vertices.end()) {
+                if(!rv->in(s)) {
                     TF_Log(LOG_ERROR) << "Something went wrong during surface merge";
                     return E_FAIL;
                 }
-                std::replace(s->vertices.begin(), s->vertices.end(), rv, kv);
-                kv->surfaces.push_back(s);
+                s->replace(kv, rv);
+                kv->add(s);
             }
     }
 
     // Replace surface in child bodies
     for(auto &b : toRemove->getBodies()) {
         if(!toKeep->in(b)) {
-            b->addParent(toKeep);
-            toKeep->addChild(b);
+            b->add(toKeep);
+            toKeep->add(b);
         }
-        b->removeParent(toRemove);
-        toRemove->removeChild(b);
+        b->remove(toRemove);
+        toRemove->remove(b);
     }
 
     // Detach removed vertices
     for(auto &v : toRemoveOrdered) {
         v->surfaces.clear();
-        toRemove->removeParent(v);
+        toRemove->remove(v);
     }
 
     // Move kept vertices by length coefficients
@@ -1038,14 +1040,14 @@ Vertex *Mesh::splitExecute(Vertex *v, const FVector3 &sep, const std::vector<Ver
 
     //  Replace v with u where removing
     for(auto &s : surfs_remove_v) {
-        v->removeChild(s);
-        u->addChild(s);
-        std::replace(s->vertices.begin(), s->vertices.end(), v, u);
+        v->remove(s);
+        u->add(s);
+        s->replace(u, v);
     }
 
     //  Insert u between v and neighbor where not removing
     for(auto &s : surfs_keep_v) {
-        u->addChild(s);
+        u->add(s);
         for(auto &nv : verts_new_v) {
             std::vector<Vertex*>::iterator verts_new_v_itr = std::find(s->vertices.begin(), s->vertices.end(), nv);
             if(verts_new_v_itr != s->vertices.end()) { 
@@ -1111,8 +1113,8 @@ Surface *Mesh::split(Surface *s, Vertex *v1, Vertex *v2) {
     }
     v_new_surf.push_back(v2);
     for(auto v_itr = v_new_surf.begin() + 1; v_itr != v_new_surf.end() - 1; v_itr++) {
-        s->removeParent(*v_itr);
-        (*v_itr)->removeChild(s);
+        s->remove(*v_itr);
+        (*v_itr)->remove(s);
     }
 
     // Build new surface
@@ -1123,8 +1125,8 @@ Surface *Mesh::split(Surface *s, Vertex *v1, Vertex *v2) {
 
     // Continue hierarchy
     for(auto &b : s->getBodies()) {
-        s_new->addChild(b);
-        b->addParent(s_new);
+        s_new->add(b);
+        b->add(s_new);
     }
 
     if(_solver) {
@@ -1467,18 +1469,18 @@ Body *Mesh::split(Body *b, const FVector3 &cp_pos, const FVector3 &cp_norm, Surf
     if(!s_new) 
         return NULL;
     add(s_new);
-    b->addParent(s_new);
-    s_new->addChild(b);
+    b->add(s_new);
+    s_new->add(b);
     s_new->positionChanged();
 
     // Transfer moved and new split surfaces to new body
     for(auto &s : surfs_moved) {
-        s->removeChild(b);
-        b->removeParent(s);
+        s->remove(b);
+        b->remove(s);
     }
     for(auto &s : new_surfs) {
-        s->removeChild(b);
-        b->removeParent(s);
+        s->remove(b);
+        b->remove(s);
     }
     b->positionChanged();
 

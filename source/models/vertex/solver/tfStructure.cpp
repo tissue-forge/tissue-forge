@@ -23,7 +23,6 @@
 #include "tfMeshSolver.h"
 
 #include <tfLogger.h>
-#include <tf_util.h>
 
 
 using namespace TissueForge::models::vertex;
@@ -139,31 +138,31 @@ StructureType *Structure::type() {
 }
 
 std::vector<Body*> Structure::getBodies() {
-    std::vector<Body*> result(bodies.begin(), bodies.end());
+    std::unordered_set<Body*> result(bodies.begin(), bodies.end());
     for(auto &sp : structures_parent) 
         for(auto &b : sp->getBodies()) 
-            result.push_back(b);
-    return util::unique(result);
+            result.insert(b);
+    return std::vector<Body*>(result.begin(), result.end());
 }
 
 std::vector<Surface*> Structure::getSurfaces() {
-    std::vector<Surface*> result;
+    std::unordered_set<Surface*> result;
     for(auto &b : bodies) 
         for(auto &s : b->getSurfaces()) 
-            result.push_back(s);
+            result.insert(s);
     for(auto &sp : structures_parent) 
         for(auto &s : sp->getSurfaces()) 
-            result.push_back(s);
-    return util::unique(result);
+            result.insert(s);
+    return std::vector<Surface*>(result.begin(), result.end());
 }
 
 std::vector<Vertex*> Structure::getVertices() {
-    std::vector<Vertex*> result;
+    std::unordered_set<Vertex*> result;
     for(auto &b : bodies) 
         for(auto &v : b->getVertices()) 
-            result.push_back(v);
+            result.insert(v);
     for(auto &sp : structures_parent) 
         for(auto &v : sp->getVertices()) 
-            result.push_back(v);
-    return util::unique(result);
+            result.insert(v);
+    return std::vector<Vertex*>(result.begin(), result.end());
 }
