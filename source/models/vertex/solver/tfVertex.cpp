@@ -313,3 +313,76 @@ Body *Vertex::findBody(const FVector3 &dir) {
 
     return result;
 }
+
+HRESULT Vertex::transferBondsTo(Vertex *other) {
+    ParticleHandle *ph = this->particle();
+    ParticleHandle *ph_o = other->particle();
+
+    for(auto &ah : ph->getAngles()) {
+        Angle *a = ah.get();
+        if(a->i == this->pid) {
+            if(a->j == other->pid || a->k == other->pid) 
+                ah.destroy();
+            else 
+                a->i = other->pid;
+        } 
+        else if(a->j == this->pid) {
+            if(a->i == other->pid || a->k == other->pid) 
+                ah.destroy();
+            else 
+                a->j = other->pid;
+        } 
+        else if(a->k == this->pid) {
+            if(a->i == other->pid || a->j == other->pid) 
+                ah.destroy();
+            else 
+                a->k = other->pid;
+        }
+    }
+    
+    for(auto &bh : ph->getBonds()) {
+        Bond *b = bh.get();
+        if(b->i == this->pid) {
+            if(b->j == other->pid) 
+                bh.destroy();
+            else 
+                b->i = other->pid;
+        } 
+        else if(b->j == this->pid) {
+            if(b->i == other->pid) 
+                bh.destroy();
+            else 
+                b->j = other->pid;
+        } 
+    }
+    
+    for(auto &dh : ph->getDihedrals()) {
+        Dihedral *d = dh.get();
+        if(d->i == this->pid) {
+            if(d->j == other->pid || d->k == other->pid || d->l == other->pid) 
+                dh.destroy();
+            else 
+                d->i = other->pid;
+        } 
+        else if(d->j == this->pid) {
+            if(d->i == other->pid || d->k == other->pid || d->l == other->pid) 
+                dh.destroy();
+            else 
+                d->j = other->pid;
+        } 
+        else if(d->k == this->pid) {
+            if(d->i == other->pid || d->j == other->pid || d->l == other->pid) 
+                dh.destroy();
+            else 
+                d->k = other->pid;
+        }
+        else if(d->l == this->pid) {
+            if(d->i == other->pid || d->j == other->pid || d->k == other->pid) 
+                dh.destroy();
+            else 
+                d->l = other->pid;
+        }
+    }
+
+    return S_OK;
+}

@@ -674,7 +674,7 @@ HRESULT Mesh::merge(Vertex *toKeep, Vertex *toRemove, const FloatP_t &lenCf) {
     if(_solver) 
         _solver->log(this, MeshLogEventType::Create, {toKeep->objId, toRemove->objId}, {toKeep->objType(), toRemove->objType()}, "merge");
     
-    if(toRemove->destroy() != S_OK) 
+    if(toRemove->transferBondsTo(toKeep) != S_OK || toRemove->destroy() != S_OK) 
         return E_FAIL;
 
     if(_solver) 

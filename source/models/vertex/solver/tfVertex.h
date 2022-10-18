@@ -123,6 +123,8 @@ namespace TissueForge::models::vertex {
 
         HRESULT setPosition(const FVector3 &pos);
 
+        HRESULT transferBondsTo(Vertex *other);
+
 
         friend Surface;
         friend Body;
