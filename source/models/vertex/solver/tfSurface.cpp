@@ -445,6 +445,19 @@ std::vector<Surface*> Surface::neighborSurfaces() {
     return std::vector<Surface*>(result.begin(), result.end());
 }
 
+std::vector<Surface*> Surface::connectedSurfaces(const std::vector<Vertex*> &verts) {
+    std::unordered_set<Surface*> result;
+    for(auto &v : verts) 
+        for(auto &s : v->surfaces) 
+            if(s != this) 
+                result.insert(s);
+    return std::vector<Surface*>(result.begin(), result.end());
+}
+
+std::vector<Surface*> Surface::connectedSurfaces() {
+    return connectedSurfaces(vertices);
+}
+
 std::vector<unsigned int> Surface::contiguousEdgeLabels(Surface *other) {
     std::vector<bool> sharedVertices(vertices.size(), false);
     for(unsigned int i = 0; i < sharedVertices.size(); i++) 

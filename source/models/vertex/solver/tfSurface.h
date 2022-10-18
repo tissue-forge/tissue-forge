@@ -136,9 +136,17 @@ namespace TissueForge::models::vertex {
         Vertex *findVertex(const FVector3 &dir);
         Body *findBody(const FVector3 &dir);
 
+        /** Connected vertices on the same surface. */
         std::tuple<Vertex*, Vertex*> neighborVertices(Vertex *v);
 
+        /** Connected surfaces on the same body. */
         std::vector<Surface*> neighborSurfaces();
+
+        /** Surfaces that share at least one vertex in a set of vertices. */
+        std::vector<Surface*> connectedSurfaces(const std::vector<Vertex*> &verts);
+
+        /** Surfaces that share at least one vertex. */
+        std::vector<Surface*> connectedSurfaces();
 
         std::vector<unsigned int> contiguousEdgeLabels(Surface *other);
 

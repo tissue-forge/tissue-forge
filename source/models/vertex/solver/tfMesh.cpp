@@ -449,7 +449,10 @@ HRESULT Mesh_SurfaceDisconnectReplace(
         }
     }
     
-    targetSurf_vertices.insert(std::find(targetSurf_vertices.begin(), targetSurf_vertices.end(), toRemove[0]), toInsert);
+    if(toRemove.empty()) 
+        return S_OK;
+    
+    targetSurf->insert(toInsert, toRemove[0]);
     toInsert->add(targetSurf);
     for(auto &v : toRemove) {
         targetSurf->remove(v);
@@ -477,7 +480,7 @@ HRESULT Mesh::replace(Vertex *toInsert, Surface *toReplace) {
     }
 
     // Gather every contacting surface
-    std::vector<Surface*> connectedSurfaces = toReplace->neighborSurfaces();
+    std::vector<Surface*> connectedSurfaces = toReplace->connectedSurfaces();
 
     // Disconnect every vertex connected to the replaced surface
     std::set<Vertex*> totalToRemove;
