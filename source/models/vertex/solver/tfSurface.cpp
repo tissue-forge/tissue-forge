@@ -24,6 +24,7 @@
 #include "tfBody.h"
 #include "tfStructure.h"
 #include "tfMeshSolver.h"
+#include "actors/tfFlatSurfaceConstraint.h"
 
 #include <Magnum/Math/Math.h>
 
@@ -611,6 +612,13 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     }
 
     return S_OK;
+}
+
+SurfaceType::SurfaceType(const FloatP_t &flatLam) : 
+    MeshObjType() 
+{
+    style = NULL;
+    actors.push_back(new FlatSurfaceConstraint(flatLam));
 }
 
 Surface *SurfaceType::operator() (std::vector<Vertex*> _vertices) {

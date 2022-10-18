@@ -180,9 +180,8 @@ namespace TissueForge::models::vertex {
 
         rendering::Style *style;
 
-        SurfaceType() : MeshObjType() {
-            style = NULL;
-        }
+        SurfaceType(const FloatP_t &flatLam);
+        SurfaceType() : SurfaceType(0.1) {};
 
         MeshObj::Type objType() { return MeshObj::Type::SURFACE; }
 
