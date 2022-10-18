@@ -51,10 +51,10 @@ namespace TissueForge::models::vertex {
         std::vector<MeshObj*> targets;
 
         /** Upstream operations, if any */
-        std::vector<MeshQualityOperation*> prev;
+        std::set<MeshQualityOperation*> prev;
 
         /** Downstream operations, if any */
-        std::vector<MeshQualityOperation*> next;
+        std::set<MeshQualityOperation*> next;
 
         std::mutex lock;
 

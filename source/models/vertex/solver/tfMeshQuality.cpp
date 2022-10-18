@@ -43,7 +43,7 @@ static HRESULT MeshQualityOperation_checkChain(
 ) {
     for(auto &t : op->targets) {
         MeshQualityOperation *t_op = ops[t->objId];
-        if(t_op) 
+        if(t_op && op != t_op) 
             op->appendNext(t_op);
         
     }
@@ -58,18 +58,16 @@ MeshQualityOperation::MeshQualityOperation(Mesh *_mesh) :
 {}
 
 HRESULT MeshQualityOperation::appendNext(MeshQualityOperation *_next) {
-    // If this op has no upstreams, make sure this doesn't create a cycle
-    if(prev.empty()) {
-        std::set<MeshQualityOperation*> next_heads = _next->headOperations();
-        if(std::find(next_heads.begin(), next_heads.end(), this) != next_heads.end()) 
-            return S_OK;
-    }
+    // Prevent loops
+    std::set<MeshQualityOperation*> us = this->upstreams();
+    if(std::find(us.begin(), us.end(), _next) != us.end()) 
+        return S_OK;
 
     _next->lock.lock();
-    _next->prev.push_back(this);
+    _next->prev.insert(this);
     _next->lock.unlock();
 
-    next.push_back(_next);
+    next.insert(_next);
     
     return E_NOTIMPL;
 }
@@ -92,8 +90,10 @@ HRESULT MeshQualityOperation::removeNext(MeshQualityOperation *_next) {
 
 static void MeshQuality_upstreams(const MeshQualityOperation *op, std::set<MeshQualityOperation*> &ops) {
     for(auto *op_u : op->prev) {
-        ops.insert(op_u);
-        MeshQuality_upstreams(op_u, ops);
+        if(std::find(ops.begin(), ops.end(), op_u) == ops.end()) {
+            ops.insert(op_u);
+            MeshQuality_upstreams(op_u, ops);
+        }
     }
 }
 
@@ -105,8 +105,10 @@ std::set<MeshQualityOperation*> MeshQualityOperation::upstreams() const {
 
 static void MeshQuality_downstreams(const MeshQualityOperation *op, std::set<MeshQualityOperation*> &ops) {
     for(auto *op_d : op->next) {
-        ops.insert(op_d);
-        MeshQuality_downstreams(op_d, ops);
+        if(std::find(ops.begin(), ops.end(), op_d) == ops.end()) {
+            ops.insert(op_d);
+            MeshQuality_downstreams(op_d, ops);
+        }
     }
 }
 
@@ -126,7 +128,9 @@ std::set<MeshQualityOperation*> MeshQualityOperation_headOperations(const T &ops
 }
 
 std::set<MeshQualityOperation*> MeshQualityOperation::headOperations() const { 
-    return MeshQualityOperation_headOperations(std::vector<MeshQualityOperation*>{const_cast<MeshQualityOperation*>(this)});
+    std::set<MeshQualityOperation*> us = upstreams();
+    us.insert(const_cast<MeshQualityOperation*>(this));
+    return MeshQualityOperation_headOperations(std::vector<MeshQualityOperation*>(us.begin(), us.end()));
 }
 
 
@@ -292,6 +296,8 @@ struct EdgeDemoteOperation : MeshQualityOperation {
         MeshSolver::engineLock();
         HRESULT res = mesh->merge((Vertex*)source, v2);
         MeshSolver::engineUnlock();
+        if(res == S_OK) 
+            next.clear();
         return res;
     }
 };
@@ -490,19 +496,38 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
         auto vertices = s->getVertices();
         for(auto itr = vertices.begin(); itr != vertices.end(); itr++) {
             Vertex *v = *itr;
-            if((MeshObj*)s != *(v->children().begin())) 
-                continue;
-            Vertex *nv = itr + 1 == vertices.end() ? *vertices.begin() : *(itr + 1);
-
             FVector3 vpos = v->getPosition();
-            FVector3 nvpos = nv->getPosition();
-            FVector3 relPos = metrics::relativePosition(vpos, nvpos);
-            FloatP_t dist2 = relPos.dot();
-            if(dist2 < vertexMergeDist2) {
-                TF_Log(LOG_TRACE) << relPos;
-                
-                ops[i] = new EdgeDemoteOperation(mesh, v, nv);
-                return;
+
+            Vertex *nv = itr + 1 == vertices.end() ? vertices.front() : *(itr + 1);
+
+            if(v->objId < nv->objId) {
+
+                FVector3 nvpos = nv->getPosition();
+                FVector3 nvrelPos = metrics::relativePosition(vpos, nvpos);
+                FloatP_t nvdist2 = nvrelPos.dot();
+                if(nvdist2 < vertexMergeDist2) {
+                    TF_Log(LOG_TRACE) << nvrelPos;
+                    
+                    ops[i] = new EdgeDemoteOperation(mesh, v, nv);
+                    return;
+                }
+
+            }
+
+            Vertex *pv = itr == vertices.begin() ? vertices.back() : *(itr - 1);
+
+            if(v->objId < pv->objId) {
+
+                FVector3 pvpos = pv->getPosition();
+                FVector3 pvrelPos = metrics::relativePosition(vpos, pvpos);
+                FloatP_t pvdist2 = pvrelPos.dot();
+                if(pvdist2 < vertexMergeDist2) {
+                    TF_Log(LOG_TRACE) << pvrelPos;
+                    
+                    ops[i] = new EdgeDemoteOperation(mesh, v, pv);
+                    return;
+                }
+
             }
         }
 
