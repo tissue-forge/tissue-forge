@@ -20,6 +20,7 @@
 TF_MODEL_TREE_INIT()
 
 TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/tf_mesh_bind.cpp)
+TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/tf_mesh_create.cpp)
 TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/tfBody.cpp)
 TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/tfMeshObj.cpp)
 TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/tfMeshQuality.cpp)
@@ -42,6 +43,7 @@ TF_MODEL_TREE_SRC(${CMAKE_CURRENT_SOURCE_DIR}/actors/tfFlatSurfaceConstraint.cpp
 
 TF_MODEL_TREE_HDR(vertex/solver/tf_mesh.h)
 TF_MODEL_TREE_HDR(vertex/solver/tf_mesh_bind.h)
+TF_MODEL_TREE_HDR(vertex/solver/tf_mesh_create.h)
 TF_MODEL_TREE_HDR(vertex/solver/tfBody.h)
 TF_MODEL_TREE_HDR(vertex/solver/tfMesh.h)
 TF_MODEL_TREE_HDR(vertex/solver/tfMeshQuality.h)

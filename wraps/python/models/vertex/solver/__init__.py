@@ -40,6 +40,10 @@ from tissue_forge.tissue_forge import _vertex_solver_Adhesion as Adhesion
 from tissue_forge.tissue_forge import _vertex_solver_edgeStrain as edge_strain
 from tissue_forge.tissue_forge import _vertex_solver_vertexStrain as vertex_strain
 
-from tissue_forge.tissue_forge import _vertex_solver__MeshParticleType_get as MeshParticleType_get;
+from tissue_forge.tissue_forge import _vertex_solver__MeshParticleType_get as MeshParticleType_get
+from tissue_forge.tissue_forge import _vertex_solver__createQuadMesh as create_quad_mesh
+from tissue_forge.tissue_forge import _vertex_solver__createPLPDMesh as create_plpd_mesh
+from tissue_forge.tissue_forge import _vertex_solver__createHex2DMesh as create_hex2d_mesh
+from tissue_forge.tissue_forge import _vertex_solver__createHex3DMesh as create_hex3d_mesh
 
 init = MeshSolver.init

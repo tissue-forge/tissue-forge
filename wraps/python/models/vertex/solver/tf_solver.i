@@ -32,6 +32,7 @@
 #include <models/vertex/solver/tfVertex.h>
 #include <models/vertex/solver/tf_mesh_metrics.h>
 #include <models/vertex/solver/tf_mesh_bind.h>
+#include <models/vertex/solver/tf_mesh_create.h>
 #include <models/vertex/solver/actors/tfBodyForce.h>
 #include <models/vertex/solver/actors/tfNormalStress.h>
 #include <models/vertex/solver/actors/tfSurfaceAreaConstraint.h>
@@ -68,6 +69,10 @@ static bool _vertex_solver_MeshObj_has(TissueForge::models::vertex::MeshObj *sel
 %template(vectorMeshBody) std::vector<TissueForge::models::vertex::Body*>;
 %template(vectorMeshStructure) std::vector<TissueForge::models::vertex::Structure*>;
 %template(vectorMesh) std::vector<TissueForge::models::vertex::Mesh*>;
+
+%template(vectorvectorMeshSurface) std::vector<std::vector<TissueForge::models::vertex::Surface*> >;
+%template(vectorvectorvectorMeshBody) std::vector<std::vector<std::vector<TissueForge::models::vertex::Body*> > >;
+
 
 %ignore TissueForge::models::vertex::MeshQualityOperation;
 %ignore TissueForge::models::vertex::CustomQualityOperation;
@@ -114,6 +119,11 @@ static bool _vertex_solver_MeshObj_has(TissueForge::models::vertex::MeshObj *sel
 
 %rename(_vertex_solver__MeshParticleType_get) TissueForge::models::vertex::MeshParticleType_get;
 
+%rename(_vertex_solver__createQuadMesh) TissueForge::models::vertex::createQuadMesh;
+%rename(_vertex_solver__createPLPDMesh) TissueForge::models::vertex::createPLPDMesh;
+%rename(_vertex_solver__createHex2DMesh) TissueForge::models::vertex::createHex2DMesh;
+%rename(_vertex_solver__createHex3DMesh) TissueForge::models::vertex::createHex3DMesh;
+
 
 %rename(_vertex_solver_bind_structure_type) TissueForge::models::vertex::bind::structure(StructureType*, MeshObjActor*);
 %rename(_vertex_solver_bind_structure_inst) TissueForge::models::vertex::bind::structure(Structure*, MeshObjActor*);
@@ -134,6 +144,7 @@ static bool _vertex_solver_MeshObj_has(TissueForge::models::vertex::MeshObj *sel
 %include <models/vertex/solver/tfMeshQuality.h>
 %include <models/vertex/solver/tfMeshSolver.h>
 %include <models/vertex/solver/tf_mesh_bind.h>
+%include <models/vertex/solver/tf_mesh_create.h>
 %include <models/vertex/solver/tf_mesh_metrics.h>
 %include <models/vertex/solver/actors/tfBodyForce.h>
 %include <models/vertex/solver/actors/tfNormalStress.h>
