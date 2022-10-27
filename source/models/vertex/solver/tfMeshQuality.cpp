@@ -209,11 +209,10 @@ struct VertexInsertOperation : MeshQualityOperation {
     HRESULT implement() override { 
         Vertex *v1 = (Vertex*)source;
         Vertex *v2 = (Vertex*)targets[0];
-        Vertex *toInsert = new Vertex();
-        toInsert->setPosition((v1->getPosition() + v2->getPosition()) * 0.5);
 
         MeshSolver::engineLock();
         
+        Vertex *toInsert = new Vertex((v1->getPosition() + v2->getPosition()) * 0.5);
         HRESULT res = mesh->insert(toInsert, v1, v2);
         
         MeshSolver::engineUnlock();
@@ -235,10 +234,10 @@ struct BodyDemoteOperation : MeshQualityOperation {
 
     HRESULT implement() override {
         Body *toReplace = (Body*)source;
-        Vertex *toInsert = new Vertex(toReplace->getCentroid());
 
         MeshSolver::engineLock();
 
+        Vertex *toInsert = new Vertex(toReplace->getCentroid());
         HRESULT res = mesh->replace(toInsert, toReplace);
 
         MeshSolver::engineUnlock();
@@ -260,10 +259,10 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
 
     HRESULT implement() override {
         Surface *toReplace = (Surface*)source;
-        Vertex *toInsert = new Vertex(toReplace->getCentroid());
         
         MeshSolver::engineLock();
         
+        Vertex *toInsert = new Vertex(toReplace->getCentroid());
         HRESULT res = mesh->replace(toInsert, toReplace);
 
         MeshSolver::engineUnlock();

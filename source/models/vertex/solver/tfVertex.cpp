@@ -316,7 +316,6 @@ Body *Vertex::findBody(const FVector3 &dir) {
 
 HRESULT Vertex::transferBondsTo(Vertex *other) {
     ParticleHandle *ph = this->particle();
-    ParticleHandle *ph_o = other->particle();
 
     for(auto &ah : ph->getAngles()) {
         Angle *a = ah.get();
