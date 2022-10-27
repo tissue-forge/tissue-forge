@@ -28,20 +28,20 @@ from tissue_forge.tissue_forge import _vertex_solver_bind_types as types
 
 def structure(*args):
     from tissue_forge.tissue_forge import _vertex_solver_Structure
-    if isinstance(args[0], _vertex_solver_Structure):
+    if isinstance(args[1], _vertex_solver_Structure):
         return _bind_structure_inst(*args)
     return _bind_structure_type(*args)
 
 
 def body(*args):
     from tissue_forge.tissue_forge import _vertex_solver_Body
-    if isinstance(args[0], _vertex_solver_Body):
+    if isinstance(args[1], _vertex_solver_Body):
         return _bind_body_inst(*args)
     return _bind_body_type(*args)
 
 
 def surface(*args):
     from tissue_forge.tissue_forge import _vertex_solver_Surface
-    if isinstance(args[0], _vertex_solver_Surface):
+    if isinstance(args[1], _vertex_solver_Surface):
         return _bind_surface_inst(*args)
     return _bind_surface_type(*args)

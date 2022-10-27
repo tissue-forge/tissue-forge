@@ -125,13 +125,13 @@ static bool _vertex_solver_MeshObj_has(TissueForge::models::vertex::MeshObj *sel
 %rename(_vertex_solver__createHex3DMesh) TissueForge::models::vertex::createHex3DMesh;
 
 
-%rename(_vertex_solver_bind_structure_type) TissueForge::models::vertex::bind::structure(StructureType*, MeshObjActor*);
-%rename(_vertex_solver_bind_structure_inst) TissueForge::models::vertex::bind::structure(Structure*, MeshObjActor*);
-%rename(_vertex_solver_bind_body_type) TissueForge::models::vertex::bind::body(BodyType*, MeshObjActor*);
-%rename(_vertex_solver_bind_body_inst) TissueForge::models::vertex::bind::body(Body*, MeshObjActor*);
-%rename(_vertex_solver_bind_surface_type) TissueForge::models::vertex::bind::surface(SurfaceType*, MeshObjActor*);
-%rename(_vertex_solver_bind_surface_inst) TissueForge::models::vertex::bind::surface(Surface*, MeshObjActor*);
-%rename(_vertex_solver_bind_types) TissueForge::models::vertex::bind::types(MeshObjType*, MeshObjType*, MeshObjTypePairActor*);
+%rename(_vertex_solver_bind_structure_type) TissueForge::models::vertex::bind::structure(MeshObjActor*, StructureType*);
+%rename(_vertex_solver_bind_structure_inst) TissueForge::models::vertex::bind::structure(MeshObjActor*, Structure*);
+%rename(_vertex_solver_bind_body_type) TissueForge::models::vertex::bind::body(MeshObjActor*, BodyType*);
+%rename(_vertex_solver_bind_body_inst) TissueForge::models::vertex::bind::body(MeshObjActor*, Body*);
+%rename(_vertex_solver_bind_surface_type) TissueForge::models::vertex::bind::surface(MeshObjActor*, SurfaceType*);
+%rename(_vertex_solver_bind_surface_inst) TissueForge::models::vertex::bind::surface(MeshObjActor*, Surface*);
+%rename(_vertex_solver_bind_types) TissueForge::models::vertex::bind::types(MeshObjTypePairActor*, MeshObjType*, MeshObjType*);
 
 %import <models/vertex/solver/tfMeshObj.h>
 

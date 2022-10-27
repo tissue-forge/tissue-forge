@@ -33,19 +33,19 @@ namespace TissueForge::models::vertex {
     namespace bind { 
 
 
-        CPPAPI_FUNC(HRESULT) structure(StructureType *st, MeshObjActor *a);
+        CPPAPI_FUNC(HRESULT) structure(MeshObjActor *a, StructureType *st);
 
-        CPPAPI_FUNC(HRESULT) structure(Structure *s, MeshObjActor *a);
+        CPPAPI_FUNC(HRESULT) structure(MeshObjActor *a, Structure *s);
 
-        CPPAPI_FUNC(HRESULT) body(BodyType *b, MeshObjActor *a);
+        CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, BodyType *b);
 
-        CPPAPI_FUNC(HRESULT) body(Body *b, MeshObjActor *a);
+        CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, Body *b);
 
-        CPPAPI_FUNC(HRESULT) surface(SurfaceType *s, MeshObjActor *a);
+        CPPAPI_FUNC(HRESULT) surface(MeshObjActor *a, SurfaceType *s);
 
-        CPPAPI_FUNC(HRESULT) surface(Surface *s, MeshObjActor *a);
+        CPPAPI_FUNC(HRESULT) surface(MeshObjActor *a, Surface *s);
 
-        CPPAPI_FUNC(HRESULT) types(MeshObjType *type1, MeshObjType *type2, MeshObjTypePairActor *a);
+        CPPAPI_FUNC(HRESULT) types(MeshObjTypePairActor *a, MeshObjType *type1, MeshObjType *type2);
 
     }
 

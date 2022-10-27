@@ -26,37 +26,37 @@ using namespace TissueForge::models::vertex;
 namespace TissueForge::models::vertex::bind { 
 
 
-    HRESULT structure(StructureType *s, MeshObjActor *a) {
+    HRESULT structure(MeshObjActor *a, StructureType *s) {
         s->actors.push_back(a);
         return S_OK;
     }
 
-    HRESULT structure(Structure *s, MeshObjActor *a) {
+    HRESULT structure(MeshObjActor *a, Structure *s) {
         s->actors.push_back(a);
         return S_OK;
     }
 
-    HRESULT body(BodyType *b, MeshObjActor *a) {
+    HRESULT body(MeshObjActor *a, BodyType *b) {
         b->actors.push_back(a);
         return S_OK;
     }
 
-    HRESULT body(Body *b, MeshObjActor *a) {
+    HRESULT body(MeshObjActor *a, Body *b) {
         b->actors.push_back(a);
         return S_OK;
     }
 
-    HRESULT surface(SurfaceType *s, MeshObjActor *a) { 
+    HRESULT surface(MeshObjActor *a, SurfaceType *s) { 
         s->actors.push_back(a);
         return S_OK;
     }
 
-    HRESULT surface(Surface *s, MeshObjActor *a) { 
+    HRESULT surface(MeshObjActor *a, Surface *s) { 
         s->actors.push_back(a);
         return S_OK;
     }
 
-    HRESULT types(MeshObjType *type1, MeshObjType *type2, MeshObjTypePairActor *a) {
+    HRESULT types(MeshObjTypePairActor *a, MeshObjType *type1, MeshObjType *type2) {
         if(a->registerPair(type1, type2) != S_OK) 
             return E_FAIL;
         type1->actors.push_back(a);
