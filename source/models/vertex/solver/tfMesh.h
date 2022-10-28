@@ -59,15 +59,31 @@ namespace TissueForge::models::vertex {
 
         ~Mesh();
 
+        /** Test whether this mesh has a mesh quality instance */
         bool hasQuality() { return _quality; }
+
+        /** Get the mesh quality instance */
         TissueForge::models::vertex::MeshQuality &getQuality() { return *_quality; }
+
+        /** Set the mesh quality instance */
         HRESULT setQuality(TissueForge::models::vertex::MeshQuality *quality);
+
+        /** Test whether a mesh quality instance is working on the mesh */
         bool qualityWorking() { return hasQuality() && getQuality().working(); }
 
+        /** Add a vertex */
         HRESULT add(Vertex *obj);
+
+        /** Add a surface */
         HRESULT add(Surface *obj);
+
+        /** Add a body */
         HRESULT add(Body *obj);
+
+        /** Add a structure */
         HRESULT add(Structure *obj);
+
+        /** Remove a mesh object */
         HRESULT removeObj(MeshObj *obj);
 
         /** Locks the mesh for thread-safe operations */
@@ -76,21 +92,49 @@ namespace TissueForge::models::vertex {
         /** Unlocks the mesh for thread-safe operations */
         void unlock() { this->meshLock.unlock(); }
 
+        /**
+         * @brief Find a vertex in this mesh
+         * 
+         * @param pos position to look
+         * @param tol distance tolerance
+         * @return a vertex within the distance tolerance of the position, otherwise NULL
+         */
         Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001);
 
+        /** Get the vertex at a location in the list of vertices */
         Vertex *getVertex(const unsigned int &idx);
+
+        /** Get a surface at a location in the list of surfaces */
         Surface *getSurface(const unsigned int &idx);
+
+        /** Get a body at a location in the list of bodies */
         Body *getBody(const unsigned int &idx);
+
+        /** Get a structure at a location in the list of structures */
         Structure *getStructure(const unsigned int &idx);
 
+        /** Get the number of vertices */
         unsigned int numVertices() const { return vertices.size() - vertexIdsAvail.size(); }
+
+        /** Get the number of surfaces */
         unsigned int numSurfaces() const { return surfaces.size() - surfaceIdsAvail.size(); }
+
+        /** Get the number of bodies */
         unsigned int numBodies() const { return bodies.size() - bodyIdsAvail.size(); }
+
+        /** Get the number of structures */
         unsigned int numStructures() const { return structures.size() - structureIdsAvail.size(); }
 
+        /** Get the size of the list of vertices */
         unsigned int sizeVertices() const { return vertices.size(); }
+
+        /** Get the size of the list of surfaces */
         unsigned int sizeSurfaces() const { return surfaces.size(); }
+
+        /** Get the size of the list of bodies */
         unsigned int sizeBodies() const { return bodies.size(); }
+
+        /** Get the size of the list of structures */
         unsigned int sizeStructures() const { return structures.size(); }
 
         /** Validate state of the mesh */

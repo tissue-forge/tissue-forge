@@ -69,7 +69,7 @@ HRESULT MeshQualityOperation::appendNext(MeshQualityOperation *_next) {
 
     next.insert(_next);
     
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 HRESULT MeshQualityOperation::removeNext(MeshQualityOperation *_next) {

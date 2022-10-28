@@ -77,10 +77,16 @@ namespace TissueForge::models::vertex {
 
     public:
 
+        /** Id of the type*/
         unsigned int typeId;
 
-        state::StateVector *species;
+        /** Species on outward-facing side of the surface, if any */
+        state::StateVector *species1;
 
+        /** Species on inward-facing side of the surface, if any */
+        state::StateVector *species2;
+
+        /** Surface style, if any */
         rendering::Style *style;
 
         Surface();
@@ -91,50 +97,100 @@ namespace TissueForge::models::vertex {
         /** Construct a surface from a face */
         Surface(io::ThreeDFFaceData *face);
 
+        /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::SURFACE; }
 
+        /** Get the parents of the object */
         std::vector<MeshObj*> parents() { return TissueForge::models::vertex::vectorToBase(vertices); }
 
+        /** Get the children of the object */
         std::vector<MeshObj*> children();
 
+        /** Add a child object */
         HRESULT addChild(MeshObj *obj);
 
+        /** Add a parent object */
         HRESULT addParent(MeshObj *obj);
 
+        /** Remove a child object */
         HRESULT removeChild(MeshObj *obj);
 
+        /** Remove a parent object */
         HRESULT removeParent(MeshObj *obj);
 
+        /** Add a vertex */
         HRESULT add(Vertex *v);
+
+        /** Insert a vertex at a location in the list of vertices */
         HRESULT insert(Vertex *v, const int &idx);
+
+        /** Insert a vertex before another vertex */
         HRESULT insert(Vertex *v, Vertex *before);
+
+        /** Insert a vertex between two vertices */
         HRESULT insert(Vertex *toInsert, Vertex *v1, Vertex *v2);
+
+        /** Remove a vertex */
         HRESULT remove(Vertex *v);
+
+        /** Replace a vertex at a location in the list of vertices */
         HRESULT replace(Vertex *toInsert, const int &idx);
+
+        /** Replace a vertex with another vertex */
         HRESULT replace(Vertex *toInsert, Vertex *toRemove);
 
+        /** Add a body */
         HRESULT add(Body *b);
+
+        /** Remove a body */
         HRESULT remove(Body *b);
+
+        /** Replace a body at a location in the list of bodies */
         HRESULT replace(Body *toInsert, const int &idx);
+
+        /** Replace a body with another body */
         HRESULT replace(Body *toInsert, Body *toRemove);
 
+        /**
+         * Destroy the surface. 
+         * 
+         * If the surface is in a mesh, then it and any objects it defines are removed from the mesh. 
+        */
         HRESULT destroy();
 
+        /** Validate the surface */
         bool validate();
 
+        /** Refresh internal ordering of defined bodies */
         HRESULT refreshBodies();
 
+        /** Get the surface type */
         SurfaceType *type();
 
+        /** Become a different type */
         HRESULT become(SurfaceType *stype);
 
+        /** Get the structures defined by the surface */
         std::vector<Structure*> getStructures();
 
+        /** Get the bodies defined by the surface */
         std::vector<Body*> getBodies();
 
+        /** Get the vertices that define the surface */
         std::vector<Vertex*> getVertices() { return vertices; }
 
+        /**
+         * @brief Find a vertex that defines this surface
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
         Vertex *findVertex(const FVector3 &dir);
+
+        /**
+         * @brief Find a body that this surface defines
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
         Body *findBody(const FVector3 &dir);
 
         /** Connected vertices on the same surface. */
@@ -149,25 +205,39 @@ namespace TissueForge::models::vertex {
         /** Surfaces that share at least one vertex. */
         std::vector<Surface*> connectedSurfaces();
 
+        /** Get the integer labels of the contiguous edges that this surface shares with another surface */
         std::vector<unsigned int> contiguousEdgeLabels(Surface *other);
 
+        /** Get the number of contiguous edges that this surface shares with another surface */
         unsigned int numSharedContiguousEdges(Surface *other);
 
+        /** Get the surface normal */
         FVector3 getNormal() { return normal; }
 
+        /** Get the centroid */
         FVector3 getCentroid() { return centroid; }
 
+        /**
+         * Get the velocity, calculated as the velocity of the centroid
+        */
         FVector3 getVelocity() { return velocity; }
 
+        /** Get the area */
         FloatP_t getArea() { return area; }
 
+        /** Get the sign of the volume contribution to a body that this surface contributes */
         FloatP_t volumeSense(Body *body);
+
+        /** Get the volume that this surface contributes to a body */
         FloatP_t getVolumeContr(Body *body) { return _volumeContr * volumeSense(body); }
 
+        /** Get the area that a vertex contributes to this surface */
         FloatP_t getVertexArea(Vertex *v);
 
+        /** Get the normal of a triangle */
         FVector3 triangleNormal(const unsigned int &idx);
 
+        /** Update internal data due to a change in position */
         HRESULT positionChanged();
 
         /** Sew two surfaces 
@@ -185,13 +255,28 @@ namespace TissueForge::models::vertex {
     };
 
 
+    /**
+     * @brief Mesh surface type. 
+     * 
+     * Can be used as a factory to create mesh surface instances with 
+     * processes and properties that correspond to the type. 
+     */
     struct CAPI_EXPORT SurfaceType : MeshObjType {
 
+        /** The style of the surface type */
         rendering::Style *style;
 
+        /**
+         * @brief Construct a new surface type
+         * 
+         * @param flatLam parameter for flat surface constraint
+         */
         SurfaceType(const FloatP_t &flatLam);
+
+        /** Construct a new surface type */
         SurfaceType() : SurfaceType(0.1) {};
 
+        /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::SURFACE; }
 
         /** Construct a surface of this type from a set of vertices */

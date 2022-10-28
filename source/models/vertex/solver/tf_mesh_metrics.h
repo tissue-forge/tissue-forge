@@ -30,9 +30,14 @@
 namespace TissueForge::models::vertex {
 
 
+/** Calculate the strain in a edge defined by two vertices*/
 FMatrix3 edgeStrain(Vertex *v1, Vertex *v2);
 
-// Uses a weighted average of edge strains, with a preference for closer measurements
+/**
+ * Calculate the strain in a vertex. 
+ * 
+ * Uses a weighted average of edge strains, with a preference for closer measurements. 
+ */
 FMatrix3 vertexStrain(Vertex *v);
 
 

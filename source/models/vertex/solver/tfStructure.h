@@ -43,45 +43,72 @@ namespace TissueForge::models::vertex {
 
     public:
 
+        /** Id of the type*/
         unsigned int typeId;
 
         Structure() : MeshObj() {};
 
+        /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::STRUCTURE; }
 
+        /** Get the parents of the object */
         std::vector<MeshObj*> parents();
 
+        /** Get the children of the object */
         std::vector<MeshObj*> children() { return TissueForge::models::vertex::vectorToBase(structures_child); }
 
+        /** Add a child object */
         HRESULT addChild(MeshObj *obj);
 
+        /** Add a parent object */
         HRESULT addParent(MeshObj *obj);
 
+        /** Remove a child object */
         HRESULT removeChild(MeshObj *obj);
 
+        /** Remove a parent object */
         HRESULT removeParent(MeshObj *obj);
 
+        /**
+         * Destroy the structure. 
+         * 
+         * If the structure is in a mesh, then it is removed from the mesh. 
+        */
         HRESULT destroy();
 
+        /** Validate the structure */
         bool validate() { return true; }
 
+        /** Get the structure type */
         StructureType *type();
 
+        /** Become a different type */
         HRESULT become(StructureType *stype);
 
+        /** Get the structures that this structure defines */
         std::vector<Structure*> getStructures() { return structures_parent; }
 
+        /** Get the bodies that define the structure */
         std::vector<Body*> getBodies();
 
+        /** Get the surfaces that define the structure */
         std::vector<Surface*> getSurfaces();
 
+        /** Get the vertices that define the structure */
         std::vector<Vertex*> getVertices();
 
     };
 
 
+    /**
+     * @brief Mesh structure type
+     * 
+     * Can be used as a factory to create mesh structure instances with 
+     * processes and properties that correspond to the type. 
+     */
     struct CAPI_EXPORT StructureType : MeshObjType {
 
+        /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::STRUCTURE; }
         
     };

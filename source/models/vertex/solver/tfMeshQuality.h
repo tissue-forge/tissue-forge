@@ -36,6 +36,7 @@ namespace TissueForge::models::vertex {
     class Mesh;
 
 
+    /** An operation that modifies the topology of a mesh to improve its quality */
     struct MeshQualityOperation {
 
         enum Flag : unsigned int {
@@ -46,8 +47,14 @@ namespace TissueForge::models::vertex {
 
         unsigned int flags;
 
+        /** Source mesh object */
         MeshObj *source;
 
+        /**
+         * @brief Target mesh objects.
+         * 
+         * Used to identify dependencies between operations
+         */
         std::vector<MeshObj*> targets;
 
         /** Upstream operations, if any */
@@ -56,20 +63,31 @@ namespace TissueForge::models::vertex {
         /** Downstream operations, if any */
         std::set<MeshQualityOperation*> next;
 
+        /** Lock, for safe modification during concurrent work */
         std::mutex lock;
 
         MeshQualityOperation(Mesh *_mesh);
 
         virtual ~MeshQualityOperation() {};
 
+        /**
+         * @brief Add an operation to the list of next operations
+         * 
+         * If the operation is already upstream of this operation, 
+         * then the call is ignored
+         */
         HRESULT appendNext(MeshQualityOperation *_next);
 
+        /** Remove an operation to the list of next operations */
         HRESULT removeNext(MeshQualityOperation *_next);
 
+        /** Compute all upstream operations */
         std::set<MeshQualityOperation*> upstreams() const;
 
+        /** Compute all downstream operations */
         std::set<MeshQualityOperation*> downstreams() const;
 
+        /** Compute all upstream operations that have no dependencies */
         std::set<MeshQualityOperation*> headOperations() const;
 
         /** Validate this operation. 
@@ -95,6 +113,11 @@ namespace TissueForge::models::vertex {
     };
 
 
+    /**
+     * @brief Custom mesh quality operation.
+     * 
+     * todo: implement support for custom mesh quality operations
+     */
     struct CAPI_EXPORT CustomQualityOperation : MeshQualityOperation {
 
         typedef bool (*OperationCheck)();
@@ -129,6 +152,10 @@ namespace TissueForge::models::vertex {
     };
 
 
+    /**
+     * @brief An object that schedules topological operations on a mesh to maintain its quality
+     * 
+     */
     class CAPI_EXPORT MeshQuality {
 
         /** 
@@ -173,24 +200,34 @@ namespace TissueForge::models::vertex {
             const FloatP_t &_edgeSplitDistCf=2.0
         );
 
+        /** Perform quality operations work */
         HRESULT doQuality();
 
+        /** Test whether quality operations are being done */
         const bool working() const { return _working; }
 
+        /** Get the distance below which two vertices are scheduled for merging */
         FloatP_t getVertexMergeDistance() const { return vertexMergeDist; };
 
+        /** Set the distance below which two vertices are scheduled for merging */
         HRESULT setVertexMergeDistance(const FloatP_t &_val);
 
+        /** Get the area below which a surface is scheduled to become a vertex */
         FloatP_t getSurfaceDemoteArea() const { return surfaceDemoteArea; };
 
+        /** Set the area below which a surface is scheduled to become a vertex */
         HRESULT setSurfaceDemoteArea(const FloatP_t &_val);
 
+        /** Get the volume below which a body is scheduled to become a vertex */
         FloatP_t getBodyDemoteVolume() const { return bodyDemoteVolume; }
 
+        /** Set the volume below which a body is scheduled to become a vertex */
         HRESULT setBodyDemoteVolume(const FloatP_t &_val);
 
+        /** Get the distance at which two vertices are seperated when a vertex is split */
         FloatP_t getEdgeSplitDist() const { return edgeSplitDist; };
 
+        /** Set the distance at which two vertices are seperated when a vertex is split */
         HRESULT setEdgeSplitDist(const FloatP_t &_val);
     };
 }

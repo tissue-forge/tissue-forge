@@ -33,6 +33,10 @@
 namespace TissueForge::models::vertex { 
 
 
+    /**
+     * @brief Types of log events
+     * 
+     */
     enum MeshLogEventType {
         None = 0,
         Create,
@@ -40,6 +44,10 @@ namespace TissueForge::models::vertex {
         Operation
     };
 
+    /**
+     * @brief An event for the logger
+     * 
+     */
     struct CAPI_EXPORT MeshLogEvent {
         MeshLogEventType type;
         std::vector<int> objIDs;
@@ -48,20 +56,31 @@ namespace TissueForge::models::vertex {
         std::string name;
     };
 
+    /**
+     * @brief The Tissue Forge vertex model solver logger. 
+     * 
+     */
     struct CAPI_EXPORT MeshLogger {
 
+        /** Clear the log */
         static HRESULT clear();
 
+        /** Add a log event to the log */
         static HRESULT log(const MeshLogEvent &event);
 
+        /** Get the list of log events */
         static std::vector<MeshLogEvent> events();
 
+        /** Test whether the logger is fowarding log events to the main Tissue Forge logger */
         static bool getForwardLogging();
 
+        /** Set whether to foward log events to the main Tissue Forge logger */
         static HRESULT setForwardLogging(const bool &_forward);
 
+        /** Get the current log level */
         static LogLevel getLogLevel();
 
+        /** set the current log level */
         static HRESULT setLogLevel(const LogLevel &_level);
 
     };

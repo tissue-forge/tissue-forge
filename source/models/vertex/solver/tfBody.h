@@ -51,8 +51,10 @@ namespace TissueForge::models::vertex {
      */
     class CAPI_EXPORT Body : public MeshObj { 
 
+        /** Surfaces that define this body */
         std::vector<Surface*> surfaces;
 
+        /** Structures defined by this body */
         std::vector<Structure*> structures;
 
         /** current centroid */
@@ -71,8 +73,10 @@ namespace TissueForge::models::vertex {
 
     public:
 
+        /** Id of the type*/
         unsigned int typeId;
 
+        /** Amount of species in the enclosed volume, if any */
         state::StateVector *species;
 
         Body();
@@ -83,62 +87,135 @@ namespace TissueForge::models::vertex {
         /** Construct a body from a mesh */
         Body(io::ThreeDFMeshData *ioMesh);
 
+        /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::BODY; }
 
+        /** Get the parents of the object */
         std::vector<MeshObj*> parents();
 
+        /** Get the children of the object */
         std::vector<MeshObj*> children();
 
+        /** Add a child object */
         HRESULT addChild(MeshObj *obj);
 
+        /** Add a parent object */
         HRESULT addParent(MeshObj *obj);
 
+        /** Remove a child object */
         HRESULT removeChild(MeshObj *obj);
 
+        /** Remove a parent object */
         HRESULT removeParent(MeshObj *obj);
 
+        /** Add a surface */
         HRESULT add(Surface *s);
+
+        /** Remove a surface */
         HRESULT remove(Surface *s);
+
+        /** Replace a surface a surface */
         HRESULT replace(Surface *toInsert, Surface *toRemove);
 
+        /** Add a structure */
         HRESULT add(Structure *s);
+
+        /** Remove a structure */
         HRESULT remove(Structure *s);
+
+        /** Replace a structure */
         HRESULT replace(Structure *toInsert, Structure *toRemove);
 
+        /**
+         * Destroy the body. 
+         * 
+         * If the body is in a mesh, then it and any objects it defines are removed from the mesh. 
+        */
         HRESULT destroy();
 
+        /** Validate the body */
         bool validate();
 
+        /** Update internal data due to a change in position */
         HRESULT positionChanged();
 
+        /** Get the body type */
         BodyType *type();
 
+        /** Become a different type */
         HRESULT become(BodyType *btype);
 
+        /** Get the structures defined by the body */
         std::vector<Structure*> getStructures();
+
+        /** Get the surfaces that define the body */
         std::vector<Surface*> getSurfaces() { return surfaces; }
+
+        /** Get the vertices that define the body */
         std::vector<Vertex*> getVertices();
 
+        /**
+         * @brief Find a vertex that defines this body
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
         Vertex *findVertex(const FVector3 &dir);
+
+        /**
+         * @brief Find a surface that defines this body
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
         Surface *findSurface(const FVector3 &dir);
 
+        /**
+         * Get the neighboring bodies. 
+         * 
+         * A body is a neighbor if it shares a surface.
+         */
         std::vector<Body*> neighborBodies();
+
+        /**
+         * Get the neighboring surfaces of a surface on this body.
+         * 
+         * Two surfaces are a neighbor on this body if they define the body and share a vertex
+         */
         std::vector<Surface*> neighborSurfaces(Surface *s);
 
+        /** Get the mass density */
         FloatP_t getDensity() const { return density; }
+
+        /** Set the mass density */
         void setDensity(const FloatP_t &_density) { density = _density; }
 
+        /** Get the centroid */
         FVector3 getCentroid() const { return centroid; }
+
+        /** Get the velocity, calculated as the velocity of the centroid */
         FVector3 getVelocity();
+
+        /** Get the surface area */
         FloatP_t getArea() const { return area; }
+
+        /** Get the volume */
         FloatP_t getVolume() const { return volume; }
+
+        /** Get the mass */
         FloatP_t getMass() const { return volume * density; }
 
+        /** Get the surface area contribution of a vertex to this body */
         FloatP_t getVertexArea(Vertex *v);
+
+        /** Get the volume contribution of a vertex to this body */
         FloatP_t getVertexVolume(Vertex *v);
+
+        /** Get the mass contribution of a vertex to this body */
         FloatP_t getVertexMass(Vertex *v) { return getVertexVolume(v) * density; }
 
+        /** Get the surfaces that define the interface between this body and another body */
         std::vector<Surface*> findInterface(Body *b);
+
+        /** Get the contacting surface area of this body with another body */
         FloatP_t contactArea(Body *other);
 
         
@@ -148,10 +225,18 @@ namespace TissueForge::models::vertex {
     };
 
 
+    /**
+     * @brief Mesh body type
+     * 
+     * Can be used as a factory to create mesh body instances with 
+     * processes and properties that correspond to the type. 
+     */
     struct CAPI_EXPORT BodyType : MeshObjType {
 
+        /** Mass density */
         FloatP_t density;
 
+        /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::BODY; }
 
         /** Construct a body of this type from a set of surfaces */

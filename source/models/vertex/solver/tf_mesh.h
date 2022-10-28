@@ -26,15 +26,18 @@
 namespace TissueForge::models::vertex {
 
 
+    /** Check whether an object is an instance of an object type */
     TF_ALWAYS_INLINE bool check(MeshObj *obj, const MeshObj::Type &typeEnum) {
         return obj->objType() == typeEnum;
     }
 
+    /** Convert a vector of derived mesh objects to a vector of base mesh objects */
     template<typename T>
     std::vector<MeshObj*> vectorToBase(const std::vector<T*> &implVec) {
         return std::vector<MeshObj*>(implVec.begin(), implVec.end());
     }
 
+    /** Convert a vector of base mesh objects to a vector of derived mesh objects */
     template<typename T> 
     std::vector<T*> vectorToDerived(const std::vector<MeshObj*> &baseVec) {
         std::vector<T*> result(baseVec.size(), 0);

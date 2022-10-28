@@ -74,56 +74,111 @@ namespace TissueForge::models::vertex {
         Vertex(const FVector3 &position);
         Vertex(io::ThreeDFVertexData *vdata);
 
+        /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::VERTEX; }
 
+        /** Get the parents of the object */
         std::vector<MeshObj*> parents() { return std::vector<MeshObj*>(); }
 
+        /** Get the children of the object */
         std::vector<MeshObj*> children();
 
+        /** Add a child object */
         HRESULT addChild(MeshObj *obj);
 
+        /** Add a parent object */
         HRESULT addParent(MeshObj *obj) { return E_FAIL; }
 
+        /** Remove a child object */
         HRESULT removeChild(MeshObj *obj);
 
+        /** Remove a parent object */
         HRESULT removeParent(MeshObj *obj) { return E_FAIL; }
 
+        /** Add a surface */
         HRESULT add(Surface *s);
+
+        /** Insert a surface at a location in the list of surfaces */
         HRESULT insert(Surface *s, const int &idx);
+
+        /** Insert a surface before another surface */
         HRESULT insert(Surface *s, Surface *before);
+
+        /** Remove a surface */
         HRESULT remove(Surface *s);
+
+        /** Replace a surface at a location in the list of surfaces */
         HRESULT replace(Surface *toInsert, const int &idx);
+
+        /** Replace a surface with another surface */
         HRESULT replace(Surface *toInsert, Surface *toRemove);
 
+        /**
+         * Destroy the vertex. 
+         * 
+         * If the vertex is in a mesh, then it and any objects it defines are removed from the mesh. 
+         * 
+         * The underlying particle is also destroyed, if any. 
+        */
         HRESULT destroy();
 
+        /** Validate the vertex */
         bool validate() { return true; }
 
+        /** Get the structures defined by the vertex */
         std::vector<Structure*> getStructures();
 
+        /** Get the bodies defined by the vertex */
         std::vector<Body*> getBodies();
 
+        /** Get the surfaces defined by the vertex */
         std::vector<Surface*> getSurfaces() { return surfaces; }
 
+        /**
+         * @brief Find a surface defined by this vertex
+         * 
+         * @param dir direction to look with respect to the vertex
+         */
         Surface *findSurface(const FVector3 &dir);
+
+        /**
+         * @brief Find a body defined by this vertex
+         * 
+         * @param dir direction to look with respect to the vertex
+         */
         Body *findBody(const FVector3 &dir);
 
+        /** Get the neighbor vertices.
+         * 
+         * A vertex is a neighbor if it defines an edge with this vertex.
+         */
         std::vector<Vertex*> neighborVertices();
 
+        /** Get the surfaces that this vertex and another vertex both define */
         std::vector<Surface*> sharedSurfaces(Vertex *other);
 
+        /** Get the current volume */
         FloatP_t getVolume();
+
+        /** Get the current mass */
         FloatP_t getMass();
 
+        /** Update internal data due to a change in position */
         HRESULT positionChanged();
+
+        /** Update the properties of the underlying particle */
         HRESULT updateProperties();
 
+        /** Get a handle to the underlying particle, if any */
         ParticleHandle *particle();
 
+        /** Get the current position */
         FVector3 getPosition();
 
+        /** Set the current position */
         HRESULT setPosition(const FVector3 &pos);
 
+        /** Transfer all bonds to another vertex */
         HRESULT transferBondsTo(Vertex *other);
 
 

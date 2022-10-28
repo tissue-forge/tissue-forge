@@ -34,11 +34,16 @@ namespace TissueForge::models::vertex {
 
     struct MeshRenderer : rendering::SubRenderer {
 
+        /**
+         * Get the mesh renderer.
+         * 
+         * If a mesh renderer does not yet exist, then it is created. 
+         */
         static MeshRenderer *get();
         
-        HRESULT start(const std::vector<fVector4> &clipPlanes);
+        HRESULT start(const std::vector<fVector4> &clipPlanes) override;
 
-        HRESULT draw(rendering::ArcBallCamera *camera, const iVector2 &viewportSize, const fMatrix4 &modelViewMat);
+        HRESULT draw(rendering::ArcBallCamera *camera, const iVector2 &viewportSize, const fMatrix4 &modelViewMat) override;
 
     private:
 

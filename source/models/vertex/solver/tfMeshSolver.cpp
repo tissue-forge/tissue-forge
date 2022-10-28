@@ -33,7 +33,9 @@
 #include <future>
 
 
-#define TF_MESHSOLVER_CHECKINIT { if(!_solver) return E_FAIL; }
+#define TF_MESHSOLVER_CHECKINIT_RET(retval) { if(!_solver) return retval; }
+
+#define TF_MESHSOLVER_CHECKINIT { TF_MESHSOLVER_CHECKINIT_RET(E_FAIL) }
 
 
 static std::mutex _meshEngineLock;
@@ -125,7 +127,7 @@ MeshSolver *MeshSolver::get() {
     return _solver;
 }
 
-HRESULT MeshSolver::compact() { 
+HRESULT MeshSolver::_compactInst() { 
     TF_MESHSOLVER_CHECKINIT
 
     if(_solver->_bufferSize > 1) {
@@ -135,6 +137,12 @@ HRESULT MeshSolver::compact() {
     }
 
     return S_OK;
+}
+
+HRESULT MeshSolver::compact() { 
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_compactInst();
 }
 
 HRESULT MeshSolver::engineLock() {
@@ -151,14 +159,20 @@ HRESULT MeshSolver::engineUnlock() {
     return S_OK;
 }
 
-Mesh *MeshSolver::newMesh() {
+Mesh *MeshSolver::_newMeshInst() {
     Mesh *mesh = new Mesh();
     if(loadMesh(mesh) != S_OK) 
         return NULL;
     return mesh;
 }
 
-HRESULT MeshSolver::loadMesh(Mesh *mesh) {
+Mesh *MeshSolver::newMesh() {
+    TF_MESHSOLVER_CHECKINIT_RET(NULL);
+
+    return _solver->_newMeshInst();
+}
+
+HRESULT MeshSolver::_loadMeshInst(Mesh *mesh) {
     for(auto &m : meshes) 
         if(m == mesh) 
             return E_FAIL;
@@ -169,7 +183,13 @@ HRESULT MeshSolver::loadMesh(Mesh *mesh) {
     return S_OK;
 }
 
-HRESULT MeshSolver::unloadMesh(Mesh *mesh) {
+HRESULT MeshSolver::loadMesh(Mesh *mesh) {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_loadMeshInst(mesh);
+}
+
+HRESULT MeshSolver::_unloadMeshInst(Mesh *mesh) {
     for(auto itr = meshes.begin(); itr != meshes.end(); itr++) {
         if(*itr == mesh) {
             meshes.erase(itr);
@@ -181,7 +201,13 @@ HRESULT MeshSolver::unloadMesh(Mesh *mesh) {
     return E_FAIL;
 }
 
-HRESULT MeshSolver::registerType(BodyType *_type) {
+HRESULT MeshSolver::unloadMesh(Mesh *mesh) {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_unloadMeshInst(mesh);
+}
+
+HRESULT MeshSolver::_registerTypeInst(BodyType *_type) {
     if(!_type || _type->id >= 0) 
         return E_FAIL;
     
@@ -191,7 +217,13 @@ HRESULT MeshSolver::registerType(BodyType *_type) {
     return S_OK;
 }
 
-HRESULT MeshSolver::registerType(SurfaceType *_type) {
+HRESULT MeshSolver::registerType(BodyType *_type) {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_registerTypeInst(_type);
+}
+
+HRESULT MeshSolver::_registerTypeInst(SurfaceType *_type) {
     if(!_type || _type->id >= 0) 
         return E_FAIL;
 
@@ -206,22 +238,46 @@ HRESULT MeshSolver::registerType(SurfaceType *_type) {
     return S_OK;
 }
 
-StructureType *MeshSolver::getStructureType(const unsigned int &typeId) {
+HRESULT MeshSolver::registerType(SurfaceType *_type) {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_registerTypeInst(_type);
+}
+
+StructureType *MeshSolver::_getStructureTypeInst(const unsigned int &typeId) {
     if(typeId >= _structureTypes.size()) 
         return NULL;
     return _structureTypes[typeId];
 }
 
-BodyType *MeshSolver::getBodyType(const unsigned int &typeId) {
+StructureType *MeshSolver::getStructureType(const unsigned int &typeId) {
+    TF_MESHSOLVER_CHECKINIT_RET(NULL);
+
+    return _solver->_getStructureTypeInst(typeId);
+}
+
+BodyType *MeshSolver::_getBodyTypeInst(const unsigned int &typeId) {
     if(typeId >= _bodyTypes.size()) 
         return NULL;
     return _bodyTypes[typeId];
 }
 
-SurfaceType *MeshSolver::getSurfaceType(const unsigned int &typeId) {
+BodyType *MeshSolver::getBodyType(const unsigned int &typeId) {
+    TF_MESHSOLVER_CHECKINIT_RET(NULL);
+
+    return _solver->_getBodyTypeInst(typeId);
+}
+
+SurfaceType *MeshSolver::_getSurfaceTypeInst(const unsigned int &typeId) {
     if(typeId >= _surfaceTypes.size()) 
         return NULL;
     return _surfaceTypes[typeId];
+}
+
+SurfaceType *MeshSolver::getSurfaceType(const unsigned int &typeId) {
+    TF_MESHSOLVER_CHECKINIT_RET(NULL);
+
+    return _solver->_getSurfaceTypeInst(typeId);
 }
 
 template <typename T> 
@@ -232,7 +288,7 @@ void Mesh_actRecursive(MeshObj *vertex, T *source, FloatP_t *f) {
         Mesh_actRecursive(vertex, (T*)c, f);
 }
 
-HRESULT MeshSolver::positionChanged() {
+HRESULT MeshSolver::_positionChangedInst() {
 
     unsigned int i;
     _surfaceVertices = 0;
@@ -288,6 +344,12 @@ HRESULT MeshSolver::positionChanged() {
     _isDirty = false;
 
     return S_OK;
+}
+
+HRESULT MeshSolver::positionChanged() {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_positionChangedInst();
 }
 
 HRESULT MeshSolver::update(const bool &_force) {
@@ -414,22 +476,40 @@ HRESULT MeshSolver::postStepJoin() {
     return S_OK;
 }
 
-std::vector<unsigned int> MeshSolver::getSurfaceVertexIndices() {
+std::vector<unsigned int> MeshSolver::_getSurfaceVertexIndicesInst() {
     return MeshSolver_surfaceVertexIndices(meshes);
 }
 
-HRESULT MeshSolver::getSurfaceVertexIndicesAsyncStart() {
+std::vector<unsigned int> MeshSolver::getSurfaceVertexIndices() {
+    TF_MESHSOLVER_CHECKINIT_RET({});
+
+    return _solver->_getSurfaceVertexIndicesInst();
+}
+
+HRESULT MeshSolver::_getSurfaceVertexIndicesAsyncStartInst() {
     fut_surfaceVertexIndices = std::async(MeshSolver_surfaceVertexIndices, meshes);
     return S_OK;
 }
 
-std::vector<unsigned int> MeshSolver::getSurfaceVertexIndicesAsyncJoin() {
+HRESULT MeshSolver::getSurfaceVertexIndicesAsyncStart() {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_getSurfaceVertexIndicesAsyncStartInst();
+}
+
+std::vector<unsigned int> MeshSolver::_getSurfaceVertexIndicesAsyncJoinInst() {
     if(fut_surfaceVertexIndices.valid()) 
         _surfaceVertexIndices = fut_surfaceVertexIndices.get();
     return _surfaceVertexIndices;
 }
 
-HRESULT MeshSolver::log(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
+std::vector<unsigned int> MeshSolver::getSurfaceVertexIndicesAsyncJoin() {
+    TF_MESHSOLVER_CHECKINIT_RET({});
+
+    return _solver->_getSurfaceVertexIndicesAsyncJoinInst();
+}
+
+HRESULT MeshSolver::_logInst(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
     int meshID = -1;
     for(int i = 0; i < meshes.size(); i++) 
         if(meshes[i] == mesh) {
@@ -451,7 +531,13 @@ HRESULT MeshSolver::log(Mesh *mesh, const MeshLogEventType &type, const std::vec
     return MeshLogger::log(event);
 }
 
-bool MeshSolver::isDirty() {
+HRESULT MeshSolver::log(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_logInst(mesh, type, objIDs, objTypes, name);
+}
+
+bool MeshSolver::_isDirtyInst() {
     if(_isDirty) 
         return true;
     bool result = false;
@@ -460,9 +546,21 @@ bool MeshSolver::isDirty() {
     return result;
 }
 
-HRESULT MeshSolver::setDirty(const bool &_dirty) {
+bool MeshSolver::isDirty() {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_isDirtyInst();
+}
+
+HRESULT MeshSolver::_setDirtyInst(const bool &_dirty) {
     _isDirty = _dirty;
     for(auto &m : meshes) 
         m->isDirty = _dirty;
     return S_OK;
+}
+
+HRESULT MeshSolver::setDirty(const bool &_dirty) {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_setDirtyInst(_dirty);
 }
