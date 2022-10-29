@@ -167,6 +167,30 @@ namespace TissueForge::models::vertex {
         /** Get the surface type by id */
         static SurfaceType *getSurfaceType(const unsigned int &typeId);
 
+        /** Get the number of vertices */
+        static unsigned int numVertices();
+
+        /** Get the number of surfaces */
+        static unsigned int numSurfaces();
+
+        /** Get the number of bodies */
+        static unsigned int numBodies();
+
+        /** Get the number of structures */
+        static unsigned int numStructures();
+
+        /** Get the size of the list of vertices */
+        static unsigned int sizeVertices();
+
+        /** Get the size of the list of surfaces */
+        static unsigned int sizeSurfaces();
+
+        /** Get the size of the list of bodies */
+        static unsigned int sizeBodies();
+
+        /** Get the size of the list of structures */
+        static unsigned int sizeStructures();
+
         /** Update internal data due to a change in position */
         static HRESULT positionChanged();
 

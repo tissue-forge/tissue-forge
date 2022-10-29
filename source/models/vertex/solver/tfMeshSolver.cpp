@@ -280,6 +280,86 @@ SurfaceType *MeshSolver::getSurfaceType(const unsigned int &typeId) {
     return _solver->_getSurfaceTypeInst(typeId);
 }
 
+unsigned int MeshSolver::numVertices() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->numVertices();
+
+    return result;
+}
+
+unsigned int MeshSolver::numSurfaces() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->numSurfaces();
+
+    return result;
+}
+
+unsigned int MeshSolver::numBodies() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->numBodies();
+
+    return result;
+}
+
+unsigned int MeshSolver::numStructures() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->numStructures();
+
+    return result;
+}
+
+unsigned int MeshSolver::sizeVertices() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->sizeVertices();
+
+    return result;
+}
+
+unsigned int MeshSolver::sizeSurfaces() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->sizeSurfaces();
+
+    return result;
+}
+
+unsigned int MeshSolver::sizeBodies() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->sizeBodies();
+
+    return result;
+}
+
+unsigned int MeshSolver::sizeStructures() {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    unsigned int result = 0;
+    for(auto &m : _solver->meshes) 
+        result += m->sizeStructures();
+
+    return result;
+}
+
 template <typename T> 
 void Mesh_actRecursive(MeshObj *vertex, T *source, FloatP_t *f) {
     for(auto &a : source->type()->actors) 

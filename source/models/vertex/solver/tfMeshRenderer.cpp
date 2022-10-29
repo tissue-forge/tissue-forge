@@ -214,7 +214,7 @@ HRESULT MeshRenderer::draw(rendering::ArcBallCamera *camera, const iVector2 &vie
     );
 
     std::vector<unsigned int> surfaceVertexIndices = solver->getSurfaceVertexIndicesAsyncJoin();
-    if(surfaceVertexIndices.size() == 0) 
+    if(surfaceVertexIndices.size() != solver->sizeSurfaces()) 
         surfaceVertexIndices = solver->getSurfaceVertexIndices();
 
     for(auto &m : solver->meshes) {
