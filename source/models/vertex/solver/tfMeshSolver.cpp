@@ -547,8 +547,6 @@ HRESULT MeshSolver::postStepStart() {
                 m->getQuality().doQuality();
     }
 
-    getSurfaceVertexIndicesAsyncStart();
-
     return S_OK;
 }
 
