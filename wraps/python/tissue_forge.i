@@ -223,4 +223,13 @@
 
     start = Universe.start
     """Alias of :meth:`tissue_forge.tissue_forge.Universe.start`"""
+
+    step_async_start = Universe.step_async_start
+    """Alias of :meth:`tissue_forge.tissue_forge.Universe.step_async_start`"""
+
+    step_async_working = lambda: Universe.step_async_working
+    """Alias of :prop:`tissue_forge.tissue_forge.Universe.step_async_working`"""
+
+    step_async_join = Universe.step_async_join
+    """Alias of :meth:`tissue_forge.tissue_forge.Universe.step_async_join`"""
 %}

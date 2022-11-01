@@ -103,3 +103,15 @@ HRESULT tfStart() {
 HRESULT tfRun(tfFloatP_t et) {
     return tfSimulator_run(et);
 }
+
+HRESULT tfStepAsyncStart(tfFloatP_t until, tfFloatP_t dt) {
+    return tfUniverse_stepAsyncStart(until, dt);
+}
+
+HRESULT tfStepAsyncWorking(bool *isWorking) {
+    return tfUniverse_stepAsyncWorking(isWorking);
+}
+
+HRESULT tfStepAsyncJoin() {
+    return tfUniverse_stepAsyncJoin();
+}

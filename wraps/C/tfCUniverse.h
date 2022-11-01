@@ -153,17 +153,54 @@ CAPI_FUNC(HRESULT) tfUniverse_getCenter(tfFloatP_t **center);
 CAPI_FUNC(HRESULT) tfUniverse_step(tfFloatP_t until, tfFloatP_t dt);
 
 /**
- * @brief Stops the universe time evolution. This essentially freezes the universe, 
+ * @brief Requests an asynchronous single step ``dt`` of the universe if no arguments are 
+ * given. Optionally runs until ``until``, and can use a different timestep 
+ * of ``dt``.
+ * 
+ * Fails if a step is already working.
+ * 
+ * @param until runs the timestep for this length of time.
+ * @param dt overrides the existing time step, and uses this value for time stepping; currently not supported.
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverse_stepAsyncStart(tfFloatP_t until, tfFloatP_t dt);
+
+/**
+ * @brief Tests whether the time evolution of the universe is being performed asynchronously.
+ * 
+ * @param isWorking 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverse_stepAsyncWorking(bool *isWorking);
+
+/**
+ * @brief Blocks until asynchronous time evolution of the universe completes. 
+ * 
+ * If time evolution is not being performed asynchronously, then the call is ignored.
+ * 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverse_stepAsyncJoin();
+
+/**
+ * @brief Stops the universe time evolution. 
+ * 
+ * This essentially freezes the universe, 
  * everything remains the same, except time no longer moves forward.
+ * 
+ * Can be used to interrupt previous calls to perform multiple integration steps.
  * 
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfUniverse_stop();
 
 /**
- * @brief Starts the universe time evolution, and advanced the universe forward by 
- * timesteps in ``dt``. All methods to build and manipulate universe objects 
+ * @brief Starts the universe time evolution. 
+ * 
+ * All methods to build and manipulate universe objects 
  * are valid whether the universe time evolution is running or stopped.
+ * 
+ * Any call to perform time evolution must be preceded by a call to this method.
  * 
  * @return S_OK on success
  */

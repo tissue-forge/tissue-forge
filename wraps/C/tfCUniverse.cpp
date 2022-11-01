@@ -153,6 +153,23 @@ HRESULT tfUniverse_step(tfFloatP_t until, tfFloatP_t dt) {
     return univ->step(until, dt);
 }
 
+HRESULT tfUniverse_stepAsyncStart(tfFloatP_t until, tfFloatP_t dt) {
+    TFC_UNIVERSE_STATIC_GET()
+    return univ->stepAsyncStart(until, dt);
+}
+
+HRESULT tfUniverse_stepAsyncWorking(bool *isWorking) {
+    TFC_UNIVERSE_STATIC_GET()
+    TFC_PTRCHECK(isWorking);
+    *isWorking = univ->stepAsyncWorking();
+    return S_OK;
+}
+
+HRESULT tfUniverse_stepAsyncJoin() {
+    TFC_UNIVERSE_STATIC_GET()
+    return univ->stepAsyncJoin();
+}
+
 HRESULT tfUniverse_stop() {
     TFC_UNIVERSE_STATIC_GET()
     return univ->stop();

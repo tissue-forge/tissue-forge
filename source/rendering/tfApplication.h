@@ -296,6 +296,9 @@ namespace TissueForge::rendering {
         
         virtual HRESULT simulationStep();
         
+        virtual HRESULT requestSimulationStep(bool &fulfilled);
+        virtual HRESULT requestSimulationStep();
+        
         virtual HRESULT messageLoop(double et) = 0;
         
         virtual Magnum::GL::AbstractFramebuffer& framebuffer() = 0;

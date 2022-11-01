@@ -292,49 +292,59 @@ HRESULT rendering::GlfwApplication::messageLoop(double et)
     SetForegroundWindow(hwnd);
 #endif
 
-    HRESULT hr;
+    HRESULT hr = S_OK;
 
     // run while it's visible, process window messages
     while(_Engine.time * _Engine.dt < endTime &&
           Magnum::Platform::GlfwApplication::mainLoopIteration() &&
           glfwGetWindowAttrib(Magnum::Platform::GlfwApplication::window(), GLFW_VISIBLE)) {
 
-        // keep processing messages until window closes.
-        if(engine_err == 0 && Universe_Flag(Universe::Flags::RUNNING)) {
-            if(!SUCCEEDED((hr = Application::simulationStep()))) {
-                TF_Log(LOG_CRITICAL) << "something went wrong.";
-                close();
-            }
-            Magnum::Platform::GlfwApplication::redraw();
+        Magnum::Platform::GlfwApplication::redraw();
+
+        // request a simulation step if universe is in running state
+        if(engine_err == 0 && Universe_Flag(Universe::Flags::RUNNING) && !SUCCEEDED((hr = Application::requestSimulationStep()))) {
+            TF_Log(LOG_CRITICAL) << "something went wrong.";
+            close();
         }
     }
-    return S_OK;
+
+    // Ensure universe work is done before releasing
+    if(hr == S_OK) 
+        hr = Universe::stepAsyncJoin();
+
+    TF_Log(LOG_TRACE);
+
+    return hr;
 }
 
 HRESULT rendering::GlfwApplication::mainLoopIteration(double timeout) {
-    HRESULT hr;
-    if(engine_err == 0 && Universe_Flag(Universe::Flags::RUNNING)) {
+    HRESULT hr = S_OK;
 
-        // perform a simulation step if universe is in running state
-        if(FAILED((hr = Application::simulationStep()))) {
+    if(Magnum::Platform::GlfwApplication::window() && 
+        glfwGetWindowAttrib(Magnum::Platform::GlfwApplication::window(), GLFW_VISIBLE)) 
+    {
+        Magnum::Platform::GlfwApplication::redraw();
+
+        // request a simulation step if universe is in running state
+        if(engine_err == 0 && Universe_Flag(Universe::Flags::RUNNING) && !SUCCEEDED((hr = Application::requestSimulationStep()))) {
+
             // window close message
             close();
 
             // process messages until window closes
             while(Magnum::Platform::GlfwApplication::window() &&
-                  glfwGetWindowAttrib(Magnum::Platform::GlfwApplication::window(), GLFW_VISIBLE)) {
+                glfwGetWindowAttrib(Magnum::Platform::GlfwApplication::window(), GLFW_VISIBLE)) {
                 Magnum::Platform::GlfwApplication::mainLoopIteration();
             }
             return hr;
         }
     }
-    else {
-        Simulator::get()->redraw();
-    }
+    else 
+        glfwPostEmptyEvent();
 
     // process messages
     Magnum::Platform::GlfwApplication::mainLoopIteration();
-    return S_OK;
+    return hr;
 }
 
 HRESULT rendering::GlfwApplication::redraw()

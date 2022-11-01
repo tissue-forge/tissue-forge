@@ -134,18 +134,54 @@
             """
             return _tfUniverse.step(until, 0)
 
+        def step_async_start(self, until: float = 0):
+            """
+            Performs an asynchronous single time step of the universe if no arguments are 
+            given. Optionally runs until ``until``.
+            
+            :param until: runs the timestep for this length of time, optional.
+            :raises RuntimeError: when an asynchronous time step is already working
+            """
+            if self.step_async_working:
+                raise RuntimeError('Asynchronous time step is already working')
+            return _tfUniverse.stepAsyncStart(until, 0)
+
+        @property
+        def step_async_working(self) -> bool:
+            """
+            Tests whether the time evolution of the universe is being performed asynchronously.
+
+            :return: True when time evolution of the universe is being performed asynchronously
+            """
+            return _tfUniverse.stepAsyncWorking()
+
+        def step_async_join(self):
+            """
+            Blocks until asynchronous time evolution of the universe completes. 
+
+            If time evolution is not being performed asynchronously, then the call is ignored.
+            """
+            return _tfUniverse.stepAsyncJoin()
+
         def stop(self):
             """
-            Stops the universe time evolution. This essentially freezes the universe, 
+            Stops the universe time evolution. 
+            
+            This essentially freezes the universe, 
             everything remains the same, except time no longer moves forward.
+
+            Can be used to interrupt previous calls to perform multiple integration steps.
             """
             return _tfUniverse.stop()
 
         def start(self):
             """
-            Starts the universe time evolution, and advanced the universe forward by 
-            timesteps in ``dt``. All methods to build and manipulate universe objects 
+            Starts the universe time evolution. 
+            
+            All methods to build and manipulate universe objects 
             are valid whether the universe time evolution is running or stopped.
+
+            Any call to perform time evolution must be preceded by a call to this method.
             """
             return _tfUniverse.start()
 

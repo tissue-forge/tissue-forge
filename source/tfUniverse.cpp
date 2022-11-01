@@ -29,6 +29,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <future>
 #include "tfThreadPool.h"
 #include "tf_bind.h"
 #include "state/tfStateVector.h"
@@ -159,6 +160,48 @@ HRESULT Universe::step(const FloatP_t &until, const FloatP_t &dt) {
         Universe_SetFlag(Universe::Flags::RUNNING, false);
     return res;
     TF_UNIVERSE_FINALLY(1);
+}
+
+static bool fut_universeStep_working = false;
+static bool fut_universeStep_resultRetrieved = true;
+
+static HRESULT doUniverseStep(const FloatP_t &until, const FloatP_t &dt) {
+    fut_universeStep_working = true;
+    fut_universeStep_resultRetrieved = false;
+    HRESULT res = Universe::step(until, dt);
+    fut_universeStep_working = false;
+    return res;
+}
+
+static std::future<HRESULT> fut_universeStep;
+
+HRESULT Universe::stepAsyncStart(const FloatP_t &until, const FloatP_t &dt) {
+    if(stepAsyncWorking()) 
+        return E_FAIL;
+
+    fut_universeStep = std::async(doUniverseStep, until, dt);
+    return S_OK;
+}
+
+bool Universe::stepAsyncWorking() {
+    return fut_universeStep_working;
+}
+
+HRESULT Universe::stepAsyncJoin() {
+    // Wait while working
+    while(stepAsyncWorking()) {
+        TF_Log(LOG_TRACE);
+    }
+
+    HRESULT res;
+    if(!fut_universeStep_resultRetrieved) {
+        fut_universeStep_resultRetrieved = true;
+        res = fut_universeStep.valid() ? fut_universeStep.get() : E_FAIL;
+    }
+    else 
+        res = S_OK;
+
+    return res;
 }
 
 HRESULT Universe::stop() {

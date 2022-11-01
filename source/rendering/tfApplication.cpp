@@ -171,6 +171,28 @@ HRESULT rendering::Application::simulationStep() {
     return Universe::step(0,0);
 }
 
+HRESULT rendering::Application::requestSimulationStep(bool &fulfilled) {
+    if(Universe::stepAsyncWorking()) {
+        fulfilled = false;
+        return S_OK;
+    }
+
+    HRESULT result;
+    if((result = Universe::stepAsyncJoin()) != S_OK) {
+        fulfilled = false;
+        return result;
+    }
+
+    currentStep += 1;
+    fulfilled = true;
+    return Universe::stepAsyncStart();
+}
+
+HRESULT rendering::Application::requestSimulationStep() {
+    bool dummy;
+    return requestSimulationStep(dummy);
+}
+
 HRESULT rendering::Application::run(double et)
 {
     TF_Log(LOG_TRACE);

@@ -219,5 +219,35 @@ CAPI_FUNC(HRESULT) tfStart();
  */
 CAPI_FUNC(HRESULT) tfRun(tfFloatP_t et);
 
+/**
+ * @brief Requests an asynchronous single step ``dt`` of the universe if no arguments are 
+ * given. Optionally runs until ``until``, and can use a different timestep 
+ * of ``dt``.
+ * 
+ * Fails if a step is already working.
+ * 
+ * @param until runs the timestep for this length of time.
+ * @param dt overrides the existing time step, and uses this value for time stepping; currently not supported.
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfStepAsyncStart(tfFloatP_t until, tfFloatP_t dt);
+
+/**
+ * @brief Tests whether the time evolution of the universe is being performed asynchronously.
+ * 
+ * @param isWorking 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfStepAsyncWorking(bool *isWorking);
+
+/**
+ * @brief Blocks until asynchronous time evolution of the universe completes. 
+ * 
+ * If time evolution is not being performed asynchronously, then the call is ignored.
+ * 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfStepAsyncJoin();
+
 
 #endif // _WRAPS_C_TISSUEFORGE_C_H_
