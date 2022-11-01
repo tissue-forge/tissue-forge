@@ -18,6 +18,9 @@
  *
  ******************************************************************************/
 
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
 
 /* include some standard header files */
 #include <stdlib.h>
@@ -187,16 +190,23 @@ int TissueForge::engine_shuffle(struct engine *e) {
 	parallel_for(s->nr_ghost, func_space_cell_flush);
 #endif
 
+	e->advance_mutex.lock();
+
 	/* Shuffle the domain. */
     if(space_shuffle_local(s) < 0) {
+		e->advance_mutex.unlock();
+
 		return error(engine_err_space);
     }
 
 #ifdef WITH_MPI
 	/* Get the incomming particle from other procs if needed. */
 	if(e->particle_flags & engine_flag_mpi)
-		if(engine_exchange_incomming(e) < 0)
+		if(engine_exchange_incomming(e) < 0) {
+			e->advance_mutex.unlock();
+
 			return error(engine_err);
+		}
 #endif
 
 /* Welcome the new particles in each cell, unhook the old ones. */
@@ -225,6 +235,8 @@ int TissueForge::engine_shuffle(struct engine *e) {
 	};
 	parallel_for(s->nr_marked, func_space_cell_welcome);
 #endif
+
+	e->advance_mutex.unlock();
 
 	/* return quietly */
 	return engine_err_ok;
@@ -1693,8 +1705,20 @@ int TissueForge::engine_force_prep(struct engine *e) {
 
     /* prepare the space, sets forces to zero */
     tic = getticks();
-    if(space_prepare(&e->s) != space_err_ok)
+
+	if(e->flags & engine_flag_advance_mutex) 
+		e->advance_mutex.lock();
+
+    if(space_prepare(&e->s) != space_err_ok) {
+		if(e->flags & engine_flag_advance_mutex) 
+			e->advance_mutex.unlock();
+
         return error(engine_err_space);
+	}
+
+	if(e->flags & engine_flag_advance_mutex) 
+		e->advance_mutex.unlock();
+
     e->timers[engine_timer_prepare] += getticks() - tic;
 
     /* Make sure the verlet lists are up to date. */
@@ -2199,7 +2223,14 @@ FPTYPE TissueForge::engine_kinetic_energy(struct engine *e)
             worker_total[cid] += e;
         }
 	};
+
+	if(e->flags & engine_flag_advance_mutex) 
+		e->advance_mutex.lock();
+
 	parallel_for(_Engine.s.nr_cells, func_cell_kinetic_energy);
+
+	if(e->flags & engine_flag_advance_mutex) 
+		e->advance_mutex.unlock();
 
 	for(int cid = 0; cid < _Engine.s.nr_cells; cid++) {
 		total += worker_total[cid];

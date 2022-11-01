@@ -364,6 +364,10 @@ int engine_advance_forward_euler(struct engine *e) {
             epot += s->cells[ s->cid_ghost[cid] ].epot;
 
 #ifdef HAVE_OPENMP
+
+        if(e->flags & engine_flag_advance_mutex) 
+            e->advance_mutex.lock();
+
 #pragma omp parallel private(cid,c,pid,p,w,k,epot_local)
         {
             step = omp_get_num_threads();
@@ -391,6 +395,10 @@ int engine_advance_forward_euler(struct engine *e) {
 #pragma omp atomic
             epot += epot_local;
         }
+
+        if(e->flags & engine_flag_advance_mutex) 
+            e->advance_mutex.unlock();
+
 #else
         auto func_update_parts = [&](int _cid) -> void {
             space_cell *_c = &(s->cells[ s->cid_real[_cid] ]);
@@ -411,7 +419,15 @@ int engine_advance_forward_euler(struct engine *e) {
                 }
             }
         };
+
+        if(e->flags & engine_flag_advance_mutex) 
+            e->advance_mutex.lock();
+
         parallel_for(s->nr_real, func_update_parts);
+
+        if(e->flags & engine_flag_advance_mutex) 
+            e->advance_mutex.unlock();
+
         for(cid = 0; cid < s->nr_real; cid++) {
             epot += s->cells[ s->cid_real[cid] ].epot;
             computed_volume += s->cells[s->cid_real[cid]].computed_volume;
@@ -443,18 +459,24 @@ int engine_advance_forward_euler(struct engine *e) {
             Fluxes_integrate(_cid);
             #endif
         };
-        
-        parallel_for(s->nr_real, func);
 
         auto func_advance_clusters = [&h](int _cid) -> void {
             cell_advance_forward_euler_cluster(h, staggered_ids[_cid]);
         };
-        parallel_for(s->nr_real, func_advance_clusters);
 
         auto func_space_cell_welcome = [&](int _cid) -> void {
             space_cell_welcome(&(s->cells[ s->cid_marked[_cid] ]), s->partlist);
         };
+
+        if(e->flags & engine_flag_advance_mutex) 
+            e->advance_mutex.lock();
+        
+        parallel_for(s->nr_real, func);
+        parallel_for(s->nr_real, func_advance_clusters);
         parallel_for(s->nr_marked, func_space_cell_welcome);
+
+        if(e->flags & engine_flag_advance_mutex) 
+            e->advance_mutex.unlock();
 
         /* Collect potential energy and computed volume */
         for(cid = 0; cid < s->nr_cells; cid++) {

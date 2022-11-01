@@ -118,6 +118,7 @@ namespace TissueForge {
 		engine_flag_nullpart             = 1 << 15,
 		engine_flag_initialized          = 1 << 16,
 		engine_flag_velocity_clamp       = 1 << 17,
+		engine_flag_advance_mutex		 = 1 << 18
 	};
 
 	enum EngineIntegrator {
@@ -247,6 +248,9 @@ namespace TissueForge {
 		 * potential matrix p.
 		 */
 		struct Fluxes **fluxes;
+
+		/** Mutex for when the system is advancing */
+		std::mutex advance_mutex;
 
 		/** Mutexes, conditions and counters for the barrier */
 		pthread_mutex_t barrier_mutex;
