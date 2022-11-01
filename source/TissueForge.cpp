@@ -69,6 +69,12 @@ namespace TissueForge {
 
     HRESULT step(const FloatP_t &until, const FloatP_t &dt) { return Universe::step(until, dt); }
 
+    HRESULT stepAsyncStart(const FloatP_t &until, const FloatP_t &dt) { return Universe::stepAsyncStart(until, dt); }
+
+    bool stepAsyncWorking() { return Universe::stepAsyncWorking(); }
+
+    HRESULT stepAsyncJoin() { return Universe::stepAsyncJoin(); }
+
     HRESULT stop() { return Universe::stop(); }
     
     HRESULT start() { return Universe::start(); }

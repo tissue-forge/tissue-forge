@@ -46,7 +46,10 @@ For convenience, all simulation control functions are aliased as top-level funct
     tf.close()                  # close the main window
     tf.show()                   # display the window
     tf.step()                   # time steps the simulation
-    tf.stop()                   # stops the simulation
+    tf.step_async_start()       # execute ``step`` asynchronously
+    tf.step_async_working()     # test whether an asynchronous call to ``step`` is executing
+    tf.step_async_join()        # block until a current asynchronous call to ``step`` finishes
+    tf.stop()                   # interrupts and stops the simulation
 
 In C++, the same functions are available through the ``TissueForge`` namespace in ``TissueForge.h``,
 
@@ -64,7 +67,10 @@ In C++, the same functions are available through the ``TissueForge`` namespace i
     tf::close();                    // close the main window
     tf::show();                     // display the window
     tf::step();                     // time steps the simulation
-    tf::stop();                     // stops the simulation
+    tf::stepAsyncStart();           // execute ``step`` asynchronously
+    tf::stepAsyncWorking();         // test whether an asynchronous call to ``step`` is executing
+    tf::stepAsyncJoin();            // block until a current asynchronous call to ``step`` finishes
+    tf::stop();                     // interrupts and stops the simulation
 
 In C, the same functions are available in ``wraps/C/TissueForge_c.h``,
 
@@ -81,7 +87,10 @@ In C, the same functions are available in ``wraps/C/TissueForge_c.h``,
     tfClose();                              // close the main window
     tfShow();                               // display the window
     tfStep();                               // time steps the simulation
-    tfStop();                               // stops the simulation
+    tfStepAsyncStart();                     // execute ``step`` asynchronously
+    tfStepAsyncWorking();                   // test whether an asynchronous call to ``step`` is executing
+    tfStepAsyncJoin();                      // block until a current asynchronous call to ``step`` finishes
+    tfStop();                               // interrupts and stops the simulation
 
 .. _running_a_sim_windowless:
 
@@ -109,6 +118,57 @@ Execution of a simulation occurs through the function :func:`step` (rather than
     num_steps = int(1E6)  # Number of steps to execute
     for step_num in range(num_steps):
         tf.step()
+
+Asynchronous and Embedded Simulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Tissue Forge supports simulation execution as a background process. Tissue Forge
+can begin execution of a number of simulation steps and then return control to accomplish
+other things while the simulation executes, ::
+
+    # Start executing some simulation time in the background
+    tf.step_async_start(until=1.0)
+    # Do other things here while waiting on the simulation
+    ...
+    # Wait until simulation is done with previous instructions
+    tf.step_async_join()
+
+When visualizing a simulation in real time, Tissue Forge asynchronously performs system
+evolution and rendering.
+These same features allow Tissue Forge to act as an embedded software component
+when running in :ref:`Windowless mode <_running_a_sim_windowless>`, where an application
+can issue simulation steps to execute in the background and retrieve visualization and
+simulation data on demand.
+For example, an application can easily construct an *ad hoc* event loop that externally
+controls a Tissue Forge simulation, ::
+
+    # Instruct Tissue Forge to support real-time rendering during asynchronous execution
+    tf.Simulator.setIsRTRendering(True)
+    # Release the Tissue Forge context, to be picked up in background thread
+    tf.system.context_release()
+    # Define a flag that controls whether Tissue Forge evolves the system
+    tf_evolve_flag = False
+    # Define a framerate
+    import time
+    tf_delay = 1 / 60
+    # Define a container to place visualization data as it's gathered
+    tf_viz_data = None
+    # Define a routine for a background thread that runs Tissue Forge
+    def background_thread_routine():
+        global tf_evolve_flag, tf_delay, tf_viz_data
+        tf.system.context_make_current()            # Grab the Tissue Forge context
+        while True:
+            tf_viz_data = tf.system.image_data()    # Load visualization data
+            if tf_evolve_flag:                      # Issue a step?
+                if not tf.step_async_working():     # Already working on a step?
+                    tf.step_async_start()           # Issue a step
+            time.sleep(tf_delay)                    # Wait a while
+    # Create the background thread that runs Tissue Forge
+    import threading
+    tf_thread = threading.Thread(target=background_thread_routine)
+    tf_thread.start()
+    # Start executing the simulation
+    tf_evolve_flag = True
 
 Reproducible Simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
