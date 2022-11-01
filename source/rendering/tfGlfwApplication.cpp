@@ -428,6 +428,8 @@ HRESULT rendering::GlfwApplication::close()
 {
     TF_Log(LOG_DEBUG);
 
+    Simulator_SetFlag(Simulator::Flags::RTRendering, false);
+
     glfwHideWindow(window());
 
     return S_OK;
@@ -566,6 +568,8 @@ HRESULT rendering::GlfwApplication::showWindow()
         ForceForgoundWindow1(window());
     }
 #endif
+
+    Simulator_SetFlag(Simulator::Flags::RTRendering, true);
 
     TF_GLFW_CHECK();
 }

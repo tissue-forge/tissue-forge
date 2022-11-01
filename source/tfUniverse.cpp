@@ -38,6 +38,7 @@
 #include "rendering/tfStyle.h"
 #include "io/tfFIO.h"
 #include <tf_mdcore_io.h>
+#include <mutex>
 
 
 using namespace TissueForge;
@@ -60,7 +61,7 @@ engine TissueForge::_Engine = {
 
 // default to paused universe
 static uint32_t universe_flags = 0;
-
+static std::mutex universe_flags_mutex;
 
 struct engine* TissueForge::engine_get()
 {
@@ -151,7 +152,12 @@ FMatrix3 *Universe::virial(FVector3 *origin, FloatP_t *radius, std::vector<Parti
 
 HRESULT Universe::step(const FloatP_t &until, const FloatP_t &dt) {
     TF_UNIVERSE_TRY();
-    return Universe_Step(until, dt);
+    bool alreadyRunning = Universe_Flag(Universe::Flags::RUNNING);
+    Universe_SetFlag(Universe::Flags::RUNNING, true);
+    HRESULT res = Universe_Step(until, dt);
+    if(!alreadyRunning) 
+        Universe_SetFlag(Universe::Flags::RUNNING, false);
+    return res;
     TF_UNIVERSE_FINALLY(1);
 }
 
@@ -328,7 +334,13 @@ HRESULT TissueForge::Universe_Step(FloatP_t until, FloatP_t dt) {
 
     FloatP_t tf = _Engine.time + until / dtStore;
 
-    while (_Engine.time < tf) {
+    bool engine_flag_advance_mutexStore = _Engine.flags & engine_flag_advance_mutex;
+    if(Simulator_Flag(Simulator::Flags::RTRendering)) 
+        _Engine.flags |= engine_flag_advance_mutex;
+    else 
+        _Engine.flags &= ~(engine_flag_advance_mutex);
+
+    while (_Engine.time < tf && Universe_Flag(Universe::Flags::RUNNING)) {
         if ( engine_step( &_Engine ) != 0 ) {
             std::string msg = "main: engine_step failed with engine_err=";
             msg += engine_err;
@@ -337,18 +349,30 @@ HRESULT TissueForge::Universe_Step(FloatP_t until, FloatP_t dt) {
         }
 
         // notify time listeners
+        Simulator::lockRTRenderingIf();
+
         if(_Universe.events->eval(_Engine.time * _Engine.dt) != 0) {
+            Simulator::UnlockRTRenderingIf();
+            
             std::string msg = "main: engine_step failed with engine_err=";
             msg += engine_err;
             tf_error(E_FAIL, msg.c_str());
             return E_FAIL;
         }
 
+        Simulator::UnlockRTRenderingIf();
+
         if(_Engine.timer_output_period > 0 && _Engine.time % _Engine.timer_output_period == 0 ) {
             system::printPerformanceCounters();
         }
 
     }
+
+    // Restore rendering state
+    if(engine_flag_advance_mutexStore) 
+        _Engine.flags |= engine_flag_advance_mutex;
+    else 
+        _Engine.flags &= ~(engine_flag_advance_mutex);
 
     _Engine.dt = dtStore;
 
@@ -362,9 +386,11 @@ int TissueForge::Universe_Flag(Universe::Flags flag)
     return universe_flags & flag;
 }
 
-CAPI_FUNC(HRESULT) TissueForge::Universe_SetFlag(Universe::Flags flag, int value)
+HRESULT TissueForge::Universe_SetFlag(Universe::Flags flag, int value)
 {
     TF_UNIVERSE_CHECKERROR();
+
+    universe_flags_mutex.lock();
 
     if(value) {
         universe_flags |= flag;
@@ -372,6 +398,8 @@ CAPI_FUNC(HRESULT) TissueForge::Universe_SetFlag(Universe::Flags flag, int value
     else {
         universe_flags &= ~(flag);
     }
+
+    universe_flags_mutex.unlock();
 
     return Simulator::get()->redraw();
 }

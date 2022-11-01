@@ -223,6 +223,26 @@ HRESULT tfSimulator_makeCurrent(struct tfSimulatorHandle *handle) {
     return sim->makeCurrent();
 }
 
+bool tfSimulator_lockedRTRendering() {
+    return Simulator::lockedRTRendering();
+}
+
+HRESULT tfSimulator_lockRTRendering() {
+    return Simulator::lockRTRendering();
+}
+
+HRESULT tfSimulator_UnlockRTRendering() {
+    return Simulator::UnlockRTRendering();
+}
+
+HRESULT tfSimulator_lockRTRenderingIf() {
+    return Simulator::lockRTRenderingIf();
+}
+
+HRESULT tfSimulator_UnlockRTRenderingIf() {
+    return Simulator::UnlockRTRenderingIf();
+}
+
 HRESULT tfSimulator_run(tfFloatP_t et) {
     Simulator *sim = Simulator::get();
     TFC_PTRCHECK(sim);

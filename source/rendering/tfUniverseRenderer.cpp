@@ -380,6 +380,8 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::draw(T& camera, const 
     
     _dirty = false;
 
+    _Engine.advance_mutex.lock();
+
     int nr_parts = _Engine.s.nr_parts - _Engine.s.largeparts.count;
 
     sphereMesh.setInstanceCount(nr_parts);
@@ -448,6 +450,8 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::draw(T& camera, const 
     for(auto &s : subRenderers) 
         s->draw(camera, viewportSize, modelViewMat);
     
+    _Engine.advance_mutex.unlock();
+
     return *this;
 }
 

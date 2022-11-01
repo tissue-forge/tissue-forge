@@ -273,6 +273,41 @@ CAPI_FUNC(HRESULT) tfSimulator_get(struct tfSimulatorHandle *handle);
 CAPI_FUNC(HRESULT) tfSimulator_makeCurrent(struct tfSimulatorHandle *handle);
 
 /**
+ * @brief Tests whether the simulator real-time rendering lock is enabled
+ * 
+ * @return true when the simulator real-time rendering lock is enabled
+ */
+CAPI_FUNC(bool) tfSimulator_lockedRTRendering();
+
+/**
+ * @brief Enable the simulator real-time rendering lock
+ * 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulator_lockRTRendering();
+
+/**
+ * @brief Disable the simulator real-time rendering lock
+ * 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulator_UnlockRTRendering();
+
+/**
+ * @brief Enable the simulator real-time rendering lock if the simulator is supporting real-time rendering
+ * 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulator_lockRTRenderingIf();
+
+/**
+ * @brief Disable the simulator real-time rendering lock if the simulator is supporting real-time rendering
+ * 
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulator_UnlockRTRenderingIf();
+
+/**
  * @brief Runs the event loop until all windows close or simulation time expires. 
  * Automatically performs universe time propogation. 
  * 

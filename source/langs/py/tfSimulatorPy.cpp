@@ -536,6 +536,8 @@ PyObject *py::SimulatorPy_init(PyObject *args, PyObject *kwargs) {
 
         TF_Log(LOG_INFORMATION) << "sucessfully created application";
 
+        Simulator_SetFlag(Simulator::Flags::Running, true);
+
         sim->makeCurrent();
         
         if(py::ZMQInteractiveShell()) {
@@ -565,7 +567,7 @@ HRESULT py::SimulatorPy::irun()
     
     TF_SIMULATORPY_CHECK();
 
-    Universe_SetFlag(Universe::Flags::RUNNING, true);
+    Universe::start();
 
     TF_Log(LOG_DEBUG) << "checking for ipython";
 
@@ -574,14 +576,14 @@ HRESULT py::SimulatorPy::irun()
 
     if (interactive) {
 
+        TF_Log(LOG_DEBUG) <<  "in ipython, calling interactive";
+
         if (!Universe_Flag(Universe::Flags::IPYTHON_MSGLOOP)) {
             // ipython message loop, this exits right away
             simulator_interactive_run();
         }
-
-        TF_Log(LOG_DEBUG) <<  "in ipython, calling interactive";
-
-        Simulator::get()->app->show();
+        else 
+            Simulator::get()->app->show();
         
         TF_Log(LOG_DEBUG) << "finished";
 
@@ -604,14 +606,14 @@ HRESULT py::SimulatorPy::_show()
     
     if (interactive) {
 
+        TF_Log(LOG_TRACE) << "in ipython, calling interactive";
+
         if (!Universe_Flag(Universe::Flags::IPYTHON_MSGLOOP)) {
             // ipython message loop, this exits right away
             simulator_interactive_run();
         }
-
-        TF_Log(LOG_TRACE) << "in ipython, calling interactive";
-
-        Simulator::get()->app->show();
+        else 
+            Simulator::get()->app->show();
         
         TF_Log(LOG_INFORMATION) << ", Simulator::get()->app->show() all done" ;
 

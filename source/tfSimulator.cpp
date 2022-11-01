@@ -737,6 +737,8 @@ HRESULT TissueForge::Simulator_init(const Simulator::Config &conf, const std::ve
 
         TF_Log(LOG_INFORMATION) << "sucessfully created application";
 
+        Simulator_SetFlag(Simulator::Flags::Running, true);
+
         sim->makeCurrent();
         
         return S_OK;
@@ -861,6 +863,8 @@ HRESULT Simulator::initConfig(const Simulator::Config &conf, const Simulator::GL
 
     TF_Log(LOG_INFORMATION);
 
+    Simulator_SetFlag(Simulator::Flags::Running, true);
+
     sim->makeCurrent();
 
     return S_OK;
@@ -875,6 +879,8 @@ HRESULT Simulator::close()
 HRESULT Simulator::destroy()
 {
     TF_SIMULATOR_CHECK();
+    Simulator_SetFlag(Simulator::Flags::Running, false);
+    Simulator_SetFlag(Simulator::Flags::RTRendering, false);
     return _Simulator->app->destroy();
 }
 
@@ -909,6 +915,38 @@ HRESULT Simulator::makeCurrent() {
     }
     _Simulator = this;
     return S_OK;
+}
+
+static bool _Engine_advance_mutex_locked = false;
+
+bool Simulator::lockedRTRendering() { 
+    return _Engine_advance_mutex_locked;
+}
+
+HRESULT Simulator::lockRTRendering() {
+    if(lockedRTRendering()) 
+        return S_OK;
+    
+    _Engine_advance_mutex_locked = true;
+    _Engine.advance_mutex.lock();
+    return S_OK;
+}
+
+HRESULT Simulator::UnlockRTRendering() {
+    if(!lockedRTRendering()) 
+        return S_OK;
+
+    _Engine_advance_mutex_locked = false;
+    _Engine.advance_mutex.unlock();
+    return S_OK;
+}
+
+HRESULT Simulator::lockRTRenderingIf() { 
+    return Simulator_Flag(Simulator::Flags::RTRendering) ? lockRTRendering() : S_OK;
+}
+
+HRESULT Simulator::UnlockRTRenderingIf() {
+    return Simulator_Flag(Simulator::Flags::RTRendering) ? UnlockRTRendering() : S_OK;
 }
 
 

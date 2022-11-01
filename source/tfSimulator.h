@@ -216,6 +216,21 @@ namespace TissueForge {
          */
         HRESULT makeCurrent();
 
+        /** Tests whether the simulator real-time rendering lock is enabled */
+        static bool lockedRTRendering();
+
+        /** Enable the simulator real-time rendering lock */
+        static HRESULT lockRTRendering();
+
+        /** Disable the simulator real-time rendering lock */
+        static HRESULT UnlockRTRendering();
+
+        /** Enable the simulator real-time rendering lock if the simulator is supporting real-time rendering */
+        static HRESULT lockRTRenderingIf();
+
+        /** Disable the simulator real-time rendering lock if the simulator is supporting real-time rendering */
+        static HRESULT UnlockRTRenderingIf();
+
         static HRESULT initConfig(const Config &conf, const GLConfig &glConf);
 
         /**

@@ -114,6 +114,17 @@
         def redraw():
             return _SimulatorPy.redraw()
 
+        @property
+        def locked_rtrendering(self) -> bool:
+            return _Simulator.lockedRTRendering()
+
+        @locked_rtrendering.setter
+        def locked_rtrendering(self, _flag: bool):
+            if _flag:
+                _Simulator.lockRTRendering()
+            else:
+                _Simulator.unlockRTRendering()
+
     Simulator = SimulatorInterface()
     
     from enum import Enum as EnumPy
