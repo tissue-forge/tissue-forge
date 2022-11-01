@@ -227,6 +227,36 @@ CAPI_FUNC(HRESULT) tfSimulator_init(char **argv, unsigned int nargs);
 CAPI_FUNC(HRESULT) tfSimulator_initC(struct tfSimulatorConfigHandle *conf, char **appArgv, unsigned int nargs);
 
 /**
+ * @brief Tests whether the simulator is running
+ * 
+ * @return true when the simulator is running
+ */
+CAPI_FUNC(bool) tfSimulator_isRunning();
+
+/**
+ * @brief Tests whether the simulator is supporting real-time rendering
+ * 
+ * @return true when supporting real-time rendering
+ */
+CAPI_FUNC(bool) tfSimulator_isRTRendering();
+
+/**
+ * @brief Sets whether the simulator is running
+ * 
+ * @param flag true when running
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulator_setIsRunning(bool flag);
+
+/**
+ * @brief Sets whether the simulator is supporting real-time rendering
+ * 
+ * @param flag true when supporting real-time rendering
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulator_setIsRTRendering(bool flag);
+
+/**
  * @brief Gets the global simulator object
  * 
  * @param handle handle

@@ -194,6 +194,22 @@ HRESULT tfSimulator_initC(struct tfSimulatorConfigHandle *handle, char **appArgv
     return Simulator_init(*conf, TissueForge::capi::charA2StrV((const char**)appArgv, nargs));
 }
 
+bool tfSimulator_isRunning() {
+    return Simulator::isRunning();
+}
+
+bool tfSimulator_isRTRendering() {
+    return Simulator::isRTRendering();
+}
+
+HRESULT tfSimulator_setIsRunning(bool flag) {
+    return Simulator::setIsRunning(flag);
+}
+
+HRESULT tfSimulator_setIsRTRendering(bool flag) {
+    return Simulator::setIsRTRendering(flag);
+}
+
 HRESULT tfSimulator_get(struct tfSimulatorHandle *handle) {
     Simulator *sim = Simulator::get();
     if(!sim) 

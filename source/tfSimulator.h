@@ -131,12 +131,6 @@ namespace TissueForge {
             RUNGE_KUTTA_4 = TissueForge::EngineIntegrator::RUNGE_KUTTA_4
         };
 
-        enum Key {
-            NONE,
-            WINDOWLESS,
-            GLFW
-        };
-
         enum Options {
             Windowless = 1 << 0,
 
@@ -194,8 +188,21 @@ namespace TissueForge {
         struct rendering::Application *app;
 
         enum Flags {
-            Running = 1 << 0
+            Running     = 1 << 0, 
+            RTRendering = 1 << 1
         };
+
+        /** Tests whether the simulator is running */
+        static bool isRunning();
+
+        /** Tests whether the simulator is supporting real-time rendering */
+        static bool isRTRendering();
+
+        /** Sets whether the simulator is running */
+        static HRESULT setIsRunning(const bool &_flag);
+
+        /** Sets whether the simulator is supporting real-time rendering */
+        static HRESULT setIsRTRendering(const bool &_flag);
 
         /**
          * gets the global simulator object, returns NULL if fail.
@@ -358,6 +365,16 @@ namespace TissueForge {
      * main simulator init method
      */
     CPPAPI_FUNC(HRESULT) Simulator_init(const Simulator::Config &conf, const std::vector<std::string> &appArgv=std::vector<std::string>());
+
+    /**
+     * get a flag value
+     */
+    CAPI_FUNC(int) Simulator_Flag(Simulator::Flags flag);
+
+    /**
+     * sets / clears a flag value
+     */
+    CAPI_FUNC(HRESULT) Simulator_SetFlag(Simulator::Flags flag, int value);
 
     struct CAPI_EXPORT Simulator::Config {
 

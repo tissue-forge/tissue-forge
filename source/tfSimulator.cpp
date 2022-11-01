@@ -79,6 +79,8 @@ static bool _isTerminalInteractiveShell = false;
 
 static void simulator_interactive_run();
 
+// default to paused simulator
+static uint32_t simulator_flags = 0;
 
 Simulator::Config::Config():
             _title{"Tissue Forge Application"},
@@ -483,13 +485,6 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
     );
 }
 
-// (5) Initializer list constructor
-const std::map<std::string, int> configItemMap {
-    {"none", Simulator::Key::NONE},
-    {"windowless", Simulator::Key::WINDOWLESS},
-    {"glfw", Simulator::Key::GLFW}
-};
-
 #define TF_CLASS METH_CLASS | METH_VARARGS | METH_KEYWORDS
 
 
@@ -782,6 +777,21 @@ HRESULT TissueForge::Simulator_init(const std::vector<std::string> &argv) {
     }
 }
 
+int TissueForge::Simulator_Flag(Simulator::Flags flag) {
+    return simulator_flags & flag;
+}
+
+HRESULT TissueForge::Simulator_SetFlag(Simulator::Flags flag, int value) {
+    if(value) {
+        simulator_flags |= flag;
+    }
+    else {
+        simulator_flags &= ~(flag);
+    }
+
+    return Simulator_Flag(Simulator::Flags::RTRendering) ? Simulator::redraw() : S_OK;
+}
+
 HRESULT Simulator::show()
 {
     TF_SIMULATOR_CHECK();
@@ -868,9 +878,22 @@ HRESULT Simulator::destroy()
     return _Simulator->app->destroy();
 }
 
-/**
- * gets the global simulator object, returns NULL if fail.
- */
+bool Simulator::isRunning() {
+    return Simulator_Flag(Simulator::Flags::Running);
+}
+
+bool Simulator::isRTRendering() {
+    return Simulator_Flag(Simulator::Flags::RTRendering);
+}
+
+HRESULT Simulator::setIsRunning(const bool &_flag) {
+    return Simulator_SetFlag(Simulator::Flags::Running, _flag);
+}
+
+HRESULT Simulator::setIsRTRendering(const bool &_flag) {
+    return Simulator_SetFlag(Simulator::Flags::RTRendering, _flag);
+}
+
 Simulator *Simulator::get() {
     if(_Simulator) {
         return _Simulator;

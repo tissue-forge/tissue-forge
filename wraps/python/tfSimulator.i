@@ -91,6 +91,25 @@
         def destroy():
             return _SimulatorPy.destroy()
 
+        @property
+        def is_running(self) -> bool:
+            """
+            Tests whether the simulator is running
+            """
+            return _Simulator.isRunning()
+
+        @is_running.setter
+        def is_running(self, _flag: bool):
+            _Simulator.setIsRunning(_flag)
+
+        @property
+        def is_rtrendering(self) -> bool:
+            return _Simulator.isRTRendering()
+
+        @is_rtrendering.setter
+        def is_rtrendering(self, _flag: bool):
+            _Simulator.setIsRTRendering(_flag)
+
         @staticmethod
         def redraw():
             return _SimulatorPy.redraw()
