@@ -17,8 +17,8 @@
  * 
  ******************************************************************************/
 
-#ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFCONVEXPOLYGON_H_
-#define _MODELS_VERTEX_SOLVER_ACTORS_TFCONVEXPOLYGON_H_
+#ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFCONVEXPOLYGONCONSTRAINT_H_
+#define _MODELS_VERTEX_SOLVER_ACTORS_TFCONVEXPOLYGONCONSTRAINT_H_
 
 #include <models/vertex/solver/tfMeshObj.h>
 
@@ -41,4 +41,4 @@ namespace TissueForge::models::vertex {
 
 }
 
-#endif // _MODELS_VERTEX_SOLVER_ACTORS_TFCONVEXPOLYGON_H_
+#endif // _MODELS_VERTEX_SOLVER_ACTORS_TFCONVEXPOLYGONCONSTRAINT_H_

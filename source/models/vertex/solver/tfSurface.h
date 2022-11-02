@@ -270,11 +270,12 @@ namespace TissueForge::models::vertex {
          * @brief Construct a new surface type
          * 
          * @param flatLam parameter for flat surface constraint
+         * @param convexLam parameter for convex surface constraint
          */
-        SurfaceType(const FloatP_t &flatLam);
+        SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam);
 
         /** Construct a new surface type */
-        SurfaceType() : SurfaceType(0.1) {};
+        SurfaceType() : SurfaceType(0.1, 0.1) {};
 
         /** Get the mesh object type */
         MeshObj::Type objType() { return MeshObj::Type::SURFACE; }
