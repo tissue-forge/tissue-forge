@@ -26,17 +26,25 @@
 namespace TissueForge::models::vertex { 
 
 
+    typedef HRESULT (*EdgeTensionEnergyFcn)(MeshObj*, MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t&);
+    typedef HRESULT (*EdgeTensionForceFcn)(MeshObj*, MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t*);
+
+
     struct EdgeTension : MeshObjActor {
 
         FloatP_t lam;
+        unsigned int order;
 
-        EdgeTension(const FloatP_t &_lam) {
-            lam = _lam;
-        }
+        EdgeTension(const FloatP_t &lam, const unsigned int &order=1);
 
         HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e);
 
         HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f);
+
+    private:
+
+        EdgeTensionEnergyFcn energyFcn;
+        EdgeTensionForceFcn forceFcn;
     };
 
 }
