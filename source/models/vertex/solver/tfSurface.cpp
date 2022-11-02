@@ -24,6 +24,7 @@
 #include "tfBody.h"
 #include "tfStructure.h"
 #include "tfMeshSolver.h"
+#include "actors/tfConvexPolygonConstraint.h"
 #include "actors/tfFlatSurfaceConstraint.h"
 
 #include <Magnum/Math/Math.h>
@@ -638,6 +639,7 @@ SurfaceType::SurfaceType(const FloatP_t &flatLam) :
 {
     style = NULL;
     actors.push_back(new FlatSurfaceConstraint(flatLam));
+    actors.push_back(new ConvexPolygonConstraint());
 }
 
 Surface *SurfaceType::operator() (std::vector<Vertex*> _vertices) {
