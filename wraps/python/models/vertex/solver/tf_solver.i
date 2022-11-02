@@ -62,6 +62,10 @@ static bool _vertex_solver_MeshObj_has(TissueForge::models::vertex::MeshObj *sel
     return self->has(obj);
 }
 
+static int _vertex_solver_MeshObjType_getId(TissueForge::models::vertex::MeshObjType *self) {
+    return self->id;
+}
+
 %}
 
 %template(vectorMeshVertex) std::vector<TissueForge::models::vertex::Vertex*>;
@@ -180,6 +184,22 @@ vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Vertex)
 vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Surface)
 vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Body)
 vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Structure)
+
+%define vertex_solver_MeshObjType_extend_py(name) 
+
+%extend name {
+    %pythoncode %{
+        @property
+        def id(self) -> int:
+            return _vertex_solver_MeshObjType_getId(self)
+    %}
+}
+
+%enddef
+
+vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
+vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
+vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::StructureType)
 
 %extend TissueForge::models::vertex::Vertex {
     %pythoncode %{
