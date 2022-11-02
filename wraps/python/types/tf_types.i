@@ -247,6 +247,7 @@ typedef TissueForge::types::TQuaternion<float> fQuaternion;
 vector_template_prep_float(TissueForge::types::TVector2, dataType, wrappedName)
 
 %rename(_ ## wrappedName ## _distance) TissueForge::types::TVector2::distance<dataType>;
+%rename(_ ## wrappedName ## _lineShortestDisplacementTo) TissueForge::types::TVector2::lineShortestDisplacementTo<dataType>;
 
 %extend TissueForge::types::TVector2<dataType> {
     dataType _distance(
@@ -255,11 +256,21 @@ vector_template_prep_float(TissueForge::types::TVector2, dataType, wrappedName)
     { 
         return $self->distance(lineStartPt, lineEndPt); 
     }
+    TissueForge::types::TVector2<dataType> _lineShortestDisplacementTo(
+        const TissueForge::types::TVector2<dataType> &lineStartPt, 
+        const TissueForge::types::TVector2<dataType> &lineEndPt) 
+    { 
+        return $self->lineShortestDisplacementTo(lineStartPt, lineEndPt); 
+    }
 
     %pythoncode %{
         def distance(self, line_start_pt, line_end_pt):
             """distance from a line defined by two points"""
             return self._distance(line_start_pt, line_end_pt)
+
+        def line_shortest_displacement_to(self, line_start_pt, line_end_pt):
+            """shortest displacement to a line defined by two points"""
+            return self._lineShortestDisplacementTo(line_start_pt, line_end_pt)
 
         def __reduce__(self):
             return self.__class__, (self.x(), self.y())
@@ -273,6 +284,7 @@ vector_template_prep_float(TissueForge::types::TVector2, dataType, wrappedName)
 vector_template_prep_float(TissueForge::types::TVector3, dataType, wrappedName)
 
 %rename(_ ## wrappedName ## _distance) TissueForge::types::TVector3::distance<dataType>;
+%rename(_ ## wrappedName ## _lineShortestDisplacementTo) TissueForge::types::TVector3::lineShortestDisplacementTo<dataType>;
 %rename(_ ## wrappedName ## _relativeTo) TissueForge::types::TVector3::relativeTo<dataType>;
 %rename(_ ## wrappedName ## _xy) TissueForge::types::TVector3::xy<dataType>;
 
@@ -283,6 +295,12 @@ vector_template_prep_float(TissueForge::types::TVector3, dataType, wrappedName)
         const TissueForge::types::TVector3<dataType> &lineEndPt) 
     { 
         return $self->distance(lineStartPt, lineEndPt); 
+    }
+    TissueForge::types::TVector3<dataType> _lineShortestDisplacementTo(
+        const TissueForge::types::TVector3<dataType> &lineStartPt, 
+        const TissueForge::types::TVector3<dataType> &lineEndPt) 
+    { 
+        return $self->lineShortestDisplacementTo(lineStartPt, lineEndPt); 
     }
     TissueForge::types::TVector3<dataType> _relativeTo(
         const TVector3<dataType> &origin, 
@@ -302,6 +320,10 @@ vector_template_prep_float(TissueForge::types::TVector3, dataType, wrappedName)
         def distance(self, line_start_pt, line_end_pt):
             """distance from a line defined by two points"""
             return self._distance(line_start_pt, line_end_pt)
+
+        def line_shortest_displacement_to(self, line_start_pt, line_end_pt):
+            """shortest displacement to a line defined by two points"""
+            return self._lineShortestDisplacementTo(line_start_pt, line_end_pt)
 
         def relative_to(self, origin, dim, periodic_x, periodic_y, periodic_z):
             """position relative to an origin in a space with some periodic boundary conditions"""

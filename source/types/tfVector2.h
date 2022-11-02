@@ -61,6 +61,12 @@ namespace TissueForge::types {
                 return Magnum::Math::Distance::lineSegmentPoint(lineStartPt, lineEndPt, *this);
             }
 
+            template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
+            TVector2<T> lineShortestDisplacementTo(const TVector2<T> &lineStartPt, const TVector2<T> &lineEndPt) const {
+                const TVector2<T> lineDir = (lineEndPt - lineStartPt).normalized();
+                return lineStartPt + (*this - lineStartPt).dot(lineDir) * lineDir - *this;
+            }
+
             MAGNUM_BASE_VECTOR_CAST_METHODS(2, TVector2, Vector2Base)
 
             REVISED_MAGNUM_VECTOR_SUBCLASS_IMPLEMENTATION(2, TVector2, Vector2Base)

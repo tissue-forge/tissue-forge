@@ -29,26 +29,23 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-static inline bool ConvexPolygonConstraint_acts(Vertex *vc, Surface *s, FVector3 &dir_a2b, FVector3 &rel_c2ab) {
+static inline bool ConvexPolygonConstraint_acts(Vertex *vc, Surface *s, FVector3 &rel_c2ab) {
     Vertex *va, *vb;
     std::tie(va, vb) = s->neighborVertices(vc);
-    const FVector3 posva = va->getPosition();
     const FVector3 posvc = vc->getPosition();
-    
+
     // Perpindicular vector from vertex to line connecting neighbors should point 
     //  in the same direction as the vector from the vertex to the centroid
-    dir_a2b = (vb->getPosition() - posva).normalized();
-    rel_c2ab = posva + (posvc - posva).dot(dir_a2b) * dir_a2b - posvc;
+    rel_c2ab = posvc.lineShortestDisplacementTo(va->getPosition(), vb->getPosition());
     return rel_c2ab.dot(s->getCentroid() - posvc) < 0;
 }
-
 
 HRESULT ConvexPolygonConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     Vertex *vc = (Vertex*)target;
     Surface *s = (Surface*)source;
 
-    FVector3 dir_a2b, rel_c2ab;
-    if(ConvexPolygonConstraint_acts(vc, s, dir_a2b, rel_c2ab)) 
+    FVector3 rel_c2ab;
+    if(ConvexPolygonConstraint_acts(vc, s, rel_c2ab)) 
         e += vc->particle()->getMass() / _Engine.dt * lam / 2.0 * rel_c2ab.dot();
 
     return S_OK;
@@ -58,8 +55,8 @@ HRESULT ConvexPolygonConstraint::force(MeshObj *source, MeshObj *target, FloatP_
     Vertex *vc = (Vertex*)target;
     Surface *s = (Surface*)source;
 
-    FVector3 dir_a2b, rel_c2ab;
-    if(ConvexPolygonConstraint_acts(vc, s, dir_a2b, rel_c2ab)) {
+    FVector3 rel_c2ab;
+    if(ConvexPolygonConstraint_acts(vc, s, rel_c2ab)) {
         const FVector3 force = rel_c2ab * vc->particle()->getMass() / _Engine.dt * lam;
         f[0] += force[0];
         f[1] += force[1];
