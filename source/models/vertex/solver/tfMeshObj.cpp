@@ -31,7 +31,7 @@ MeshObj::MeshObj() :
     objId{-1}
 {}
 
-bool MeshObj::in(MeshObj *obj) {
+bool MeshObj::in(const MeshObj *obj) const {
     if(!obj || objType() > obj->objType()) 
         return false;
 
@@ -42,7 +42,7 @@ bool MeshObj::in(MeshObj *obj) {
     return false;
 }
 
-bool MeshObj::has(MeshObj *obj) {
+bool MeshObj::has(const MeshObj *obj) const {
     return obj && obj->in(this);
 }
 

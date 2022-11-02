@@ -139,7 +139,7 @@ static HRESULT Adhesion_force_Surface(Surface *s, Vertex *v, const FloatP_t &lam
 }
 
 
-HRESULT Adhesion::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
+HRESULT Adhesion::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
     if(source->objType() == MeshObj::Type::BODY) { 
         Body *b = (Body*)source;
         auto itr = typePairs.find(b->typeId);
@@ -157,7 +157,7 @@ HRESULT Adhesion::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
     return S_OK;
 }
 
-HRESULT Adhesion::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
+HRESULT Adhesion::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
     if(source->objType() == MeshObj::Type::BODY) { 
         Body *b = (Body*)source;
         auto itr = typePairs.find(b->typeId);

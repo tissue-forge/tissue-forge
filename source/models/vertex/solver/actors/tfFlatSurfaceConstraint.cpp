@@ -29,7 +29,7 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT FlatSurfaceConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
+HRESULT FlatSurfaceConstraint::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
@@ -40,7 +40,7 @@ HRESULT FlatSurfaceConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t
     return S_OK;
 }
 
-HRESULT FlatSurfaceConstraint::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
+HRESULT FlatSurfaceConstraint::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 

@@ -30,7 +30,7 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-static inline HRESULT EdgeTension_energy_order1(MeshObj *source, MeshObj *target, const FloatP_t &lam, const unsigned int &dummy, FloatP_t &e) {
+static inline HRESULT EdgeTension_energy_order1(const MeshObj *source, const MeshObj *target, const FloatP_t &lam, const unsigned int &dummy, FloatP_t &e) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
@@ -48,7 +48,7 @@ static inline HRESULT EdgeTension_energy_order1(MeshObj *source, MeshObj *target
     return S_OK;
 }
 
-static inline HRESULT EdgeTension_energy_orderN(MeshObj *source, MeshObj *target, const FloatP_t &lam, const unsigned int &order, FloatP_t &e) {
+static inline HRESULT EdgeTension_energy_orderN(const MeshObj *source, const MeshObj *target, const FloatP_t &lam, const unsigned int &order, FloatP_t &e) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
@@ -72,7 +72,7 @@ static inline HRESULT EdgeTension_energy_orderN(MeshObj *source, MeshObj *target
     return S_OK;
 }
 
-static inline HRESULT EdgeTension_force_order1(MeshObj *source, MeshObj *target, const FloatP_t &lam, const unsigned int &dummy, FloatP_t *f) {
+static inline HRESULT EdgeTension_force_order1(const MeshObj *source, const MeshObj *target, const FloatP_t &lam, const unsigned int &dummy, FloatP_t *f) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
@@ -93,7 +93,7 @@ static inline HRESULT EdgeTension_force_order1(MeshObj *source, MeshObj *target,
     return S_OK;
 }
 
-static inline HRESULT EdgeTension_force_orderN(MeshObj *source, MeshObj *target, const FloatP_t &lam, const unsigned int &order, FloatP_t *f) {
+static inline HRESULT EdgeTension_force_orderN(const MeshObj *source, const MeshObj *target, const FloatP_t &lam, const unsigned int &order, FloatP_t *f) {
     Surface *s = (Surface*)source;
     Vertex *v = (Vertex*)target;
 
@@ -145,10 +145,10 @@ EdgeTension::EdgeTension(const FloatP_t &_lam, const unsigned int &_order) {
 }
 
 
-HRESULT EdgeTension::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
+HRESULT EdgeTension::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
     return energyFcn(source, target, lam, order, e);
 }
 
-HRESULT EdgeTension::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
+HRESULT EdgeTension::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
     return forceFcn(source, target, lam, order, f);
 }

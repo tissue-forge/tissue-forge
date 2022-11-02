@@ -34,9 +34,9 @@ namespace TissueForge::models::vertex {
             lam = _lam;
         }
 
-        HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e) override;
+        HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
-        HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f) override;
+        HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
     };
 
 }

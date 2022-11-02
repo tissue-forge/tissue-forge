@@ -54,7 +54,7 @@ MeshParticleType *TissueForge::models::vertex::MeshParticleType_get() {
     return (MeshParticleType*)result;
 }
 
-std::vector<Vertex*> Vertex::neighborVertices() {
+std::vector<Vertex*> Vertex::neighborVertices() const {
     std::unordered_set<Vertex*> result;
     Vertex *vp, *vn;
 
@@ -66,7 +66,7 @@ std::vector<Vertex*> Vertex::neighborVertices() {
     return std::vector<Vertex*>(result.begin(), result.end());
 }
 
-std::vector<Surface*> Vertex::sharedSurfaces(Vertex *other) {
+std::vector<Surface*> Vertex::sharedSurfaces(const Vertex *other) const {
     std::vector<Surface*> result;
     for(auto &s : surfaces) 
         if(other->in(s) && std::find(result.begin(), result.end(), s) == result.end()) 
@@ -74,14 +74,14 @@ std::vector<Surface*> Vertex::sharedSurfaces(Vertex *other) {
     return result;
 }
 
-FloatP_t Vertex::getVolume() {
+FloatP_t Vertex::getVolume() const {
     FloatP_t result = 0.f;
     for(auto &b : getBodies()) 
         result += b->getVertexVolume(this);
     return result;
 }
 
-FloatP_t Vertex::getMass() {
+FloatP_t Vertex::getMass() const {
     FloatP_t result = 0.f;
     for(auto &b : getBodies()) 
         result += b->getVertexMass(this);
@@ -101,7 +101,7 @@ HRESULT Vertex::updateProperties() {
     return S_OK;
 }
 
-ParticleHandle *Vertex::particle() {
+ParticleHandle *Vertex::particle() const {
     if(this->pid < 0) {
         TF_Log(LOG_DEBUG);
         return NULL;
@@ -116,7 +116,7 @@ ParticleHandle *Vertex::particle() {
     return p->handle();
 }
 
-FVector3 Vertex::getPosition() {
+FVector3 Vertex::getPosition() const {
     auto p = particle();
     if(!p) { 
         TF_Log(LOG_ERROR) << "No assigned particle.";
@@ -169,7 +169,7 @@ Vertex::Vertex(io::ThreeDFVertexData *vdata) :
     Vertex(vdata->position)
 {}
 
-std::vector<MeshObj*> Vertex::children() {
+std::vector<MeshObj*> Vertex::children() const {
     return TissueForge::models::vertex::vectorToBase(surfaces);
 }
 
@@ -260,7 +260,7 @@ HRESULT Vertex::destroy() {
     return S_OK;
 }
 
-std::vector<Structure*> Vertex::getStructures() {
+std::vector<Structure*> Vertex::getStructures() const {
     std::unordered_set<Structure*> result;
     for(auto &s : surfaces) 
         for(auto &ss : s->getStructures()) 
@@ -268,7 +268,7 @@ std::vector<Structure*> Vertex::getStructures() {
     return std::vector<Structure*>(result.begin(), result.end());
 }
 
-std::vector<Body*> Vertex::getBodies() {
+std::vector<Body*> Vertex::getBodies() const {
     std::unordered_set<Body*> result;
     for(auto &s : surfaces) 
         for(auto &b : s->getBodies()) 
@@ -276,7 +276,7 @@ std::vector<Body*> Vertex::getBodies() {
     return std::vector<Body*>(result.begin(), result.end());
 }
 
-Surface *Vertex::findSurface(const FVector3 &dir) {
+Surface *Vertex::findSurface(const FVector3 &dir) const {
     Surface *result = 0;
 
     FVector3 pta = getPosition();
@@ -295,7 +295,7 @@ Surface *Vertex::findSurface(const FVector3 &dir) {
     return result;
 }
 
-Body *Vertex::findBody(const FVector3 &dir) {
+Body *Vertex::findBody(const FVector3 &dir) const {
     Body *result = 0;
 
     FVector3 pta = getPosition();

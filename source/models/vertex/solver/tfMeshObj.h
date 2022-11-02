@@ -62,13 +62,13 @@ namespace TissueForge::models::vertex {
         virtual ~MeshObj() {};
 
         /** Get the mesh object type */
-        virtual MeshObj::Type objType() = 0;
+        virtual MeshObj::Type objType() const = 0;
 
         /** Current parent objects. */
-        virtual std::vector<MeshObj*> parents() = 0;
+        virtual std::vector<MeshObj*> parents() const = 0;
 
         /** Current child objects. Child objects require this object as part of their definition. */
-        virtual std::vector<MeshObj*> children() = 0;
+        virtual std::vector<MeshObj*> children() const = 0;
 
         /** Add a child object */
         virtual HRESULT addChild(MeshObj *obj) = 0;
@@ -89,10 +89,10 @@ namespace TissueForge::models::vertex {
         virtual bool validate() = 0;
 
         /** Test whether this object is in another object */
-        bool in(MeshObj *obj);
+        bool in(const MeshObj *obj) const;
 
         /** Test whether this object has another object */
-        bool has(MeshObj *obj);
+        bool has(const MeshObj *obj) const;
 
     };
 
@@ -109,7 +109,7 @@ namespace TissueForge::models::vertex {
          * @param target target object
          * @param e energy 
          */
-        virtual HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e) = 0;
+        virtual HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) = 0;
 
         /**
          * @brief Calculate the force that a source object exerts on a target object
@@ -118,7 +118,7 @@ namespace TissueForge::models::vertex {
          * @param target target object
          * @param f force
          */
-        virtual HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f) = 0;
+        virtual HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) = 0;
 
     };
 
@@ -137,7 +137,7 @@ namespace TissueForge::models::vertex {
         std::vector<MeshObjActor*> actors;
 
         /** Get the mesh object type */
-        virtual MeshObj::Type objType() = 0;
+        virtual MeshObj::Type objType() const = 0;
 
     };
 
@@ -153,24 +153,6 @@ namespace TissueForge::models::vertex {
 
         /** Test whether a pair of types is registered with this actor */
         bool hasPair(MeshObjType *type1, MeshObjType *type2);
-
-        /**
-         * @brief Calculate the energy of a source object acting on a target object
-         * 
-         * @param source source object
-         * @param target target object
-         * @param e energy 
-         */
-        virtual HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e) = 0;
-
-        /**
-         * @brief Calculate the force that a source object exerts on a target object
-         * 
-         * @param source source object
-         * @param target target object
-         * @param f force
-         */
-        virtual HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f) = 0;
 
     protected:
 

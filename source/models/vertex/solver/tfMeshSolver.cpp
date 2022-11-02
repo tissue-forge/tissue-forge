@@ -48,7 +48,7 @@ using namespace TissueForge::models::vertex;
 static MeshSolver *_solver = NULL;
 
 
-HRESULT TissueForge::models::vertex::VertexForce(Vertex *v, FloatP_t *f) {
+HRESULT TissueForge::models::vertex::VertexForce(const Vertex *v, FloatP_t *f) {
     // Surfaces
     for(auto &s : v->getSurfaces()) {
         for(auto &a : s->type()->actors) 
@@ -79,12 +79,12 @@ HRESULT TissueForge::models::vertex::VertexForce(Vertex *v, FloatP_t *f) {
     return S_OK;
 }
 
-double MeshSolverTimers::ms(const Section &section, const bool &avg) {
+double MeshSolverTimers::ms(const Section &section, const bool &avg) const {
     double val = timers[section];
     return avg ? val / (_Engine.time * CLOCKS_PER_SEC) : val;
 }
 
-std::string MeshSolverTimers::str() {
+std::string MeshSolverTimers::str() const {
     std::stringstream ss;
     ss << "Force: " << ms(Section::FORCE) << ", " << std::endl;
     ss << "Advance: " << ms(Section::ADVANCE) << ", " << std::endl;
@@ -244,7 +244,7 @@ HRESULT MeshSolver::registerType(SurfaceType *_type) {
     return _solver->_registerTypeInst(_type);
 }
 
-StructureType *MeshSolver::_getStructureTypeInst(const unsigned int &typeId) {
+StructureType *MeshSolver::_getStructureTypeInst(const unsigned int &typeId) const {
     if(typeId >= _structureTypes.size()) 
         return NULL;
     return _structureTypes[typeId];
@@ -256,7 +256,7 @@ StructureType *MeshSolver::getStructureType(const unsigned int &typeId) {
     return _solver->_getStructureTypeInst(typeId);
 }
 
-BodyType *MeshSolver::_getBodyTypeInst(const unsigned int &typeId) {
+BodyType *MeshSolver::_getBodyTypeInst(const unsigned int &typeId) const {
     if(typeId >= _bodyTypes.size()) 
         return NULL;
     return _bodyTypes[typeId];
@@ -268,7 +268,7 @@ BodyType *MeshSolver::getBodyType(const unsigned int &typeId) {
     return _solver->_getBodyTypeInst(typeId);
 }
 
-SurfaceType *MeshSolver::_getSurfaceTypeInst(const unsigned int &typeId) {
+SurfaceType *MeshSolver::_getSurfaceTypeInst(const unsigned int &typeId) const {
     if(typeId >= _surfaceTypes.size()) 
         return NULL;
     return _surfaceTypes[typeId];
@@ -554,7 +554,7 @@ HRESULT MeshSolver::postStepJoin() {
     return S_OK;
 }
 
-std::vector<unsigned int> MeshSolver::_getSurfaceVertexIndicesInst() {
+std::vector<unsigned int> MeshSolver::_getSurfaceVertexIndicesInst() const {
     return MeshSolver_surfaceVertexIndices(meshes);
 }
 
@@ -615,7 +615,7 @@ HRESULT MeshSolver::log(Mesh *mesh, const MeshLogEventType &type, const std::vec
     return _solver->_logInst(mesh, type, objIDs, objTypes, name);
 }
 
-bool MeshSolver::_isDirtyInst() {
+bool MeshSolver::_isDirtyInst() const {
     if(_isDirty) 
         return true;
     bool result = false;

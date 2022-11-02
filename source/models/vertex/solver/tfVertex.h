@@ -75,25 +75,25 @@ namespace TissueForge::models::vertex {
         Vertex(io::ThreeDFVertexData *vdata);
 
         /** Get the mesh object type */
-        MeshObj::Type objType() { return MeshObj::Type::VERTEX; }
+        MeshObj::Type objType() const override { return MeshObj::Type::VERTEX; }
 
         /** Get the parents of the object */
-        std::vector<MeshObj*> parents() { return std::vector<MeshObj*>(); }
+        std::vector<MeshObj*> parents() const override { return std::vector<MeshObj*>(); }
 
         /** Get the children of the object */
-        std::vector<MeshObj*> children();
+        std::vector<MeshObj*> children() const override;
 
         /** Add a child object */
-        HRESULT addChild(MeshObj *obj);
+        HRESULT addChild(MeshObj *obj) override;
 
         /** Add a parent object */
-        HRESULT addParent(MeshObj *obj) { return E_FAIL; }
+        HRESULT addParent(MeshObj *obj) override { return E_FAIL; }
 
         /** Remove a child object */
-        HRESULT removeChild(MeshObj *obj);
+        HRESULT removeChild(MeshObj *obj) override;
 
         /** Remove a parent object */
-        HRESULT removeParent(MeshObj *obj) { return E_FAIL; }
+        HRESULT removeParent(MeshObj *obj) override { return E_FAIL; }
 
         /** Add a surface */
         HRESULT add(Surface *s);
@@ -120,48 +120,48 @@ namespace TissueForge::models::vertex {
          * 
          * The underlying particle is also destroyed, if any. 
         */
-        HRESULT destroy();
+        HRESULT destroy() override;
 
         /** Validate the vertex */
-        bool validate() { return true; }
+        bool validate() override { return true; }
 
         /** Get the structures defined by the vertex */
-        std::vector<Structure*> getStructures();
+        std::vector<Structure*> getStructures() const;
 
         /** Get the bodies defined by the vertex */
-        std::vector<Body*> getBodies();
+        std::vector<Body*> getBodies() const;
 
         /** Get the surfaces defined by the vertex */
-        std::vector<Surface*> getSurfaces() { return surfaces; }
+        std::vector<Surface*> getSurfaces() const { return surfaces; }
 
         /**
          * @brief Find a surface defined by this vertex
          * 
          * @param dir direction to look with respect to the vertex
          */
-        Surface *findSurface(const FVector3 &dir);
+        Surface *findSurface(const FVector3 &dir) const;
 
         /**
          * @brief Find a body defined by this vertex
          * 
          * @param dir direction to look with respect to the vertex
          */
-        Body *findBody(const FVector3 &dir);
+        Body *findBody(const FVector3 &dir) const;
 
         /** Get the neighbor vertices.
          * 
          * A vertex is a neighbor if it defines an edge with this vertex.
          */
-        std::vector<Vertex*> neighborVertices();
+        std::vector<Vertex*> neighborVertices() const;
 
         /** Get the surfaces that this vertex and another vertex both define */
-        std::vector<Surface*> sharedSurfaces(Vertex *other);
+        std::vector<Surface*> sharedSurfaces(const Vertex *other) const;
 
         /** Get the current volume */
-        FloatP_t getVolume();
+        FloatP_t getVolume() const;
 
         /** Get the current mass */
-        FloatP_t getMass();
+        FloatP_t getMass() const;
 
         /** Update internal data due to a change in position */
         HRESULT positionChanged();
@@ -170,10 +170,10 @@ namespace TissueForge::models::vertex {
         HRESULT updateProperties();
 
         /** Get a handle to the underlying particle, if any */
-        ParticleHandle *particle();
+        ParticleHandle *particle() const;
 
         /** Get the current position */
-        FVector3 getPosition();
+        FVector3 getPosition() const;
 
         /** Set the current position */
         HRESULT setPosition(const FVector3 &pos);

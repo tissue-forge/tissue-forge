@@ -275,7 +275,7 @@ HRESULT Mesh::removeObj(MeshObj *obj) {
     return S_OK;
 }
 
-Vertex *Mesh::findVertex(const FVector3 &pos, const FloatP_t &tol) {
+Vertex *Mesh::findVertex(const FVector3 &pos, const FloatP_t &tol) const {
 
     for(auto &v : vertices)
         if(v->particle()->relativePosition(pos).length() <= tol) 
@@ -284,19 +284,19 @@ Vertex *Mesh::findVertex(const FVector3 &pos, const FloatP_t &tol) {
     return NULL;
 }
 
-Vertex *Mesh::getVertex(const unsigned int &idx) {
+Vertex *Mesh::getVertex(const unsigned int &idx) const {
     return TF_MESH_GETPART(idx, vertices);
 }
 
-Surface *Mesh::getSurface(const unsigned int &idx) {
+Surface *Mesh::getSurface(const unsigned int &idx) const {
     return TF_MESH_GETPART(idx, surfaces);
 }
 
-Body *Mesh::getBody(const unsigned int &idx) {
+Body *Mesh::getBody(const unsigned int &idx) const {
     return TF_MESH_GETPART(idx, bodies);
 }
 
-Structure *Mesh::getStructure(const unsigned int &idx) {
+Structure *Mesh::getStructure(const unsigned int &idx) const {
     return TF_MESH_GETPART(idx, structures);
 }
 
@@ -328,7 +328,7 @@ HRESULT Mesh::makeDirty() {
     return S_OK;
 }
 
-bool Mesh::connected(Vertex *v1, Vertex *v2) {
+bool Mesh::connected(const Vertex *v1, const Vertex *v2) const {
     for(auto &s1 : v1->surfaces) 
         for(auto vitr = s1->vertices.begin() + 1; vitr != s1->vertices.end(); vitr++) 
             if((*vitr == v1 && *(vitr - 1) == v2) || (*vitr == v2 && *(vitr - 1) == v1)) 
@@ -337,14 +337,14 @@ bool Mesh::connected(Vertex *v1, Vertex *v2) {
     return false;
 }
 
-bool Mesh::connected(Surface *s1, Surface *s2) {
+bool Mesh::connected(const Surface *s1, const Surface *s2) const {
     for(auto &v : s1->parents()) 
         if(v->in(s2)) 
             return true;
     return false;
 }
 
-bool Mesh::connected(Body *b1, Body *b2) {
+bool Mesh::connected(const Body *b1, const Body *b2) const {
     for(auto &s : b1->parents()) 
         if(s->in(b2)) 
             return true;

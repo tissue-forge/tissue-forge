@@ -41,7 +41,7 @@ namespace TissueForge::models::vertex {
      * @param v vertex
      * @param f force
      */
-    HRESULT VertexForce(Vertex *v, FloatP_t *f);
+    HRESULT VertexForce(const Vertex *v, FloatP_t *f);
 
     /**
      * @brief Calculate the force on a vertex
@@ -49,7 +49,7 @@ namespace TissueForge::models::vertex {
      * @param v vertex
      * @param f force
      */
-    static HRESULT VertexForce(Vertex *v, FVector3 &f) { return VertexForce(v, f.data()); }
+    static HRESULT VertexForce(const Vertex *v, FVector3 &f) { return VertexForce(v, f.data()); }
 
 
     /** Mesh solver performance timers */
@@ -75,7 +75,7 @@ namespace TissueForge::models::vertex {
          * @param avg flag to return average (when true) or total time
          * @return double 
          */
-        double ms(const Section &section, const bool &avg=true);
+        double ms(const Section &section, const bool &avg=true) const;
 
         /** Reset the timers */
         HRESULT reset() {
@@ -84,7 +84,7 @@ namespace TissueForge::models::vertex {
         }
 
         /** Get a string representation of the current timer average values */
-        std::string str();
+        std::string str() const;
 
     private:
 
@@ -243,7 +243,7 @@ namespace TissueForge::models::vertex {
         HRESULT _compactInst();
 
         /** Test whether the current mesh state needs updated */
-        bool _isDirtyInst();
+        bool _isDirtyInst() const;
 
         /** Set whether the current mesh state needs updated */
         HRESULT _setDirtyInst(const bool &_isDirty);
@@ -264,19 +264,19 @@ namespace TissueForge::models::vertex {
         HRESULT _registerTypeInst(SurfaceType *_type);
 
         /** Get the structure type by id */
-        StructureType *_getStructureTypeInst(const unsigned int &typeId);
+        StructureType *_getStructureTypeInst(const unsigned int &typeId) const;
 
         /** Get the body type by id */
-        BodyType *_getBodyTypeInst(const unsigned int &typeId);
+        BodyType *_getBodyTypeInst(const unsigned int &typeId) const;
 
         /** Get the surface type by id */
-        SurfaceType *_getSurfaceTypeInst(const unsigned int &typeId);
+        SurfaceType *_getSurfaceTypeInst(const unsigned int &typeId) const;
 
         /** Update internal data due to a change in position */
         HRESULT _positionChangedInst();
 
         /** Get the starting vertex index for each surface */
-        std::vector<unsigned int> _getSurfaceVertexIndicesInst();
+        std::vector<unsigned int> _getSurfaceVertexIndicesInst() const;
 
         /** Start getting the starting vertex index for each surface */
         HRESULT _getSurfaceVertexIndicesAsyncStartInst();

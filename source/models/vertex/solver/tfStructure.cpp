@@ -28,7 +28,7 @@
 using namespace TissueForge::models::vertex;
 
 
-std::vector<MeshObj*> Structure::parents() {
+std::vector<MeshObj*> Structure::parents() const {
     std::vector<MeshObj*> result(structures_parent.size() + bodies.size(), 0);
     for(unsigned int i = 0; i < structures_parent.size(); i++) 
         result[i] = static_cast<MeshObj*>(structures_parent[i]);
@@ -130,7 +130,7 @@ HRESULT Structure::destroy() {
     return S_OK;
 }
 
-StructureType *Structure::type() {
+StructureType *Structure::type() const {
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 
         return NULL;
@@ -142,7 +142,7 @@ HRESULT Structure::become(StructureType *stype) {
     return S_OK;
 }
 
-std::vector<Body*> Structure::getBodies() {
+std::vector<Body*> Structure::getBodies() const {
     std::unordered_set<Body*> result(bodies.begin(), bodies.end());
     for(auto &sp : structures_parent) 
         for(auto &b : sp->getBodies()) 
@@ -150,7 +150,7 @@ std::vector<Body*> Structure::getBodies() {
     return std::vector<Body*>(result.begin(), result.end());
 }
 
-std::vector<Surface*> Structure::getSurfaces() {
+std::vector<Surface*> Structure::getSurfaces() const {
     std::unordered_set<Surface*> result;
     for(auto &b : bodies) 
         for(auto &s : b->getSurfaces()) 
@@ -161,7 +161,7 @@ std::vector<Surface*> Structure::getSurfaces() {
     return std::vector<Surface*>(result.begin(), result.end());
 }
 
-std::vector<Vertex*> Structure::getVertices() {
+std::vector<Vertex*> Structure::getVertices() const {
     std::unordered_set<Vertex*> result;
     for(auto &b : bodies) 
         for(auto &v : b->getVertices()) 

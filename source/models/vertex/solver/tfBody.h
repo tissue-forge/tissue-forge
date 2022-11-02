@@ -88,25 +88,25 @@ namespace TissueForge::models::vertex {
         Body(io::ThreeDFMeshData *ioMesh);
 
         /** Get the mesh object type */
-        MeshObj::Type objType() { return MeshObj::Type::BODY; }
+        MeshObj::Type objType() const override { return MeshObj::Type::BODY; }
 
         /** Get the parents of the object */
-        std::vector<MeshObj*> parents();
+        std::vector<MeshObj*> parents() const override;
 
         /** Get the children of the object */
-        std::vector<MeshObj*> children();
+        std::vector<MeshObj*> children() const override;
 
         /** Add a child object */
-        HRESULT addChild(MeshObj *obj);
+        HRESULT addChild(MeshObj *obj) override;
 
         /** Add a parent object */
-        HRESULT addParent(MeshObj *obj);
+        HRESULT addParent(MeshObj *obj) override;
 
         /** Remove a child object */
-        HRESULT removeChild(MeshObj *obj);
+        HRESULT removeChild(MeshObj *obj) override;
 
         /** Remove a parent object */
-        HRESULT removeParent(MeshObj *obj);
+        HRESULT removeParent(MeshObj *obj) override;
 
         /** Add a surface */
         HRESULT add(Surface *s);
@@ -131,56 +131,56 @@ namespace TissueForge::models::vertex {
          * 
          * If the body is in a mesh, then it and any objects it defines are removed from the mesh. 
         */
-        HRESULT destroy();
+        HRESULT destroy() override;
 
         /** Validate the body */
-        bool validate();
+        bool validate() override;
 
         /** Update internal data due to a change in position */
         HRESULT positionChanged();
 
         /** Get the body type */
-        BodyType *type();
+        BodyType *type() const;
 
         /** Become a different type */
         HRESULT become(BodyType *btype);
 
         /** Get the structures defined by the body */
-        std::vector<Structure*> getStructures();
+        std::vector<Structure*> getStructures() const;
 
         /** Get the surfaces that define the body */
-        std::vector<Surface*> getSurfaces() { return surfaces; }
+        std::vector<Surface*> getSurfaces() const { return surfaces; }
 
         /** Get the vertices that define the body */
-        std::vector<Vertex*> getVertices();
+        std::vector<Vertex*> getVertices() const;
 
         /**
          * @brief Find a vertex that defines this body
          * 
          * @param dir direction to look with respect to the centroid
          */
-        Vertex *findVertex(const FVector3 &dir);
+        Vertex *findVertex(const FVector3 &dir) const;
 
         /**
          * @brief Find a surface that defines this body
          * 
          * @param dir direction to look with respect to the centroid
          */
-        Surface *findSurface(const FVector3 &dir);
+        Surface *findSurface(const FVector3 &dir) const;
 
         /**
          * Get the neighboring bodies. 
          * 
          * A body is a neighbor if it shares a surface.
          */
-        std::vector<Body*> neighborBodies();
+        std::vector<Body*> neighborBodies() const;
 
         /**
          * Get the neighboring surfaces of a surface on this body.
          * 
          * Two surfaces are a neighbor on this body if they define the body and share a vertex
          */
-        std::vector<Surface*> neighborSurfaces(Surface *s);
+        std::vector<Surface*> neighborSurfaces(const Surface *s) const;
 
         /** Get the mass density */
         FloatP_t getDensity() const { return density; }
@@ -192,7 +192,7 @@ namespace TissueForge::models::vertex {
         FVector3 getCentroid() const { return centroid; }
 
         /** Get the velocity, calculated as the velocity of the centroid */
-        FVector3 getVelocity();
+        FVector3 getVelocity() const;
 
         /** Get the surface area */
         FloatP_t getArea() const { return area; }
@@ -204,19 +204,22 @@ namespace TissueForge::models::vertex {
         FloatP_t getMass() const { return volume * density; }
 
         /** Get the surface area contribution of a vertex to this body */
-        FloatP_t getVertexArea(Vertex *v);
+        FloatP_t getVertexArea(const Vertex *v) const;
 
         /** Get the volume contribution of a vertex to this body */
-        FloatP_t getVertexVolume(Vertex *v);
+        FloatP_t getVertexVolume(const Vertex *v) const;
 
         /** Get the mass contribution of a vertex to this body */
-        FloatP_t getVertexMass(Vertex *v) { return getVertexVolume(v) * density; }
+        FloatP_t getVertexMass(const Vertex *v) const { return getVertexVolume(v) * density; }
 
         /** Get the surfaces that define the interface between this body and another body */
-        std::vector<Surface*> findInterface(Body *b);
+        std::vector<Surface*> findInterface(const Body *b) const;
 
         /** Get the contacting surface area of this body with another body */
-        FloatP_t contactArea(Body *other);
+        FloatP_t contactArea(const Body *other) const;
+
+        /** Test whether a point is outside. Test is performed using the nearest surface */
+        bool isOutside(const FVector3 &pos) const;
 
         
         friend Mesh;
@@ -237,7 +240,7 @@ namespace TissueForge::models::vertex {
         FloatP_t density;
 
         /** Get the mesh object type */
-        MeshObj::Type objType() { return MeshObj::Type::BODY; }
+        MeshObj::Type objType() const override { return MeshObj::Type::BODY; }
 
         /** Construct a body of this type from a set of surfaces */
         Body *operator() (std::vector<Surface*> surfaces);

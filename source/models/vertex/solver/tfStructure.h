@@ -49,53 +49,53 @@ namespace TissueForge::models::vertex {
         Structure() : MeshObj() {};
 
         /** Get the mesh object type */
-        MeshObj::Type objType() { return MeshObj::Type::STRUCTURE; }
+        MeshObj::Type objType() const override { return MeshObj::Type::STRUCTURE; }
 
         /** Get the parents of the object */
-        std::vector<MeshObj*> parents();
+        std::vector<MeshObj*> parents() const override;
 
         /** Get the children of the object */
-        std::vector<MeshObj*> children() { return TissueForge::models::vertex::vectorToBase(structures_child); }
+        std::vector<MeshObj*> children() const override { return TissueForge::models::vertex::vectorToBase(structures_child); }
 
         /** Add a child object */
-        HRESULT addChild(MeshObj *obj);
+        HRESULT addChild(MeshObj *obj) override;
 
         /** Add a parent object */
-        HRESULT addParent(MeshObj *obj);
+        HRESULT addParent(MeshObj *obj) override;
 
         /** Remove a child object */
-        HRESULT removeChild(MeshObj *obj);
+        HRESULT removeChild(MeshObj *obj) override;
 
         /** Remove a parent object */
-        HRESULT removeParent(MeshObj *obj);
+        HRESULT removeParent(MeshObj *obj) override;
 
         /**
          * Destroy the structure. 
          * 
          * If the structure is in a mesh, then it is removed from the mesh. 
         */
-        HRESULT destroy();
+        HRESULT destroy() override;
 
         /** Validate the structure */
-        bool validate() { return true; }
+        bool validate() override { return true; }
 
         /** Get the structure type */
-        StructureType *type();
+        StructureType *type() const;
 
         /** Become a different type */
         HRESULT become(StructureType *stype);
 
         /** Get the structures that this structure defines */
-        std::vector<Structure*> getStructures() { return structures_parent; }
+        std::vector<Structure*> getStructures() const { return structures_parent; }
 
         /** Get the bodies that define the structure */
-        std::vector<Body*> getBodies();
+        std::vector<Body*> getBodies() const;
 
         /** Get the surfaces that define the structure */
-        std::vector<Surface*> getSurfaces();
+        std::vector<Surface*> getSurfaces() const;
 
         /** Get the vertices that define the structure */
-        std::vector<Vertex*> getVertices();
+        std::vector<Vertex*> getVertices() const;
 
     };
 
@@ -109,7 +109,7 @@ namespace TissueForge::models::vertex {
     struct CAPI_EXPORT StructureType : MeshObjType {
 
         /** Get the mesh object type */
-        MeshObj::Type objType() { return MeshObj::Type::STRUCTURE; }
+        MeshObj::Type objType() const override { return MeshObj::Type::STRUCTURE; }
         
     };
 

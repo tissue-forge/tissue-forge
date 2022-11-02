@@ -99,9 +99,9 @@ Body::Body(io::ThreeDFMeshData *ioMesh) :
         _updateInternal();
 }
 
-std::vector<MeshObj*> Body::parents() { return TissueForge::models::vertex::vectorToBase(surfaces); }
+std::vector<MeshObj*> Body::parents() const { return TissueForge::models::vertex::vectorToBase(surfaces); }
 
-std::vector<MeshObj*> Body::children() { return TissueForge::models::vertex::vectorToBase(structures); }
+std::vector<MeshObj*> Body::children() const { return TissueForge::models::vertex::vectorToBase(structures); }
 
 HRESULT Body::addChild(MeshObj *obj) { 
     if(!TissueForge::models::vertex::check(obj, MeshObj::Type::STRUCTURE)) {
@@ -225,7 +225,7 @@ HRESULT Body::positionChanged() {
     return S_OK;
 }
 
-BodyType *Body::type() {
+BodyType *Body::type() const {
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 
         return NULL;
@@ -237,7 +237,7 @@ HRESULT Body::become(BodyType *btype) {
     return S_OK;
 }
 
-std::vector<Structure*> Body::getStructures() {
+std::vector<Structure*> Body::getStructures() const {
     std::unordered_set<Structure*> result;
     for(auto &s : structures) {
         result.insert(s);
@@ -247,7 +247,7 @@ std::vector<Structure*> Body::getStructures() {
     return std::vector<Structure*>(result.begin(), result.end());
 }
 
-std::vector<Vertex*> Body::getVertices() {
+std::vector<Vertex*> Body::getVertices() const {
     std::unordered_set<Vertex*> result;
 
     for(auto &s : surfaces) 
@@ -257,7 +257,7 @@ std::vector<Vertex*> Body::getVertices() {
     return std::vector<Vertex*>(result.begin(), result.end());
 }
 
-Vertex *Body::findVertex(const FVector3 &dir) {
+Vertex *Body::findVertex(const FVector3 &dir) const {
     Vertex *result = 0;
 
     FVector3 pta = centroid;
@@ -276,7 +276,7 @@ Vertex *Body::findVertex(const FVector3 &dir) {
     return result;
 }
 
-Surface *Body::findSurface(const FVector3 &dir) {
+Surface *Body::findSurface(const FVector3 &dir) const {
     Surface *result = 0;
 
     FVector3 pta = centroid;
@@ -295,7 +295,7 @@ Surface *Body::findSurface(const FVector3 &dir) {
     return result;
 }
 
-std::vector<Body*> Body::neighborBodies() {
+std::vector<Body*> Body::neighborBodies() const {
     std::unordered_set<Body*> result;
     for(auto &s : surfaces) 
         for(auto &b : s->getBodies()) 
@@ -304,7 +304,7 @@ std::vector<Body*> Body::neighborBodies() {
     return std::vector<Body*>(result.begin(), result.end());
 }
 
-std::vector<Surface*> Body::neighborSurfaces(Surface *s) {
+std::vector<Surface*> Body::neighborSurfaces(const Surface *s) const {
     std::unordered_set<Surface*> result;
     for(auto &so : surfaces) {
         if(so == s) 
@@ -318,27 +318,27 @@ std::vector<Surface*> Body::neighborSurfaces(Surface *s) {
     return std::vector<Surface*>(result.begin(), result.end());
 }
 
-FVector3 Body::getVelocity() {
+FVector3 Body::getVelocity() const {
     FVector3 result;
     for(auto &v : getVertices()) 
         result += v->particle()->getVelocity() * getVertexMass(v);
     return result / getMass();
 }
 
-FloatP_t Body::getVertexArea(Vertex *v) {
+FloatP_t Body::getVertexArea(const Vertex *v) const {
     FloatP_t result;
     for(auto &s : surfaces) 
         result += s->getVertexArea(v);
     return result;
 }
 
-FloatP_t Body::getVertexVolume(Vertex *v) {
+FloatP_t Body::getVertexVolume(const Vertex *v) const {
     if(area == 0.f) 
         return 0.f;
     return getVertexArea(v) / area * volume;
 }
 
-std::vector<Surface*> Body::findInterface(Body *b) {
+std::vector<Surface*> Body::findInterface(const Body *b) const {
     std::vector<Surface*> result;
     for(auto &s : surfaces) 
         if(s->in(b)) 
@@ -346,12 +346,18 @@ std::vector<Surface*> Body::findInterface(Body *b) {
     return result;
 }
 
-FloatP_t Body::contactArea(Body *other) {
+FloatP_t Body::contactArea(const Body *other) const {
     FloatP_t result = 0.f;
     for(auto &s : surfaces) 
         if(s->in(other)) 
             result += s->area;
     return result;
+}
+
+bool Body::isOutside(const FVector3 &pos) const {
+    // Test against outward-facing normal of nearest surface
+    const FVector3 rel_pos = pos - centroid;
+    return rel_pos.dot(findSurface(rel_pos)->getOutwardNormal(this)) > 0;
 }
 
 static Body *BodyType_fromSurfaces(BodyType *btype, std::vector<Surface*> surfaces) {

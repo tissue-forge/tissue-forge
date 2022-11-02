@@ -26,8 +26,8 @@
 namespace TissueForge::models::vertex { 
 
 
-    typedef HRESULT (*EdgeTensionEnergyFcn)(MeshObj*, MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t&);
-    typedef HRESULT (*EdgeTensionForceFcn)(MeshObj*, MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t*);
+    typedef HRESULT (*EdgeTensionEnergyFcn)(const MeshObj*, const MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t&);
+    typedef HRESULT (*EdgeTensionForceFcn)(const MeshObj*, const MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t*);
 
 
     struct EdgeTension : MeshObjActor {
@@ -37,9 +37,9 @@ namespace TissueForge::models::vertex {
 
         EdgeTension(const FloatP_t &lam, const unsigned int &order=1);
 
-        HRESULT energy(MeshObj *source, MeshObj *target, FloatP_t &e);
+        HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
-        HRESULT force(MeshObj *source, MeshObj *target, FloatP_t *f);
+        HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
 
     private:
 

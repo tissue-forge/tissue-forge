@@ -112,7 +112,7 @@ static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const 
 }
 
 
-HRESULT SurfaceAreaConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
+HRESULT SurfaceAreaConstraint::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
     if(source->objType() == MeshObj::Type::BODY) 
         return SurfaceAreaConstraint_energy_Body((Body*)source, lam, constr, e);
     else if(source->objType() == MeshObj::Type::SURFACE) 
@@ -120,7 +120,7 @@ HRESULT SurfaceAreaConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t
     return S_OK;
 }
 
-HRESULT SurfaceAreaConstraint::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
+HRESULT SurfaceAreaConstraint::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
     if(source->objType() == MeshObj::Type::BODY) 
         return SurfaceAreaConstraint_force_Body((Body*)source, (Vertex*)target, lam, constr, f);
     else if(source->objType() == MeshObj::Type::SURFACE) 

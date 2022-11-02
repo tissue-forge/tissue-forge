@@ -40,7 +40,7 @@ static inline bool ConvexPolygonConstraint_acts(Vertex *vc, Surface *s, FVector3
     return rel_c2ab.dot(s->getCentroid() - posvc) < 0;
 }
 
-HRESULT ConvexPolygonConstraint::energy(MeshObj *source, MeshObj *target, FloatP_t &e) {
+HRESULT ConvexPolygonConstraint::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
     Vertex *vc = (Vertex*)target;
     Surface *s = (Surface*)source;
 
@@ -51,7 +51,7 @@ HRESULT ConvexPolygonConstraint::energy(MeshObj *source, MeshObj *target, FloatP
     return S_OK;
 }
 
-HRESULT ConvexPolygonConstraint::force(MeshObj *source, MeshObj *target, FloatP_t *f) {
+HRESULT ConvexPolygonConstraint::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
     Vertex *vc = (Vertex*)target;
     Surface *s = (Surface*)source;
 

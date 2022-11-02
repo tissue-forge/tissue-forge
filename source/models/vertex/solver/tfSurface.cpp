@@ -121,7 +121,7 @@ Surface::Surface(io::ThreeDFFaceData *face) :
     }
 }
 
-std::vector<MeshObj*> Surface::children() {
+std::vector<MeshObj*> Surface::children() const {
     std::vector<MeshObj*> result;
     if(b1) 
         result.push_back((MeshObj*)b1);
@@ -340,7 +340,7 @@ HRESULT Surface::refreshBodies() {
     return S_OK;
 }
 
-SurfaceType *Surface::type() {
+SurfaceType *Surface::type() const {
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 
         return NULL;
@@ -370,7 +370,7 @@ HRESULT Surface::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
     return E_FAIL;
 }
 
-std::vector<Structure*> Surface::getStructures() {
+std::vector<Structure*> Surface::getStructures() const {
     std::unordered_set<Structure*> result;
     if(b1) 
         for(auto &s : b1->getStructures()) 
@@ -381,7 +381,7 @@ std::vector<Structure*> Surface::getStructures() {
     return std::vector<Structure*>(result.begin(), result.end());
 }
 
-std::vector<Body*> Surface::getBodies() {
+std::vector<Body*> Surface::getBodies() const {
     std::vector<Body*> result;
     if(b1) 
         result.push_back(b1);
@@ -390,7 +390,7 @@ std::vector<Body*> Surface::getBodies() {
     return result;
 }
 
-Vertex *Surface::findVertex(const FVector3 &dir) {
+Vertex *Surface::findVertex(const FVector3 &dir) const {
     Vertex *result = 0;
 
     FVector3 pta = centroid;
@@ -409,7 +409,7 @@ Vertex *Surface::findVertex(const FVector3 &dir) {
     return result;
 }
 
-Body *Surface::findBody(const FVector3 &dir) {
+Body *Surface::findBody(const FVector3 &dir) const {
     Body *result = 0;
 
     FVector3 pta = centroid;
@@ -428,7 +428,7 @@ Body *Surface::findBody(const FVector3 &dir) {
     return result;
 }
 
-std::tuple<Vertex*, Vertex*> Surface::neighborVertices(Vertex *v) {
+std::tuple<Vertex*, Vertex*> Surface::neighborVertices(const Vertex *v) const {
     Vertex *vp = NULL;
     Vertex *vn = NULL; 
 
@@ -438,10 +438,10 @@ std::tuple<Vertex*, Vertex*> Surface::neighborVertices(Vertex *v) {
         vn = itr == vertices.begin()   ? *(vertices.end() - 1) : *(itr - 1);
     }
 
-    return {vp, vn};
+    return std::make_tuple(vp, vn);
 }
 
-std::vector<Surface*> Surface::neighborSurfaces() { 
+std::vector<Surface*> Surface::neighborSurfaces() const { 
     std::unordered_set<Surface*> result;
     if(b1) 
         for(auto &s : b1->neighborSurfaces(this)) 
@@ -452,7 +452,7 @@ std::vector<Surface*> Surface::neighborSurfaces() {
     return std::vector<Surface*>(result.begin(), result.end());
 }
 
-std::vector<Surface*> Surface::connectedSurfaces(const std::vector<Vertex*> &verts) {
+std::vector<Surface*> Surface::connectedSurfaces(const std::vector<Vertex*> &verts) const {
     std::unordered_set<Surface*> result;
     for(auto &v : verts) 
         for(auto &s : v->surfaces) 
@@ -461,11 +461,11 @@ std::vector<Surface*> Surface::connectedSurfaces(const std::vector<Vertex*> &ver
     return std::vector<Surface*>(result.begin(), result.end());
 }
 
-std::vector<Surface*> Surface::connectedSurfaces() {
+std::vector<Surface*> Surface::connectedSurfaces() const {
     return connectedSurfaces(vertices);
 }
 
-std::vector<unsigned int> Surface::contiguousEdgeLabels(Surface *other) {
+std::vector<unsigned int> Surface::contiguousEdgeLabels(const Surface *other) const {
     std::vector<bool> sharedVertices(vertices.size(), false);
     for(unsigned int i = 0; i < sharedVertices.size(); i++) 
         if(vertices[i]->in(other)) 
@@ -493,14 +493,14 @@ std::vector<unsigned int> Surface::contiguousEdgeLabels(Surface *other) {
     return result;
 }
 
-unsigned int Surface::numSharedContiguousEdges(Surface *other) {
+unsigned int Surface::numSharedContiguousEdges(const Surface *other) const {
     unsigned int result = 0;
     for(auto &i : contiguousEdgeLabels(other)) 
         result = std::max(result, i);
     return result;
 }
 
-FloatP_t Surface::volumeSense(Body *body) {
+FloatP_t Surface::volumeSense(const Body *body) const {
     if(body == b1) 
         return 1.f;
     else if(body == b2) 
@@ -508,7 +508,15 @@ FloatP_t Surface::volumeSense(Body *body) {
     return 0.f;
 }
 
-FloatP_t Surface::getVertexArea(Vertex *v) {
+FVector3 Surface::getOutwardNormal(const Body *body) const {
+    if(body == b1) 
+        return normal;
+    else if(body == b2) 
+        return normal * -1;
+    return FVector3(0);
+}
+
+FloatP_t Surface::getVertexArea(const Vertex *v) const {
     FloatP_t result = 0.f;
     
     for(unsigned int i = 0; i < vertices.size(); i++) {
@@ -524,10 +532,18 @@ FloatP_t Surface::getVertexArea(Vertex *v) {
     return result / 4.f;
 }
 
-FVector3 Surface::triangleNormal(const unsigned int &idx) {
+FVector3 Surface::triangleNormal(const unsigned int &idx) const {
     return triNorm(vertices[idx]->getPosition(), 
                    centroid, 
                    vertices[Surface_VERTEXINDEX(vertices, idx + 1)]->getPosition());
+}
+
+FloatP_t Surface::normalDistance(const FVector3 &pos) const {
+    return FVector4::planeEquation(normal, centroid).distance(pos);
+}
+
+bool Surface::isOutside(const FVector3 &pos) const {
+    return normalDistance(pos) > 0;
 }
 
 HRESULT Surface::positionChanged() {

@@ -46,23 +46,23 @@
 
 %inline %{
 
-static int _vertex_solver_MeshObj_getObjId(TissueForge::models::vertex::MeshObj *self) {
+static int _vertex_solver_MeshObj_getObjId(const TissueForge::models::vertex::MeshObj *self) {
     return self->objId;
 }
 
-static TissueForge::models::vertex::Mesh *_vertex_solver_MeshObj_getMesh(TissueForge::models::vertex::MeshObj *self) {
+static TissueForge::models::vertex::Mesh *_vertex_solver_MeshObj_getMesh(const TissueForge::models::vertex::MeshObj *self) {
     return self->mesh;
 }
 
-static bool _vertex_solver_MeshObj_in(TissueForge::models::vertex::MeshObj *self, TissueForge::models::vertex::MeshObj *obj) {
+static bool _vertex_solver_MeshObj_in(const TissueForge::models::vertex::MeshObj *self, const TissueForge::models::vertex::MeshObj *obj) {
     return self->in(obj);
 }
 
-static bool _vertex_solver_MeshObj_has(TissueForge::models::vertex::MeshObj *self, TissueForge::models::vertex::MeshObj *obj) {
+static bool _vertex_solver_MeshObj_has(const TissueForge::models::vertex::MeshObj *self, const TissueForge::models::vertex::MeshObj *obj) {
     return self->has(obj);
 }
 
-static int _vertex_solver_MeshObjType_getId(TissueForge::models::vertex::MeshObjType *self) {
+static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::MeshObjType *self) {
     return self->id;
 }
 
@@ -82,22 +82,22 @@ static int _vertex_solver_MeshObjType_getId(TissueForge::models::vertex::MeshObj
 %ignore TissueForge::models::vertex::CustomQualityOperation;
 
 // todo: correct so that this block isn't necessary
-%ignore TissueForge::models::vertex::MeshObjActor::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::MeshObjActor::force(MeshObj *, MeshObj *, FloatP_t *);
-%ignore TissueForge::models::vertex::VolumeConstraint::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::VolumeConstraint::force(MeshObj *, MeshObj *, FloatP_t *);
-%ignore TissueForge::models::vertex::SurfaceAreaConstraint::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::SurfaceAreaConstraint::force(MeshObj *, MeshObj *, FloatP_t *);
-%ignore TissueForge::models::vertex::BodyForce::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::BodyForce::force(MeshObj *, MeshObj *, FloatP_t *);
-%ignore TissueForge::models::vertex::SurfaceTraction::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::SurfaceTraction::force(MeshObj *, MeshObj *, FloatP_t *);
-%ignore TissueForge::models::vertex::NormalStress::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::NormalStress::force(MeshObj *, MeshObj *, FloatP_t *);
-%ignore TissueForge::models::vertex::EdgeTension::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::EdgeTension::force(MeshObj *, MeshObj *, FloatP_t *);
-%ignore TissueForge::models::vertex::Adhesion::energy(MeshObj *, MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::Adhesion::force(MeshObj *, MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::MeshObjActor::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::MeshObjActor::force(const MeshObj *, const MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::VolumeConstraint::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::VolumeConstraint::force(const MeshObj *, const MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::SurfaceAreaConstraint::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::SurfaceAreaConstraint::force(const MeshObj *, const MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::BodyForce::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::BodyForce::force(const MeshObj *, const MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::SurfaceTraction::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::SurfaceTraction::force(const MeshObj *, const MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::NormalStress::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::NormalStress::force(const MeshObj *, const MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::EdgeTension::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::EdgeTension::force(const MeshObj *, const MeshObj *, FloatP_t *);
+%ignore TissueForge::models::vertex::Adhesion::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::Adhesion::force(const MeshObj *, const MeshObj *, FloatP_t *);
 
 
 %rename(_vertex_solver_Body) TissueForge::models::vertex::Body;

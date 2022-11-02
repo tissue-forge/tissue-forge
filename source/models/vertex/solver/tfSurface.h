@@ -98,25 +98,25 @@ namespace TissueForge::models::vertex {
         Surface(io::ThreeDFFaceData *face);
 
         /** Get the mesh object type */
-        MeshObj::Type objType() { return MeshObj::Type::SURFACE; }
+        MeshObj::Type objType() const override { return MeshObj::Type::SURFACE; }
 
         /** Get the parents of the object */
-        std::vector<MeshObj*> parents() { return TissueForge::models::vertex::vectorToBase(vertices); }
+        std::vector<MeshObj*> parents() const override { return TissueForge::models::vertex::vectorToBase(vertices); }
 
         /** Get the children of the object */
-        std::vector<MeshObj*> children();
+        std::vector<MeshObj*> children() const override;
 
         /** Add a child object */
-        HRESULT addChild(MeshObj *obj);
+        HRESULT addChild(MeshObj *obj) override;
 
         /** Add a parent object */
-        HRESULT addParent(MeshObj *obj);
+        HRESULT addParent(MeshObj *obj) override;
 
         /** Remove a child object */
-        HRESULT removeChild(MeshObj *obj);
+        HRESULT removeChild(MeshObj *obj) override;
 
         /** Remove a parent object */
-        HRESULT removeParent(MeshObj *obj);
+        HRESULT removeParent(MeshObj *obj) override;
 
         /** Add a vertex */
         HRESULT add(Vertex *v);
@@ -156,86 +156,95 @@ namespace TissueForge::models::vertex {
          * 
          * If the surface is in a mesh, then it and any objects it defines are removed from the mesh. 
         */
-        HRESULT destroy();
+        HRESULT destroy() override;
 
         /** Validate the surface */
-        bool validate();
+        bool validate() override;
 
         /** Refresh internal ordering of defined bodies */
         HRESULT refreshBodies();
 
         /** Get the surface type */
-        SurfaceType *type();
+        SurfaceType *type() const;
 
         /** Become a different type */
         HRESULT become(SurfaceType *stype);
 
         /** Get the structures defined by the surface */
-        std::vector<Structure*> getStructures();
+        std::vector<Structure*> getStructures() const;
 
         /** Get the bodies defined by the surface */
-        std::vector<Body*> getBodies();
+        std::vector<Body*> getBodies() const;
 
         /** Get the vertices that define the surface */
-        std::vector<Vertex*> getVertices() { return vertices; }
+        std::vector<Vertex*> getVertices() const { return vertices; }
 
         /**
          * @brief Find a vertex that defines this surface
          * 
          * @param dir direction to look with respect to the centroid
          */
-        Vertex *findVertex(const FVector3 &dir);
+        Vertex *findVertex(const FVector3 &dir) const;
 
         /**
          * @brief Find a body that this surface defines
          * 
          * @param dir direction to look with respect to the centroid
          */
-        Body *findBody(const FVector3 &dir);
+        Body *findBody(const FVector3 &dir) const;
 
         /** Connected vertices on the same surface. */
-        std::tuple<Vertex*, Vertex*> neighborVertices(Vertex *v);
+        std::tuple<Vertex*, Vertex*> neighborVertices(const Vertex *v) const;
 
         /** Connected surfaces on the same body. */
-        std::vector<Surface*> neighborSurfaces();
+        std::vector<Surface*> neighborSurfaces() const;
 
         /** Surfaces that share at least one vertex in a set of vertices. */
-        std::vector<Surface*> connectedSurfaces(const std::vector<Vertex*> &verts);
+        std::vector<Surface*> connectedSurfaces(const std::vector<Vertex*> &verts) const;
 
         /** Surfaces that share at least one vertex. */
-        std::vector<Surface*> connectedSurfaces();
+        std::vector<Surface*> connectedSurfaces() const;
 
         /** Get the integer labels of the contiguous edges that this surface shares with another surface */
-        std::vector<unsigned int> contiguousEdgeLabels(Surface *other);
+        std::vector<unsigned int> contiguousEdgeLabels(const Surface *other) const;
 
         /** Get the number of contiguous edges that this surface shares with another surface */
-        unsigned int numSharedContiguousEdges(Surface *other);
+        unsigned int numSharedContiguousEdges(const Surface *other) const;
 
         /** Get the surface normal */
-        FVector3 getNormal() { return normal; }
+        FVector3 getNormal() const { return normal; }
 
         /** Get the centroid */
-        FVector3 getCentroid() { return centroid; }
+        FVector3 getCentroid() const { return centroid; }
 
         /**
          * Get the velocity, calculated as the velocity of the centroid
         */
-        FVector3 getVelocity() { return velocity; }
+        FVector3 getVelocity() const { return velocity; }
 
         /** Get the area */
-        FloatP_t getArea() { return area; }
+        FloatP_t getArea() const { return area; }
 
         /** Get the sign of the volume contribution to a body that this surface contributes */
-        FloatP_t volumeSense(Body *body);
+        FloatP_t volumeSense(const Body *body) const;
 
         /** Get the volume that this surface contributes to a body */
-        FloatP_t getVolumeContr(Body *body) { return _volumeContr * volumeSense(body); }
+        FloatP_t getVolumeContr(const Body *body) const { return _volumeContr * volumeSense(body); }
+
+        /** Get the outward facing normal w.r.t. a body */
+        FVector3 getOutwardNormal(const Body *body) const;
 
         /** Get the area that a vertex contributes to this surface */
-        FloatP_t getVertexArea(Vertex *v);
+        FloatP_t getVertexArea(const Vertex *v) const;
 
         /** Get the normal of a triangle */
-        FVector3 triangleNormal(const unsigned int &idx);
+        FVector3 triangleNormal(const unsigned int &idx) const;
+
+        /** Get the normal distance to a point; negative distance means that the point is on the inner side */
+        FloatP_t normalDistance(const FVector3 &pos) const;
+
+        /** Test whether a point is on the outer side */
+        bool isOutside(const FVector3 &pos) const;
 
         /** Update internal data due to a change in position */
         HRESULT positionChanged();
@@ -278,7 +287,7 @@ namespace TissueForge::models::vertex {
         SurfaceType() : SurfaceType(0.1, 0.1) {};
 
         /** Get the mesh object type */
-        MeshObj::Type objType() { return MeshObj::Type::SURFACE; }
+        MeshObj::Type objType() const override { return MeshObj::Type::SURFACE; }
 
         /** Construct a surface of this type from a set of vertices */
         Surface *operator() (std::vector<Vertex*> _vertices);

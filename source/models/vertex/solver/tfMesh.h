@@ -60,16 +60,16 @@ namespace TissueForge::models::vertex {
         ~Mesh();
 
         /** Test whether this mesh has a mesh quality instance */
-        bool hasQuality() { return _quality; }
+        bool hasQuality() const { return _quality; }
 
         /** Get the mesh quality instance */
-        TissueForge::models::vertex::MeshQuality &getQuality() { return *_quality; }
+        TissueForge::models::vertex::MeshQuality &getQuality() const { return *_quality; }
 
         /** Set the mesh quality instance */
         HRESULT setQuality(TissueForge::models::vertex::MeshQuality *quality);
 
         /** Test whether a mesh quality instance is working on the mesh */
-        bool qualityWorking() { return hasQuality() && getQuality().working(); }
+        bool qualityWorking() const { return hasQuality() && getQuality().working(); }
 
         /** Add a vertex */
         HRESULT add(Vertex *obj);
@@ -99,19 +99,19 @@ namespace TissueForge::models::vertex {
          * @param tol distance tolerance
          * @return a vertex within the distance tolerance of the position, otherwise NULL
          */
-        Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001);
+        Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001) const;
 
         /** Get the vertex at a location in the list of vertices */
-        Vertex *getVertex(const unsigned int &idx);
+        Vertex *getVertex(const unsigned int &idx) const;
 
         /** Get a surface at a location in the list of surfaces */
-        Surface *getSurface(const unsigned int &idx);
+        Surface *getSurface(const unsigned int &idx) const;
 
         /** Get a body at a location in the list of bodies */
-        Body *getBody(const unsigned int &idx);
+        Body *getBody(const unsigned int &idx) const;
 
         /** Get a structure at a location in the list of structures */
-        Structure *getStructure(const unsigned int &idx);
+        Structure *getStructure(const unsigned int &idx) const;
 
         /** Get the number of vertices */
         unsigned int numVertices() const { return vertices.size() - vertexIdsAvail.size(); }
@@ -144,13 +144,13 @@ namespace TissueForge::models::vertex {
         HRESULT makeDirty();
 
         /** Check whether two vertices are connected */
-        bool connected(Vertex *v1, Vertex *v2);
+        bool connected(const Vertex *v1, const Vertex *v2) const;
 
         /** Check whether two surfaces are connected */
-        bool connected(Surface *s1, Surface *s2);
+        bool connected(const Surface *s1, const Surface *s2) const;
 
         /** Check whether two bodies are connected */
-        bool connected(Body *b1, Body *b2);
+        bool connected(const Body *b1, const Body *b2) const;
 
         // Mesh editing
 
