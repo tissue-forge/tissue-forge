@@ -95,6 +95,11 @@ namespace TissueForge::types {
                 return Magnum::Math::Distance::pointPlaneScaled(point, *this);
             }
 
+            template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
+            TVector3<T> shortestDisplacementFrom(const TVector3<T> &pt) const {
+                return - distance(pt) * xyz().normalized();
+            }
+
             MAGNUM_BASE_VECTOR_CAST_METHODS(4, TVector4, Vector4Base)
 
             REVISED_MAGNUM_VECTOR_SUBCLASS_IMPLEMENTATION(4, TVector4, Vector4Base)

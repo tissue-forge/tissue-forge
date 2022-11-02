@@ -344,12 +344,16 @@ vector_template_prep_float(TissueForge::types::TVector4, dataType, wrappedName)
 
 %rename(_ ## wrappedName ## _distance) TissueForge::types::TVector4::distance<dataType>;
 %rename(_ ## wrappedName ## _distanceScaled) TissueForge::types::TVector4::distanceScaled<dataType>;
+%rename(_ ## wrappedName ## _shortestDisplacementFrom) TissueForge::types::TVector4::shortestDisplacementFrom<dataType>;
 %rename(_ ## wrappedName ## _planeEquation) TissueForge::types::TVector4::planeEquation<dataType>;
 %rename(_ ## wrappedName ## _xyz) TissueForge::types::TVector4::xyz<dataType>;
 
 %extend TissueForge::types::TVector4<dataType> {
     dataType _distance(const TissueForge::types::TVector3<dataType> &point) { return $self->distance(point); }
     dataType _distanceScaled(const TissueForge::types::TVector3<dataType> &point) { return $self->distanceScaled(point); }
+    TissueForge::types::TVector3<dataType> _shortestDisplacementFrom(const TissueForge::types::TVector3<dataType> &point) {
+        return $self->shortestDisplacementFrom(point);
+    }
     static TissueForge::types::TVector4<dataType> _planeEquation(
         const TissueForge::types::TVector3<dataType> &normal, 
         const TissueForge::types::TVector3<dataType> &point) 
@@ -376,6 +380,10 @@ vector_template_prep_float(TissueForge::types::TVector4, dataType, wrappedName)
         def distanceScaled(self, point):
             """scaled distance from a point"""
             return self._distanceScaled(point)
+
+        def shortest_displacement_from(self, point):
+            """shortest displacement from a point"""
+            return self._shortestDisplacementFrom(point)
 
         @classmethod
         def planeEquation(cls, *args):
@@ -405,6 +413,7 @@ vector_template_prep_float(TissueForge::types::TVector4, dataType, wrappedName)
 // Like vector_template_init, but for TVector2
 %define vector2_template_init(dataType, wrappedName)
 %ignore TissueForge::types::TVector2<dataType>::distance;
+%ignore TissueForge::types::TVector2<dataType>::lineShortestDisplacementTo;
 
 vector_template_init(TissueForge::types::TVector2, dataType, wrappedName)
 %enddef
@@ -412,6 +421,7 @@ vector_template_init(TissueForge::types::TVector2, dataType, wrappedName)
 // Like vector_template_init, but for TVector3
 %define vector3_template_init(dataType, wrappedName)
 %ignore TissueForge::types::TVector3<dataType>::distance;
+%ignore TissueForge::types::TVector3<dataType>::lineShortestDisplacementTo;
 
 vector_template_init(TissueForge::types::TVector3, dataType, wrappedName)
 %enddef
@@ -420,6 +430,7 @@ vector_template_init(TissueForge::types::TVector3, dataType, wrappedName)
 %define vector4_template_init(dataType, wrappedName)
 %ignore TissueForge::types::TVector4<dataType>::distance;
 %ignore TissueForge::types::TVector4<dataType>::distanceScaled;
+%ignore TissueForge::types::TVector4<dataType>::shortestDisplacementFrom;
 %ignore TissueForge::types::TVector4<dataType>::planeEquation;
 
 vector_template_init(TissueForge::types::TVector4, dataType, wrappedName)
