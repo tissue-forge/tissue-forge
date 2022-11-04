@@ -436,11 +436,12 @@ int engine_advance_forward_euler(struct engine *e) {
             
             // Patching a strange bug here. 
             // When built with CUDA support, space_cell alignment is off in Fluxes_integrate when retrieved from static engine. 
-            // TODO: fix space cell alignment issue when built with CUDA
+            // TODO: determine and fix space cell alignment issue when built with vs. without CUDA
             #ifdef HAVE_CUDA
             Fluxes_integrate(&_Engine.s.cells[_cid], _Engine.dt);
             #else
-            Fluxes_integrate(_cid);
+            // Fluxes_integrate(_cid);                             // Now this shows alignment issue, when previously it worked
+            Fluxes_integrate(&_Engine.s.cells[_cid], _Engine.dt);  // Now this works like when built with CUDA, when previously it showed alignment issue
             #endif
         };
         
