@@ -835,7 +835,7 @@ namespace TissueForge {
 	};
 
 	inline ParticleType *ParticleHandle::type() {
-		return &_Engine.types[this->typeId];
+		return &_Engine.types[this->getTypeId()];
 	}
 
 	inline Particle *Particle_FromId(int id) {

@@ -89,7 +89,7 @@ HRESULT tfClusterParticleHandle_init(struct tfClusterParticleHandleHandle *handl
     Particle *p = _Engine.s.partlist[id];
     TFC_PTRCHECK(p);
 
-    ClusterParticleHandle *phandle = new ClusterParticleHandle(id, p->typeId);
+    ClusterParticleHandle *phandle = new ClusterParticleHandle(id);
     handle->tfObj = (void*)phandle;
     return S_OK;
 }
@@ -203,7 +203,7 @@ HRESULT tfClusterParticleHandle_getParticle(struct tfClusterParticleHandleHandle
         return E_FAIL;
     Particle *p = _Engine.s.partlist[pid];
     TFC_PTRCHECK(p);
-    ParticleHandle *ph = new ParticleHandle(p->id, p->typeId);
+    ParticleHandle *ph = new ParticleHandle(p->id);
     parthandle->tfObj = (void*)ph;
     return S_OK;
 }

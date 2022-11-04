@@ -85,7 +85,7 @@ namespace TissueForge {
      */
     struct CAPI_EXPORT ClusterParticleHandle : ParticleHandle {
         ClusterParticleHandle();
-        ClusterParticleHandle(const int &id, const int &typeId);
+        ClusterParticleHandle(const int &id);
 
         /**
          * @brief Gets the actual cluster of this handle. 

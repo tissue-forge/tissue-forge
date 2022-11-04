@@ -318,9 +318,6 @@ namespace TissueForge {
         /** Particle id */
         int id;
 
-        /** Particle type id */
-        int typeId;
-
         /**
          * @brief Gets the actual particle of this handle. 
          */
@@ -331,8 +328,8 @@ namespace TissueForge {
          */
         ParticleType *type();
 
-        ParticleHandle() : id(0), typeId(0) {}
-        ParticleHandle(const int &id, const int &typeId) : id(id), typeId(typeId) {}
+        ParticleHandle() : id(0) {}
+        ParticleHandle(const int &id) : id(id) {}
 
         virtual ParticleHandle* fission();
 

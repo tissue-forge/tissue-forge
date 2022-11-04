@@ -67,7 +67,7 @@ static HRESULT split(const event::ParticleTimeEvent &event) {
     ClusterParticleHandle *particle = (ClusterParticleHandle*)event.targetParticle;
     ClusterParticleType *ptype = (ClusterParticleType*)event.targetType;
 
-    ParticleHandle yolk(yolk_id, Yolk->id);
+    ParticleHandle yolk(yolk_id);
     FVector3 axis = particle->getPosition() - yolk.getPosition();
     particle->split(&axis);
     return S_OK;

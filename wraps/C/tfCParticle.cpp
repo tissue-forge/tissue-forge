@@ -166,7 +166,7 @@ HRESULT tfParticleHandle_init(struct tfParticleHandleHandle *handle, unsigned in
     for(unsigned int i = 0; i < _Engine.s.size_parts; i++) {
         Particle *p = _Engine.s.partlist[i];
         if(p && p->id == pid) {
-            ParticleHandle *ph = new ParticleHandle(p->id, p->typeId);
+            ParticleHandle *ph = new ParticleHandle(p->id);
             handle->tfObj = (void*)ph;
             return S_OK;
         }
@@ -247,7 +247,7 @@ HRESULT package_parts(ParticleList *plist, struct tfParticleHandleHandle **hlist
     for(unsigned int i = 0; i < plist->nr_parts; i++) {
         Particle *p = _Engine.s.partlist[plist->parts[i]];
         TFC_PTRCHECK(p);
-        ParticleHandle *ph = new ParticleHandle(p->id, p->typeId);
+        ParticleHandle *ph = new ParticleHandle(p->id);
         _hlist[i].tfObj = (void*)ph;
     }
     *hlist = _hlist;
@@ -790,7 +790,7 @@ HRESULT tfParticleType_getParticle(struct tfParticleTypeHandle *handle, int i, s
     Particle *p = ptype->particle(i);
     TFC_PTRCHECK(p);
     
-    ParticleHandle *ph = new ParticleHandle(p->id, ptype->id);
+    ParticleHandle *ph = new ParticleHandle(p->id);
     phandle->tfObj = (void*)ph;
     return S_OK;
 }

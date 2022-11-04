@@ -137,6 +137,7 @@ unsigned int *TissueForge::Particle_Colors = colors;
     }
 
 static HRESULT particle_ex_construct(ParticleHandle *self,  
+                                     ParticleType *ptype, 
                                      const FVector3 &position, 
                                      const FVector3 &velocity, 
                                      int clusterId, 
@@ -144,10 +145,12 @@ static HRESULT particle_ex_construct(ParticleHandle *self,
 static HRESULT particle_ex_load(ParticleHandle *self, Particle &part);
 static HRESULT particles_ex_load(std::vector<ParticleHandle*> selfs, std::vector<Particle*> parts);
 static HRESULT particle_init(ParticleHandle *self, 
+                             ParticleType *ptype, 
                              FVector3 *position=NULL, 
                              FVector3 *velocity=NULL, 
                              int *cluster=NULL);
 static HRESULT particle_init_ex(ParticleHandle *self,  
+                                ParticleType *ptype, 
                                 const FVector3 &position,
                                 const FVector3 &velocity,
                                 int clusterId);
@@ -499,6 +502,7 @@ TissueForge::ParticleType::ParticleType(const bool &noReg) {
     dynamics = PARTICLE_NEWTONIAN;
     type_flags = PARTICLE_TYPE_NONE;
     particle_flags = PARTICLE_NONE;
+    species = NULL;
     
     fVector3 c = Magnum::Color3::fromSrgb(colors[(_Engine.nr_types - 1) % (sizeof(colors)/sizeof(unsigned))]);
     style = new rendering::Style(&c);
@@ -819,7 +823,7 @@ Particle* TissueForge::Particle_Get(ParticleHandle *pypart) {
 
 ParticleHandle *TissueForge::Particle::handle() {
     
-    if(!this->_handle) this->_handle = new ParticleHandle(this->id, this->typeId);
+    if(!this->_handle) this->_handle = new ParticleHandle(this->id);
     
     return this->_handle;
 }
@@ -936,9 +940,8 @@ ParticleHandle* TissueForge::Particle_New(
     
     // make a new pyparticle
     auto pyPart = new ParticleHandle();
-    pyPart->typeId = type->id;
     
-    if(particle_init(pyPart, position, velocity, clusterId) < 0) {
+    if(particle_init(pyPart, type, position, velocity, clusterId) < 0) {
         TF_Log(LOG_ERROR) << "failed calling particle_init";
         return NULL;
     }
@@ -976,12 +979,12 @@ std::vector<int> TissueForge::Particles_New(
     // construct particles
     for(int i = 0; i < nr_parts; i++) {
         parts[i] = new Particle();
+        ParticleType *ptype = types[i];
         ParticleHandle *self = new ParticleHandle();
-        self->typeId = types[i]->id;
         FVector3 position = positions ? (*positions)[i] : particle_posdefault();
-        FVector3 velocity = velocities ? (*velocities)[i] : particle_veldefault(*types[i]);
+        FVector3 velocity = velocities ? (*velocities)[i] : particle_veldefault(*ptype);
         int clusterId = clusterIds ? (*clusterIds)[i] : -1;
-        particle_ex_construct(self, position, velocity, clusterId, *parts[i]);
+        particle_ex_construct(self, ptype, position, velocity, clusterId, *parts[i]);
         handles[i] = self;
     }
     
@@ -1030,7 +1033,7 @@ HRESULT TissueForge::Particle_Become(Particle *part, ParticleType *type) {
     
     ParticleType *currentType = &_Engine.types[part->typeId];
     
-    assert(pypart->typeId == currentType->id);
+    assert(pypart->typeId() == currentType->id);
     
     if(!SUCCEEDED(hr = currentType->del_part(part->id))) {
         return hr;
@@ -1039,8 +1042,6 @@ HRESULT TissueForge::Particle_Become(Particle *part, ParticleType *type) {
     if(!SUCCEEDED(hr = type->addpart(part->id))) {
         return hr;
     }
-    
-    pypart->typeId = type->id;
     
     part->typeId = type->id;
     
@@ -1222,13 +1223,11 @@ FPTYPE TissueForge::ParticleHandle::distance(ParticleHandle *_other) {
     return (opos - pos).length();
 }
 
-HRESULT particle_init(ParticleHandle *self, FVector3 *position, FVector3 *velocity, int *cluster) 
+HRESULT particle_init(ParticleHandle *self, ParticleType *ptype, FVector3 *position, FVector3 *velocity, int *cluster) 
 {
     
     try {
         TF_Log(LOG_TRACE);
-
-        TF_PARTICLE_TYPE(self)
 
         FVector3 _position = position ? FVector3(*position) : particle_posdefault();
         FVector3 _velocity = velocity ? FVector3(*velocity) : particle_veldefault(*ptype);
@@ -1237,7 +1236,7 @@ HRESULT particle_init(ParticleHandle *self, FVector3 *position, FVector3 *veloci
         // the engine particles, so need to pass cluster by id.
         int _clusterId = cluster ? *cluster : -1;
         
-        return particle_init_ex(self, _position, _velocity, _clusterId);
+        return particle_init_ex(self, ptype, _position, _velocity, _clusterId);
         
     }
     catch (const std::exception &e) {
@@ -1246,14 +1245,13 @@ HRESULT particle_init(ParticleHandle *self, FVector3 *position, FVector3 *veloci
 }
 
 HRESULT particle_ex_construct(
-    ParticleHandle *self,  
+    ParticleHandle *self, 
+    ParticleType *ptype, 
     const FVector3 &position, 
     const FVector3 &velocity, 
     int clusterId, 
     Particle &part) 
 {
-    TF_PARTICLE_TYPE(self)
-    
     bzero(&part, sizeof(Particle));
     part.radius = ptype->radius;
     part.mass = ptype->mass;
@@ -1354,6 +1352,7 @@ HRESULT particles_ex_load(std::vector<ParticleHandle*> selfs, std::vector<Partic
 
 HRESULT particle_init_ex(
     ParticleHandle *self, 
+    ParticleType *ptype, 
     const FVector3 &position,
     const FVector3 &velocity, 
     int clusterId) 
@@ -1362,7 +1361,7 @@ HRESULT particle_init_ex(
     Particle part;
     HRESULT result;
 
-    if((result = particle_ex_construct(self, position, velocity, clusterId, part)) != S_OK) {
+    if((result = particle_ex_construct(self, ptype, position, velocity, clusterId, part)) != S_OK) {
         return tf_error(result, engine_err_msg[-engine_err]);
     }
     if((result = particle_ex_load(self, part)) != S_OK) {
@@ -1428,7 +1427,7 @@ namespace TissueForge::io {
         TF_PARTICLEIOTOEASY(fe, "force_i", dataElement.force_i);
         TF_PARTICLEIOTOEASY(fe, "number_density", dataElement.number_density);
         TF_PARTICLEIOTOEASY(fe, "velocity", dataElement.velocity);
-        TF_PARTICLEIOTOEASY(fe, "position", ParticleHandle(dataElement.id, dataElement.typeId).getPosition());
+        TF_PARTICLEIOTOEASY(fe, "position", ParticleHandle(dataElement.id).getPosition());
         TF_PARTICLEIOTOEASY(fe, "creation_time", dataElement.creation_time);
         TF_PARTICLEIOTOEASY(fe, "persistent_force", dataElement.persistent_force);
         TF_PARTICLEIOTOEASY(fe, "radius", dataElement.radius);

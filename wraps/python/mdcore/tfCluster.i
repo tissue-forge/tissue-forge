@@ -110,7 +110,7 @@
     %pythoncode %{
         def __call__(self, position=None, velocity=None, cluster_id=None):
             ph = ParticleType.__call__(self, position, velocity, cluster_id)
-            return ClusterParticleHandle(ph.id, ph.type_id)
+            return ClusterParticleHandle(ph.id)
 
         def __reduce__(self):
             return ClusterParticleType.fromString, (self.toString(),)

@@ -210,8 +210,8 @@ TissueForge::ClusterParticleHandle::ClusterParticleHandle() :
     ParticleHandle() 
 {}
 
-TissueForge::ClusterParticleHandle::ClusterParticleHandle(const int &id, const int &typeId) : 
-    ParticleHandle(id, typeId) 
+TissueForge::ClusterParticleHandle::ClusterParticleHandle(const int &id) : 
+    ParticleHandle(id) 
 {}
 
 Cluster *TissueForge::ClusterParticleHandle::cluster() {
@@ -223,7 +223,7 @@ ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *par
                                                                FVector3 *velocity) 
 {
     auto p = Cluster_CreateParticle((Cluster*)part(), partType, position, velocity);
-    return new ParticleHandle(p->id, p->typeId);
+    return new ParticleHandle(p->id);
 }
 
 ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *partType, const std::string &str) {
