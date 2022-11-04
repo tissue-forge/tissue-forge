@@ -1033,7 +1033,7 @@ HRESULT TissueForge::Particle_Become(Particle *part, ParticleType *type) {
     
     ParticleType *currentType = &_Engine.types[part->typeId];
     
-    assert(pypart->typeId() == currentType->id);
+    assert(pypart->getTypeId() == currentType->id);
     
     if(!SUCCEEDED(hr = currentType->del_part(part->id))) {
         return hr;
