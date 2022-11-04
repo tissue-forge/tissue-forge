@@ -26,8 +26,14 @@
 %ignore TissueForge::errSet;
 %ignore TissueForge::expSet;
 
+%template(vectorError) std::vector<TissueForge::Error>;
+
 %rename(err_occurred) TissueForge::errOccurred;
 %rename(err_clear) TissueForge::errClear;
+%rename(err_get_all) TissueForge::errGetAll;
+%rename(err_get_first) TissueForge::errGetFirst;
+%rename(err_clear_first) TissueForge::errClearFirst;
+%rename(err_pop_first) TissueForge::errPopFirst;
 %rename(_msg) TissueForge::Error::msg;
 
 %include "tfError.h"

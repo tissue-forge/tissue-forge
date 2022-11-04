@@ -45,18 +45,5 @@ tf.bind.types(pot, Argon, Argon)
 # create lots of particles in a uniform random cube
 Argon.factory(positions=np.random.uniform(low=0, high=10, size=(10000, 3)))
 
-# TEST
-
-p0, p1 = Argon.items()[0], Argon.items()[1]
-b = tf.Bond.create(pot, p0, p1)
-tf.Logger.enableConsoleLogging(tf.Logger.ERROR)
-p2 = b[2]  # Error should happen here
-error: tf.Error = tf.err_occurred()
-if error is not None:
-    print(error)
-    exit(error.err)
-
-# END TEST
-
 # run the simulator interactive
 tf.run()

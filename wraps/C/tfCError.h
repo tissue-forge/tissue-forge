@@ -97,14 +97,14 @@ CAPI_FUNC(HRESULT) tfError_getFunc(struct tfErrorHandle *handle, char **func, un
 //////////////////////
 
 /**
- * Set the error indicator. If there is a previous error indicator, then the previous indicator is overwritten. 
+ * Set the error indicator. If there is a previous error indicator, then the previous indicator is moved down the stack. 
  */
 CAPI_FUNC(HRESULT) tfErrSet(HRESULT code, const char* msg, int line, const char* file, const char* func);
 
 /**
- * Get the error indicator, if any. 
+ * Check whether there is an error indicator. 
  */
-CAPI_FUNC(bool) tfErrOccurred(struct tfErrorHandle *handle);
+CAPI_FUNC(bool) tfErrOccurred();
 
 /**
  * Clear the error indicator. If the error indicator is not set, there is no effect.
@@ -115,6 +115,30 @@ CAPI_FUNC(void) tfErrClear();
  * Get a string representation of an error.
  */
 CAPI_FUNC(HRESULT) tfErrStr(struct tfErrorHandle *handle, char **str, unsigned int *numChars);
+
+/**
+ * @brief Get all error indicators.
+ * 
+ * @param handles error indicators
+ * @param numErrors number of error indicators
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfErrGetAll(struct tfErrorHandle ***handles, unsigned int *numErrors);
+
+/**
+ * Get the first error
+ */
+CAPI_FUNC(HRESULT) tfErrGetFirst(struct tfErrorHandle **handle);
+
+/**
+ * Clear the first error
+ */
+CAPI_FUNC(void) tfErrClearFirst();
+
+/**
+ * Get and clear the first error
+ */
+CAPI_FUNC(HRESULT) tfErrPopFirst(struct tfErrorHandle **handle);
 
 
 #endif // _WRAPS_C_TFCERROR_H_

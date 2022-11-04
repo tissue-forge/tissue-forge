@@ -52,6 +52,10 @@ void TissueForge::errs_clear() {
     errs_count = 0;
 }
 
+int TissueForge::errs_num() {
+    return errs_count;
+}
+
 
 /**
  * @brief Print the error stack out to the given FILE pointer.
@@ -134,4 +138,15 @@ int TissueForge::errs_register(int id, const char *msg, int line, const char *fu
     /* Return with the given error code. */
     return id;
 
+}
+
+CAPI_FUNC(int) errs_get(int id, char **msg, int *line, char **func, char **file) {
+    if(id < 0 || id >= errs_count) 
+        return -1;
+
+    *msg = const_cast<char*>(errs_stack[id].msg);
+    *line = errs_stack[id].line;
+    *func = const_cast<char*>(errs_stack[id].func);
+    *file = const_cast<char*>(errs_stack[id].file);
+    return errs_err_ok;
 }

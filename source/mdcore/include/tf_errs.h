@@ -49,8 +49,10 @@ namespace TissueForge {
     CAPI_FUNC(int) errs_register( int id , const char *msg , int line , const char *func , const char *file );
     CAPI_FUNC(int) errs_dump(FILE *out );
     CAPI_FUNC(void) errs_clear();
+    CAPI_FUNC(int) errs_num();
 
     std::string errs_getstring(int id);
+    CAPI_FUNC(int) errs_get(int id, char **msg, int *line, char **func, char **file);
 
 };
 

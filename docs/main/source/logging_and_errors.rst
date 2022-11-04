@@ -40,25 +40,27 @@ Error Handling
 
 To support interactive execution, many errors in Tissue Forge do not
 necessarily terminate execution of a simulation.
-Rather, errors that do not corrupt simulation data
+Rather, an error that does not corrupt simulation data
 (*e.g.*, bad specification of a particle location)
-allow a simulation to proceed but post an :py:class:`Error`, and also
-log the error at the ``ERROR`` level. If an :py:class:`Error` has been posted,
-it can be retrieved with :py:func:`err_occurred` for inspection. Otherwise,
-:py:func:`err_occurred` returns ``None``, which communicates that no errors
-have occurred. A posted :py:class:`Error` can be cleared with
-:py:func:`err_clear`. ::
+allow a simulation to proceed but posts an :py:class:`Error`, and also
+logs the error at the ``ERROR`` level. Errors that have been posted can
+be retrieved in order of their posting with :py:func:`err_get_all`, or the
+current first posted error can be retrieved and removed from the list of
+errors with :py:func:`err_pos_first`. The function :py:func:`err_occured`
+returns ``True`` when any error is currently posted, and :py:func:`err_clear`
+clears all posted errors. ::
 
     # Create a bond with potential ``pot`` between particles ``p0`` and ``p1``
     b = tf.Bond.create(pot, p0, p1)
     # The particles are accessible at indices ``0`` and ``1``; an error results at other indices
     p2 = b[2]
-    # Do error checking and maybe terminate if an error occurred
-    error: tf.Error = tf.err_occurred()
-    if error is not None:
+    # Do error checking and maybe terminate if certain errors occurred
+    while tf.err_occurred():
+        error: tf.Error = tf.err_pop_first()
         print(error)
         # Exit or continue, depending on the error code
-        tf.err_clear() if error.err < 0 else exit(error.err)
+        if error.err < 0:
+            exit(error.err)
 
 Many errors include useful information about what caused the error, and
 useful suggestions about how to prevent the error from occuring. However,

@@ -96,14 +96,8 @@ HRESULT tfErrSet(HRESULT code, const char* msg, int line, const char* file, cons
     return errSet(code, msg, line, file, func);
 }
 
-bool tfErrOccurred(struct tfErrorHandle *handle) {
-    Error *err = errOccurred();
-    if(!err) 
-        return false;
-
-    TFC_PTRCHECK(handle);
-    handle->tfObj = (void*)err;
-    return true;
+bool tfErrOccurred() {
+    return errOccurred();
 }
 
 void tfErrClear() {
@@ -116,4 +110,50 @@ HRESULT tfErrStr(struct tfErrorHandle *handle, char **str, unsigned int *numChar
     TFC_PTRCHECK(numChars);
     TFC_ERROR_GET(handle, _err);
     return capi::str2Char(errStr(*_err), str, numChars);
+}
+
+HRESULT tfErrGetAll(struct tfErrorHandle ***handles, unsigned int *numErrors) {
+    if(!errOccurred()) 
+        return E_FAIL;
+
+    TFC_PTRCHECK(handles);
+    TFC_PTRCHECK(numErrors);
+
+    auto errors = errGetAll();
+    *numErrors = errors.size();
+    if(errors.size() == 0) 
+        return S_OK;
+
+    *handles = (tfErrorHandle**)malloc(errors.size() * sizeof(tfErrorHandle*));
+    for(unsigned int i = 0; i < errors.size(); i++) {
+        tfErrorHandle *_handle = new tfErrorHandle();
+        _handle->tfObj = (void*)(new Error(errors[i]));
+        (*handles)[i] = _handle;
+    }
+
+    return S_OK;
+}
+
+HRESULT tfErrGetFirst(struct tfErrorHandle **handle) {
+    if(!errOccurred()) 
+        return E_FAIL;
+
+    TFC_PTRCHECK(handle);
+    (*handle)->tfObj = (void*)(new Error(errGetFirst()));
+    return S_OK;
+}
+
+void tfErrClearFirst() {
+    errClearFirst();
+}
+
+HRESULT tfErrPopFirst(struct tfErrorHandle **handle) {
+    if(!errOccurred()) 
+        return E_FAIL;
+
+    if(tfErrGetFirst(handle) != S_OK) 
+        return E_FAIL;
+
+    errClearFirst();
+    return S_OK;
 }
