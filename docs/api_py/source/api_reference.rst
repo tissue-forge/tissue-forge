@@ -71,6 +71,8 @@ This is the API Reference page for the module: :mod:`tissue_forge`
 
 .. include:: api_logger.rst
 
+.. include:: api_error.rst
+
 .. include:: api_utils.rst
 
 .. include:: api_metrics.rst

@@ -17,49 +17,24 @@
  * 
  ******************************************************************************/
 
-#include <cstdio>
+%{
 
 #include "tfError.h"
 
-#include <iostream>
-#include <sstream>
-#include <tfLogger.h>
+%}
 
+%ignore TissueForge::errSet;
+%ignore TissueForge::expSet;
 
-using namespace TissueForge;
+%rename(err_occurred) TissueForge::errOccurred;
+%rename(err_clear) TissueForge::errClear;
+%rename(_msg) TissueForge::Error::msg;
 
+%include "tfError.h"
 
-static Error _Error;
-static Error *_ErrorPtr = NULL;
-
-HRESULT TissueForge::errSet(HRESULT code, const char* msg, int line,
-		const char* file, const char* func) {
-
-	_Error.err = code;
-	_Error.fname = file;
-	_Error.func = func;
-	_Error.msg = msg;
-    
-    TF_Log(LOG_ERROR) << _Error;
-
-	_ErrorPtr = &_Error;
-	return code;
-}
-
-HRESULT TissueForge::expSet(const std::exception& e, const char* msg, int line, const char* file, const char* func) {
-    return errSet(E_FAIL, e.what(), line, file, func);
-}
-
-Error* TissueForge::errOccurred() {
-    return _ErrorPtr;
-}
-
-void TissueForge::errClear() {
-    _ErrorPtr = NULL;
-}
-
-std::string TissueForge::errStr(const Error &err) {
-	std::stringstream ss;
-	ss << err;
-	return ss.str();
+%extend TissueForge::Error {
+    %pythoncode %{
+        def __str__(self) -> str:
+            return errStr(self)
+    %}
 }

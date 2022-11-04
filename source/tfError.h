@@ -28,17 +28,27 @@
 #include <tf_port.h>
 
 #include <exception>
+#include <string>
 
 
 namespace TissueForge {
 
 
     struct CAPI_EXPORT Error {
+        /** Error code */
         HRESULT err;
-        const char* msg;
+
+        /** Error message */
+        std::string msg;
+
+        /** Originating line number */
         int lineno;
-        const char* fname;
-        const char* func;
+
+        /** Originating file name */
+        std::string fname;
+
+        /** Originating function name */
+        std::string func;
     };
 
     #define tf_error(code, msg) errSet(code, msg, __LINE__, __FILE__, TF_FUNCTION)
@@ -47,10 +57,19 @@ namespace TissueForge {
 
     #define TF_RETURN_EXP(e) expSet(e, "", __LINE__, __FILE__, TF_FUNCTION); return NULL
 
+    /**
+     * Set the error indicator. If there is a previous error indicator, then the previous indicator is overwritten. 
+     */
     CPPAPI_FUNC(HRESULT) errSet(HRESULT code, const char* msg, int line, const char* file, const char* func);
 
+    /**
+     * Set the error indicator. If there is a previous error indicator, then the previous indicator is overwritten. 
+     */
     CPPAPI_FUNC(HRESULT) expSet(const std::exception&, const char* msg, int line, const char* file, const char* func);
 
+    /**
+     * Get the error indicator, if any. 
+     */
     CPPAPI_FUNC(Error*) errOccurred();
 
     /**
@@ -58,6 +77,26 @@ namespace TissueForge {
      */
     CPPAPI_FUNC(void) errClear();
 
+    /**
+     * Get a string representation of an error.
+     */
+    CPPAPI_FUNC(std::string) errStr(const Error &err);
+
 };
+
+inline std::ostream& operator<<(std::ostream& os, const TissueForge::Error &err)
+{
+    os << std::string("Code: ");
+    os << std::to_string(err.err);
+    os << std::string(", Msg: ");
+    os << err.msg;
+    os << std::string(", File: ");
+    os << err.fname;
+    os << std::string(", Line: ");
+    os << std::to_string(err.lineno);
+    os << std::string(", Function: ");
+    os << err.func;
+    return os;
+}
 
 #endif // _SOURCE_TFERROR_H_

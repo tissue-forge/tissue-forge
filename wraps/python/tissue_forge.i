@@ -96,6 +96,9 @@
 // Logger
 %include "tfLogger.i"
 
+// Error
+%include "tfError.i"
+
 // io namespace
 %include "io/tf_io.i"
 
