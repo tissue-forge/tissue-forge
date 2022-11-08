@@ -38,11 +38,6 @@
 #include "tfParticleTypeList.h"
 #include <set>
 
-/* error codes */
-#define PARTICLE_ERR_OK                 0
-#define PARTICLE_ERR_NULL              -1
-#define PARTICLE_ERR_MALLOC            -2
-
 /**
  * increment size of cluster particle list.
  */
@@ -879,7 +874,7 @@ namespace TissueForge {
     CAPI_DATA(unsigned int) *Particle_Colors;
 
     // Returns 1 if a type has been registered, otherwise 0
-    CAPI_FUNC(HRESULT) ParticleType_checkRegistered(ParticleType *type);
+    CAPI_FUNC(bool) ParticleType_checkRegistered(ParticleType *type);
 
     /**
      * mandatory internal function to initalize the particle and particle types

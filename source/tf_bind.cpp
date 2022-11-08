@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include "tf_bind.h"
+#include <tf_errs.h>
 #include <tfParticle.h>
 #include <tfEngine.h>
 #include "tfError.h"
@@ -28,6 +29,10 @@
 
 
 using namespace TissueForge;
+
+
+/* the error macro. */
+#define error(id)   (tf_error(E_FAIL, errs_err_msg[id]))
 
 
 
@@ -59,15 +64,8 @@ HRESULT universe_bind_potential(Potential *p, ParticleType *a, ParticleType *b, 
         pot->flags = pot->flags | POTENTIAL_BOUND;
     }
 
-    if(engine_addpot(&_Engine, pot, a->id, b->id) != engine_err_ok) {
-        std::string msg = "failed to add potential to engine: error ";
-        msg += std::to_string(-engine_err);
-        msg += ", ";
-        msg += engine_err_msg[-engine_err];
-        TF_Log(LOG_CRITICAL) << msg;
-        auto msg_c = msg.c_str();
-        return tf_error(E_FAIL, msg_c);
-    }
+    if(engine_addpot(&_Engine, pot, a->id, b->id) != S_OK) 
+        return error(MDCERR_engine);
     
     return S_OK;
 }
@@ -86,13 +84,8 @@ HRESULT universe_bind_potential(Potential *p, BoundaryCondition *bc, ParticleTyp
 
 HRESULT universe_bind_force(Force *force, ParticleType *a_type, const std::string* coupling_symbol) {
 
-    if(engine_add_singlebody_force(&_Engine, force, a_type->id) != engine_err_ok) {
-        std::string msg = "failed to add force to engine: error";
-        msg += std::to_string(engine_err);
-        msg += ", ";
-        msg += engine_err_msg[-engine_err];
-        return tf_error(E_FAIL, msg.c_str());
-    }
+    if(engine_add_singlebody_force(&_Engine, force, a_type->id) != S_OK) 
+        return error(MDCERR_engine);
     
     if(coupling_symbol == NULL) {
         return S_OK;
@@ -102,7 +95,6 @@ HRESULT universe_bind_force(Force *force, ParticleType *a_type, const std::strin
         std::string msg = "could not add force, given a coupling symbol, but the particle type ";
         msg += a_type->name;
         msg += " does not have a chemical species vector";
-        TF_Log(LOG_CRITICAL) << msg;
         return tf_error(E_FAIL, msg.c_str());
     }
 
@@ -176,9 +168,9 @@ HRESULT bind::sphere(
         phi0 = std::get<0>(*phi);
         phi1 = std::get<1>(*phi);
 
-        if(phi0 < 0 || phi0 > Pi) tf_exp(std::logic_error("phi_0 must be between 0 and pi"));
-        if(phi1 < 0 || phi1 > Pi) tf_exp(std::logic_error("phi_1 must be between 0 and pi"));
-        if(phi1 < phi0) tf_exp(std::logic_error("phi_1 must be greater than phi_0"));
+        if(phi0 < 0 || phi0 > Pi) return tf_error(E_FAIL, "phi_0 must be between 0 and pi");
+        if(phi1 < 0 || phi1 > Pi) return tf_error(E_FAIL, "phi_1 must be between 0 and pi");
+        if(phi1 < phi0) return tf_error(E_FAIL, "phi_1 must be greater than phi_0");
     }
 
     FVector3 _center =  center ? *center : engine_center();
@@ -212,7 +204,7 @@ HRESULT bind::sphere(
         edges = vertices.size() + (indices.size() / 3);
     }
 
-    if(edges <= 0) return E_FAIL;
+    if(edges <= 0) return tf_error(E_FAIL, "No edges resulted from input.");
 
     std::vector<BondHandle*> *bonds = new std::vector<BondHandle*>();
 
@@ -222,7 +214,7 @@ HRESULT bind::sphere(
         parts->parts[i] = p->id;
     }
 
-    if(vertices.size() > 0 && indices.size() == 0) return E_FAIL;
+    if(vertices.size() > 0 && indices.size() == 0) return tf_error(E_FAIL, "No vertices resulted from input.");
 
     int nbonds = 0;
     for(int i = 0; i < indices.size(); i += 3) {
@@ -241,7 +233,7 @@ HRESULT bind::sphere(
         msg += "indices: " + std::to_string(indices.size()) + "\n";
         msg += "expected edges: " + std::to_string(edges) + "\n";
         msg += "found edges: " + std::to_string(nbonds);
-        tf_exp(std::overflow_error(msg));
+        tf_error(E_FAIL, msg.c_str());
     }
 
     if(out) *out = new std::pair<ParticleList*, std::vector<BondHandle*>*>(parts, bonds);

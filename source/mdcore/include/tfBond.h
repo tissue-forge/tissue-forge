@@ -29,11 +29,6 @@
 
 #include <mdcore_config.h>
 
-/* bond error codes */
-#define bond_err_ok                    0
-#define bond_err_null                  -1
-#define bond_err_malloc                -2
-
 
 namespace TissueForge {
 
@@ -41,10 +36,6 @@ namespace TissueForge {
     namespace rendering {
         struct Style;
     }
-
-
-    /** ID of the last error */
-    CAPI_DATA(int) bond_err;
 
 
     typedef enum BondFlags {
@@ -210,9 +201,8 @@ namespace TissueForge {
          * @param half_life bond half life
          * @param bond_energy bond energy
          * @param flags bond flags
-         * @return int 
          */
-        int init(
+        HRESULT init(
             TissueForge::Potential *pot, 
             TissueForge::ParticleHandle *p1, 
             TissueForge::ParticleHandle *p2, 
@@ -264,10 +254,14 @@ namespace TissueForge {
          * @brief Destroy the bond. 
          * 
          * Automatically updates when running on a CUDA device. 
-         * 
-         * @return HRESULT 
          */
         HRESULT destroy();
+
+        /**
+         * @brief Get a handle to each bond in the universe
+         * 
+         * @return std::vector<BondHandle*> 
+         */
         static std::vector<BondHandle*> bonds();
 
         /**
@@ -301,7 +295,7 @@ namespace TissueForge {
 
     private:
 
-        int _init(
+        HRESULT _init(
             uint32_t flags, 
             int32_t i, 
             int32_t j, 
@@ -326,16 +320,36 @@ namespace TissueForge {
      * @brief Deletes all bonds in the universe. 
      * 
      * Automatically updates when running on a CUDA device. 
-     * 
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Bond_DestroyAll();
 
     HRESULT Bond_Energy (Bond *b, FPTYPE *epot_out);
 
     /* associated functions */
-    CAPI_FUNC(int) bond_eval (Bond *b, int N, struct engine *e, FPTYPE *epot_out);
-    CAPI_FUNC(int) bond_evalf (Bond *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of bonded interactions
+     *
+     * @param b Pointer to an array of #bond.
+     * @param N Nr of bonds in @c b.
+     * @param e Pointer to the #engine in which these bonds are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     */
+    CAPI_FUNC(HRESULT) bond_eval (Bond *b, int N, struct engine *e, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of bonded interactions
+     *
+     * @param bonds Pointer to an array of #bond.
+     * @param N Nr of bonds in @c b.
+     * @param e Pointer to the #engine in which these bonds are evaluated.
+     * @param forces An array of @c FPTYPE in which to aggregate the resulting forces.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     * 
+     * This function differs from #bond_eval in that the forces are added to
+     * the array @c f instead of directly in the particle data.
+     */
+    CAPI_FUNC(HRESULT) bond_evalf (Bond *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
 
 
     /**

@@ -67,18 +67,7 @@ using namespace TissueForge;
 rendering::Style *Angle_StylePtr = new rendering::Style("aqua");
 
 
-/* Global variables. */
-/** The ID of the last error. */
-int TissueForge::angle_err = angle_err_ok;
-
-/* the error macro. */
-#define error(id)				(angle_err = errs_register(id, angle_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-
-/* list of error messages. */
-const char *angle_err_msg[2] = {
-	"Nothing bad happened.",
-    "An unexpected NULL pointer was encountered."
-	};
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
 static bool Angle_decays(Angle *a, std::uniform_real_distribution<FPTYPE> *uniform01=NULL) {
@@ -97,17 +86,7 @@ static bool Angle_decays(Angle *a, std::uniform_real_distribution<FPTYPE> *unifo
 }
 
 
-/**
- * @brief Evaluate a list of angleed interactions
- *
- * @param b Pointer to an array of #angle.
- * @param N Nr of angles in @c b.
- * @param e Pointer to the #engine in which these angles are evaluated.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- * 
- * @return #angle_err_ok or <0 on error (see #angle_err)
- */
-int TissueForge::angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *epot_out) { 
+HRESULT TissueForge::angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *epot_out) { 
 
     #ifdef HAVE_CUDA
     if(e->angles_cuda) {
@@ -144,9 +123,9 @@ int TissueForge::angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *ep
 #endif
     
     /* Check inputs. */
-    if(a == NULL || e == NULL)
-        return error(angle_err_null);
-        
+    if(a == NULL || e == NULL) 
+        return error(MDCERR_null);
+
     /* Get local copies of some variables. */
     s = &e->s;
     partlist = s->partlist;
@@ -397,25 +376,12 @@ int TissueForge::angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *ep
     *epot_out += epot;
     
     /* We're done here. */
-    return angle_err_ok;
+    return S_OK;
     
 }
 
 
-/**
- * @brief Evaluate a list of angleed interactions
- *
- * @param b Pointer to an array of #angle.
- * @param N Nr of angles in @c b.
- * @param e Pointer to the #engine in which these angles are evaluated.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- *
- * This function differs from #angle_eval in that the forces are added to
- * the array @c f instead of directly in the particle data.
- * 
- * @return #angle_err_ok or <0 on error (see #angle_err)
- */
-int TissueForge::angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out) {
+HRESULT TissueForge::angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out) {
 
     Angle *angle;
     int aid, pid, pjd, pkd, k, *loci, *locj, *lock, shift;
@@ -446,7 +412,7 @@ int TissueForge::angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f
     
     /* Check inputs. */
     if(a == NULL || e == NULL)
-        return error(angle_err_null);
+        return error(MDCERR_null);
         
     /* Get local copies of some variables. */
     s = &e->s;
@@ -687,20 +653,20 @@ int TissueForge::angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f
     *epot_out += epot;
     
     /* We're done here. */
-    return angle_err_ok;
+    return S_OK;
     
 }
 
 static bool Angle_destroyingAll = false;
 
 HRESULT TissueForge::Angle_Destroy(Angle *a) {
-    if(!a) return E_FAIL;
+    if(!a) return error(MDCERR_null);
 
     if(a->flags & ANGLE_ACTIVE) {
         #ifdef HAVE_CUDA
         if(_Engine.angles_cuda && !Angle_destroyingAll) 
             if(cuda::engine_cuda_finalize_angle(a->id) < 0) 
-                return E_FAIL;
+                return error(MDCERR_cuda);
         #endif
 
         bzero(a, sizeof(Angle));
@@ -716,7 +682,7 @@ HRESULT TissueForge::Angle_DestroyAll() {
     #ifdef HAVE_CUDA
     if(_Engine.angles_cuda) 
         if(cuda::engine_cuda_finalize_angles_all(&_Engine) < 0) 
-            return E_FAIL;
+            return error(MDCERR_cuda);
     #endif
 
     for(auto ah: TissueForge::AngleHandle::items()) ah->destroy();
@@ -745,7 +711,7 @@ void TissueForge::Angle::init(Potential *potential, ParticleHandle *p1, Particle
 
 AngleHandle *TissueForge::Angle::create(Potential *potential, ParticleHandle *p1, ParticleHandle *p2, ParticleHandle *p3, uint32_t flags) {
     if(potential->flags & POTENTIAL_SCALED || potential->flags & POTENTIAL_SHIFTED) {
-        throw std::runtime_error("angles do not support scaled or shifted potentials");
+        error(MDCERR_angsspot);
         return NULL;
     }
 
@@ -753,7 +719,10 @@ AngleHandle *TissueForge::Angle::create(Potential *potential, ParticleHandle *p1
 
     auto id = engine_angle_alloc(&_Engine, &angle);
     
-    if(!angle) return NULL;
+    if(!angle) {
+        error(MDCERR_null);
+        return NULL;
+    }
 
     angle->init(potential, p1, p2, p3, flags);
     if(angle->i >=0 && angle->j >=0 && angle->k >=0) {
@@ -782,8 +751,10 @@ Angle *TissueForge::Angle::fromString(const std::string &str) {
 }
 
 Angle *TissueForge::AngleHandle::get() {
-    if(id >= _Engine.angles_size) throw std::range_error("Angle id invalid");
-    if (id < 0) return NULL;
+    if(id < 0 || id >= _Engine.angles_size) {
+        error(MDCERR_id);
+        return NULL;
+    }
     return &_Engine.angles[this->id];
 }
 
@@ -825,7 +796,7 @@ bool TissueForge::AngleHandle::decays() {
 ParticleHandle *TissueForge::AngleHandle::operator[](unsigned int index) {
     auto *a = get();
     if(!a) {
-        TF_Log(LOG_ERROR) << "Invalid angle handle";
+        error(MDCERR_null);
         return NULL;
     }
 
@@ -833,7 +804,7 @@ ParticleHandle *TissueForge::AngleHandle::operator[](unsigned int index) {
     else if(index == 1) return Particle_FromId(a->j)->handle();
     else if(index == 2) return Particle_FromId(a->k)->handle();
     
-    tf_exp(std::range_error("Index out of range (must be 0, 1 or 2)"));
+    error(MDCERR_range);
     return NULL;
 }
 
@@ -931,14 +902,14 @@ namespace TissueForge::io {
     #define TF_ANGLEIOTOEASY(fe, key, member) \
         fe = new IOElement(); \
         if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
+            return error(MDCERR_io); \
         fe->parent = fileElement; \
         fileElement->children[key] = fe;
 
     #define TF_ANGLEIOFROMEASY(feItr, children, metaData, key, member_p) \
         feItr = children.find(key); \
         if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
+            return error(MDCERR_io);
 
     template <>
     HRESULT toFile(const Angle &dataElement, const MetaData &metaData, IOElement *fileElement) {

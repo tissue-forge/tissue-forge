@@ -61,42 +61,15 @@
 using namespace TissueForge;
 
 
-/* the last error */
-int TissueForge::space_err = space_err_ok;
-
-
 /* the error macro. */
-#define error(id)(space_err = errs_register(id, space_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)   (tf_error(E_FAIL, errs_err_msg[id]))
 
-/* list of error messages. */
-const char *space_err_msg[10] = {
-        "Nothing bad happened.",
-        "An unexpected NULL pointer was encountered.",
-        "A call to malloc failed, probably due to insufficient memory.",
-        "An error occured when calling a cell function.",
-        "A call to a pthread routine failed.",
-        "One or more values were outside of the allowed range.",
-        "Too many pairs associated with a single particle in Verlet list.",
-        "Task list too short.",
-        "An error occured when calling a task function.",
-        "Invalid particle id"
-};
 
 static std::vector<std::mt19937> generators;
 
 // instance of class std::normal_distribution with 0 mean, and 1 stdev
 static std::vector<std::normal_distribution<FPTYPE>> distributions;
 
-
-/** 
- * @brief Get the sort-ID and flip the cells if necessary.
- *
- * @param s The #space.
- * @param ci FPTYPE pointer to the first #cell.
- * @param cj FPTYPE pointer to the second #cell.
- * 
- * @return The sort ID of both cells, which may be swapped.
- */
 
 int TissueForge::space_getsid(
     struct space *s, 
@@ -139,22 +112,13 @@ int TissueForge::space_getsid(
 
 }
 
-
-/**
- * @brief Clear all particles from the ghost cells in this #space.
- *
- * @param s The #space to flush.
- *
- * @return #space_err_ok or < 0 on error (see #space_err).
- */
-
-int TissueForge::space_flush_ghosts(struct space *s) {
+HRESULT TissueForge::space_flush_ghosts(struct space *s) {
 
     int cid;
 
     /* check input. */
     if(s == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
 
     /* loop through the cells. */
     for(cid = 0 ; cid < s->nr_cells ; cid++)
@@ -164,26 +128,17 @@ int TissueForge::space_flush_ghosts(struct space *s) {
         }
 
     /* done for now. */
-    return space_err_ok;
+    return S_OK;
 
 }
 
-
-/**
- * @brief Clear all particles from this #space.
- *
- * @param s The #space to flush.
- *
- * @return #space_err_ok or < 0 on error (see #space_err).
- */
-
-int TissueForge::space_flush(struct space *s) {
+HRESULT TissueForge::space_flush(struct space *s) {
 
     int cid;
 
     /* check input. */
     if(s == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
 
     /* loop through the cells. */
     for(cid = 0 ; cid < s->nr_cells ; cid++)
@@ -193,23 +148,11 @@ int TissueForge::space_flush(struct space *s) {
     s->nr_parts = 0;
 
     /* done for now. */
-    return space_err_ok;
+    return S_OK;
 
 }
 
-
-/**
- * @brief Prepare the space before a time step.
- *
- * @param s A pointer to the #space to prepare.
- *
- * @return #space_err_ok or < 0 on error (see #space_err)
- *
- * Initializes a #space for a single time step. This routine runs
- * through the particles and sets their forces to zero.
- */
-
-int TissueForge::space_prepare(struct space *s) {
+HRESULT TissueForge::space_prepare(struct space *s) {
 
     int pid, cid, j, k;
 
@@ -249,23 +192,10 @@ int TissueForge::space_prepare(struct space *s) {
     parallel_for(s->nr_marked, func_reset_cells);
 
     /* what else could happen? */
-    return space_err_ok;
+    return S_OK;
 }
 
-
-/**
- * @brief Run through the cells of a #space and make sure every particle is in
- * its place.
- *
- * @param s The #space on which to operate.
- *
- * @returns #space_err_ok or < 0 on error.
- *
- * Runs through the cells of @c s and if a particle has stepped outside the
- * cell bounds, moves it to the correct cell.
- */
-
-int TissueForge::space_shuffle(struct space *s) {
+HRESULT TissueForge::space_shuffle(struct space *s) {
 
     int k, cid, pid, delta[3];
     FPTYPE h[3];
@@ -322,25 +252,13 @@ int TissueForge::space_shuffle(struct space *s) {
     }
 
     /* all is well... */
-    return space_err_ok;
+    return S_OK;
 
 }
 
-
-/**
- * @brief Run through the non-ghost cells of a #space and make sure every
- * particle is in its place.
- *
- * @param s The #space on which to operate.
- *
- * @returns #space_err_ok or < 0 on error.
- *
- * Runs through the cells of @c s and if a particle has stepped outside the
- * cell bounds, moves it to the correct cell.
- */
 /* TODO: Check non-periodicity and ghost cells. */
 
-int TissueForge::space_shuffle_local(struct space *s) {
+HRESULT TissueForge::space_shuffle_local(struct space *s) {
 
     int k;
     FPTYPE h[3];
@@ -451,11 +369,11 @@ int TissueForge::space_shuffle_local(struct space *s) {
 #endif
 
     /* all is well... */
-    return space_err_ok;
+    return S_OK;
 
 }
 
-int space_gpos_cellindices(struct space *s, FPTYPE x, FPTYPE y, FPTYPE z, int *ind) {
+HRESULT space_gpos_cellindices(struct space *s, FPTYPE x, FPTYPE y, FPTYPE z, int *ind) {
     FPTYPE _x[] = {x, y, z};
     /* get the hypothetical cell coordinate */
     for(int k = 0 ; k < 3 ; k++) {
@@ -463,12 +381,12 @@ int space_gpos_cellindices(struct space *s, FPTYPE x, FPTYPE y, FPTYPE z, int *i
         ind[k] = (_x[k] - s->origin[k]) * s->ih[k];
         /* is this particle within the space? */
         if(ind[k] < 0 || ind[k] >= s->cdim[k])
-            return error(space_err_range);
+            return error(MDCERR_range);
     }
-    return space_err_ok;
+    return S_OK;
 }
 
-int TissueForge::space_growparts(struct space *s, unsigned int size_incr) { 
+HRESULT TissueForge::space_growparts(struct space *s, unsigned int size_incr) { 
     int k;
     struct Particle **temp;
     struct space_cell **tempc;
@@ -477,9 +395,9 @@ int TissueForge::space_growparts(struct space *s, unsigned int size_incr) {
     s->size_parts += size_incr;
 
     if((temp = (struct Particle **)malloc(sizeof(struct Particle *) * s->size_parts)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     if((tempc = (struct space_cell **)malloc(sizeof(struct space_cell *) * s->size_parts)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     memcpy(temp, s->partlist, sizeof(struct Particle *) * size_parts);
     memcpy(tempc, s->celllist, sizeof(struct space_cell *) * size_parts);
     free(s->partlist);
@@ -491,17 +409,17 @@ int TissueForge::space_growparts(struct space *s, unsigned int size_incr) {
         s->celllist[k] = NULL;
     }
 
-    return space_err_ok;
+    return S_OK;
 }
 
-int space_setpartp(struct space *s, struct Particle *p, FPTYPE *x, struct Particle **result) { 
+HRESULT space_setpartp(struct space *s, struct Particle *p, FPTYPE *x, struct Particle **result) { 
     int k;
     int ind[3];
     struct space_cell *c;
 
     /* check input */
     if(s == NULL || p == NULL || x == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
     
     /* get the hypothetical cell coordinate */
     for(k = 0 ; k < 3 ; k++) {
@@ -509,7 +427,7 @@ int space_setpartp(struct space *s, struct Particle *p, FPTYPE *x, struct Partic
         ind[k] = (x[k] - s->origin[k]) * s->ih[k];
         /* is this particle within the space? */
         if(ind[k] < 0 || ind[k] >= s->cdim[k])
-            return error(space_err_range);
+            return error(MDCERR_range);
     }
 
     // treat large particles in the large parts cell
@@ -528,7 +446,7 @@ int space_setpartp(struct space *s, struct Particle *p, FPTYPE *x, struct Partic
 
     /* delegate the particle to the cell */
     if((s->partlist[p->id] = space_cell_add(c, p, s->partlist)) == NULL)
-        return error(space_err_cell);
+        return error(MDCERR_cell);
     
     s->celllist[p->id] = c;
     
@@ -536,10 +454,10 @@ int space_setpartp(struct space *s, struct Particle *p, FPTYPE *x, struct Partic
         *result = s->partlist[p->id];
     }
     
-    return space_err_ok;
+    return S_OK;
 }
 
-int TissueForge::space_addpart(struct space *s, struct Particle *p, FPTYPE *x, struct Particle **result) {
+HRESULT TissueForge::space_addpart(struct space *s, struct Particle *p, FPTYPE *x, struct Particle **result) {
 
     int ind[3];
     struct Particle **temp;
@@ -548,16 +466,16 @@ int TissueForge::space_addpart(struct space *s, struct Particle *p, FPTYPE *x, s
 
     /* check input */
     if(s == NULL || p == NULL || x == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
 
     /* do we need to extend the partlist? */
     if(s->nr_parts == s->size_parts) {
-        if(space_growparts(s, space_partlist_incr) != space_err_ok) 
-            return error(space_err);
+        if(space_growparts(s, space_partlist_incr) != S_OK) 
+            return error(MDCERR_space);
 
         #if defined(HAVE_CUDA)
             if(_Engine.flags & engine_flag_cuda && cuda::engine_cuda_refresh_particles(&_Engine) < 0)
-                return error(space_err_malloc);
+                return error(MDCERR_malloc);
         #endif
     }
 
@@ -565,11 +483,11 @@ int TissueForge::space_addpart(struct space *s, struct Particle *p, FPTYPE *x, s
     s->nr_parts++;
     
     if(p->id < 0 || p->id >= s->nr_parts) {
-        return error(space_err_invalid_partid);
+        return error(MDCERR_id);
     }
     
-    if(space_setpartp(s, p, x, result) != space_err_ok) 
-        return error(space_err);
+    if(space_setpartp(s, p, x, result) != S_OK) 
+        return error(MDCERR_space);
     
     ParticleType *type = &_Engine.types[p->typeId];
     rendering::Style *style = p->style ? p->style : type->style;
@@ -584,10 +502,10 @@ int TissueForge::space_addpart(struct space *s, struct Particle *p, FPTYPE *x, s
     }
 
     /* end well */
-    return space_err_ok;
+    return S_OK;
 }
 
-int TissueForge::space_addparts(struct space *s, int nr_parts, struct Particle **parts, FPTYPE **xparts) {
+HRESULT TissueForge::space_addparts(struct space *s, int nr_parts, struct Particle **parts, FPTYPE **xparts) {
 
     int k, ind[3];
     struct Particle **temp;
@@ -596,17 +514,17 @@ int TissueForge::space_addparts(struct space *s, int nr_parts, struct Particle *
 
     /* check input */
     if(s == NULL || parts == NULL || xparts == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
 
     /* do we need to extend the partlist? */
     int size_incr = (int((s->nr_parts - s->size_parts + nr_parts) / space_partlist_incr) + 1) * space_partlist_incr;
     if(size_incr > 0) {
-        if(space_growparts(s, size_incr) != space_err_ok) 
-            return error(space_err);
+        if(space_growparts(s, size_incr) != S_OK) 
+            return error(MDCERR_space);
 
         #if defined(HAVE_CUDA)
             if(_Engine.flags & engine_flag_cuda && cuda::engine_cuda_refresh_particles(&_Engine) < 0)
-                return error(space_err_malloc);
+                return error(MDCERR_malloc);
         #endif
     }
     
@@ -673,57 +591,38 @@ int TissueForge::space_addparts(struct space *s, int nr_parts, struct Particle *
     }
 
     /* end well */
-    return space_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Get the absolute position of a particle
- *
- * @param s The #space in which the particle resides.
- * @param id The local id of the #part.
- * @param x A pointer to a vector of at least three @c FPTYPEs in
- *      which to store the particle position.
- *
- */
-
-int TissueForge::space_getpos(struct space *s, int id, FPTYPE *x) {
+HRESULT TissueForge::space_getpos(struct space *s, int id, FPTYPE *x) {
 
     int k;
 
     /* Sanity check. */
     if(s == NULL || x == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
     if(id >= s->size_parts)
-        return error(space_err_range);
+        return error(MDCERR_range);
 
     /* Copy the position to x. */
     for(k = 0 ; k < 3 ; k++)
         x[k] = s->partlist[id]->x[k] + s->celllist[id]->origin[k];
 
     /* All is well... */
-    return space_err_ok;
+    return S_OK;
 
 }
 
-/**
- * @brief Set the absolute position of a particle. 
- * 
- * @param s The #space in which the particle resides.
- * @param id The local id of the #part.
- * @param x A pointer to a vector of at least three @c FPTYPEs in
- *      which to store the particle position.
- */
-
-int TissueForge::space_setpos(struct space *s, int id, FPTYPE *x) {
+HRESULT TissueForge::space_setpos(struct space *s, int id, FPTYPE *x) {
 
     int k;
     struct space_cell *cell_current, *cell_next;
 
     /* Sanity check. */
     if(s == NULL || x == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
     if(id >= s->size_parts)
-        return error(space_err_range);
+        return error(MDCERR_range);
 
     Particle *p = s->partlist[id];
     
@@ -738,7 +637,7 @@ int TissueForge::space_setpos(struct space *s, int id, FPTYPE *x) {
             ind[k] = (x[k] - s->origin[k]) * s->ih[k];
             /* is this particle within the space? */
             if(ind[k] < 0 || ind[k] >= s->cdim[k])
-                return error(space_err_range);
+                return error(MDCERR_range);
         }
 
         cell_current = s->celllist[id];
@@ -747,13 +646,11 @@ int TissueForge::space_setpos(struct space *s, int id, FPTYPE *x) {
         if(cell_current != cell_next) {
             // Add to next cell
             if(space_cell_add(cell_next, p, s->partlist) == NULL) 
-                return tf_error(E_FAIL, "Adding particle to cell failed");
+                return error(MDCERR_cell);
 
             // Remove from current cell
-            if(space_cell_remove(cell_current, p, s->partlist) != cell_err_ok) {
-                std::string msg = "Removing particle from cell failed with error: ";
-                msg += std::to_string(cell_err);
-                return tf_error(E_FAIL, msg.c_str());
+            if(space_cell_remove(cell_current, p, s->partlist) != S_OK) {
+                return error(MDCERR_cell);
             }
 
             s->celllist[id] = cell_next;
@@ -765,23 +662,9 @@ int TissueForge::space_setpos(struct space *s, int id, FPTYPE *x) {
         s->partlist[id]->x[k] = x[k] - s->celllist[id]->origin[k];
 
     /* All is well... */
-    return space_err_ok;
+    return S_OK;
 
 }
-
-
-/**
- * @brief Add a task to the given space.
- *
- * @param s The #space.
- * @param type The task type.
- * @param subtype The task subtype.
- * @param flags The task flags.
- * @param i Index of the first cell/domain.
- * @param j Index of the second cell/domain.
- *
- * @return A pointer to the newly added #task or @c NULL if anything went wrong.
- */
 
 struct task *TissueForge::space_addtask(struct space *s, int type, int subtype, int flags, int i, int j) {
 
@@ -789,7 +672,7 @@ struct task *TissueForge::space_addtask(struct space *s, int type, int subtype, 
 
     /* Is there enough space? */
     if(s->nr_tasks >= s->tasks_size) {
-        error(space_err_nrtasks);
+        error(MDCERR_nrtasks);
         return NULL;
     }
 
@@ -812,28 +695,7 @@ struct task *TissueForge::space_addtask(struct space *s, int type, int subtype, 
 
 }
 
-
-/**
- * @brief Initialize the space with the given dimensions.
- *
- * @param s The #space to initialize.
- * @param origin Pointer to an array of three FPTYPEs specifying the origin
- *      of the rectangular domain.
- * @param dim Pointer to an array of three FPTYPEs specifying the length
- *      of the rectangular domain along each dimension.
- * @param L The minimum cell edge length, in each dimension.
- * @param cutoff A FPTYPE-precision value containing the maximum cutoff lenght
- *      that will be used in the potentials.
- * @param period Unsigned integer containing the flags #space_periodic_x,
- *      #space_periodic_y and/or #space_periodic_z or #space_periodic_full.
- *
- * @return #space_err_ok or <0 on error (see #space_err).
- * 
- * This routine initializes the fields of the #space @c s, creates the cells and
- * generates the cell-pair list.
- */
-
-int TissueForge::space_init(
+HRESULT TissueForge::space_init(
     struct space *s, 
     const FPTYPE *origin, 
     const FPTYPE *dim,
@@ -849,7 +711,7 @@ int TissueForge::space_init(
     
     /* check inputs */
     if(s == NULL || origin == NULL || dim == NULL || L == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
 
     /* Clear the space. */
     bzero(s, sizeof(struct space));
@@ -882,7 +744,7 @@ int TissueForge::space_init(
     }
     
     if(s->cells == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
 
     /* get the dimensions of each cell */
     for(i = 0 ; i < 3 ; i++) {
@@ -903,7 +765,7 @@ int TissueForge::space_init(
                 space_cell *c = &(s->cells[space_cellid(s,l[0],l[1],l[2])]);
                 
                 if(space_cell_init(c, l, o, s->h) < 0)
-                    return error(space_err_cell);
+                    return error(MDCERR_cell);
                 
                 if(l[0] == 0 && bc->left.kind & BOUNDARY_ACTIVE) {
                     c->flags |= cell_active_left;
@@ -984,7 +846,7 @@ int TissueForge::space_init(
     if((s->cid_real = (int *)malloc(sizeof(int) * s->nr_cells)) == NULL ||
            (s->cid_ghost = (int *)malloc(sizeof(int) * s->nr_cells)) == NULL ||
            (s->cid_marked = (int *)malloc(sizeof(int) * s->nr_cells)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
 
     /* Fill the cid lists with marked, local and ghost cells. */
     s->nr_real = 0; s->nr_ghost = 0; s->nr_marked = 0;
@@ -1008,7 +870,7 @@ int TissueForge::space_init(
     /* allocate the tasks array (pessimistic guess) */
     s->tasks_size = s->nr_cells *((2*s->span[0] + 1) * (2*s->span[1] + 1) * (2*s->span[2] + 1) + 1);
     if((s->tasks = (struct task *)malloc(sizeof(struct task) * s->tasks_size)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     
 
     /* fill the cell pairs array */
@@ -1107,7 +969,7 @@ int TissueForge::space_init(
                                 if(space_addtask(s,(id1 == id2) ? task_type_self : task_type_pair,
                                                    task_subtype_none, sid, ci - s->cells,
                                                    cj - s->cells) == NULL) {
-                                    return error(space_err);
+                                    return error(MDCERR_space);
                                 }
                             }
                             
@@ -1122,7 +984,7 @@ int TissueForge::space_init(
     /* Run through the cells and add a sort task to each one. */
     for(k = 0 ; k < s->nr_cells ; k++) {
         if ((s->cells[k].sort = space_addtask(s, task_type_sort, task_subtype_none, 0, k, -1)) == NULL) {
-            return error(space_err);
+            return error(MDCERR_space);
         }
     }
 
@@ -1132,7 +994,7 @@ int TissueForge::space_init(
         if(s->tasks[k].type == task_type_pair) {
             if (task_addunlock(s->cells[ s->tasks[k].i ].sort, &s->tasks[k]) != 0 ||
                 task_addunlock(s->cells[ s->tasks[k].j ].sort, &s->tasks[k]) != 0) {
-                return error(space_err_task);
+                return error(MDCERR_task);
             }
             s->cells[ s->tasks[k].i ].sort->flags |= 1 << s->tasks[k].flags;
             s->cells[ s->tasks[k].j ].sort->flags |= 1 << s->tasks[k].flags;
@@ -1141,17 +1003,17 @@ int TissueForge::space_init(
 
     /* allocate and init the taboo-list */
     if((s->cells_taboo = (char *)malloc(sizeof(char) * s->nr_cells)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     bzero(s->cells_taboo, sizeof(char) * s->nr_cells);
     if((s->cells_owner = (char *)malloc(sizeof(char) * s->nr_cells)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     bzero(s->cells_owner, sizeof(char) * s->nr_cells);
 
     /* allocate the initial partlist */
     if((s->partlist = (struct Particle **)malloc(sizeof(struct Particle *) * space_partlist_incr)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     if((s->celllist = (struct space_cell **)malloc(sizeof(struct space_cell *) * space_partlist_incr)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     s->nr_parts = 0;
     s->size_parts = space_partlist_incr;
     for(k = 0; k < s->size_parts; k++) {
@@ -1162,7 +1024,7 @@ int TissueForge::space_init(
     /* init the cellpair mutexes */
     if(pthread_mutex_init(&s->tasks_mutex, NULL) != 0 ||
             pthread_cond_init(&s->tasks_avail, NULL) != 0)
-        return error(space_err_pthread);
+        return error(MDCERR_pthread);
 
     /* Init the Verlet table (NULL for now). */
     s->verlet_rebuild = 1;
@@ -1174,25 +1036,13 @@ int TissueForge::space_init(
     l[0] = l[1] = l[2] = 0;
     
     if(space_cell_init(&s->largeparts, l, s->origin, s->h) < 0)
-        return error(space_err_cell);
+        return error(MDCERR_cell);
     
 
     /* all is well that ends well... */
-    return space_err_ok;
+    return S_OK;
 
 }
-
-/**
- * @brief Get the next free #celltuple from the space.
- *
- * @param s The #space in which to look for tuples.
- * @param out A pointer to a #celltuple in which to copy the result.
- * @param wait A boolean value specifying if to wait for free tuples
- *      or not.
- *
- * @return The number of #celltuple found or 0 if the list is empty and
- *      < 0 on error (see #space_err).
- */
 
 int TissueForge::space_gettuple(struct space *s, struct celltuple **out, int wait) {
 
@@ -1200,8 +1050,10 @@ int TissueForge::space_gettuple(struct space *s, struct celltuple **out, int wai
     struct celltuple *t, temp;
 
     /* Try to get a hold of the cells mutex */
-    if(pthread_mutex_lock(&s->cellpairs_mutex) != 0)
-        return error(space_err_pthread);
+    if(pthread_mutex_lock(&s->cellpairs_mutex) != 0) {
+        error(MDCERR_pthread);
+        return -(MDCERR_pthread);
+    }
 
     /* Main loop, while there are still tuples left. */
     while(s->next_tuple < s->nr_tuples) {
@@ -1244,12 +1096,16 @@ int TissueForge::space_gettuple(struct space *s, struct celltuple **out, int wai
             /* If this was the last tuple, broadcast to all waiting
                 runners to go home. */
             if(s->next_tuple == s->nr_tuples)
-                if (pthread_cond_broadcast(&s->cellpairs_avail) != 0)
-                    return error(space_err_pthread);
+                if (pthread_cond_broadcast(&s->cellpairs_avail) != 0) {
+                    error(MDCERR_pthread);
+                    return -(MDCERR_pthread);
+                }
 
             /* And leave. */
-            if(pthread_mutex_unlock(&s->cellpairs_mutex) != 0)
-                return error(space_err_pthread);
+            if(pthread_mutex_unlock(&s->cellpairs_mutex) != 0) {
+                error(MDCERR_pthread);
+                return -(MDCERR_pthread);
+            }
             return 1;
 
         }
@@ -1257,8 +1113,10 @@ int TissueForge::space_gettuple(struct space *s, struct celltuple **out, int wai
         /* If we got here without catching anything, wait for a sign. */
         if(wait) {
             s->nr_stalls += 1;
-            if(pthread_cond_wait(&s->cellpairs_avail, &s->cellpairs_mutex) != 0)
-                return error(space_err_pthread);
+            if(pthread_cond_wait(&s->cellpairs_avail, &s->cellpairs_mutex) != 0) {
+                error(MDCERR_pthread);
+                return -(MDCERR_pthread);
+            }
         }
         else
             break;
@@ -1266,24 +1124,15 @@ int TissueForge::space_gettuple(struct space *s, struct celltuple **out, int wai
     }
 
     /* Release the cells mutex */
-    if(pthread_mutex_unlock(&s->cellpairs_mutex) != 0)
-        return error(space_err_pthread);
+    if(pthread_mutex_unlock(&s->cellpairs_mutex) != 0) {
+        error(MDCERR_pthread);
+        return -(MDCERR_pthread);
+    }
 
     /* Bring good tidings. */
-    return space_err_ok;
+    return 0;
 
 }
-
-
-/**
- * @brief Get the next unprocessed cell from the spaece.
- *
- * @param s The #space.
- * @param out Pointer to a pointer to #cell in which to store the results.
- *
- * @return @c 1 if a cell was found, #space_err_ok if the list is empty
- *      or < 0 on error (see #space_err).
- */
 
 int TissueForge::space_getcell(struct space *s, struct space_cell **out) {
 
@@ -1294,8 +1143,10 @@ int TissueForge::space_getcell(struct space *s, struct space_cell **out) {
         return 0;
 
     /* Try to get a hold of the cells mutex */
-    if(pthread_mutex_lock(&s->cellpairs_mutex) != 0)
-        return error(space_err_pthread);
+    if(pthread_mutex_lock(&s->cellpairs_mutex) != 0) {
+        error(MDCERR_pthread);
+        return -(MDCERR_pthread);
+    }
 
     /* Try to get a cell. */
     if(s->next_cell < s->nr_cells) {
@@ -1305,27 +1156,15 @@ int TissueForge::space_getcell(struct space *s, struct space_cell **out) {
     }
 
     /* Release the cells mutex */
-    if(pthread_mutex_unlock(&s->cellpairs_mutex) != 0)
-        return error(space_err_pthread);
+    if(pthread_mutex_unlock(&s->cellpairs_mutex) != 0) {
+        error(MDCERR_pthread);
+        return -(MDCERR_pthread);
+    }
 
     /* We've got it! */
     return res;
 
 }
-
-
-/**
- * @brief Collect forces and potential energies
- *
- * @param s The #space.
- * @param maxcount The maximum number of entries.
- * @param from Pointer to an integer which will contain the index to the
- *        first entry on success.
- * @param to Pointer to an integer which will contain the index to the
- *        last entry on success.
- *
- * @return The number of entries returned or < 0 on error (see #space_err).
- */
 
 int TissueForge::space_verlet_force(struct space *s, FPTYPE *f, FPTYPE epot) {
 
@@ -1335,8 +1174,10 @@ int TissueForge::space_verlet_force(struct space *s, FPTYPE *f, FPTYPE epot) {
     int nr_cells = s->nr_cells, *scells;
 
     /* Allocate a buffer to mix-up the cells. */
-    if((scells = (int *)alloca(sizeof(int) * nr_cells)) == NULL)
-        return error(space_err_malloc);
+    if((scells = (int *)alloca(sizeof(int) * nr_cells)) == NULL) {
+        error(MDCERR_malloc);
+        return -(MDCERR_malloc);
+    }
 
     /* Mix-up the order of the cells. */
     for(k = 0 ; k < nr_cells ; k++)
@@ -1353,8 +1194,10 @@ int TissueForge::space_verlet_force(struct space *s, FPTYPE *f, FPTYPE epot) {
         c = &(s->cells[scells[cid]]);
 
         /* Get a lock on the cell. */
-        if(pthread_mutex_lock(&c->cell_mutex) != 0)
-            return error(space_err_pthread);
+        if(pthread_mutex_lock(&c->cell_mutex) != 0) {
+            error(MDCERR_pthread);
+            return -(MDCERR_pthread);
+        }
 
         for(pid = 0 ; pid < c->count ; pid++) {
             p = &(c->parts[pid]);
@@ -1364,68 +1207,49 @@ int TissueForge::space_verlet_force(struct space *s, FPTYPE *f, FPTYPE epot) {
         }
 
         /* Release the cells mutex */
-        if(pthread_mutex_unlock(&c->cell_mutex) != 0)
-            return error(space_err_pthread);
+        if(pthread_mutex_unlock(&c->cell_mutex) != 0) {
+            error(MDCERR_pthread);
+            return -(MDCERR_pthread);
+        }
 
     }
 
     /* Add the potential energy to the space's potential energy. */
-    if(pthread_mutex_lock(&s->verlet_force_mutex) != 0)
-        return error(space_err_pthread);
+    if(pthread_mutex_lock(&s->verlet_force_mutex) != 0) {
+        error(MDCERR_pthread);
+        return -(MDCERR_pthread);
+    }
     s->epot += epot;
-    if(pthread_mutex_unlock(&s->verlet_force_mutex) != 0)
-        return error(space_err_pthread);
+    if(pthread_mutex_unlock(&s->verlet_force_mutex) != 0) {
+        error(MDCERR_pthread);
+        return -(MDCERR_pthread);
+    }
 
     /* Relax. */
-    return space_err_ok;
+    return 0;
 
 }
 
-
-/**
- * @brief Free the cells involved in the current pair.
- *
- * @param s The #space to operate on.
- * @param ci ID of the first cell.
- * @param cj ID of the second cell.
- *
- * @returns #space_err_ok or < 0 on error (see #space_err).
- *
- * Decreases the taboo-counter of the cells involved in the pair
- * and signals any #runner that might be waiting.
- * Note that only a single waiting #runner is released per released cell
- * and therefore, if two different cells become free, the condition
- * @c cellpairs_avail is signaled twice.
- */
-
-int TissueForge::space_releasepair(struct space *s, int ci, int cj) {
+HRESULT TissueForge::space_releasepair(struct space *s, int ci, int cj) {
 
     /* release the cells in the given pair */
     if(--(s->cells_taboo[ ci ]) == 0)
         if (pthread_cond_signal(&s->cellpairs_avail) != 0)
-            return error(space_err_pthread);
+            return error(MDCERR_pthread);
     if(--(s->cells_taboo[ cj ]) == 0)
         if (pthread_cond_signal(&s->cellpairs_avail) != 0)
-            return error(space_err_pthread);
+            return error(MDCERR_pthread);
 
     /* all is well... */
-    return space_err_ok;
+    return S_OK;
 
 }
 
-/**
- * @brief Initialize the Verlet-list data structures.
- *
- * @param s The #space.
- *
- * @return #space_err_ok or < 0 on error (see #space_err).
- */
-
-int TissueForge::space_verlet_init(struct space *s, int list_global) {
+HRESULT TissueForge::space_verlet_init(struct space *s, int list_global) {
 
     /* Check input for nonsense. */
     if(s == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
 
     /* Allocate the parts and nrpairs lists if necessary. */
     if(list_global && s->verlet_size < s->nr_parts) {
@@ -1439,9 +1263,9 @@ int TissueForge::space_verlet_init(struct space *s, int list_global) {
         /* Allocate new arrays. */
         s->verlet_size = 1.1 * s->nr_parts;
         if((s->verlet_list = (struct verlet_entry *)malloc(sizeof(struct verlet_entry) * s->verlet_size * space_verlet_maxpairs)) == NULL)
-            return error(space_err_malloc);
+            return error(MDCERR_malloc);
         if((s->verlet_nrpairs = (int *)malloc(sizeof(int) * s->verlet_size)) == NULL)
-            return error(space_err_malloc);
+            return error(MDCERR_malloc);
 
         /* We have to re-build the list now. */
         s->verlet_rebuild = 1;
@@ -1452,7 +1276,7 @@ int TissueForge::space_verlet_init(struct space *s, int list_global) {
     s->verlet_next = 0;
 
     /* All done! */
-    return space_err_ok;
+    return S_OK;
 
 }
 
@@ -1461,11 +1285,8 @@ int TissueForge::space_verlet_init(struct space *s, int list_global) {
  * @brief Generate the list of #celltuple.
  *
  * @param s Pointer to the #space to make tuples for.
- *
- * @return #space_err_ok or < 0 on error (see #space_err).
  */
-
-int space_maketuples(struct space *s) {
+HRESULT space_maketuples(struct space *s) {
 
     int size, incr, *w, w_max, iw_max;
     int i, j, k, kk, pid;
@@ -1475,7 +1296,7 @@ int space_maketuples(struct space *s) {
 
     /* Check for bad input. */
     if(s == NULL)
-        return error(space_err_null);
+        return error(MDCERR_null);
 
     /* Clean up any old tuple data that may be lying around. */
     if(s->tuples != NULL)
@@ -1484,20 +1305,20 @@ int space_maketuples(struct space *s) {
     /* Guess the size of the tuple array and allocate it. */
     size = 1.2 * s->nr_pairs / space_maxtuples;
     if((s->tuples = (struct celltuple *)malloc(sizeof(struct celltuple) * size)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     bzero(s->tuples, sizeof(struct celltuple) * size);
     s->nr_tuples = 0;
 
     /* Allocate the vector w. */
     if((w = (int *)alloca(sizeof(int) * s->nr_cells)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     s->next_pair = 0;
 
     /* Allocate and fill the cell-to-pair array. */
     ppc =(2*ceil(s->cutoff * s->ih[0]) + 1) *(2*ceil(s->cutoff * s->ih[1]) + 1) *(2*ceil(s->cutoff * s->ih[2]) + 1);
     if((c2p = (int *)alloca(sizeof(int) * s->nr_cells * ppc)) == NULL ||
            (c2p_count = (int *)alloca(sizeof(int) * s->nr_cells)) == NULL)
-        return error(space_err_malloc);
+        return error(MDCERR_malloc);
     bzero(c2p_count, sizeof(int) * s->nr_cells);
     for(k = 0 ; k < s->nr_pairs ; k++) {
         i = s->pairs[k].i; j = s->pairs[k].j;
@@ -1516,7 +1337,7 @@ int space_maketuples(struct space *s) {
         if(s->nr_tuples >= size) {
             incr = size * 0.2;
             if((t = (struct celltuple *)malloc(sizeof(struct celltuple) * (size + incr))) == NULL)
-                return error(space_err_malloc);
+                return error(MDCERR_malloc);
             memcpy(t, s->tuples, sizeof(struct celltuple) * size);
             bzero(&t[size], sizeof(struct celltuple) * incr);
             size += incr;
@@ -1699,11 +1520,11 @@ int space_maketuples(struct space *s) {
         } */
 
     /* If we made it up to here, we're done! */
-    return space_err_ok;
+    return S_OK;
 
 }
 
-CAPI_FUNC(HRESULT) TissueForge::space_del_particle(struct space *s, int pid) {
+HRESULT TissueForge::space_del_particle(struct space *s, int pid) {
     if(pid < 0 || pid >= s->size_parts) {
         return tf_error(E_FAIL, "pid out of range");
     }
@@ -1731,10 +1552,8 @@ CAPI_FUNC(HRESULT) TissueForge::space_del_particle(struct space *s, int pid) {
         }
     }
 
-    if(space_cell_remove(cell, p, s->partlist) != cell_err_ok) {
-        std::string msg = "Removing particle from cell failed with error: ";
-        msg += std::to_string(cell_err);
-        return tf_error(E_FAIL, msg.c_str());
+    if(space_cell_remove(cell, p, s->partlist) != S_OK) {
+        return error(MDCERR_cell);
     }
 
     s->nr_parts -= 1;
@@ -1761,7 +1580,7 @@ int TissueForge::space_get_cellids_for_pos (struct space *s, FPTYPE *x, int *cel
     /* is this particle within the space? */
     for(k = 0 ; k < 3 ; k++)
         if(ind[k] < 0 || ind[k] >= s->cdim[k])
-            return error(space_err_range);
+            return error(MDCERR_range);
     
     return space_cellid(s,ind[0],ind[1],ind[2]);
 }

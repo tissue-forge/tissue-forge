@@ -310,10 +310,6 @@ FVector3 Universe::dim()
 
 HRESULT TissueForge::Universe_Step(FloatP_t until, FloatP_t dt) {
 
-    if(engine_err != 0) {
-        return E_FAIL;
-    }
-
     // Ok to call here, since nothing happens if root element is already released. 
     io::FIO::releaseIORootElement();
 
@@ -329,20 +325,12 @@ HRESULT TissueForge::Universe_Step(FloatP_t until, FloatP_t dt) {
     FloatP_t tf = _Engine.time + until / dtStore;
 
     while (_Engine.time < tf) {
-        if ( engine_step( &_Engine ) != 0 ) {
-            std::string msg = "main: engine_step failed with engine_err=";
-            msg += engine_err;
-            tf_error(E_FAIL, msg.c_str());
-            return E_FAIL;
-        }
+        if(engine_step(&_Engine) != S_OK) 
+            return tf_error(E_FAIL, errs_err_msg[MDCERR_engine]);
 
         // notify time listeners
-        if(_Universe.events->eval(_Engine.time * _Engine.dt) != 0) {
-            std::string msg = "main: engine_step failed with engine_err=";
-            msg += engine_err;
-            tf_error(E_FAIL, msg.c_str());
-            return E_FAIL;
-        }
+        if(_Universe.events->eval(_Engine.time * _Engine.dt) != S_OK) 
+            return tf_error(E_FAIL, errs_err_msg[MDCERR_engine]);
 
         if(_Engine.timer_output_period > 0 && _Engine.time % _Engine.timer_output_period == 0 ) {
             system::printPerformanceCounters();

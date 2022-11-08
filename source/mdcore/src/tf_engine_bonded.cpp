@@ -52,6 +52,7 @@
 #include <tfExclusion.h>
 #include <tfEngine.h>
 #include <tfLogger.h>
+#include <tfError.h>
 
 #pragma clang diagnostic ignored "-Wwritable-strings"
 
@@ -59,23 +60,10 @@
 using namespace TissueForge;
 
 
-/* the error macro. */
-#define error(id) (engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
-/**
- * @brief Compute all bonded interactions stored in this engine.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- *
- * Does the same as #engine_bond_eval, #engine_angle_eval and
- * #engine_dihedral eval, yet all in one go to avoid excessive
- * updates of the particle forces.
- */
-
-int TissueForge::engine_bonded_eval_sets(struct engine *e) {
+HRESULT TissueForge::engine_bonded_eval_sets(struct engine *e) {
 
 	FPTYPE epot_bond = 0.0, epot_angle = 0.0, epot_dihedral = 0.0, epot_exclusion = 0.0;
 #ifdef HAVE_OPENMP
@@ -213,25 +201,25 @@ int TissueForge::engine_bonded_eval_sets(struct engine *e) {
 	/* Do exclusions. */
 	tic = getticks();
 	if(exclusion_eval(e->exclusions, e->nr_exclusions, e, &epot_exclusion) < 0)
-		return error(engine_err_exclusion);
+		return error(MDCERR_exclusion);
 	e->timers[engine_timer_exclusions] += getticks() - tic;
 
 	/* Do bonds. */
 	tic = getticks();
 	if(bond_eval(e->bonds, e->nr_bonds, e, &epot_bond) < 0)
-		return error(engine_err_bond);
+		return error(MDCERR_bond);
 	e->timers[engine_timer_bonds] += getticks() - tic;
 
 	/* Do angles. */
 	tic = getticks();
 	if(angle_eval(e->angles, e->nr_angles, e, &epot_angle) < 0)
-		return error(engine_err_angle);
+		return error(MDCERR_angle);
 	e->timers[engine_timer_angles] += getticks() - tic;
 
 	/* Do dihedrals. */
 	tic = getticks();
 	if(dihedral_eval(e->dihedrals, e->nr_dihedrals, e, &epot_dihedral) < 0)
-		return error(engine_err_dihedral);
+		return error(MDCERR_dihedral);
 	e->timers[engine_timer_dihedrals] += getticks() - tic;
 
 #endif
@@ -244,7 +232,7 @@ int TissueForge::engine_bonded_eval_sets(struct engine *e) {
 	e->s.epot_exclusion += epot_exclusion;
 
 	/* I'll be back... */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
@@ -264,11 +252,11 @@ typedef struct _bonded_sets {
 static int confl_add (bonded_sets *bs, int i, int j) {
 	if(bs->confl_count == bs->confl_size &&
        (bs->confl = (bonded_set*)realloc(bs->confl, sizeof(bonded_set) * (bs->confl_size *= 2))) == NULL)
-		return error(engine_err_malloc);
+		return error(MDCERR_malloc);
 	bs->confl[bs->confl_count].i = i; bs->confl[bs->confl_count].j = j;
 	bs->nconfl[i] += 1; bs->nconfl[j] += 1;
 	bs->confl_count += 1;
-	return engine_err_ok;
+	return S_OK;
 }
 
 
@@ -322,17 +310,7 @@ static void confl_qsort (bonded_sets *bs, int l, int r) {
 	}
 }
 
-
-
-/**
- * @brief Assemble non-conflicting sets of bonded interactions.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
+HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 
 
 	int *confl_index;
@@ -351,7 +329,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 	if((weight = (int *)malloc(sizeof(int) * nr_sets)) == NULL ||
 			(bs.nconfl = (int *)calloc(nr_sets, sizeof(int))) == NULL ||
 			(confl_counts = (char *)malloc(sizeof(char) * nr_sets)) == NULL)
-		return error(engine_err_malloc);
+		return error(MDCERR_malloc);
 
 	/* Allocate the initial setids. */
 	if((setid_bonds = (int *)malloc(sizeof(int) * e->nr_bonds)) == NULL ||
@@ -359,12 +337,12 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			(setid_dihedrals = (int *)malloc(sizeof(int) * e->nr_dihedrals)) == NULL ||
 			(setid_exclusions = (int *)malloc(sizeof(int) * e->nr_exclusions)) == NULL ||
 			(setid_rigids = (int *)malloc(sizeof(int) * e->nr_rigids)) == NULL)
-		return error(engine_err_malloc);
+		return error(MDCERR_malloc);
 
 	/* Generate the set of conflicts. */
 	bs.confl_size = nr_sets;
 	if((bs.confl = (_bonded_set*)malloc(sizeof(int) * 2 * bs.confl_size)) == NULL)
-		return error(engine_err_malloc);
+		return error(MDCERR_malloc);
 	nr_sets = 0;
 
 	/* Loop over all dihedrals. */
@@ -381,7 +359,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					e->dihedrals[k].k == e->dihedrals[j].i || e->dihedrals[k].k == e->dihedrals[j].j || e->dihedrals[k].k == e->dihedrals[j].k || e->dihedrals[k].k == e->dihedrals[j].l ||
 					e->dihedrals[k].l == e->dihedrals[j].i || e->dihedrals[k].l == e->dihedrals[j].j || e->dihedrals[k].l == e->dihedrals[j].k || e->dihedrals[k].l == e->dihedrals[j].l)
 				if(confl_add(&bs, setid_dihedrals[k], setid_dihedrals[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 	} /* Loop over dihedrals. */
 
@@ -413,7 +391,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					e->angles[k].j == e->dihedrals[j].i || e->angles[k].j == e->dihedrals[j].j || e->angles[k].j == e->dihedrals[j].k || e->angles[k].j == e->dihedrals[j].l ||
 					e->angles[k].k == e->dihedrals[j].i || e->angles[k].k == e->dihedrals[j].j || e->angles[k].k == e->dihedrals[j].k || e->angles[k].k == e->dihedrals[j].l)
 				if(confl_add(&bs, setid_angles[k], setid_dihedrals[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 		/* Loop over previous angles... */
 		for(j = 0 ; j < k ; j++)
@@ -422,7 +400,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 							e->angles[k].j == e->angles[j].i || e->angles[k].j == e->angles[j].j || e->angles[k].j == e->angles[j].k ||
 							e->angles[k].k == e->angles[j].i || e->angles[k].k == e->angles[j].j || e->angles[k].k == e->angles[j].k))
 				if(confl_add(&bs, setid_angles[k], setid_angles[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 	} /* Loop over angles. */
 
@@ -471,7 +449,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(e->bonds[k].i == e->dihedrals[j].i || e->bonds[k].i == e->dihedrals[j].j || e->bonds[k].i == e->dihedrals[j].k || e->bonds[k].i == e->dihedrals[j].l ||
 					e->bonds[k].j == e->dihedrals[j].i || e->bonds[k].j == e->dihedrals[j].j || e->bonds[k].j == e->dihedrals[j].k || e->bonds[k].j == e->dihedrals[j].l)
 				if(confl_add(&bs, setid_bonds[k], setid_dihedrals[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 		/* Loop over angles... */
 		for(j = 0 ; j < e->nr_angles ; j++)
@@ -479,7 +457,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					(e->bonds[k].i == e->angles[j].i || e->bonds[k].i == e->angles[j].j || e->bonds[k].i == e->angles[j].k ||
 							e->bonds[k].j == e->angles[j].i || e->bonds[k].j == e->angles[j].j || e->bonds[k].j == e->angles[j].k))
 				if(confl_add(&bs, setid_bonds[k], setid_angles[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 		/* Loop over previous bonds... */
 		for(j = 0 ; j < k ; j++)
@@ -487,7 +465,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					(e->bonds[k].i == e->bonds[j].i || e->bonds[k].i == e->bonds[j].j ||
 							e->bonds[k].j == e->bonds[j].i || e->bonds[k].j == e->bonds[j].j))
 				if(confl_add(&bs, setid_bonds[k], setid_bonds[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 	} /* Loop over bonds. */
 
@@ -504,7 +482,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 				if(e->rigids[k].parts[i] == e->dihedrals[j].i || e->rigids[k].parts[i] == e->dihedrals[j].j || e->rigids[k].parts[i] == e->dihedrals[j].k || e->rigids[k].parts[i] == e->dihedrals[j].l)
 					break;
 			if(i < e->rigids[k].nr_parts && confl_add(&bs, setid_rigids[k], setid_dihedrals[j]))
-				return error(engine_err);
+				return error(MDCERR_sets);
 		}
 
 		/* Loop over angles, looking for overlap. */
@@ -515,7 +493,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 				if(e->rigids[k].parts[i] == e->angles[j].i || e->rigids[k].parts[i] == e->angles[j].j || e->rigids[k].parts[i] == e->angles[j].k)
 					break;
 			if(i < e->rigids[k].nr_parts && confl_add(&bs, setid_rigids[k], setid_angles[j]))
-				return error(engine_err);
+				return error(MDCERR_sets);
 		}
 
 		/* Loop over bonds, looking for overlap. */
@@ -526,7 +504,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 				if(e->rigids[k].parts[i] == e->bonds[j].i || e->rigids[k].parts[i] == e->bonds[j].j)
 					break;
 			if(i < e->rigids[k].nr_parts && confl_add(&bs, setid_rigids[k], setid_bonds[j]))
-				return error(engine_err);
+				return error(MDCERR_sets);
 		}
 
 	}
@@ -615,7 +593,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(e->exclusions[k].i == e->dihedrals[j].i || e->exclusions[k].i == e->dihedrals[j].j || e->exclusions[k].i == e->dihedrals[j].k || e->exclusions[k].i == e->dihedrals[j].l ||
 					e->exclusions[k].j == e->dihedrals[j].i || e->exclusions[k].j == e->dihedrals[j].j || e->exclusions[k].j == e->dihedrals[j].k || e->exclusions[k].j == e->dihedrals[j].l)
 				if(confl_add(&bs, setid_exclusions[k], setid_dihedrals[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 		/* Loop over angles... */
 		for(j = 0 ; j < e->nr_angles ; j++)
@@ -623,7 +601,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					(e->exclusions[k].i == e->angles[j].i || e->exclusions[k].i == e->angles[j].j || e->exclusions[k].i == e->angles[j].k ||
 							e->exclusions[k].j == e->angles[j].i || e->exclusions[k].j == e->angles[j].j || e->exclusions[k].j == e->angles[j].k))
 				if(confl_add(&bs, setid_exclusions[k], setid_angles[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 		/* Loop over  bonds... */
 		for(j = 0 ; j < e->nr_bonds ; j++)
@@ -631,7 +609,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					(e->exclusions[k].i == e->bonds[j].i || e->exclusions[k].i == e->bonds[j].j ||
 							e->exclusions[k].j == e->bonds[j].i || e->exclusions[k].j == e->bonds[j].j))
 				if(confl_add(&bs, setid_exclusions[k], setid_bonds[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 		/* Loop over previous exclusions... */
 		for(j = 0 ; j < k ; j++)
@@ -639,7 +617,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					(e->exclusions[k].i == e->exclusions[j].i || e->exclusions[k].i == e->exclusions[j].j ||
 							e->exclusions[k].j == e->exclusions[j].i || e->exclusions[k].j == e->exclusions[j].j))
 				if(confl_add(&bs, setid_exclusions[k], setid_exclusions[j]) < 0)
-					return error(engine_err);
+					return error(MDCERR_sets);
 
 	} /* Loop over exclusions. */
 
@@ -654,7 +632,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 	/* Allocate the sorted conflict data. */
 	if((bs.confl_sorted = (_bonded_set*)malloc(sizeof(int) * 4 * bs.confl_size)) == NULL ||
 			(confl_index = (int *)malloc(sizeof(int) * (nr_sets + 1))) == NULL)
-		return error(engine_err_malloc);
+		return error(MDCERR_malloc);
 
 
 	/* As of here, the data structure has been set-up! */
@@ -803,10 +781,8 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			}
 
 			/* Did we catch any pair? */
-			if(min_i < 0 || min_j < 0) {
-				printf("engine_bonded_sets: could not find a pair to merge!\n");
-				return error(engine_err_sets);
-			}
+			if(min_i < 0 || min_j < 0) 
+				return error(MDCERR_sets);
 
 			/* Mark the sets with which min_i conflicts. */
 			for(k = confl_index[min_i] ; k < confl_index[min_i+1] ; k++)
@@ -881,7 +857,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 	/* Allocate the sets. */
 	e->nr_sets = nr_sets;
 	if((e->sets = (struct engine_set *)malloc(sizeof(struct engine_set) * nr_sets)) == NULL)
-		return error(engine_err_malloc);
+		return error(MDCERR_malloc);
 	bzero(e->sets, sizeof(struct engine_set) * nr_sets);
 
 	/* Fill in the counts. */
@@ -901,7 +877,7 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 				(e->sets[k].dihedrals = (struct Dihedral *)malloc(sizeof(struct Dihedral) * e->sets[k].nr_dihedrals)) == NULL ||
 				(e->sets[k].exclusions = (struct exclusion *)malloc(sizeof(struct exclusion) * e->sets[k].nr_exclusions)) == NULL ||
 				(e->sets[k].confl = (int *)malloc(sizeof(int) * bs.nconfl[k])) == NULL)
-			return error(engine_err_malloc);
+			return error(MDCERR_malloc);
 		e->sets[k].weight = e->sets[k].nr_bonds + e->sets[k].nr_exclusions + 2*e->sets[k].nr_angles + 3*e->sets[k].nr_dihedrals;
 		e->sets[k].nr_bonds = 0;
 		e->sets[k].nr_angles = 0;
@@ -944,21 +920,20 @@ int TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 
 
 	/* It's the end of the world as we know it... */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
-/**
- * allocates a new dihedral, returns its id.
- */
 int TissueForge::engine_dihedral_alloc(struct engine *e, Dihedral **out) {
     
     struct Dihedral *dummy;
 	int dihedral_id = -1;
     
     /* Check inputs. */
-    if (e == NULL) 
-		return error(engine_err_null);
+    if (e == NULL) {
+		error(MDCERR_null);
+		return dihedral_id;
+	}
     
     // first check if we have any deleted dihedrals we can re-use
 	if(e->nr_active_dihedrals < e->nr_dihedrals) {
@@ -975,7 +950,7 @@ int TissueForge::engine_dihedral_alloc(struct engine *e, Dihedral **out) {
 		if (e->nr_dihedrals == e->dihedrals_size) {
 			e->dihedrals_size *= 1.414;
 			if ((dummy = (struct Dihedral *)malloc(sizeof(struct Dihedral) * e->dihedrals_size)) == NULL)
-				return error(engine_err_malloc);
+				return error(MDCERR_malloc);
 			memcpy(dummy, e->dihedrals, sizeof(struct Dihedral) * e->nr_dihedrals);
 			free(e->dihedrals);
 			e->dihedrals = dummy;
@@ -995,17 +970,16 @@ int TissueForge::engine_dihedral_alloc(struct engine *e, Dihedral **out) {
     return result;
 }
 
-/**
- * allocates a new angle, returns its id.
- */
-int TissueForge::engine_angle_alloc (struct engine *e, Angle **out) {
+int TissueForge::engine_angle_alloc(struct engine *e, Angle **out) {
     
     struct Angle *dummy;
 	int angle_id = -1;
     
     /* Check inputs. */
-    if(e == NULL)
-    	return error(engine_err_null);
+    if(e == NULL) {
+		error(MDCERR_null);
+		return -1;
+	}
     
 	// first check if we have any deleted angles we can re-use
     if(e->nr_active_angles < e->nr_angles) {
@@ -1021,8 +995,10 @@ int TissueForge::engine_angle_alloc (struct engine *e, Angle **out) {
 		/* Do we need to grow the angles array? */
 		if(e->nr_angles == e->angles_size) {
 			e->angles_size *= 1.414;
-			if((dummy = (struct Angle *)malloc(sizeof(struct Angle) * e->angles_size)) == NULL)
-			return error(engine_err_malloc);
+			if((dummy = (struct Angle *)malloc(sizeof(struct Angle) * e->angles_size)) == NULL) {
+				error(MDCERR_malloc);
+				return -1;
+			}
 			memcpy(dummy, e->angles, sizeof(struct Angle) * e->nr_angles);
 			free(e->angles);
 			e->angles = dummy;
@@ -1100,16 +1076,7 @@ static void exclusion_qsort (struct engine *e,  int l, int r) {
 
 }
 
-
-/**
- * @brief Remove duplicate exclusions.
- *
- * @param e The #engine.
- *
- * @return The number of unique exclusions or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_exclusion_shrink(struct engine *e) {
+HRESULT TissueForge::engine_exclusion_shrink(struct engine *e) {
 
 	int j, k;
 
@@ -1127,37 +1094,26 @@ int TissueForge::engine_exclusion_shrink(struct engine *e) {
 	/* Set the number of exclusions to j. */
 	e->nr_exclusions = j+1;
 	if((e->exclusions = (struct exclusion *)realloc(e->exclusions, sizeof(struct exclusion) * e->nr_exclusions)) == NULL)
-		return error(engine_err_malloc);
+		return error(MDCERR_malloc);
 
 	/* Go home. */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * @brief Add a exclusioned interaction to the engine.
- *
- * @param e The #engine.
- * @param i The ID of the first #part.
- * @param j The ID of the second #part.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_exclusion_add(struct engine *e, int i, int j) {
+HRESULT TissueForge::engine_exclusion_add(struct engine *e, int i, int j) {
 
 	struct exclusion *dummy;
 
 	/* Check inputs. */
 	if(e == NULL)
-		return error(engine_err_null);
+		return error(MDCERR_null);
 
 	/* Do we need to grow the exclusions array? */
 	if(e->nr_exclusions == e->exclusions_size) {
 		e->exclusions_size *= 1.414;
 		if((dummy = (struct exclusion *)malloc(sizeof(struct exclusion) * e->exclusions_size)) == NULL)
-			return error(engine_err_malloc);
+			return error(MDCERR_malloc);
 		memcpy(dummy, e->exclusions, sizeof(struct exclusion) * e->nr_exclusions);
 		free(e->exclusions);
 		e->exclusions = dummy;
@@ -1175,22 +1131,20 @@ int TissueForge::engine_exclusion_add(struct engine *e, int i, int j) {
 	e->nr_exclusions += 1;
 
 	/* It's the end of the world as we know it. */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * allocates a new bond, returns a pointer to it.
- */
 int TissueForge::engine_bond_alloc (struct engine *e, Bond **out) {
 
     struct Bond *dummy;
     int bond_id = -1;
     
     /* Check inputs. */
-    if(e == NULL)
-        return error(engine_err_null);
+    if(e == NULL) {
+		error(MDCERR_null);
+		return -1;
+	}
     
     // first check if we have any deleted bonds we can re-use
     if(e->nr_active_bonds < e->nr_bonds) {
@@ -1206,8 +1160,10 @@ int TissueForge::engine_bond_alloc (struct engine *e, Bond **out) {
         /* Do we need to grow the bonds array? */
         if(e->nr_bonds == e->bonds_size) {
             e->bonds_size  *= 1.414;
-            if((dummy = (struct Bond *)malloc(sizeof(struct Bond) * e->bonds_size)) == NULL)
-                return error(engine_err_malloc);
+            if((dummy = (struct Bond *)malloc(sizeof(struct Bond) * e->bonds_size)) == NULL) {
+				error(MDCERR_malloc);
+				return -1;
+			}
             memcpy(dummy, e->bonds, sizeof(struct Bond) * e->nr_bonds);
             free(e->bonds);
             e->bonds = dummy;
@@ -1228,20 +1184,7 @@ int TissueForge::engine_bond_alloc (struct engine *e, Bond **out) {
     return result;
 }
 
-
-/**
- * @brief Compute all bonded interactions stored in this engine.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- *
- * Does the same as #engine_bond_eval, #engine_angle_eval and
- * #engine_dihedral eval, yet all in one go to avoid excessive
- * updates of the particle forces.
- */
-
-int TissueForge::engine_bonded_eval(struct engine *e) {
+HRESULT TissueForge::engine_bonded_eval(struct engine *e) {
 
 	FPTYPE epot_bond = 0.0, epot_angle = 0.0, epot_dihedral = 0.0, epot_exclusion = 0.0;
 	struct space *s;
@@ -1256,7 +1199,7 @@ int TissueForge::engine_bonded_eval(struct engine *e) {
 
 	/* Bail if there are no bonded interaction. */
 	if(nr_bonds == 0 && nr_angles == 0 && nr_dihedrals == 0 && nr_exclusions == 0)
-		return engine_err_ok;
+		return S_OK;
 
 	/* Get a handle on the space. */
 	s = &e->s;
@@ -1370,25 +1313,25 @@ int TissueForge::engine_bonded_eval(struct engine *e) {
 	/* Do exclusions. */
 	tic = getticks();
 	if(exclusion_eval(e->exclusions, nr_exclusions, e, &epot_exclusion) < 0)
-		return error(engine_err_exclusion);
+		return error(MDCERR_exclusion);
 	e->timers[engine_timer_exclusions] += getticks() - tic;
 
 	/* Do bonds. */
 	tic = getticks();
 	if(bond_eval(e->bonds, nr_bonds, e, &epot_bond) < 0)
-		return error(engine_err_bond);
+		return error(MDCERR_bond);
 	e->timers[engine_timer_bonds] += getticks() - tic;
 
 	/* Do angles. */
 	tic = getticks();
 	if(angle_eval(e->angles, nr_angles, e, &epot_angle) < 0)
-		return error(engine_err_angle);
+		return error(MDCERR_angle);
 	e->timers[engine_timer_angles] += getticks() - tic;
 
 	/* Do dihedrals. */
 	tic = getticks();
 	if(dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot_dihedral) < 0)
-		return error(engine_err_dihedral);
+		return error(MDCERR_dihedral);
 	e->timers[engine_timer_dihedrals] += getticks() - tic;
 
 
@@ -1400,20 +1343,11 @@ int TissueForge::engine_bonded_eval(struct engine *e) {
 	s->epot_exclusion += epot_exclusion;
 
 	/* I'll be back... */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * @brief Compute the dihedral interactions stored in this engine.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_dihedral_eval(struct engine *e) {
+HRESULT TissueForge::engine_dihedral_eval(struct engine *e) {
 
 	FPTYPE epot = 0.0;
 	struct space *s;
@@ -1499,7 +1433,7 @@ int TissueForge::engine_dihedral_eval(struct engine *e) {
 		dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot);
 #else
 	if(dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot) < 0)
-		return error(engine_err_dihedral);
+		return error(MDCERR_dihedral);
 #endif
 
 	/* Store the potential energy. */
@@ -1507,20 +1441,11 @@ int TissueForge::engine_dihedral_eval(struct engine *e) {
 	s->epot_dihedral += epot;
 
 	/* I'll be back... */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * @brief Compute the angled interactions stored in this engine.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_angle_eval(struct engine *e) {
+HRESULT TissueForge::engine_angle_eval(struct engine *e) {
 
 	FPTYPE epot = 0.0;
 	struct space *s;
@@ -1604,7 +1529,7 @@ int TissueForge::engine_angle_eval(struct engine *e) {
 		angle_eval(e->angles, nr_angles, e, &epot);
 #else
 	if(angle_eval(e->angles, nr_angles, e, &epot) < 0)
-		return error(engine_err_angle);
+		return error(MDCERR_angle);
 #endif
 
 	/* Store the potential energy. */
@@ -1612,20 +1537,11 @@ int TissueForge::engine_angle_eval(struct engine *e) {
 	s->epot_angle += epot;
 
 	/* I'll be back... */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * @brief Compute the exclusioned interactions stored in this engine.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_exclusion_eval(struct engine *e) {
+HRESULT TissueForge::engine_exclusion_eval(struct engine *e) {
 
 	FPTYPE epot = 0.0;
 	struct space *s;
@@ -1707,7 +1623,7 @@ int TissueForge::engine_exclusion_eval(struct engine *e) {
 		exclusion_eval(e->exclusions, nr_exclusions, e, &epot);
 #else
 	if(exclusion_eval(e->exclusions, nr_exclusions, e, &epot) < 0)
-		return error(engine_err_exclusion);
+		return error(MDCERR_exclusion);
 #endif
 
 	/* Store the potential energy. */
@@ -1715,20 +1631,11 @@ int TissueForge::engine_exclusion_eval(struct engine *e) {
 	s->epot_exclusion += epot;
 
 	/* I'll be back... */
-	return engine_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * @brief Compute the bonded interactions stored in this engine.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_bond_eval(struct engine *e) {
+HRESULT TissueForge::engine_bond_eval(struct engine *e) {
 
 	FPTYPE epot = 0.0;
 	struct space *s;
@@ -1810,7 +1717,7 @@ int TissueForge::engine_bond_eval(struct engine *e) {
 		bond_eval(e->bonds, nr_bonds, e, &epot);
 #else
 	if(bond_eval(e->bonds, nr_bonds, e, &epot) < 0)
-		return error(engine_err_bond);
+		return error(MDCERR_bond);
 #endif
 
 	/* Store the potential energy. */
@@ -1818,6 +1725,6 @@ int TissueForge::engine_bond_eval(struct engine *e) {
 	s->epot_bond += epot;
 
 	/* I'll be back... */
-	return engine_err_ok;
+	return S_OK;
 
 }

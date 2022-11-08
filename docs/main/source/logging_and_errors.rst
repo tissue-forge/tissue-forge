@@ -46,7 +46,7 @@ allow a simulation to proceed but posts an :py:class:`Error`, and also
 logs the error at the ``ERROR`` level. Errors that have been posted can
 be retrieved in order of their posting with :py:func:`err_get_all`, or the
 current first posted error can be retrieved and removed from the list of
-errors with :py:func:`err_pos_first`. The function :py:func:`err_occured`
+errors with :py:func:`err_pos_first`. The function :py:func:`err_occurred`
 returns ``True`` when any error is currently posted, and :py:func:`err_clear`
 clears all posted errors. ::
 

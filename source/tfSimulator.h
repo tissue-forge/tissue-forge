@@ -721,7 +721,7 @@ namespace TissueForge {
 
     HRESULT initSimConfigFromFile(const std::string &loadFilePath, Simulator::Config &conf);
 
-    CAPI_FUNC(int) universe_init(const UniverseConfig &conf);
+    CAPI_FUNC(HRESULT) universe_init(const UniverseConfig &conf);
 
     CAPI_FUNC(HRESULT) modules_init();
 

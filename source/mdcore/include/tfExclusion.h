@@ -30,17 +30,8 @@
 
 MDCORE_BEGIN_DECLS
 
-/* exclusion error codes */
-#define exclusion_err_ok                    0
-#define exclusion_err_null                  -1
-#define exclusion_err_malloc                -2
-
 
 namespace TissueForge { 
-
-
-	/** ID of the last error */
-	CAPI_DATA(int) exclusion_err;
 
 
 	/** The exclusion structure */
@@ -53,8 +44,27 @@ namespace TissueForge {
 
 
 	/* associated functions */
-	int exclusion_eval(struct exclusion *b, int N, struct engine *e, FPTYPE *epot_out);
-	int exclusion_evalf(struct exclusion *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
+
+	/**
+	 * @brief Evaluate a list of exclusioned interactions
+	 *
+	 * @param b Pointer to an array of #exclusion.
+	 * @param N Nr of exclusions in @c b.
+	 * @param e Pointer to the #engine in which these exclusions are evaluated.
+	 * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+	 */
+	HRESULT exclusion_eval(struct exclusion *b, int N, struct engine *e, FPTYPE *epot_out);
+
+	/**
+	 * @brief Evaluate a list of exclusioned interactions
+	 *
+	 * @param b Pointer to an array of #exclusion.
+	 * @param N Nr of exclusions in @c b.
+	 * @param e Pointer to the #engine in which these exclusions are evaluated.
+	 * @param f Array in which to aggregate the force.
+	 * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+	 */
+	HRESULT exclusion_evalf(struct exclusion *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
 
 };
 

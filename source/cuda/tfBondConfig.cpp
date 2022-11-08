@@ -19,11 +19,16 @@
 
 #include "tfBondConfig.h"
 
+#include <tfError.h>
 #include <tfEngine.h>
 #include <tfLogger.h>
+#include <tf_cuda.h>
 
 
 using namespace TissueForge;
+
+
+#define error(id)   tf_error(E_FAIL, tfcuda_err_msg[id])
 
 
 bool cuda::BondConfig::onDevice() {
@@ -35,21 +40,19 @@ int cuda::BondConfig::getDevice() {
 }
 
 HRESULT cuda::BondConfig::setDevice(int deviceId) {
-    if(cuda::Bond_setDevice(&_Engine, deviceId) < 0) 
-        return E_FAIL;
+    if(cuda::Bond_setDevice(&_Engine, deviceId) != S_OK) 
+        return error(TFCUDAERR_setdevice);
     return S_OK;
 }
 
 HRESULT cuda::BondConfig::toDevice() {
     if(cuda::BondConfig::onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting send to device when already sent. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_ondevice] << " Ignoring.";
         return S_OK;
     }
 
-    if(cuda::Bond_toDevice(&_Engine) < 0) { 
-        TF_Log(LOG_CRITICAL) << "Attempting send to device failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(cuda::Bond_toDevice(&_Engine) != S_OK) 
+        return error(TFCUDAERR_send);
 
     TF_Log(LOG_INFORMATION) << "Successfully sent bonds to device";
 
@@ -58,14 +61,12 @@ HRESULT cuda::BondConfig::toDevice() {
 
 HRESULT cuda::BondConfig::fromDevice() {
     if(!cuda::BondConfig::onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting pull from device when not sent. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_notondevice] << " Ignoring.";
         return S_OK;
     }
 
-    if(cuda::Bond_fromDevice(&_Engine) < 0) { 
-        TF_Log(LOG_CRITICAL) << "Attempting pull from device failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(cuda::Bond_fromDevice(&_Engine) != S_OK) 
+        return error(TFCUDAERR_pull);
 
     TF_Log(LOG_INFORMATION) << "Successfully pulled bonds from device";
     
@@ -74,60 +75,54 @@ HRESULT cuda::BondConfig::fromDevice() {
 
 HRESULT cuda::BondConfig::setBlocks(unsigned int numBlocks) {
     if(cuda::BondConfig::onDevice()) 
-        tf_error(E_FAIL, "Bonds already on device.");
+        return error(TFCUDAERR_ondevice);
 
-    if(cuda::Bond_setBlocks(numBlocks) < 0) 
-        return E_FAIL;
+    if(cuda::Bond_setBlocks(numBlocks) != S_OK) 
+        return error(TFCUDAERR_setblocks);
     return S_OK;
 }
 
 HRESULT cuda::BondConfig::setThreads(unsigned int numThreads) {
     if(cuda::BondConfig::onDevice()) 
-        tf_error(E_FAIL, "Bonds already on device.");
+        return error(TFCUDAERR_ondevice);
 
-    if(cuda::Bond_setThreads(numThreads) < 0) 
-        return E_FAIL;
+    if(cuda::Bond_setThreads(numThreads) != S_OK) 
+        return error(TFCUDAERR_setthreads);
     return S_OK;
 }
 
 HRESULT cuda::BondConfig::refreshBond(BondHandle *bh) {
     if(!cuda::BondConfig::onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting to refresh bonds when not on device. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_notondevice] << " Ignoring.";
         return S_OK;
     }
 
-    if(cuda::Bond_refreshBond(&_Engine, bh) < 0) { 
-        TF_Log(LOG_CRITICAL) << "Refresh failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(cuda::Bond_refreshBond(&_Engine, bh) != S_OK) 
+        return error(TFCUDAERR_refresh);
 
     return S_OK;
 }
 
 HRESULT cuda::BondConfig::refreshBonds(std::vector<BondHandle*> bonds) {
     if(!cuda::BondConfig::onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting to refresh bonds when not on device. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_notondevice] << " Ignoring.";
         return S_OK;
     }
 
-    if(cuda::Bond_refreshBonds(&_Engine, bonds.data(), bonds.size()) < 0) { 
-        TF_Log(LOG_CRITICAL) << "Refresh failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(cuda::Bond_refreshBonds(&_Engine, bonds.data(), bonds.size()) != S_OK) 
+        return error(TFCUDAERR_refresh);
 
     return S_OK;
 }
 
 HRESULT cuda::BondConfig::refresh() {
     if(!cuda::BondConfig::onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting to refresh bonds when not on device. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_notondevice] << " Ignoring.";
         return S_OK;
     }
 
-    if(cuda::Bond_refresh(&_Engine) < 0) { 
-        TF_Log(LOG_CRITICAL) << "Refresh failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(cuda::Bond_refresh(&_Engine) != S_OK) 
+        return error(TFCUDAERR_refresh);
 
     return S_OK;
 }

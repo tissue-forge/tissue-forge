@@ -197,7 +197,7 @@ static HRESULT virial_pair(
     count_i = cell_i->count;
     count_j = cell_j->count;
     if ( count_i == 0 || count_j == 0 || ( cell_i == cell_j && count_i < 2 ) )
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     cutoff2 = cutoff * cutoff;
@@ -333,7 +333,7 @@ static HRESULT virial_pair(
     }
     
     /* all is well that ends ok */
-    return runner_err_ok;
+    return S_OK;
 }
 
 HRESULT metrics::particlesRadiusOfGyration(int32_t *parts, uint16_t nr_parts, FloatP_t *result)
@@ -469,7 +469,7 @@ HRESULT metrics::particlesMomentOfInertia(int32_t *parts, uint16_t nr_parts, Flo
     return S_OK;
 }
 
-CAPI_FUNC(HRESULT) metrics::particlesVirial(int32_t *parts, uint16_t nr_parts, uint32_t flags, FloatP_t *tensor) {
+HRESULT metrics::particlesVirial(int32_t *parts, uint16_t nr_parts, uint32_t flags, FloatP_t *tensor) {
     FMatrix3 m{0.0};
     int i, j, k;
     struct Particle *part_i, *part_j;
@@ -723,7 +723,7 @@ HRESULT enum_particles(
     count = cell->count;
     
     if ( count == 0 )
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     cutoff2 = radius * radius;
@@ -766,7 +766,7 @@ HRESULT enum_particles(
     
     
     /* all is well that ends ok */
-    return runner_err_ok;
+    return S_OK;
 }
 
 void do_it(const FVector3 &origin, const Particle *part, FMatrix3 &m) {
@@ -795,7 +795,7 @@ HRESULT enum_thing(
     count = cell->count;
     
     if ( count == 0 )
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     cutoff2 = radius * radius;
@@ -836,7 +836,7 @@ HRESULT enum_thing(
     
     
     /* all is well that ends ok */
-    return runner_err_ok;
+    return S_OK;
 }
 
 /**

@@ -63,18 +63,8 @@ using namespace TissueForge;
 
 rendering::Style *Dihedral_StylePtr = new rendering::Style("gold");
 
-/* Global variables. */
-/** The ID of the last error. */
-int TissueForge::dihedral_err = dihedral_err_ok;
 
-/* the error macro. */
-#define error(id)				(dihedral_err = errs_register(id, dihedral_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-
-/* list of error messages. */
-const char *dihedral_err_msg[2] = {
-	"Nothing bad happened.",
-    "An unexpected NULL pointer was encountered."
-};
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
 static bool Dihedral_decays(Dihedral *d, std::uniform_real_distribution<FPTYPE> *uniform01=NULL) {
@@ -92,18 +82,7 @@ static bool Dihedral_decays(Dihedral *d, std::uniform_real_distribution<FPTYPE> 
     return result;
 }
 
-/**
- * @brief Evaluate a list of dihedraled interactions
- *
- * @param b Pointer to an array of #dihedral.
- * @param N Nr of dihedrals in @c b.
- * @param e Pointer to the #engine in which these dihedrals are evaluated.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- * 
- * @return #dihedral_err_ok or <0 on error (see #dihedral_err)
- */
- 
-int TissueForge::dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTYPE *epot_out) {
+HRESULT TissueForge::dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTYPE *epot_out) {
 
     Dihedral *dihedral;
     int did, pid, pjd, pkd, pld, k;
@@ -137,8 +116,8 @@ int TissueForge::dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTY
     
     /* Check inputs. */
     if(d == NULL || e == NULL)
-        return error(dihedral_err_null);
-        
+        return error(MDCERR_null);
+
     /* Get local copies of some variables. */
     s = &e->s;
     partlist = s->partlist;
@@ -428,26 +407,12 @@ int TissueForge::dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTY
     *epot_out += epot;
     
     /* We're done here. */
-    return dihedral_err_ok;
+    return S_OK;
     
     }
 
 
-/**
- * @brief Evaluate a list of dihedraled interactions
- *
- * @param b Pointer to an array of #dihedral.
- * @param N Nr of dihedrals in @c b.
- * @param e Pointer to the #engine in which these dihedrals are evaluated.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- *
- * This function differs from #dihedral_eval in that the forces are added to
- * the array @c f instead of directly in the particle data.
- * 
- * @return #dihedral_err_ok or <0 on error (see #dihedral_err)
- */
- 
-int TissueForge::dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out) {
+HRESULT TissueForge::dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out) {
 
     Dihedral *dihedral;
     int did, pid, pjd, pkd, pld, k;
@@ -481,8 +446,8 @@ int TissueForge::dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPT
     
     /* Check inputs. */
     if(d == NULL || e == NULL)
-        return error(dihedral_err_null);
-        
+        return error(MDCERR_null);
+
     /* Get local copies of some variables. */
     s = &e->s;
     partlist = s->partlist;
@@ -772,7 +737,7 @@ int TissueForge::dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPT
     *epot_out += epot;
     
     /* We're done here. */
-    return dihedral_err_ok;
+    return S_OK;
     
 }
 
@@ -806,7 +771,7 @@ DihedralHandle *TissueForge::Dihedral::create(Potential *potential,
                                               ParticleHandle *p4) 
 {
     if(potential->flags & POTENTIAL_SCALED || potential->flags & POTENTIAL_SHIFTED) {
-        throw std::runtime_error("dihedrals do not support scaled or shifted potentials");
+        error(MDCERR_dihsspot);
         return NULL;
     }
 
@@ -815,7 +780,7 @@ DihedralHandle *TissueForge::Dihedral::create(Potential *potential,
     int id = engine_dihedral_alloc(&_Engine, &dihedral);
 
     if(id < 0) {
-        throw std::runtime_error("could not allocate dihedral");
+        error(MDCERR_malloc);
         return NULL;
     }
 
@@ -839,8 +804,10 @@ Dihedral *TissueForge::Dihedral::fromString(const std::string &str) {
 }
 
 Dihedral *TissueForge::DihedralHandle::get() {
-    if(id >= _Engine.dihedrals_size) throw std::range_error("Dihedral id invalid");
-    if (id < 0) return NULL;
+    if(id < 0 || id >= _Engine.dihedrals_size) {
+        error(MDCERR_id);
+        return NULL;
+    }
     return &_Engine.dihedrals[this->id];
 }
 
@@ -877,7 +844,7 @@ bool TissueForge::DihedralHandle::decays() {
 ParticleHandle *TissueForge::DihedralHandle::operator[](unsigned int index) {
     auto *d = this->get();
     if(!d) {
-        TF_Log(LOG_ERROR) << "Invalid dihedral handle";
+        error(MDCERR_null);
         return NULL;
     }
 
@@ -886,7 +853,7 @@ ParticleHandle *TissueForge::DihedralHandle::operator[](unsigned int index) {
     else if(index == 2) return Particle_FromId(d->k)->handle();
     else if(index == 3) return Particle_FromId(d->l)->handle();
     
-    tf_exp(std::range_error("Index out of range (must be 0, 1, 2 or 3)"));
+    error(MDCERR_range);
     return NULL;
 }
 
@@ -951,7 +918,7 @@ FPTYPE TissueForge::DihedralHandle::getAge() {
 }
 
 HRESULT TissueForge::Dihedral_Destroy(Dihedral *d) {
-    if(!d) return E_FAIL;
+    if(!d) return error(MDCERR_null);
 
     if(d->flags & DIHEDRAL_ACTIVE) {
         bzero(d, sizeof(Dihedral));
@@ -985,14 +952,14 @@ namespace TissueForge::io {
     #define TF_DIHEDIOTOEASY(fe, key, member) \
         fe = new IOElement(); \
         if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
+            return error(MDCERR_io); \
         fe->parent = fileElement; \
         fileElement->children[key] = fe;
 
     #define TF_DIHEDIOFROMEASY(feItr, children, metaData, key, member_p) \
         feItr = children.find(key); \
         if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
+            return error(MDCERR_io);
 
     template <>
     HRESULT toFile(const Dihedral &dataElement, const MetaData &metaData, IOElement *fileElement) {

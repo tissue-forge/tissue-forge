@@ -38,21 +38,14 @@
 #include <tfParticle.h>
 #include <tfSpace_cell.h>
 #include <tf_util.h>
+#include <tfError.h>
 
 
 using namespace TissueForge;
 
 
 /* the error macro. */
-#define error(id)				(cell_err = errs_register(id, cell_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-
-/* list of error messages. */
-const char *cell_err_msg[] = {
-		"Nothing bad happened.",
-		"An unexpected NULL pointer was encountered.",
-		"A call to malloc failed, probably due to insufficient memory.",
-		"A call to a pthread routine failed."
-};
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
 /* Map shift vector to sortlist. */
@@ -104,27 +97,13 @@ const char TissueForge::cell_flip[27] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 
-/* the last error */
-int TissueForge::cell_err = cell_err_ok;
-
-
-/**
- * @brief Flush all the parts from a #cell.
- *
- * @param c The #cell to flush.
- * @param partlist A pointer to the partlist to set the part indices.
- * @param celllist A pointer to the celllist to set the part indices.
- *
- * @return #cell_err_ok or < 0 on error (see #cell_err).
- */
-
-int TissueForge::space_cell_flush(struct space_cell *c, struct Particle **partlist, struct space_cell **celllist) {
+HRESULT TissueForge::space_cell_flush(struct space_cell *c, struct Particle **partlist, struct space_cell **celllist) {
 
 	int k;
 
 	/* Check the inputs. */
 	if(c == NULL)
-		return error(cell_err_null);
+		return error(MDCERR_null);
 
 	/* Unhook the cells from the partlist. */
 	if(partlist != NULL)
@@ -140,31 +119,18 @@ int TissueForge::space_cell_flush(struct space_cell *c, struct Particle **partli
 	c->count = 0;
 
 	/* All done! */
-	return cell_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * @brief Load a block of particles to the cell.
- *
- * @param c The #cell.
- * @param parts Pointer to a block of #part.
- * @param nr_parts The number of parts to load.
- * @param partlist A pointer to the partlist to set the part indices.
- * @param celllist A pointer to the celllist to set the part indices.
- *
- * @return #cell_err_ok or < 0 on error (see #cell_err).
- */
-
-int TissueForge::space_cell_load(struct space_cell *c, struct Particle *parts, int nr_parts, struct Particle **partlist, struct space_cell **celllist) {
+HRESULT TissueForge::space_cell_load(struct space_cell *c, struct Particle *parts, int nr_parts, struct Particle **partlist, struct space_cell **celllist) {
 
 	int k, size_new;
 	struct Particle *temp;
 
 	/* check inputs */
 	if(c == NULL || parts == NULL)
-		return error(cell_err_null);
+		return error(MDCERR_null);
 
 	/* Is there sufficient room for these particles? */
 	if(c->count + nr_parts > c->size) {
@@ -172,7 +138,7 @@ int TissueForge::space_cell_load(struct space_cell *c, struct Particle *parts, i
 		if(size_new < c->size + cell_incr)
 			size_new = c->size + cell_incr;
 		if ((temp = (Particle*)aligned_Malloc(align_ceil(sizeof(struct Particle) * size_new),  cell_partalign)) == 0)
-			return error(cell_err_malloc);
+			return error(MDCERR_malloc);
 		memcpy(temp, c->parts, sizeof(struct Particle) * c->count);
 		aligned_Free(c->parts);
 		c->parts = temp;
@@ -183,7 +149,7 @@ int TissueForge::space_cell_load(struct space_cell *c, struct Particle *parts, i
 		if(c->sortlist != NULL) {
 			free(c->sortlist);
 			if((c->sortlist = (unsigned int *)malloc(sizeof(unsigned int) * 13 * c->size)) == NULL)
-				return error(cell_err_malloc);
+				return error(MDCERR_malloc);
 		}
 	}
 
@@ -212,55 +178,31 @@ int TissueForge::space_cell_load(struct space_cell *c, struct Particle *parts, i
 	c->count += nr_parts;
 
 	/* We're out of here! */
-	return cell_err_ok;
+	return S_OK;
 
 }
 
-
-/**
- * @brief Move particles from the incomming buffer to the cell.
- *
- * @param c The #cell.
- * @param partlist A pointer to the partlist to set the part indices.
- *
- * @return #cell_err_ok or < 0 on error (see #cell_err).
- */
-
-int TissueForge::space_cell_welcome (space_cell *c, struct Particle **partlist) {
+HRESULT TissueForge::space_cell_welcome(space_cell *c, struct Particle **partlist) {
 
 	int k;
 
 	/* Check inputs. */
 	if(c == NULL)
-		return error(cell_err_null);
+		return error(MDCERR_null);
 
 	/* Loop over the incomming parts. */
 	for(k = 0 ; k < c->incomming_count ; k++)
 		if(!space_cell_add(c, &c->incomming[k], partlist))
-			return error(cell_err);
+			return error(MDCERR_cell);
 
 
 	/* Clear the incomming particles list. */
 	c->incomming_count = 0;
 
 	/* All done! */
-	return cell_err_ok;
+	return S_OK;
 
 }
-
-
-/**
- * @brief Add a particle to the incomming array of a cell.
- *
- * @param c The #cell to which the particle should be added.
- * @param p The #particle to add to the cell
- *
- * @return A pointer to the particle data in the incomming array of
- *      the cell.
- *
- * This routine assumes the particle position has already been adjusted
- * to the cell @c c.
- */
 
 struct Particle *TissueForge::space_cell_add_incomming(struct space_cell *c, struct Particle *p) {
 
@@ -268,14 +210,14 @@ struct Particle *TissueForge::space_cell_add_incomming(struct space_cell *c, str
 
 	/* check inputs */
 	if(c == NULL || p == NULL) {
-		error(cell_err_null);
+		error(MDCERR_null);
 		return NULL;
 	}
 
 	/* is there room for this particle? */
 	if(c->incomming_count == c->incomming_size) {
 		if ((temp = (Particle*)aligned_Malloc(align_ceil(sizeof(struct Particle) * (c->incomming_size + cell_incr)),  cell_partalign)) == 0) {
-			error(cell_err_malloc);
+			error(MDCERR_malloc);
 			return NULL;
 		}
 		memcpy(temp, c->incomming, sizeof(struct Particle) * c->incomming_count);
@@ -292,34 +234,25 @@ struct Particle *TissueForge::space_cell_add_incomming(struct space_cell *c, str
 
 }
 
-
-/**
- * @brief Add one or more particles to the incomming array of a cell.
- *
- * @param c The #cell to which the particle should be added.
- * @param p The #particle to add to the cell
- *
- * @return The number of incomming parts or < 0 on error (see #cell_err).
- *
- * This routine assumes the particle position have already been adjusted
- * to the cell @c c.
- */
-
 int TissueForge::space_cell_add_incomming_multiple(struct space_cell *c, struct Particle *p, int count) {
 
 	struct Particle *temp;
 	int incr = cell_incr;
 
 	/* check inputs */
-	if(c == NULL || p == NULL)
-		return error(cell_err_null);
+	if(c == NULL || p == NULL) {
+		error(MDCERR_null);
+		return -(MDCERR_null);
+	}
 
 	/* is there room for this particle? */
 	if(c->incomming_count + count > c->incomming_size) {
 		if(c->incomming_size + incr < c->incomming_count + count)
 			incr = c->incomming_count + count - c->incomming_size;
-		if ((temp = (Particle*)aligned_Malloc(align_ceil(sizeof(struct Particle) * (c->incomming_size + incr)), cell_partalign)) == 0)
-			return error(cell_err_malloc);
+		if ((temp = (Particle*)aligned_Malloc(align_ceil(sizeof(struct Particle) * (c->incomming_size + incr)), cell_partalign)) == 0) {
+			error(MDCERR_malloc);
+			return -(MDCERR_malloc);
+		}
 		memcpy(temp, c->incomming, sizeof(struct Particle) * c->incomming_count);
 		aligned_Free(c->incomming);
 		c->incomming = temp;
@@ -334,19 +267,6 @@ int TissueForge::space_cell_add_incomming_multiple(struct space_cell *c, struct 
 
 }
 
-
-/**
- * @brief Add a particle to a cell.
- *
- * @param c The #cell to which the particle should be added.
- * @param p The #particle to add to the cell
- *
- * @return A pointer to the particle data in the cell.
- *
- * This routine assumes the particle position has already been adjusted
- * to the cell @c c.
- */
-
 struct Particle *TissueForge::space_cell_add(struct space_cell *c, struct Particle *p, struct Particle **partlist) {
 
 	struct Particle *temp;
@@ -354,7 +274,7 @@ struct Particle *TissueForge::space_cell_add(struct space_cell *c, struct Partic
 
 	/* check inputs */
 	if(c == NULL || p == NULL) {
-		error(cell_err_null);
+		error(MDCERR_null);
 		return NULL;
 	}
 
@@ -362,7 +282,7 @@ struct Particle *TissueForge::space_cell_add(struct space_cell *c, struct Partic
 	if(c->count == c->size) {
 		c->size *= 1.414;
 		if ((temp = (Particle*)aligned_Malloc(align_ceil(sizeof(struct Particle) * c->size), cell_partalign)) == 0) {
-			error(cell_err_malloc);
+			error(MDCERR_malloc);
 			return NULL;
 		}
 		memcpy(temp, c->parts, sizeof(struct Particle) * c->count);
@@ -374,7 +294,7 @@ struct Particle *TissueForge::space_cell_add(struct space_cell *c, struct Partic
 		if(c->sortlist != NULL) {
 			free(c->sortlist);
 			if((c->sortlist = (unsigned int *)malloc(sizeof(unsigned int) * 13 * c->size)) == NULL) {
-				error(cell_err_malloc);
+				error(MDCERR_malloc);
 				return NULL;
 			}
 		}
@@ -396,10 +316,10 @@ struct Particle *TissueForge::space_cell_add(struct space_cell *c, struct Partic
 
 }
 
-int TissueForge::space_cell_remove(struct space_cell *c, struct Particle *p, struct Particle **partlist) {
+HRESULT TissueForge::space_cell_remove(struct space_cell *c, struct Particle *p, struct Particle **partlist) {
 	/* check inputs */
 	if(c == NULL || p == NULL) {
-		return cell_err_null;
+		return error(MDCERR_null);
 	}
 
 	// index of cell in cell particle array.
@@ -415,28 +335,16 @@ int TissueForge::space_cell_remove(struct space_cell *c, struct Particle *p, str
 		}
     }
 
-	return cell_err_ok;
+	return S_OK;
 }
 
-
-/**
- * @brief Initialize the given cell.
- *
- * @param c The #cell to initialize.
- * @param loc Array containing the location of this cell in the space.
- * @param origin The origin of the cell in global coordinates
- * @param dim The cell dimensions.
- *
- * @return #cell_err_ok or < 0 on error (see #cell_err).
- */
-
-int TissueForge::space_cell_init (struct space_cell *c, int *loc, FPTYPE *origin, FPTYPE *dim) {
+HRESULT TissueForge::space_cell_init(struct space_cell *c, int *loc, FPTYPE *origin, FPTYPE *dim) {
 
 	int i;
 
 	/* check inputs */
 	if(c == NULL || loc == NULL || origin == NULL || dim == NULL)
-		return error(cell_err_null);
+		return error(MDCERR_null);
 
 	/* default flags. */
 	c->flags = cell_flag_none;
@@ -445,9 +353,9 @@ int TissueForge::space_cell_init (struct space_cell *c, int *loc, FPTYPE *origin
 
 	/* Init this cell's mutex. */
 	if(pthread_mutex_init(&c->cell_mutex, NULL) != 0)
-		return error(cell_err_pthread);
+		return error(MDCERR_pthread);
 	if(pthread_cond_init(&c->cell_cond, NULL) != 0)
-		return error(cell_err_pthread);
+		return error(MDCERR_pthread);
 
 	/* store values */
 	for(i = 0 ; i < 3 ; i++) {
@@ -458,22 +366,22 @@ int TissueForge::space_cell_init (struct space_cell *c, int *loc, FPTYPE *origin
 
 	/* allocate the particle pointers */
 	if ((c->parts = (Particle*)aligned_Malloc(align_ceil(sizeof(struct Particle) * cell_default_size), cell_partalign)) == 0)
-		return error(cell_err_malloc);
+		return error(MDCERR_malloc);
 	c->size = cell_default_size;
 	c->count = 0;
 	c->oldx_size = 0;
 	c->oldx = NULL;
 	if((c->sortlist = (unsigned int *)malloc(sizeof(unsigned int) * 13 * c->size)) == NULL)
-		return error(cell_err_malloc);
+		return error(MDCERR_malloc);
 
 	/* allocate the incomming part buffer. */
 	if ((c->incomming = (Particle*)aligned_Malloc(align_ceil(sizeof(struct Particle) * cell_incr), cell_partalign)) == 0)
-		return error(cell_err_malloc);
+		return error(MDCERR_malloc);
 	c->incomming_size = cell_incr;
 	c->incomming_count = 0;
 
 	/* all is well... */
-	return cell_err_ok;
+	return S_OK;
 
 }
 

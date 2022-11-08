@@ -70,6 +70,8 @@
 #include <tfEngine.h>
 #include "tfRunner_cuda.h"
 #include "tfFlux_cuda.h"
+#include <tf_port.h>
+#include <tfError.h>
 
 #ifndef CPU_TPS
 #include <ctime>
@@ -81,10 +83,10 @@ using namespace TissueForge;
 
 
 /* the error macro. */
-#define error(id)				(engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-#define cuda_error(id)			(engine_err = errs_register(id, cudaGetErrorString(cudaGetLastError()), __LINE__, __FUNCTION__, __FILE__))
-#define cuda_safe_call(f)       { if(f != cudaSuccess) return cuda_error(engine_err_cuda); }
-#define cuda_safe_call_e(f, _ret_ok)       { if(f != _ret_ok) return cuda_error(engine_err_cuda); }
+#define error(id)                           (tf_error(E_FAIL, errs_err_msg[id]))
+#define cuda_error()                        (tf_error(E_FAIL, cudaGetErrorString(cudaGetLastError())))
+#define cuda_safe_call(f)                   { if(f != cudaSuccess) return cuda_error(); }
+#define cuda_safe_call_e(f, _ret_ok)        { if(f != _ret_ok) return cuda_error(); }
 
 /* The parts (non-texture access). */
 __constant__ cuda::Particle *cuda_parts;
@@ -771,7 +773,7 @@ __device__ void cuda_sort_ascending(unsigned int *a, int count) {
         
 }
 
-int engine_cuda_texture_init(cudaTextureObject_t *tex, cudaArray_t &arr) {
+HRESULT engine_cuda_texture_init(cudaTextureObject_t *tex, cudaArray_t &arr) {
     cudaResourceDesc resDesc;
     memset(&resDesc, 0, sizeof(cudaResourceDesc));
     resDesc.resType = cudaResourceTypeArray;
@@ -787,29 +789,30 @@ int engine_cuda_texture_init(cudaTextureObject_t *tex, cudaArray_t &arr) {
 
     cuda_safe_call(cudaCreateTextureObject(tex, &resDesc, &texDesc, NULL));
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-int engine_cuda_texture_finalize(cudaTextureObject_t tex) {
+HRESULT engine_cuda_texture_finalize(cudaTextureObject_t tex) {
     cuda_safe_call(cudaDestroyTextureObject(tex));
     
-    return engine_err_ok;
+    return S_OK;
 }
 
-int engine_cuda_build_pots_pack(Potential **pots, 
-                                int nr_pots, 
-                                std::vector<int> &pind, 
-                                std::vector<float> &pot_alpha, 
-                                std::vector<float> &pot_c,
-                                std::vector<float> &pot_dataf, 
-                                std::vector<int> &pot_datai, 
-                                std::vector<float> &dpd_cf, 
-                                std::vector<float> &dpd_dataf, 
-                                std::vector<int> &dpd_datai, 
-                                int &max_coeffs, 
-                                int &max_pots, 
-                                int &max_dpds, 
-                                int &num_pots) 
+HRESULT engine_cuda_build_pots_pack(
+    Potential **pots, 
+    int nr_pots, 
+    std::vector<int> &pind, 
+    std::vector<float> &pot_alpha, 
+    std::vector<float> &pot_c,
+    std::vector<float> &pot_dataf, 
+    std::vector<int> &pot_datai, 
+    std::vector<float> &dpd_cf, 
+    std::vector<float> &dpd_dataf, 
+    std::vector<int> &dpd_datai, 
+    int &max_coeffs, 
+    int &max_pots, 
+    int &max_dpds, 
+    int &num_pots) 
 {
     int i, j;
     pind = std::vector<int>(ENGINE_CUDA_PIND_WIDTH * nr_pots, 0);
@@ -817,13 +820,13 @@ int engine_cuda_build_pots_pack(Potential **pots,
 
     /* Init the null potential. */
     if((pots_unique[0] = (struct Potential *)alloca(sizeof(struct Potential))) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     pots_unique[0]->alpha[0] = pots_unique[0]->alpha[1] = pots_unique[0]->alpha[2] = pots_unique[0]->alpha[3] = 0.0f;
     pots_unique[0]->a = 0.0; pots_unique[0]->b = FLT_MAX;
     pots_unique[0]->flags = POTENTIAL_NONE;
     pots_unique[0]->n = 0;
     if((pots_unique[0]->c = (FPTYPE *)alloca(sizeof(float) * potential_chunk)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     bzero(pots_unique[0]->c, sizeof(float) * potential_chunk);
     
     /* Start by identifying the unique potentials in the engine. */
@@ -953,10 +956,10 @@ int engine_cuda_build_pots_pack(Potential **pots,
         dpd_datai[i * ENGINE_CUDA_DPD_WIDTH_DATAI] = p->flags;
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-extern "C" int engine_cuda_boundary_conditions_load(struct engine *e) {
+extern "C" HRESULT engine_cuda_boundary_conditions_load(struct engine *e) {
 
     BoundaryCondition bcs[] = {
         e->boundary_conditions.left, 
@@ -994,7 +997,7 @@ extern "C" int engine_cuda_boundary_conditions_load(struct engine *e) {
             bcs[bi].potenntials, e->max_type, 
             pind, pot_alpha, pot_c, pot_dataf, pot_datai, 
             dpd_cf, dpd_dataf, dpd_datai, 
-            max_coeffs, max_pots, max_dpds, num_pots), engine_err_ok) ;
+            max_coeffs, max_pots, max_dpds, num_pots), S_OK) ;
 
         pots_bcs_max[bi] = max_pots;
         dpds_bcs_max[bi] = max_dpds;
@@ -1007,31 +1010,31 @@ extern "C" int engine_cuda_boundary_conditions_load(struct engine *e) {
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_alpha[did][bi], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
             cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_alpha[did][bi], 0, 0, pot_alpha.data(), sizeof(float) * pot_alpha.size(), cudaMemcpyHostToDevice));
-            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_alpha[did][bi], cuda_pot_bcs_alpha[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_alpha[did][bi], cuda_pot_bcs_alpha[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_c[did][bi], &channelDesc_float, potential_chunk * max_coeffs, pot_c.size() / (potential_chunk * max_coeffs), 0));
             cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_c[did][bi], 0, 0, pot_c.data(), sizeof(float) * pot_c.size(), cudaMemcpyHostToDevice));
-            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_c[did][bi], cuda_pot_bcs_c[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_c[did][bi], cuda_pot_bcs_c[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_dataf[did][bi], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
             cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_dataf[did][bi], 0, 0, pot_dataf.data(), sizeof(float) * pot_dataf.size(), cudaMemcpyHostToDevice));
-            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_dataf[did][bi], cuda_pot_bcs_dataf[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_dataf[did][bi], cuda_pot_bcs_dataf[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_datai[did][bi], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
             cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_datai[did][bi], 0, 0, pot_datai.data(), sizeof(int) * pot_datai.size(), cudaMemcpyHostToDevice));
-            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_datai[did][bi], cuda_pot_bcs_datai[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_datai[did][bi], cuda_pot_bcs_datai[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_dpd_bcs_cfs[did][bi], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
             cuda_safe_call(cudaMemcpyToArray(cuda_dpd_bcs_cfs[did][bi], 0, 0, dpd_cf.data(), sizeof(float) * dpd_cf.size(), cudaMemcpyHostToDevice));
-            cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_cfs[did][bi], cuda_dpd_bcs_cfs[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_cfs[did][bi], cuda_dpd_bcs_cfs[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_dpd_bcs_dataf[did][bi], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
             cuda_safe_call(cudaMemcpyToArray(cuda_dpd_bcs_dataf[did][bi], 0, 0, dpd_dataf.data(), sizeof(float) * dpd_dataf.size(), cudaMemcpyHostToDevice));
-            cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_dataf[did][bi], cuda_dpd_bcs_dataf[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_dataf[did][bi], cuda_dpd_bcs_dataf[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_dpd_bcs_datai[did][bi], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
             cuda_safe_call(cudaMemcpyToArray(cuda_dpd_bcs_datai[did][bi], 0, 0, dpd_datai.data(), sizeof(int) * dpd_datai.size(), cudaMemcpyHostToDevice));
-            cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_datai[did][bi], cuda_dpd_bcs_datai[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_datai[did][bi], cuda_dpd_bcs_datai[did][bi]), S_OK);
 
         }
     }
@@ -1065,17 +1068,15 @@ extern "C" int engine_cuda_boundary_conditions_load(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 /**
  * @brief Finalize boundary conditions on device. 
  * 
  * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
-int engine_cuda_boundary_conditions_finalize(struct engine *e) {
+HRESULT engine_cuda_boundary_conditions_finalize(struct engine *e) {
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -1085,48 +1086,41 @@ int engine_cuda_boundary_conditions_finalize(struct engine *e) {
 
             cuda_safe_call(cudaFree(pind_bcs_cuda[did][bi]));
 
-            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_alpha[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_alpha[did][bi]), S_OK);
             cuda_safe_call(cudaFreeArray(cuda_pot_bcs_alpha[did][bi]));
 
-            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_c[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_c[did][bi]), S_OK);
             cuda_safe_call(cudaFreeArray(cuda_pot_bcs_c[did][bi]));
 
-            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_dataf[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_dataf[did][bi]), S_OK);
             cuda_safe_call(cudaFreeArray(cuda_pot_bcs_dataf[did][bi]));
 
-            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_datai[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_bcs_datai[did][bi]), S_OK);
             cuda_safe_call(cudaFreeArray(cuda_pot_bcs_datai[did][bi]));
 
-            cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_bcs_cfs[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_bcs_cfs[did][bi]), S_OK);
             cuda_safe_call(cudaFreeArray(cuda_dpd_bcs_cfs[did][bi]));
 
-            cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_bcs_dataf[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_bcs_dataf[did][bi]), S_OK);
             cuda_safe_call(cudaFreeArray(cuda_dpd_bcs_dataf[did][bi]));
 
-            cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_bcs_datai[did][bi]), engine_err_ok);
+            cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_bcs_datai[did][bi]), S_OK);
             cuda_safe_call(cudaFreeArray(cuda_dpd_bcs_datai[did][bi]));
 
         }
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Refresh boundary conditions on device. Can be safely called while on device. 
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_boundary_conditions_refresh(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_boundary_conditions_refresh(struct engine *e) {
     
     if(engine_cuda_boundary_conditions_finalize(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(engine_cuda_boundary_conditions_load(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -1136,7 +1130,7 @@ extern "C" int cuda::engine_cuda_boundary_conditions_refresh(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 
@@ -2958,16 +2952,7 @@ __global__ void runner_run_cuda(float *forces, float *fluxes, int *counts, int *
 
 }
 
-
-/**
- * @brief Offload and compute the nonbonded interactions on a CUDA device.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-extern "C" int cuda::engine_nonbond_cuda(struct engine *e) {
+extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
     int k, cid, did, pid, fid, maxcount = 0;
     cudaStream_t stream;
@@ -2992,7 +2977,7 @@ extern "C" int cuda::engine_nonbond_cuda(struct engine *e) {
          cudaEventCreate(&toc_load) != cudaSuccess ||
          cudaEventCreate(&toc_run) != cudaSuccess ||
          cudaEventCreate(&toc_unload) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error(E_FAIL);
     
     /* Start the clock on the first stream. */
     cuda_safe_call(cudaEventRecord(tic, (cudaStream_t)e->streams[e->nr_devices-1]));
@@ -3141,10 +3126,10 @@ extern "C" int cuda::engine_nonbond_cuda(struct engine *e) {
     // Initialize the return buffers while waiting
     for(did = 0; did < e->nr_devices ; did ++) {
         if((forces_cuda[did] = (float *)malloc(sizeof(float) * 4 * s->nr_parts)) == NULL)
-            return error(engine_err_malloc);
+            return error(MDCERR_malloc);
         if(nr_states > 0) 
             if((fluxes_next_cuda[did] = (float *)malloc(sizeof(float) * nr_states * s->nr_parts)) == NULL)
-                return error(engine_err_malloc);
+                return error(MDCERR_malloc);
     }
 
 	for(did = 0; did < e->nr_devices ; did ++) {
@@ -3275,7 +3260,7 @@ extern "C" int cuda::engine_nonbond_cuda(struct engine *e) {
     /* Stop the clock on the last stream. */
     if(cudaEventRecord(toc_unload, (cudaStream_t)e->streams[e->nr_devices-1]) != cudaSuccess ||
          cudaStreamSynchronize((cudaStream_t)e->streams[e->nr_devices-1]) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error(E_FAIL);
     
     /* Check for any missed CUDA errors. */
     cuda_safe_call(cudaPeekAtLastError());
@@ -3284,28 +3269,17 @@ extern "C" int cuda::engine_nonbond_cuda(struct engine *e) {
     if(cudaEventElapsedTime(&ms_load, tic, toc_load) != cudaSuccess ||
          cudaEventElapsedTime(&ms_run, toc_load, toc_run) != cudaSuccess ||
          cudaEventElapsedTime(&ms_unload, toc_run, toc_unload) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error(E_FAIL);
     e->timers[ engine_timer_cuda_load ] += ms_load / 1000 * CPU_TPS;
     e->timers[ engine_timer_cuda_dopairs ] += ms_run / 1000 * CPU_TPS;
     e->timers[ engine_timer_cuda_unload ] += ms_unload / 1000 * CPU_TPS;
     
     /* Go away. */
-    return engine_err_ok;
+    return S_OK;
     
 }
 
-
-
-/**
- * @brief Load the cell data onto the CUDA device.
- *
- * @param e The #engine.
- *
- * @return The maximum number of parts per cell or < 0
- *      on error (see #engine_err).
- */
- 
-extern "C" int cuda::engine_cuda_load_parts(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_load_parts(struct engine *e) {
     
     int k, did, cid, pid, maxcount = 0;
     cuda::Particle *parts_cuda = (cuda::Particle*)e->parts_cuda_local;
@@ -3375,21 +3349,11 @@ extern "C" int cuda::engine_cuda_load_parts(struct engine *e) {
     }
     
     /* Our work is done here. */
-    return maxcount;
+    return S_OK;
 
 }
-    
-    
 
-/**
- * @brief Load the cell data from the CUDA device.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-extern "C" int cuda::engine_cuda_unload_parts(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_unload_parts(struct engine *e) {
 
     int k, did, cid, pid;
     struct TissueForge::Particle *p;
@@ -3408,7 +3372,7 @@ extern "C" int cuda::engine_cuda_unload_parts(struct engine *e) {
     
         /* Get the forces from the device. */
         if((forces_cuda[did] = (float *)malloc(sizeof(float) * 4 * s->nr_parts)) == NULL)
-            return error(engine_err_malloc);
+            return error(MDCERR_malloc);
         cuda_safe_call(cudaMemcpyAsync(forces_cuda[did], e->forces_cuda[did], sizeof(float) * 4 * s->nr_parts, cudaMemcpyDeviceToHost, stream));
 
         /* Get the potential energy. */
@@ -3452,7 +3416,7 @@ extern "C" int cuda::engine_cuda_unload_parts(struct engine *e) {
     }
         
     /* Our work is done here. */
-    return engine_err_ok;
+    return S_OK;
 
 }
 
@@ -3460,11 +3424,8 @@ extern "C" int cuda::engine_cuda_unload_parts(struct engine *e) {
  * @brief Load the queues onto the CUDA device.
  *
  * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
- 
-int engine_cuda_queues_load(struct engine *e) {
+HRESULT engine_cuda_queues_load(struct engine *e) {
     
     int did, nr_queues, qid, k, qsize, nr_tasks = e->s.nr_tasks;
     struct cudaDeviceProp prop;
@@ -3492,7 +3453,7 @@ int engine_cuda_queues_load(struct engine *e) {
 
         /* Allocate a temporary buffer for the queue data. */
         if((data = (int *)malloc(sizeof(int) * qsize)) == NULL)
-            return error(engine_err_malloc);
+            return error(MDCERR_malloc);
 
         /* Set the number of queues. */
         e->nr_queues_cuda = nr_queues;
@@ -3537,7 +3498,7 @@ int engine_cuda_queues_load(struct engine *e) {
     }
         
     /* Fade to grey. */
-    return engine_err_ok;
+    return S_OK;
 
 }
 
@@ -3567,15 +3528,7 @@ __global__ void engine_cuda_queues_finalize_device(int nr_queues) {
     }
 }
 
-/**
- * @brief Close the run configuration on the CUDA device.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-int cuda::engine_cuda_queues_finalize(struct engine *e) {
+HRESULT cuda::engine_cuda_queues_finalize(struct engine *e) {
 
     /* Loop over the devices. */
     for(int did = 0 ; did < e->nr_devices ; did++) {
@@ -3592,17 +3545,10 @@ int cuda::engine_cuda_queues_finalize(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Load the potentials onto the CUDA device
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_load_pots(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_load_pots(struct engine *e) {
     int i, j, nr_pots, nr_pots_cluster;
     int nr_devices = e->nr_devices;
     std::vector<int> pind, pind_cluster;
@@ -3622,12 +3568,12 @@ extern "C" int cuda::engine_cuda_load_pots(struct engine *e) {
         e->p, e->max_type * e->max_type, 
         pind, pot_alpha, pot_c, pot_dataf, pot_datai, 
         dpd_cf, dpd_dataf, dpd_datai, 
-        max_coeffs, max_pots, max_dpds, nr_pots), engine_err_ok);
+        max_coeffs, max_pots, max_dpds, nr_pots), S_OK);
     cuda_safe_call_e(engine_cuda_build_pots_pack(
         e->p_cluster, e->max_type * e->max_type, 
         pind_cluster, pot_alpha_cluster, pot_c_cluster, pot_dataf_cluster, pot_datai_cluster, 
         dpd_cf_cluster, dpd_dataf_cluster, dpd_datai_cluster, 
-        max_coeffs_cluster, max_pots_cluster, max_dpds_cluster, nr_pots_cluster), engine_err_ok);
+        max_coeffs_cluster, max_pots_cluster, max_dpds_cluster, nr_pots_cluster), S_OK);
     
     /* Store pind as a constant. */
 
@@ -3655,72 +3601,72 @@ extern "C" int cuda::engine_cuda_load_pots(struct engine *e) {
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_alpha[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_alpha[did], 0, 0, pot_alpha.data(), sizeof(float) * pot_alpha.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_alpha[did], cuda_pot_alpha[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_alpha[did], cuda_pot_alpha[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_alpha, &tex_pot_alpha[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_alpha[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha_cluster.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_alpha[did], 0, 0, pot_alpha_cluster.data(), sizeof(float) * pot_alpha_cluster.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_alpha[did], cuda_pot_cluster_alpha[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_alpha[did], cuda_pot_cluster_alpha[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_alpha, &tex_pot_cluster_alpha[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_c[did], &channelDesc_float, potential_chunk * max_coeffs, pot_c.size() / (potential_chunk * max_coeffs), 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_c[did], 0, 0, pot_c.data(), sizeof(float) * pot_c.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_c[did], cuda_pot_c[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_c[did], cuda_pot_c[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_c, &tex_pot_c[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_c[did], &channelDesc_float, potential_chunk * max_coeffs_cluster, pot_c_cluster.size() / (potential_chunk * max_coeffs_cluster), 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_c[did], 0, 0, pot_c_cluster.data(), sizeof(float) * pot_c_cluster.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_c[did], cuda_pot_cluster_c[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_c[did], cuda_pot_cluster_c[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_c, &tex_pot_cluster_c[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_dataf[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_dataf[did], 0, 0, pot_dataf.data(), sizeof(float) * pot_dataf.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_dataf[did], cuda_pot_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_dataf[did], cuda_pot_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_dataf, &tex_pot_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_dataf[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_dataf[did], 0, 0, pot_dataf_cluster.data(), sizeof(float) * pot_dataf_cluster.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_dataf[did], cuda_pot_cluster_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_dataf[did], cuda_pot_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_dataf, &tex_pot_cluster_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_datai[did], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_datai[did], 0, 0, pot_datai.data(), sizeof(int) * pot_datai.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_datai[did], cuda_pot_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_datai[did], cuda_pot_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_datai, &tex_pot_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_datai[did], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_datai[did], 0, 0, pot_datai_cluster.data(), sizeof(int) * pot_datai_cluster.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_datai[did], cuda_pot_cluster_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_datai[did], cuda_pot_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_datai, &tex_pot_cluster_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cfs[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cfs[did], 0, 0, dpd_cf.data(), sizeof(float) * dpd_cf.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cfs[did], cuda_dpd_cfs[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cfs[did], cuda_dpd_cfs[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cfs, &tex_dpd_cfs[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_cfs[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cluster_cfs[did], 0, 0, dpd_cf_cluster.data(), sizeof(float) * dpd_cf_cluster.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_cfs[did], cuda_dpd_cluster_cfs[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_cfs[did], cuda_dpd_cluster_cfs[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_cfs, &tex_dpd_cluster_cfs[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_dataf[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_dpd_dataf[did], 0, 0, dpd_dataf.data(), sizeof(float) * dpd_dataf.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_dataf[did], cuda_dpd_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_dataf[did], cuda_dpd_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_dataf, &tex_dpd_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_dataf[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cluster_dataf[did], 0, 0, dpd_dataf_cluster.data(), sizeof(float) * dpd_dataf_cluster.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_dataf[did], cuda_dpd_cluster_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_dataf[did], cuda_dpd_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_dataf, &tex_dpd_cluster_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_datai[did], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_dpd_datai[did], 0, 0, dpd_datai.data(), sizeof(int) * dpd_datai.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_datai[did], cuda_dpd_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_datai[did], cuda_dpd_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_datai, &tex_dpd_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_datai[did], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
         cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cluster_datai[did], 0, 0, dpd_datai_cluster.data(), sizeof(int) * dpd_datai_cluster.size(), cudaMemcpyHostToDevice));
-        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_datai[did], cuda_dpd_cluster_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_datai[did], cuda_dpd_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_datai, &tex_dpd_cluster_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMemcpyToSymbol(cuda_pots_max, &max_pots, sizeof(int), 0, cudaMemcpyHostToDevice));
@@ -3732,17 +3678,10 @@ extern "C" int cuda::engine_cuda_load_pots(struct engine *e) {
     e->nr_pots_cuda = nr_pots;
     e->nr_pots_cluster_cuda = nr_pots_cluster;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Unload the potentials on the CUDA device
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_unload_pots(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_unload_pots(struct engine *e) {
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3750,46 +3689,46 @@ extern "C" int cuda::engine_cuda_unload_pots(struct engine *e) {
 
         // Free the potentials.
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_alpha[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_alpha[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_alpha[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_alpha[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_alpha[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_cluster_alpha[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_c[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_c[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_c[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_c[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_c[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_cluster_c[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_dataf[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_dataf[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_cluster_dataf[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_datai[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_datai[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_pot_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_pot_cluster_datai[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cfs[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cfs[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_dpd_cfs[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cluster_cfs[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cluster_cfs[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_dpd_cluster_cfs[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_dataf[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_dpd_dataf[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cluster_dataf[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_dpd_cluster_dataf[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_datai[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_dpd_datai[did]));
 
-        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cluster_datai[did]), engine_err_ok);
+        cuda_safe_call_e(engine_cuda_texture_finalize(tex_dpd_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaFreeArray(cuda_dpd_cluster_datai[did]));
         
         cuda_safe_call(::cudaFree(e->pind_cuda[did]));
@@ -3801,25 +3740,16 @@ extern "C" int cuda::engine_cuda_unload_pots(struct engine *e) {
     e->nr_pots_cuda = 0;
     e->nr_pots_cluster_cuda = 0;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Refresh the potentials on the CUDA device. 
- * 
- * Can be safely called while on the CUDA device to reload all potential data from the engine. 
- * 
- * @param e The #engine
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err)
- */
-extern "C" int cuda::engine_cuda_refresh_pots(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_refresh_pots(struct engine *e) {
     
     if(engine_cuda_unload_pots(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(engine_cuda_load_pots(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3829,7 +3759,7 @@ extern "C" int cuda::engine_cuda_refresh_pots(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 
@@ -3837,14 +3767,12 @@ extern "C" int cuda::engine_cuda_refresh_pots(struct engine *e) {
  * @brief Allocates particle buffers. Must be called before running on a CUDA device. 
  * 
  * @param e The #engine
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
-int engine_cuda_allocate_particles(struct engine *e) {
+HRESULT engine_cuda_allocate_particles(struct engine *e) {
 
     /* Allocate the particle buffer. */
     if((e->parts_cuda_local = (cuda::Particle*)malloc(sizeof(cuda::Particle) * e->s.size_parts)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
 
     /* Allocate the particle and force data. */
     for(int did = 0; did < e->nr_devices; did++) {
@@ -3854,7 +3782,7 @@ int engine_cuda_allocate_particles(struct engine *e) {
         cuda_safe_call (cudaMalloc(&e->forces_cuda[did], sizeof(float) * 4 * e->s.size_parts));
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 
@@ -3862,10 +3790,8 @@ int engine_cuda_allocate_particles(struct engine *e) {
  * @brief Closes particle buffers. 
  * 
  * @param e The #engine
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
-int engine_cuda_finalize_particles(struct engine *e) {
+HRESULT engine_cuda_finalize_particles(struct engine *e) {
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3883,29 +3809,21 @@ int engine_cuda_finalize_particles(struct engine *e) {
 
     free(e->parts_cuda_local);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-
-/**
- * @brief Refreshes particle buffers. Can be safely used to resize buffers while running on CUDA device. 
- * 
- * @param e The #engine
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_refresh_particles(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_refresh_particles(struct engine *e) {
 
     if(engine_cuda_finalize_particles(e) < 0)
-        return cuda_error(engine_err_cuda);
+        return cuda_error(E_FAIL);
 
     if(engine_cuda_allocate_particles(e) < 0)
-        return cuda_error(engine_err_cuda);
+        return cuda_error(E_FAIL);
 
     bool is_stateful = e->nr_fluxes_cuda > 1;
 
     if(is_stateful && engine_cuda_refresh_particle_states(e) < 0) 
-        return error(engine_err_cuda);
+        return error(MDCERR_cuda);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3915,21 +3833,21 @@ extern "C" int cuda::engine_cuda_refresh_particles(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-extern "C" int cuda::engine_cuda_allocate_particle_states(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_allocate_particle_states(struct engine *e) {
     int nr_states = e->nr_fluxes_cuda - 1;
 
     if(nr_states <= 0 || nr_states == engine_cuda_nr_states) 
-        return engine_err_ok;
+        return S_OK;
 
     if(engine_cuda_nr_states > 0) 
         if(engine_cuda_finalize_particle_states(e) < 0) 
-            return error(engine_err);
+            return error(MDCERR_cuda);
     
     if((e->part_states_cuda_local = (float*)malloc(sizeof(float) * e->s.size_parts * nr_states)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3941,12 +3859,12 @@ extern "C" int cuda::engine_cuda_allocate_particle_states(struct engine *e) {
 
     engine_cuda_nr_states = nr_states;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-extern "C" int cuda::engine_cuda_finalize_particle_states(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_finalize_particle_states(struct engine *e) {
     if(engine_cuda_nr_states == 0) 
-        return engine_err_ok;
+        return S_OK;
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3962,15 +3880,15 @@ extern "C" int cuda::engine_cuda_finalize_particle_states(struct engine *e) {
 
     engine_cuda_nr_states = 0;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-extern "C" int cuda::engine_cuda_refresh_particle_states(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_refresh_particle_states(struct engine *e) {
     if(engine_cuda_finalize_particle_states(e) < 0)
-        return cuda_error(engine_err_cuda);
+        return cuda_error(E_FAIL);
 
     if(engine_cuda_allocate_particle_states(e) < 0)
-        return cuda_error(engine_err_cuda);
+        return cuda_error(E_FAIL);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3980,19 +3898,10 @@ extern "C" int cuda::engine_cuda_refresh_particle_states(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-
-/**
- * @brief Load the potentials and cell pairs onto the CUDA device.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-extern "C" int cuda::engine_cuda_load(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_load(struct engine *e) {
 
     int i, k, nr_tasks, c1,c2;
     int did, *cellsorts;
@@ -4022,11 +3931,11 @@ extern "C" int cuda::engine_cuda_load(struct engine *e) {
 
     /* Copy the cell origins, dimensions and flags to the device. */
     if((corig = (float *)malloc(sizeof(float) * s->nr_cells * 3)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     if((cdims = (float3*)malloc(sizeof(float3) * s->nr_cells)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     if((cflags = (unsigned int*)malloc(sizeof(unsigned int) * s->nr_cells)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     
     auto func_copy_cell_data = [&s, &corig, &cdims, &cflags](int _i) -> void {
         corig[3*_i + 0] = s->cells[_i].origin[0];
@@ -4070,12 +3979,12 @@ extern "C" int cuda::engine_cuda_load(struct engine *e) {
 
     /* Allocate and fill the task list. */
     if((tasks_cuda = (struct task_cuda *)malloc(sizeof(struct task_cuda) * s->nr_tasks)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     if((cellsorts = (int *)malloc(sizeof(int) * s->nr_tasks)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     for(did = 0 ;did < nr_devices ; did++) {
         if((e->cells_cuda_local[did] = (int *)malloc(sizeof(int) * s->nr_cells)) == NULL)
-            return error(engine_err_malloc);
+            return error(MDCERR_malloc);
         e->cells_cuda_nr[did]=0;
         cuda_safe_call(cudaSetDevice(e->devices[did]));
         /* Select the tasks for each device ID. */  
@@ -4171,7 +4080,7 @@ extern "C" int cuda::engine_cuda_load(struct engine *e) {
 	    /* Allocate the cell counts and offsets. */
         if((e->counts_cuda_local[did] = (int *)malloc(sizeof(int) * s->nr_cells)) == NULL ||
            (e->ind_cuda_local[did] = (int *)malloc(sizeof(int) * s->nr_cells)) == NULL)
-            return error(engine_err_malloc);
+            return error(MDCERR_malloc);
         cuda_safe_call(cudaMalloc(&e->counts_cuda[did], sizeof(int) * s->nr_cells));
         cuda_safe_call(cudaMalloc(&e->ind_cuda[did], sizeof(int) * s->nr_cells));
         
@@ -4183,26 +4092,26 @@ extern "C" int cuda::engine_cuda_load(struct engine *e) {
 
     // Allocate boundary conditions
     if(engine_cuda_boundary_conditions_load(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
         
     if(engine_cuda_allocate_particles(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(engine_cuda_load_pots(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(engine_cuda_load_fluxes(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
         
     if(engine_cuda_allocate_particle_states(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
     
     /* Init the pair queue on the device. */
     if(engine_cuda_queues_load(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
         
     /* He's done it! */
-    return engine_err_ok;
+    return S_OK;
     
 }
 
@@ -4211,25 +4120,23 @@ extern "C" int cuda::engine_cuda_load(struct engine *e) {
  * @brief Removes the potentials and cell pairs on the CUDA device.
  *
  * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
-extern "C" int engine_parts_finalize(struct engine *e) {
+extern "C" HRESULT engine_parts_finalize(struct engine *e) {
 
     if(engine_cuda_boundary_conditions_finalize(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(cuda::engine_cuda_unload_pots(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(engine_cuda_finalize_particles(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(cuda::engine_cuda_finalize_particle_states(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(cuda::engine_cuda_unload_fluxes(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -4247,43 +4154,26 @@ extern "C" int engine_parts_finalize(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Unload the potentials and cell pairs on the CUDA device.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-extern "C" int cuda::engine_cuda_finalize(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_finalize(struct engine *e) {
     if(engine_parts_finalize(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(engine_cuda_queues_finalize(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Refresh the engine image on the CUDA device. 
- * 
- * Can be safely called while on the CUDA device to reload all data from the engine. 
- * 
- * @param e The #engine
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err)
- */
-extern "C" int cuda::engine_cuda_refresh(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_refresh(struct engine *e) {
     
     if(engine_cuda_finalize(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     if(engine_cuda_load(e) < 0)
-        return error(engine_err);
+        return error(MDCERR_cuda);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -4293,5 +4183,5 @@ extern "C" int cuda::engine_cuda_refresh(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }

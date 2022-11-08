@@ -51,103 +51,73 @@
 #include <tfDihedral.h>
 #include <tfExclusion.h>
 #include <tfEngine.h>
+#include <tfError.h>
 
 
 using namespace TissueForge;
 
 
 /* the error macro. */
-#define error(id)				(engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
-/** 
- * @brief Wait for an asynchronous data exchange to finalize.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
 #ifdef WITH_MPI
-int engine_exchange_rigid_wait(struct engine *e) {
+HRESULT engine_exchange_rigid_wait(struct engine *e) {
 
     /* Try to grab the xchg_mutex, which will only be free while
        the async routine is waiting on a condition. */
     if(pthread_mutex_lock(&e->xchg2_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* If the async exchange was started but is not running,
        wait for a signal. */
     while(e->xchg2_started && ~e->xchg2_running)
         if(pthread_cond_wait(&e->xchg2_cond, &e->xchg2_mutex) != 0)
-            return error(engine_err_pthread);
+            return error(MDCERR_pthread);
         
     /* We don't actually need this, so release it again. */
     if(pthread_mutex_unlock(&e->xchg2_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* The end of the tunnel. */
-    return engine_err_ok;
+    return S_OK;
 
     }
 #endif
 
-
-/**
- * @brief Exchange data with other nodes asynchronously.
- *
- * @param e The #engine to work with.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- *
- * Starts a new thread which handles the particle exchange. At the
- * start of the exchange, ghost cells are marked in the taboo-list
- * and only freed once their data has been received.
- *
- * The function #engine_exchange_wait can be used to wait for
- * the asynchronous communication to finish.
- */
-
 #ifdef WITH_MPI 
-int engine_exchange_rigid_async(struct engine *e) {
+HRESULT engine_exchange_rigid_async(struct engine *e) {
 
     /* Check the input. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
 
     /* Bail if not in parallel. */
     if(!(e->flags & engine_flag_mpi) || e->nr_nodes <= 1)
-        return engine_err_ok;
+        return S_OK;
         
     /* Get a hold of the exchange mutex. */
     if(pthread_mutex_lock(&e->xchg2_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* Tell the async thread to get to work. */
     e->xchg2_started = 1;
     if(pthread_cond_signal(&e->xchg2_cond) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* Release the exchange mutex and let the async run. */
     if(pthread_mutex_unlock(&e->xchg2_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* Done (for now). */
-    return engine_err_ok;
+    return S_OK;
         
     }
 #endif
-    
-    
-/**
- * @brief Exchange only rigid parts which span the node edges.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
+
+
 #ifdef WITH_MPI
-int engine_exchange_rigid(struct engine *e) {
+HRESULT engine_exchange_rigid(struct engine *e) {
 
     int i, j, k, ind, res;
     int counts[ e->nr_nodes ], next[ e->nr_nodes ];
@@ -158,7 +128,7 @@ int engine_exchange_rigid(struct engine *e) {
 
     /* Check the input. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
 
     /* Initialize the request queues. */
     for(k = 0 ; k < e->nr_nodes ; k++) {
@@ -191,7 +161,7 @@ int engine_exchange_rigid(struct engine *e) {
     for(i = 0 ; i < e->nr_nodes ; i++)
         if(e->send[i].count > 0) {
             if((buff_send[i] = (struct part *)malloc(sizeof(struct part) * totals_send[i])) == NULL)
-                return error(engine_err_malloc);
+                return error(MDCERR_malloc);
             next[i] = 0;
             }
     for(k = e->rigids_local ; k < e->rigids_semilocal ; k++) {
@@ -243,7 +213,7 @@ int engine_exchange_rigid(struct engine *e) {
 
     /* Wait for all the recvs to come in. */
     /* if((res = MPI_Waitall(e->nr_nodes, reqs_recv, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi); */
+        return error(MDCERR_mpi); */
         
     /* Unpack the received data. */
     #pragma omp parallel for schedule(static), private(i,ind,res,k)
@@ -266,7 +236,7 @@ int engine_exchange_rigid(struct engine *e) {
         
     /* Wait for all the sends to come in. */
     if((res = MPI_Waitall(e->nr_nodes, reqs_send, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi);
+        return error(MDCERR_mpi);
     /* printf("engine_exchange[%i]: all send/recv completed.\n", e->nodeID); */
         
     /* Free the send and recv buffers. */
@@ -279,21 +249,14 @@ int engine_exchange_rigid(struct engine *e) {
         
 
     /* The end of the tunnel. */
-    return engine_err_ok;
+    return S_OK;
 
     }
 #endif 
 
 
-/**
- * @brief Exchange only rigid parts which span the node edges.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
 #ifdef WITH_MPI
-int engine_exchange_rigid_async_run(struct engine *e) {
+HRESULT engine_exchange_rigid_async_run(struct engine *e) {
 
     int i, j, k, ind, res, nr_neigh;
     int counts[ e->nr_nodes ], next[ e->nr_nodes ];
@@ -304,7 +267,7 @@ int engine_exchange_rigid_async_run(struct engine *e) {
 
     /* Check the input. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
 
     /* Initialize the request queues. */
     for(k = 0 ; k < e->nr_nodes ; k++) {
@@ -319,7 +282,7 @@ int engine_exchange_rigid_async_run(struct engine *e) {
         
     /* Start by acquiring the xchg_mutex. */
     if(pthread_mutex_lock(&e->xchg2_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
 
     /* Main loop... */
     while(1) {
@@ -327,12 +290,12 @@ int engine_exchange_rigid_async_run(struct engine *e) {
         /* Wait for a signal to start. */
         e->xchg_running = 0;
         if(pthread_cond_wait(&e->xchg2_cond, &e->xchg2_mutex) != 0)
-            return error(engine_err_pthread);
+            return error(MDCERR_pthread);
             
         /* Tell the world I'm alive! */
         e->xchg2_started = 0; e->xchg2_running = 1;
         if(pthread_cond_signal(&e->xchg2_cond) != 0)
-            return error(engine_err_pthread);
+            return error(MDCERR_pthread);
         
         /* Run through the cells and fill the total counts. */
         bzero(totals_send, sizeof(int) * e->nr_nodes);
@@ -359,7 +322,7 @@ int engine_exchange_rigid_async_run(struct engine *e) {
         for(i = 0 ; i < e->nr_nodes ; i++)
             if(e->send[i].count > 0) {
                 if((buff_send[i] = (struct part *)malloc(sizeof(struct part) * totals_send[i])) == NULL)
-                    return error(engine_err_malloc);
+                    return error(MDCERR_malloc);
                 next[i] = 0;
                 }
         for(k = e->rigids_local ; k < e->rigids_semilocal ; k++) {
@@ -411,7 +374,7 @@ int engine_exchange_rigid_async_run(struct engine *e) {
 
         /* Wait for all the recvs to come in. */
         /* if((res = MPI_Waitall(e->nr_nodes, reqs_recv, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-            return error(engine_err_mpi); */
+            return error(MDCERR_mpi); */
 
         /* Unpack the received data. */
         #pragma omp parallel for schedule(static), private(i,ind,res,k)
@@ -434,7 +397,7 @@ int engine_exchange_rigid_async_run(struct engine *e) {
 
         /* Wait for all the sends to come in. */
         if((res = MPI_Waitall(e->nr_nodes, reqs_send, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-            return error(engine_err_mpi);
+            return error(MDCERR_mpi);
         /* printf("engine_exchange[%i]: all send/recv completed.\n", e->nodeID); */
 
         /* Free the send and recv buffers. */
@@ -449,63 +412,39 @@ int engine_exchange_rigid_async_run(struct engine *e) {
         
 
     /* The end of the tunnel. */
-    return engine_err_ok;
+    return S_OK;
 
     }
 #endif 
 
-
-/** 
- * @brief Wait for an asynchronous data exchange to finalize.
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
  
 #ifdef WITH_MPI
-int engine_exchange_wait(struct engine *e) {
+HRESULT engine_exchange_wait(struct engine *e) {
 
     /* Try to grab the xchg_mutex, which will only be free while
        the async routine is waiting on a condition. */
     if(pthread_mutex_lock(&e->xchg_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* If the async exchange was started but is not running,
        wait for a signal. */
     while(e->xchg_started && !(e->xchg_running))
         if(pthread_cond_wait(&e->xchg_cond, &e->xchg_mutex) != 0)
-            return error(engine_err_pthread);
+            return error(MDCERR_pthread);
         
     /* We don't actually need this, so release it again. */
     if(pthread_mutex_unlock(&e->xchg_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* The end of the tunnel. */
-    return engine_err_ok;
+    return S_OK;
 
     }
 #endif
 
 
-/**
- * @brief Exchange data with other nodes asynchronously.
- *
- * @param e The #engine to work with.
- * @param comm The @c MPI_Comm over which to exchange data.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- *
- * Starts a new thread which handles the particle exchange. At the
- * start of the exchange, ghost cells are marked in the taboo-list
- * and only freed once their data has been received.
- *
- * The function #engine_exchange_wait can be used to wait for
- * the asynchronous communication to finish.
- */
-
 #ifdef WITH_MPI 
-int engine_exchange_async_run(struct engine *e) {
+HRESULT engine_exchange_async_run(struct engine *e) {
 
     int i, k, ind, cid, res, nr_neigh;
     int *counts_in[ e->nr_nodes ], *counts_out[ e->nr_nodes ];
@@ -518,7 +457,7 @@ int engine_exchange_async_run(struct engine *e) {
 
     /* Check the input. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
 
     /* Get local copies of some data. */
     s = &e->s;
@@ -538,7 +477,7 @@ int engine_exchange_async_run(struct engine *e) {
         
     /* Start by acquiring the xchg_mutex. */
     if(pthread_mutex_lock(&e->xchg_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
 
     /* Main loop... */
     while(1) {
@@ -546,12 +485,12 @@ int engine_exchange_async_run(struct engine *e) {
         /* Wait for a signal to start. */
         e->xchg_running = 0;
         if(pthread_cond_wait(&e->xchg_cond, &e->xchg_mutex) != 0)
-            return error(engine_err_pthread);
+            return error(MDCERR_pthread);
             
         /* Tell the world I'm alive! */
         e->xchg_started = 0; e->xchg_running = 1;
         if(pthread_cond_signal(&e->xchg_cond) != 0)
-            return error(engine_err_pthread);
+            return error(MDCERR_pthread);
         
         /* Start by packing and sending/receiving a counts array for each send queue. */
         #pragma omp parallel for schedule(static), private(i,k)
@@ -640,7 +579,7 @@ int engine_exchange_async_run(struct engine *e) {
 
         /* Wait for all the recvs to come in. */
         /* if((res = MPI_Waitall(e->nr_nodes, reqs_recv, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-            return error(engine_err_mpi); */
+            return error(MDCERR_mpi); */
 
         /* Unpack the received data. */
         #pragma omp parallel for schedule(static), private(i,ind,finger,k,c,cid)
@@ -676,9 +615,9 @@ int engine_exchange_async_run(struct engine *e) {
 
         /* Wait for all the sends to come in. */
         if((res = MPI_Waitall(e->nr_nodes, reqs_send, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-            return error(engine_err_mpi);
+            return error(MDCERR_mpi);
         if((res = MPI_Waitall(e->nr_nodes, reqs_send2, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-            return error(engine_err_mpi);
+            return error(MDCERR_mpi);
         /* printf("engine_exchange[%i]: all send/recv completed.\n", e->nodeID); */
 
         /* Free the send and recv buffers. */
@@ -697,75 +636,51 @@ int engine_exchange_async_run(struct engine *e) {
         
     }
 #endif
-        
-        
-/**
- * @brief Exchange data with other nodes asynchronously.
- *
- * @param e The #engine to work with.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- *
- * Starts a new thread which handles the particle exchange. At the
- * start of the exchange, ghost cells are marked in the taboo-list
- * and only freed once their data has been received.
- *
- * The function #engine_exchange_wait can be used to wait for
- * the asynchronous communication to finish.
- */
+
 
 #ifdef WITH_MPI 
-int engine_exchange_async(struct engine *e) {
+HRESULT engine_exchange_async(struct engine *e) {
 
     int k, cid;
 
     /* Check the input. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
 
     /* Bail if not in parallel. */
     if(!(e->flags & engine_flag_mpi) || e->nr_nodes <= 1)
-        return engine_err_ok;
+        return S_OK;
         
     /* Mark all the ghost cells as taboo and flush them. */
     for(k = 0 ; k < e->s.nr_ghost ; k++) {
         cid = e->s.cid_ghost[k];
         e->s.cells_taboo[ cid ] += 2;
         if(cell_flush(&e->s.cells[cid], e->s.partlist, e->s.celllist) < 0)
-            return error(engine_err_cell);
+            return error(MDCERR_cell);
         }
             
     /* Get a hold of the exchange mutex. */
     if(pthread_mutex_lock(&e->xchg_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* Tell the async thread to get to work. */
     e->xchg_started = 1;
     if(pthread_cond_signal(&e->xchg_cond) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* Release the exchange mutex and let the async run. */
     if(pthread_mutex_unlock(&e->xchg_mutex) != 0)
-        return error(engine_err_pthread);
+        return error(MDCERR_pthread);
         
     /* Done (for now). */
-    return engine_err_ok;
+    return S_OK;
         
     }
 #endif
-    
-    
-/**
- * @brief Exchange data with other nodes.
- *
- * @param e The #engine to work with.
- * @param comm The @c MPI_Comm over which to exchange data.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
+
 
 #ifdef WITH_MPI 
-int engine_exchange(struct engine *e) {
+HRESULT engine_exchange(struct engine *e) {
 
     int i, k, ind, res;
     int *counts_in[ e->nr_nodes ], *counts_out[ e->nr_nodes ];
@@ -778,11 +693,11 @@ int engine_exchange(struct engine *e) {
     
     /* Check the input. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
         
     /* Bail if not in parallel. */
     if(!(e->flags & engine_flag_mpi) || e->nr_nodes <= 1)
-        return engine_err_ok;
+        return S_OK;
         
     /* Get local copies of some data. */
     s = &e->s;
@@ -887,7 +802,7 @@ int engine_exchange(struct engine *e) {
 
     /* Wait for all the recvs to come in. */
     /* if((res = MPI_Waitall(e->nr_nodes, reqs_recv, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi); */
+        return error(MDCERR_mpi); */
         
     /* Unpack the received data. */
     #pragma omp parallel for schedule(static), private(i,ind,res,finger,k,c)
@@ -915,9 +830,9 @@ int engine_exchange(struct engine *e) {
         
     /* Wait for all the sends to come in. */
     if((res = MPI_Waitall(e->nr_nodes, reqs_send, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi);
+        return error(MDCERR_mpi);
     if((res = MPI_Waitall(e->nr_nodes, reqs_send2, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi);
+        return error(MDCERR_mpi);
     /* printf("engine_exchange[%i]: all send/recv completed.\n", e->nodeID); */
         
     /* Free the send and recv buffers. */
@@ -938,7 +853,7 @@ int engine_exchange(struct engine *e) {
     
         /* Shuffle the space. */
         if(space_shuffle(s) < 0)
-            return error(engine_err_space);
+            return error(MDCERR_space);
             
         /* Welcome the parts into the respective cells. */
         #pragma omp parallel for schedule(static), private(i)
@@ -948,23 +863,14 @@ int engine_exchange(struct engine *e) {
         }
             
     /* Call it a day. */
-    return engine_err_ok;
+    return S_OK;
         
     }
 #endif
 
 
-/**
- * @brief Exchange incomming particle data with other nodes.
- *
- * @param e The #engine to work with.
- * @param comm The @c MPI_Comm over which to exchange data.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
 #ifdef WITH_MPI 
-int engine_exchange_incomming(struct engine *e) {
+HRESULT engine_exchange_incomming(struct engine *e) {
 
     int i, j, k, ind, res;
     int *counts_in[ e->nr_nodes ], *counts_out[ e->nr_nodes ];
@@ -977,11 +883,11 @@ int engine_exchange_incomming(struct engine *e) {
     
     /* Check the input. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
         
     /* Bail if not in parallel. */
     if(!(e->flags & engine_flag_mpi) || e->nr_nodes <= 1)
-        return engine_err_ok;
+        return S_OK;
         
     /* Get local copies of some data. */
     s = &e->s;
@@ -1086,7 +992,7 @@ int engine_exchange_incomming(struct engine *e) {
 
     /* Wait for all the recvs to come in. */
     /* if((res = MPI_Waitall(e->nr_nodes, reqs_recv, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi); */
+        return error(MDCERR_mpi); */
         
     /* Unpack the received data. */
     #pragma omp parallel for schedule(static), private(i,j,ind,res,finger,k,c)
@@ -1117,9 +1023,9 @@ int engine_exchange_incomming(struct engine *e) {
         
     /* Wait for all the sends to come in. */
     if((res = MPI_Waitall(e->nr_nodes, reqs_send, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi);
+        return error(MDCERR_mpi);
     if((res = MPI_Waitall(e->nr_nodes, reqs_send2, MPI_STATUSES_IGNORE)) != MPI_SUCCESS)
-        return error(engine_err_mpi);
+        return error(MDCERR_mpi);
     /* printf("engine_exchange[%i]: all send/recv completed.\n", e->nodeID); */
         
     /* Free the send and recv buffers. */
@@ -1135,9 +1041,7 @@ int engine_exchange_incomming(struct engine *e) {
         }
         
     /* Call it a day. */
-    return engine_err_ok;
+    return S_OK;
         
     }
 #endif
-
-

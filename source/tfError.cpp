@@ -32,25 +32,6 @@ using namespace TissueForge;
 
 static std::vector<std::shared_ptr<Error> > error_registry;
 
-static HRESULT engineError(const unsigned int &id, Error &err) {
-	char *msg, *func, *fname;
-	if(errs_get((int)id, &msg, &err.lineno, &func, &fname) != errs_err_ok) 
-		return E_FAIL;
-
-	err.msg = msg;
-	err.func = func;
-	err.fname = fname;
-	return S_OK;
-}
-
-static HRESULT engineErrors(std::vector<Error> &result) {
-	result = std::vector<Error>(errs_num());
-	for(unsigned int i = 0; i < result.size(); i++) 
-		if(engineError(i, result[i]) != S_OK) 
-			return E_FAIL;
-	return S_OK;
-}
-
 HRESULT TissueForge::errSet(HRESULT code, const char* msg, int line,
 		const char* file, const char* func) {
 
@@ -71,12 +52,11 @@ HRESULT TissueForge::expSet(const std::exception& e, const char* msg, int line, 
 }
 
 bool TissueForge::errOccurred() {
-    return !error_registry.empty() && errs_num() == 0;
+    return !error_registry.empty();
 }
 
 void TissueForge::errClear() {
     error_registry.clear();
-	errs_clear();
 }
 
 std::string TissueForge::errStr(const Error &err) {
@@ -87,14 +67,9 @@ std::string TissueForge::errStr(const Error &err) {
 
 std::vector<Error> TissueForge::errGetAll() {
 	std::vector<Error> result;
-	result.reserve(error_registry.size() + errs_num());
+	result.reserve(error_registry.size());
 	for(auto &e : error_registry) 
 		result.push_back(*e);
-
-	std::vector<Error> eng_result;
-	engineErrors(eng_result);
-	for(auto &e : eng_result) 
-		result.push_back(e);
 	return result;
 }
 
@@ -106,17 +81,14 @@ Error TissueForge::errGetFirst() {
 		error_registry.clear();
 	} 
 	else {
-		if(error_registry.empty()) engineError(0, result);
-		else result = *error_registry.front();
+		result = *error_registry.front();
 	}
 	
 	return result;
 }
 
 void TissueForge::errClearFirst() {
-	if(error_registry.empty()) 
-		errs_clear();
-	else 
+	if(!error_registry.empty()) 
 		error_registry.erase(error_registry.begin());
 }
 
