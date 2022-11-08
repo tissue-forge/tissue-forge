@@ -77,6 +77,9 @@ static cuda::SimulatorConfig *_SimulatorCUDAConfig = NULL;
 #endif
 static bool _isTerminalInteractiveShell = false;
 
+static TissueForge::ErrorCallback *simErrCb = NULL;
+static unsigned int simErrCbId = 0;
+
 static void simulator_interactive_run();
 
 
@@ -201,7 +204,8 @@ static void parse_kwargs(
     FloatP_t *max_distance=NULL, 
     bool *windowless=NULL, 
     TissueForge::iVector2 *window_size=NULL, 
-    unsigned int *seed=NULL, 
+    unsigned int *seed=NULL,
+    bool *throw_exc=NULL, 
     uint32_t *perfcounters=NULL, 
     int *perfcounter_period=NULL, 
     int *logger_level=NULL, 
@@ -234,6 +238,7 @@ static void parse_kwargs(
     if(windowless) conf.setWindowless(*windowless);
     if(window_size) conf.setWindowSize(*window_size);
     if(seed) conf.setSeed(*seed);
+    if(throw_exc) conf.setThrowingExceptions(*throw_exc);
     if(perfcounters) conf.universeConfig.timers_mask = *perfcounters;
     if(perfcounter_period) conf.universeConfig.timer_output_period = *perfcounter_period;
     if(logger_level) Logger::setLevel(*logger_level);
@@ -417,6 +422,14 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
     }
     else seed = NULL;
 
+    bool *throw_exc;
+    if(parse::has_kwarg(kwargs, "throw_exc")) {
+        throw_exc = new bool(TissueForge::cast<std::string, bool>(parse::kwargVal(kwargs, "throw_exc")));
+
+        TF_Log(LOG_INFORMATION) << "got throw_exc: " << std::to_string(*throw_exc);
+    }
+    else throw_exc = NULL;
+
     uint32_t *perfcounters;
     if(parse::has_kwarg(kwargs, "perfcounters")) {
         s = parse::kwargVal(kwargs, "perfcounters");
@@ -476,6 +489,7 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
         windowless, 
         window_size, 
         seed, 
+        throw_exc, 
         perfcounters, 
         perfcounter_period, 
         logger_level, 
@@ -549,6 +563,39 @@ HRESULT Simulator::makeCUDAConfigCurrent(cuda::SimulatorConfig *config) {
     return S_OK;
 }
 #endif
+
+static void Simulator_ErrorCallback(const TissueForge::Error &err) {
+    throw std::runtime_error(errStr(err));
+}
+
+static HRESULT Simulator_setErrorCallback() {
+    if(!simErrCb) {
+        simErrCb = new ErrorCallback(Simulator_ErrorCallback);
+        simErrCbId = addErrorCallback(*simErrCb);
+    }
+    return S_OK;
+}
+
+static HRESULT Simulator_unsetErrorCallback() {
+    if(simErrCb) {
+        removeErrorCallback(simErrCbId);
+        delete simErrCb;
+        simErrCb = 0;
+        simErrCbId = 0;
+    }
+    return S_OK;
+}
+
+HRESULT Simulator::throwExceptions(const bool &_throw) {
+    if(_throw && !simErrCb) Simulator_setErrorCallback();
+    else if(simErrCb) Simulator_unsetErrorCallback();
+
+    return S_OK;
+}
+
+bool Simulator::throwingExceptions() {
+    return simErrCb;
+}
 
 bool TissueForge::isTerminalInteractiveShell() {
     return _isTerminalInteractiveShell;
@@ -683,6 +730,8 @@ HRESULT TissueForge::Simulator_init(const Simulator::Config &conf, const std::ve
     _Universe.name = conf.title();
 
     TF_Log(LOG_INFORMATION) << "got universe name: " << _Universe.name;
+
+    Simulator::throwExceptions(conf.throwingExceptions());
 
     setSeed(const_cast<Simulator::Config&>(conf).seed());
 

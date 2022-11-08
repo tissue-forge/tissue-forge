@@ -196,6 +196,8 @@
 
                 window_size: (2-component list of ints) size of application window; default is [800, 600]
 
+                throw_exc: (bool) whether errors raise exceptions; default is False
+
                 seed: (int) seed for pseudo-random number generator
 
                 load_file: (str) path to saved simulation state to initialize
@@ -215,7 +217,15 @@
         :param args: final time (default runs infinitly)
         """
         return Simulator.run(*args, **kwargs)
-    
+
+    def throw_exceptions(_throw: bool):
+        """Set whether errors result in exceptions"""
+        Simulator.throw_exceptions = _throw
+
+    def throwing_exceptions() -> bool:
+        """Test whether errors result in exceptions"""
+        return Simulator.throw_exceptions
+
     # From Universe
 
     step = Universe.step

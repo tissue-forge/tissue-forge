@@ -39,10 +39,10 @@ Error Handling
 ---------------
 
 To support interactive execution, many errors in Tissue Forge do not
-necessarily terminate execution of a simulation.
+necessarily terminate execution of a simulation by default.
 Rather, an error that does not corrupt simulation data
 (*e.g.*, bad specification of a particle location)
-allow a simulation to proceed but posts an :py:class:`Error`, and also
+allows a simulation to proceed but posts an :py:class:`Error`, and also
 logs the error at the ``ERROR`` level. Errors that have been posted can
 be retrieved in order of their posting with :py:func:`err_get_all`, or the
 current first posted error can be retrieved and removed from the list of
@@ -65,7 +65,9 @@ clears all posted errors. ::
 Many errors include useful information about what caused the error, and
 useful suggestions about how to prevent the error from occuring. However,
 error logging and reporting is an ongoing effort, and so in some cases mitigating
-an error may not be obvious.
+an error may not be obvious. Tissue Forge supports setting whether errors result
+in thrown exceptions with the module-level method :py:func:`throw_exceptions``,
+for with the :py:func:`init` keyword argument ``throw_exc``.
 
 .. note::
 

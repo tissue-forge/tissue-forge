@@ -26,11 +26,40 @@
 #include <memory>
 #include <tfLogger.h>
 #include <tf_errs.h>
+#include <unordered_map>
 
 
 using namespace TissueForge;
 
 static std::vector<std::shared_ptr<Error> > error_registry;
+static std::unordered_map<unsigned int, ErrorCallback&> cb_registry;
+
+
+const unsigned int TissueForge::addErrorCallback(ErrorCallback &cb) {
+	unsigned int result = cb_registry.size();
+	for(unsigned int i = 0; i < cb_registry.size(); i++) 
+		if(cb_registry.find(i) == cb_registry.end()) {
+			result = i;
+			break;
+		}
+
+	cb_registry.insert({result, cb});
+	return result;
+}
+
+HRESULT TissueForge::removeErrorCallback(const unsigned int &cb_id) {
+	auto itr = cb_registry.find(cb_id);
+	if(itr == cb_registry.end()) 
+		return E_FAIL;
+
+	cb_registry.erase(itr);
+	return S_OK;
+}
+
+HRESULT TissueForge::clearErrorCallbacks() {
+	cb_registry.clear();
+	return S_OK;
+}
 
 HRESULT TissueForge::errSet(HRESULT code, const char* msg, int line,
 		const char* file, const char* func) {
@@ -43,6 +72,8 @@ HRESULT TissueForge::errSet(HRESULT code, const char* msg, int line,
     
     TF_Log(LOG_ERROR) << *err;
 	error_registry.push_back(err);
+	for(auto &cb_pair : cb_registry) 
+		cb_pair.second(*err);
 
 	return code;
 }

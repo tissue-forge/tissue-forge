@@ -26,6 +26,10 @@ This is the API Reference page for the module: :mod:`tissue_forge`
 
 .. autofunction:: start
 
+.. autofunction:: throw_exceptions
+
+.. autofunction:: throwing_exceptions
+
 .. autoclass:: tissue_forge.version
     :members:
 

@@ -52,6 +52,29 @@ namespace TissueForge {
         std::string func;
     };
 
+    /** Called on every occurrence of an error */
+    typedef void (*ErrorCallback)(const Error &err);
+
+    /**
+     * @brief Register an error callback
+     * 
+     * @param cb callback to register
+     * @return id of callback in registry
+     */
+    CPPAPI_FUNC(const unsigned int) addErrorCallback(ErrorCallback &cb);
+
+    /**
+     * @brief Remove an error callback from the registry
+     * 
+     * @param cb_id id of registered callback
+     */
+    CPPAPI_FUNC(HRESULT) removeErrorCallback(const unsigned int &cb_id);
+
+    /**
+     * @brief Remove all error callbacks from the registry
+     */
+    CPPAPI_FUNC(HRESULT) clearErrorCallbacks();
+
     #define tf_error(code, msg) errSet(code, msg, __LINE__, __FILE__, TF_FUNCTION)
 
     #define tf_exp(e) expSet(e, "", __LINE__, __FILE__, TF_FUNCTION)
