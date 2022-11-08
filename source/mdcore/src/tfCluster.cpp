@@ -350,6 +350,16 @@ FMatrix3 TissueForge::ClusterParticleHandle::getMomentOfInertia() {
     return result;
 }
 
+uint16_t TissueForge::ClusterParticleHandle::getNumParts() {
+    Particle *self = this->part();
+    return self->nr_parts;
+}
+
+ParticleList TissueForge::ClusterParticleHandle::getParts() {
+    Particle *self = this->part();
+    return ParticleList(self->nr_parts, self->parts);
+}
+
 /**
  * adds an existing particle to the cluster.
  */

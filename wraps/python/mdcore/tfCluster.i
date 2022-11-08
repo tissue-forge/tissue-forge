@@ -103,6 +103,16 @@
         def moment_of_inertia(self):
             """Moment of inertia"""
             return self.getMomentOfInertia()
+
+        @property
+        def num_parts(self):
+            """number of particles that belong to this cluster."""
+            return self.getNumParts()
+
+        @property
+        def parts(self):
+            """particles that belong to this cluster."""
+            return self.getParts()
     %}
 }
 

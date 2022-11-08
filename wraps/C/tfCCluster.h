@@ -187,6 +187,15 @@ CAPI_FUNC(HRESULT) tfClusterParticleHandle_split(struct tfClusterParticleHandleH
 CAPI_FUNC(HRESULT) tfClusterParticleHandle_getNumParts(struct tfClusterParticleHandleHandle *handle, int *numParts);
 
 /**
+ * @brief Get the particles that are a member of this cluster
+ * 
+ * @param handle populated handle
+ * @param parts particles
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleHandle_getParts(struct tfClusterParticleHandleHandle *handle, struct tfParticleListHandle *parts);
+
+/**
  * @brief Get the i'th particle that's a member of this cluster.
  * 
  * @param handle populated handle

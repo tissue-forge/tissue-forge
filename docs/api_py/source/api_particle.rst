@@ -203,6 +203,10 @@ Particles and Clusters
 
     .. autoproperty:: moment_of_inertia
 
+    .. autoproperty:: num_parts
+
+    .. autoproperty:: parts
+
     .. autoattribute:: items
 
     .. automethod:: __call__

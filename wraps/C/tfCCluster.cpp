@@ -191,6 +191,13 @@ HRESULT tfClusterParticleHandle_getNumParts(struct tfClusterParticleHandleHandle
     return S_OK;
 }
 
+HRESULT tfClusterParticleHandle_getParts(struct tfClusterParticleHandleHandle *handle, struct tfParticleListHandle *parts) {
+    TFC_CLUSTERHANDLE_GET(handle);
+    TFC_PTRCHECK(parts);
+    Particle *p = phandle->part();
+    return tfParticleList_initI(parts, p->parts, p->nr_parts);
+}
+
 HRESULT tfClusterParticleHandle_getParticle(struct tfClusterParticleHandleHandle *handle, int i, struct tfParticleHandleHandle *parthandle) {
     TFC_CLUSTERHANDLE_GET(handle);
     TFC_PTRCHECK(parthandle);

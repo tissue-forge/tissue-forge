@@ -157,11 +157,24 @@ namespace TissueForge {
          * @return ParticleList* 
          */
         ParticleList *items();
-        
+
+        /** radius of gyration of this cluster. */
         FPTYPE getRadiusOfGyration();
+
+        /** center of mass of this cluster. */
         FVector3 getCenterOfMass();
+
+        /** centroid of this cluster. */
         FVector3 getCentroid();
+
+        /** moment of inertia of this cluster. */
         FMatrix3 getMomentOfInertia();
+
+        /** number of particles that belong to this cluster. */
+        uint16_t getNumParts();
+
+        /** list of particles that belong to this cluster. */
+        ParticleList getParts();
     };
 
     /**
