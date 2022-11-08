@@ -167,14 +167,14 @@ namespace TissueForge {
     /**
      * adds an existing particle to the cluster.
      */
-    CAPI_FUNC(int) Cluster_AddParticle(struct Cluster *cluster, struct Particle *part);
+    CAPI_FUNC(HRESULT) Cluster_AddParticle(struct Cluster *cluster, struct Particle *part);
 
 
     /**
      * Computes the aggregate quanties such as total mass, position, acceleration, etc...
      * from the contained particles. 
      */
-    CAPI_FUNC(int) Cluster_ComputeAggregateQuantities(struct Cluster *cluster);
+    CAPI_FUNC(HRESULT) Cluster_ComputeAggregateQuantities(struct Cluster *cluster);
 
     /**
      * creates a new particle, and adds it to the cluster.

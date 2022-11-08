@@ -28,18 +28,52 @@
 #include <tf_port.h>
 
 #include <exception>
+#include <string>
+#include <vector>
 
 
 namespace TissueForge {
 
 
     struct CAPI_EXPORT Error {
+        /** Error code */
         HRESULT err;
-        const char* msg;
+
+        /** Error message */
+        std::string msg;
+
+        /** Originating line number */
         int lineno;
-        const char* fname;
-        const char* func;
+
+        /** Originating file name */
+        std::string fname;
+
+        /** Originating function name */
+        std::string func;
     };
+
+    /** Called on every occurrence of an error */
+    typedef void (*ErrorCallback)(const Error &err);
+
+    /**
+     * @brief Register an error callback
+     * 
+     * @param cb callback to register
+     * @return id of callback in registry
+     */
+    CPPAPI_FUNC(const unsigned int) addErrorCallback(ErrorCallback &cb);
+
+    /**
+     * @brief Remove an error callback from the registry
+     * 
+     * @param cb_id id of registered callback
+     */
+    CPPAPI_FUNC(HRESULT) removeErrorCallback(const unsigned int &cb_id);
+
+    /**
+     * @brief Remove all error callbacks from the registry
+     */
+    CPPAPI_FUNC(HRESULT) clearErrorCallbacks();
 
     #define tf_error(code, msg) errSet(code, msg, __LINE__, __FILE__, TF_FUNCTION)
 
@@ -47,17 +81,66 @@ namespace TissueForge {
 
     #define TF_RETURN_EXP(e) expSet(e, "", __LINE__, __FILE__, TF_FUNCTION); return NULL
 
+    /**
+     * Set the error indicator. If there is a previous error indicator, then the previous indicator is moved down the stack. 
+     */
     CPPAPI_FUNC(HRESULT) errSet(HRESULT code, const char* msg, int line, const char* file, const char* func);
 
+    /**
+     * Set the error indicator. If there is a previous error indicator, then the previous indicator is moved down the stack. 
+     */
     CPPAPI_FUNC(HRESULT) expSet(const std::exception&, const char* msg, int line, const char* file, const char* func);
 
-    CPPAPI_FUNC(Error*) errOccurred();
+    /**
+     * Check whether there is an error indicator. 
+     */
+    CPPAPI_FUNC(bool) errOccurred();
 
     /**
-     * Clear the error indicator. If the error indicator is not set, there is no effect.
+     * Clear the error indicators. If no error indicator is set, there is no effect.
      */
     CPPAPI_FUNC(void) errClear();
 
+    /**
+     * Get a string representation of an error.
+     */
+    CPPAPI_FUNC(std::string) errStr(const Error &err);
+
+    /**
+     * Get all error indicators
+     */
+    CPPAPI_FUNC(std::vector<Error>) errGetAll();
+
+    /**
+     * Get the first error
+     */
+    CPPAPI_FUNC(Error) errGetFirst();
+
+    /**
+     * Clear the first error
+     */
+    CPPAPI_FUNC(void) errClearFirst();
+
+    /**
+     * Get and clear the first error
+     */
+    CPPAPI_FUNC(Error) errPopFirst();
+
 };
+
+inline std::ostream& operator<<(std::ostream& os, const TissueForge::Error &err)
+{
+    os << std::string("Code: ");
+    os << std::to_string(err.err);
+    os << std::string(", Msg: ");
+    os << err.msg;
+    os << std::string(", File: ");
+    os << err.fname;
+    os << std::string(", Line: ");
+    os << std::to_string(err.lineno);
+    os << std::string(", Function: ");
+    os << err.func;
+    return os;
+}
 
 #endif // _SOURCE_TFERROR_H_

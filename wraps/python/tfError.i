@@ -1,5 +1,5 @@
 /*******************************************************************************
- * This file is part of mdcore.
+ * This file is part of Tissue Forge.
  * Copyright (c) 2022 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,22 +17,30 @@
  * 
  ******************************************************************************/
 
-#ifndef _MDCORE_SOURCE_TF_ENGINE_ADVANCE_H_
-#define _MDCORE_SOURCE_TF_ENGINE_ADVANCE_H_
+%{
 
-#include <tf_port.h>
+#include "tfError.h"
 
+%}
 
-namespace TissueForge{ 
+%ignore TissueForge::errSet;
+%ignore TissueForge::expSet;
 
+%template(vectorError) std::vector<TissueForge::Error>;
 
-    /**
-     * @brief Update the particle velocities and positions, re-shuffle if
-     *      appropriate.
-     * @param e The #engine on which to run.
-     */
-    CAPI_FUNC(HRESULT) engine_advance(struct engine *e);
+%rename(err_occurred) TissueForge::errOccurred;
+%rename(err_clear) TissueForge::errClear;
+%rename(err_get_all) TissueForge::errGetAll;
+%rename(err_get_first) TissueForge::errGetFirst;
+%rename(err_clear_first) TissueForge::errClearFirst;
+%rename(err_pop_first) TissueForge::errPopFirst;
+%rename(_msg) TissueForge::Error::msg;
 
-};
+%include "tfError.h"
 
-#endif // _MDCORE_SOURCE_TF_ENGINE_ADVANCE_H_
+%extend TissueForge::Error {
+    %pythoncode %{
+        def __str__(self) -> str:
+            return errStr(self)
+    %}
+}

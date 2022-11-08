@@ -32,22 +32,12 @@
 
 MDCORE_BEGIN_DECLS
 
-/* queue error codes */
-#define queue_err_ok                    0
-#define queue_err_null                  -1
-#define queue_err_malloc                -2
-#define queue_err_full                  -3
-#define queue_err_lock                  -4
-
 /* Some constants. */
 #define queue_maxhit                    10
 
 
 namespace TissueForge { 
 
-
-	/** ID of the last error */
-	CAPI_DATA(int) queue_err;
 
 	/** The queue structure */
 	typedef struct queue {
@@ -77,9 +67,54 @@ namespace TissueForge {
 
 
 	/* Associated functions */
-	int queue_init(struct queue *q, int size, struct space *s, struct task *tasks);
+
+	/**
+	 * @brief Initialize a task queue.
+	 *
+	 * @param q The #queue to initialize.
+	 * @param size The maximum number of cellpairs in this queue.
+	 * @param s The space with which this queue is associated.
+	 * @param tasks An array containing the #task to which the queue
+	 *        indices will refer to.
+	 *
+	 * Initializes a queue of the maximum given size. The initial queue
+	 * is empty and can be filled with pair ids.
+	 *
+	 * @sa #queue_tuples_init
+	 */
+	HRESULT queue_init(struct queue *q, int size, struct space *s, struct task *tasks);
+
+	/**
+	 * @brief Reset the queue.
+	 * 
+	 * @param q The #queue.
+	 */
 	void queue_reset(struct queue *q);
+
+	/**
+	 * @brief Add an index to the given queue.
+	 * 
+	 * @param q The #queue.
+	 * @param thing The thing to be inserted.
+	 *
+	 * Inserts a task into the queue at the location of the next pointer
+	 * and moves all remaining tasks up by one. Thus, if the queue is executing,
+	 * the inserted task is considered to already have been taken.
+	 *
+	 * @return 1 on success, 0 if the queue is full and <0 on error (see #queue_err).
+	 */
 	int queue_insert(struct queue *q, struct task *t);
+
+	/**
+	 * @brief Get a task from the queue.
+	 * 
+	 * @param q The #queue.
+	 * @param rid #runner ID for ownership issues.
+	 * @param keep If true, remove the returned index from the queue.
+	 *
+	 * @return A #task with no unresolved dependencies or conflicts
+	 *      or @c NULL if none could be found.
+	 */
 	struct task *queue_get(struct queue *q, int rid, int keep);
 
 };

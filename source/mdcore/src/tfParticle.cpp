@@ -24,6 +24,7 @@
 
 #include <tfParticle.h>
 
+#include <tf_errs.h>
 #include <tfEngine.h>
 #include <tfSpace.h>
 #include <rendering/tfStyle.h>
@@ -48,6 +49,9 @@
 
 
 using namespace TissueForge;
+
+
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
 TissueForge::Particle::Particle() {
@@ -97,63 +101,67 @@ unsigned int *TissueForge::Particle_Colors = colors;
 #define TF_PARTICLE_SELF(pypart) \
     Particle *self = pypart->part(); \
     if(self == NULL) { \
-        throw std::runtime_error("Particle has been destroyed or is invalid"); \
+        error(MDCERR_id); \
         return NULL; \
     }
 
 #define TF_PARTICLE_PROP_SELF(pypart) \
     Particle *self = pypart->part(); \
     if(self == NULL) { \
-        throw std::runtime_error("Particle has been destroyed or is invalid"); \
-        return -1; \
+        return error(MDCERR_id); \
     }
 
 #define TF_PARTICLE_SELFW(pypart, ret) \
     Particle *self = pypart->part(); \
     if(self == NULL) { \
-        TF_Log(LOG_WARNING) << "Particle has been destroyed or is invalid"; \
+        error(MDCERR_id); \
         return ret; \
     }
 
 #define TF_PARTICLE_TYPE(pypart) \
     ParticleType *ptype = pypart->type(); \
     if(ptype == NULL) { \
-        throw std::runtime_error("Particle has been destroyed or is invalid"); \
+        error(MDCERR_id); \
         return NULL; \
     }
 
 #define TF_PARTICLE_PROP_TYPE(pypart) \
     ParticleType *ptype = pypart->type(); \
     if(ptype == NULL) { \
-        throw std::runtime_error("Particle has been destroyed or is invalid"); \
-        return -1; \
+        return error(MDCERR_id); \
     }
 
 #define TF_PARTICLE_TYPEW(pypart, ret) \
     ParticleType *ptype = pypart->type(); \
     if(ptype == NULL) { \
-        TF_Log(LOG_WARNING) << "Particle has been destroyed or is invalid"; \
+        error(MDCERR_id); \
         return ret; \
     }
 
-static HRESULT particle_ex_construct(ParticleHandle *self,  
-                                     ParticleType *ptype, 
-                                     const FVector3 &position, 
-                                     const FVector3 &velocity, 
-                                     int clusterId, 
-                                     Particle &part);
+static HRESULT particle_ex_construct(
+    ParticleHandle *self,  
+    ParticleType *ptype, 
+    const FVector3 &position, 
+    const FVector3 &velocity, 
+    int clusterId, 
+    Particle &part
+);
 static HRESULT particle_ex_load(ParticleHandle *self, Particle &part);
 static HRESULT particles_ex_load(std::vector<ParticleHandle*> selfs, std::vector<Particle*> parts);
-static HRESULT particle_init(ParticleHandle *self, 
-                             ParticleType *ptype, 
-                             FVector3 *position=NULL, 
-                             FVector3 *velocity=NULL, 
-                             int *cluster=NULL);
-static HRESULT particle_init_ex(ParticleHandle *self,  
-                                ParticleType *ptype, 
-                                const FVector3 &position,
-                                const FVector3 &velocity,
-                                int clusterId);
+static HRESULT particle_init(
+    ParticleHandle *self, 
+    ParticleType *ptype, 
+    FVector3 *position=NULL, 
+    FVector3 *velocity=NULL, 
+    int *cluster=NULL
+);
+static HRESULT particle_init_ex(
+    ParticleHandle *self,  
+    ParticleType *ptype, 
+    const FVector3 &position,
+    const FVector3 &velocity,
+    int clusterId
+);
 
 
 static ParticleList *particletype_items(ParticleType *self);
@@ -212,7 +220,7 @@ FPTYPE TissueForge::ParticleHandle::getMass() {
 
 void TissueForge::ParticleHandle::setMass(const FPTYPE &mass) {
     if(mass <= 0.f) {
-        tf_error(E_FAIL, "Mass must be positive");
+        error(MDCERR_badprop);
         return;
     }
 
@@ -324,9 +332,8 @@ FPTYPE TissueForge::ParticleHandle::getRadius() {
 void TissueForge::ParticleHandle::setRadius(const FPTYPE &radius) {
     TF_PARTICLE_SELFW(this,)
     self->radius = radius;
-    if((radius > _Engine.s.cutoff && !(self->flags & PARTICLE_LARGE)) || (radius <= _Engine.s.cutoff && self->flags & PARTICLE_LARGE)) {
-        TF_Log(LOG_WARNING) << "An invalid particle state change occurred (large particle)";
-    }
+    if((radius > _Engine.s.cutoff && !(self->flags & PARTICLE_LARGE)) || (radius <= _Engine.s.cutoff && self->flags & PARTICLE_LARGE)) 
+        error(MDCERR_large_state);
 }
 
 std::string TissueForge::ParticleHandle::getName() {
@@ -450,7 +457,7 @@ void assignUniqueTypeName(ParticleType *type) {
     std::strncpy(type->name, getUniqueName(type).c_str(), ParticleType::MAX_NAME);
 }
 
-HRESULT TissueForge::ParticleType_checkRegistered(ParticleType *type) {
+bool TissueForge::ParticleType_checkRegistered(ParticleType *type) {
     if(!type) return 0;
     int typeId = typeIdByName(type->name);
     return typeId > 1;
@@ -459,13 +466,13 @@ HRESULT TissueForge::ParticleType_checkRegistered(ParticleType *type) {
 HRESULT TissueForge::_Particle_init()
 {
     if(engine::max_type < 3) 
-        return tf_error(E_FAIL, "must have at least space for 3 particle types");
+        return error(MDCERR_min_types);
 
     if(engine::nr_types != 0) 
-        return tf_error(E_FAIL, "engine types already set");
+        return error(MDCERR_initorder);
 
     if((engine::types = (ParticleType *)malloc(sizeof(ParticleType) * engine::max_type)) == NULL) 
-        return tf_error(E_FAIL, "could not allocate types memory");
+        return error(MDCERR_malloc);
     
     ::memset(engine::types, 0, sizeof(ParticleType) * engine::max_type);
 
@@ -573,10 +580,6 @@ HRESULT TissueForge::ParticleType::addpart(int32_t id)
     return S_OK;
 }
 
-
-/**
- * remove a particle id from this type
- */
 HRESULT TissueForge::ParticleType::del_part(int32_t id) {
     this->parts.remove(id);
     return S_OK;
@@ -655,12 +658,11 @@ ParticleType* TissueForge::ParticleType::newType(const char *_name) {
 }
 
 HRESULT TissueForge::ParticleType::registerType() {
-    if (isRegistered()) return S_OK;
+    if (isRegistered()) 
+        return S_OK;
 
-    if(engine::nr_types >= engine::max_type) {
-        tf_exp(std::runtime_error("out of memory for new particle type"));
-        return E_OUTOFMEMORY;
-    }
+    if(engine::nr_types >= engine::max_type) 
+        return error(MDCERR_malloc);
 
     if(engine::nr_types >= 2 && !checkDerivedTypeName(this->name)) {
         assignUniqueTypeName(this);
@@ -732,87 +734,72 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
     sep = sep.normalized();
     sep = sep * r2;
 
-    try {
+    // create a new particle at the same location as the original particle.
+    Particle *p = NULL;
+    FVector3 vec(0.0);
 
-        // create a new particle at the same location as the original particle.
-        Particle *p = NULL;
-        FVector3 vec(0.0);
-        int result = space_getpos(&_Engine.s, self->id, vec.data());
-
-        if(result < 0) {
-            TF_Log(LOG_CRITICAL) << part.typeId << ", " << _Engine.nr_types;
-            TF_Log(LOG_CRITICAL) << vec;
-            TF_Log(LOG_CRITICAL) << part.id << ", " << self->id << ", " << _Engine.s.nr_parts;
-            tf_exp(std::runtime_error(engine_err_msg[-engine_err]));
-            return NULL;            
-        }
-
-        // Double-check boundaries
-        const BoundaryConditions &bc = _Engine.boundary_conditions;
-        std::vector<bool> periodicFlags {
-            bool(bc.periodic & space_periodic_x), 
-            bool(bc.periodic & space_periodic_y), 
-            bool(bc.periodic & space_periodic_z)
-        };
-
-        // Calculate new positions; account for boundaries
-        FVector3 posParent = vec + sep;
-        FVector3 posChild = FVector3(vec - sep);
-
-        for(unsigned int i = 0; i < 3; i++) {
-            FPTYPE dim_i = _Engine.s.dim[i];
-            FPTYPE origin_i = _Engine.s.origin[i];
-
-            if(periodicFlags[i]) {
-                while(posChild[i] >= dim_i + origin_i) 
-                    posChild[i] -= dim_i;
-
-                while(posChild[i] < origin_i) 
-                    posChild[i] += dim_i;
-            }
-        }
-
-        result = engine_addpart(&_Engine, &part, posChild.data(), &p);
-
-        if(result < 0) {
-            TF_Log(LOG_CRITICAL) << part.typeId << ", " << _Engine.nr_types;
-            TF_Log(LOG_CRITICAL) << posParent;
-            TF_Log(LOG_CRITICAL) << posChild;
-            TF_Log(LOG_CRITICAL) << part.id << ", " << _Engine.s.nr_parts;
-            tf_exp(std::runtime_error(engine_err_msg[-engine_err]));
-            return NULL;
-        }
-        
-        // pointers after engine_addpart could change...
-        space_setpos(&_Engine.s, self_id, posParent.data());
-        self = _Engine.s.partlist[self_id];
-        TF_Log(LOG_DEBUG) << self->position << ", " << p->position;
-        
-        // all is good, set the new radii
-        self->radius = r2;
-        p->radius = r2;
-        self->mass = p->mass = self->mass / 2.;
-        self->imass = p->imass = self->mass > 0 ? 1. / self->mass : 0;
-
-        TF_Log(LOG_TRACE) << "Simple fission for type " << (int)_Engine.types[self->typeId].id;
-
-        return p->handle();
+    if(space_getpos(&_Engine.s, self->id, vec.data()) != S_OK) {
+        TF_Log(LOG_CRITICAL) << part.typeId << ", " << _Engine.nr_types;
+        TF_Log(LOG_CRITICAL) << vec;
+        TF_Log(LOG_CRITICAL) << part.id << ", " << self->id << ", " << _Engine.s.nr_parts;
+        error(MDCERR_space);
+        return NULL;
     }
-    catch (const std::exception &e) {
-        TF_Log(LOG_ERROR);
-        tf_exp(e); return NULL;
+
+    // Double-check boundaries
+    const BoundaryConditions &bc = _Engine.boundary_conditions;
+    std::vector<bool> periodicFlags {
+        bool(bc.periodic & space_periodic_x), 
+        bool(bc.periodic & space_periodic_y), 
+        bool(bc.periodic & space_periodic_z)
+    };
+
+    // Calculate new positions; account for boundaries
+    FVector3 posParent = vec + sep;
+    FVector3 posChild = FVector3(vec - sep);
+
+    for(unsigned int i = 0; i < 3; i++) {
+        FPTYPE dim_i = _Engine.s.dim[i];
+        FPTYPE origin_i = _Engine.s.origin[i];
+
+        if(periodicFlags[i]) {
+            while(posChild[i] >= dim_i + origin_i) 
+                posChild[i] -= dim_i;
+
+            while(posChild[i] < origin_i) 
+                posChild[i] += dim_i;
+        }
     }
+
+    if(engine_addpart(&_Engine, &part, posChild.data(), &p) != S_OK) {
+        TF_Log(LOG_CRITICAL) << part.typeId << ", " << _Engine.nr_types;
+        TF_Log(LOG_CRITICAL) << posParent;
+        TF_Log(LOG_CRITICAL) << posChild;
+        TF_Log(LOG_CRITICAL) << part.id << ", " << _Engine.s.nr_parts;
+        error(MDCERR_engine);
+        return NULL;
+    }
+    
+    // pointers after engine_addpart could change...
+    space_setpos(&_Engine.s, self_id, posParent.data());
+    self = _Engine.s.partlist[self_id];
+    TF_Log(LOG_DEBUG) << self->position << ", " << p->position;
+    
+    // all is good, set the new radii
+    self->radius = r2;
+    p->radius = r2;
+    self->mass = p->mass = self->mass / 2.;
+    self->imass = p->imass = self->mass > 0 ? 1. / self->mass : 0;
+
+    TF_Log(LOG_TRACE) << "Simple fission for type " << (int)_Engine.types[self->typeId].id;
+
+    return p->handle();
 }
 
 ParticleHandle* TissueForge::ParticleHandle::fission()
 {
-    try {
-        TF_PARTICLE_SELF(this)
-        return Particle_FissionSimple(self, NULL, NULL, 0, NULL);
-    }
-    catch (const std::exception &e) {
-        tf_exp(e); return NULL;
-    }
+    TF_PARTICLE_SELF(this)
+    return Particle_FissionSimple(self, NULL, NULL, 0, NULL);
 }
 
 ParticleHandle *TissueForge::ParticleHandle::split() { return fission(); }
@@ -832,14 +819,14 @@ ParticleHandle *TissueForge::Particle::handle() {
 HRESULT TissueForge::Particle::addpart(int32_t pid) {
 
     // only in clusters
-    if (!_Engine.types[typeId].isCluster()) return tf_error(E_FAIL, "not a cluster");
+    if (!_Engine.types[typeId].isCluster()) return error(MDCERR_notcluster);
     
     /* do we need to extend the partlist? */
     if(nr_parts == size_parts) {
         size_parts += CLUSTER_PARTLIST_INCR;
         int32_t* temp;
         if((temp = (int32_t*)malloc(sizeof(int32_t) * size_parts)) == NULL)
-            return tf_error(E_FAIL, "could not allocate space for type particles");
+            return error(MDCERR_malloc);
         memcpy(temp, parts, sizeof(int32_t) * nr_parts);
         free(parts);
         parts = temp;
@@ -865,7 +852,7 @@ HRESULT TissueForge::Particle::removepart(int32_t pid) {
     }
     
     if(pid_index < 0) {
-        return tf_error(E_FAIL, "particle id not in this cluster");
+        return error(MDCERR_index);
     }
     
     Particle *p = _Engine.s.partlist[pid];
@@ -935,14 +922,15 @@ ParticleHandle* TissueForge::Particle_New(
 {
     
     if(!type) {
+        error(MDCERR_null);
         return NULL;
     }
     
     // make a new pyparticle
     auto pyPart = new ParticleHandle();
     
-    if(particle_init(pyPart, type, position, velocity, clusterId) < 0) {
-        TF_Log(LOG_ERROR) << "failed calling particle_init";
+    if(particle_init(pyPart, type, position, velocity, clusterId) != S_OK) {
+        error(MDCERR_particle);
         return NULL;
     }
     
@@ -959,14 +947,14 @@ std::vector<int> TissueForge::Particles_New(
     unsigned int nr_parts = types.size();
 
     if((positions && positions->size() != nr_parts) || (velocities && velocities->size() != nr_parts) || (clusterIds && clusterIds->size() != nr_parts)) {
-        tf_exp(std::runtime_error("Inconsistent element inputs"));
+        error(MDCERR_bad_el_input);
         return {};
     }
 
     if(_Engine.s.nr_parts + nr_parts > _Engine.s.size_parts) { 
         int size_incr = (int((_Engine.s.nr_parts - _Engine.s.size_parts + nr_parts) / space_partlist_incr) + 1) * space_partlist_incr;
-        if(space_growparts(&_Engine.s, size_incr) != space_err_ok) { 
-            tf_exp(std::runtime_error("Failed calling space_growparts"));
+        if(space_growparts(&_Engine.s, size_incr) != S_OK) { 
+            error(MDCERR_space);
             return {};
         }
     }
@@ -1015,7 +1003,7 @@ std::vector<int> TissueForge::Particles_New(
         else if(clusterIds) 
             nr_parts = clusterIds->size();
         else {
-            tf_exp(std::runtime_error("Number of particles to create could not be determined."));
+            error(MDCERR_bad_el_input);
             return {};
         }
     }
@@ -1025,22 +1013,22 @@ std::vector<int> TissueForge::Particles_New(
 
 
 HRESULT TissueForge::Particle_Become(Particle *part, ParticleType *type) {
-    HRESULT hr;
+    int hr;
     if(!part || !type) {
-        return tf_error(E_FAIL, "null arguments");
+        return error(MDCERR_null);
     }
     ParticleHandle *pypart = part->handle();
     
     ParticleType *currentType = &_Engine.types[part->typeId];
     
-    assert(pypart->typeId() == currentType->id);
+    assert(pypart->getTypeId() == currentType->id);
     
     if(!SUCCEEDED(hr = currentType->del_part(part->id))) {
-        return hr;
+        return error(MDCERR_particle);
     };
     
     if(!SUCCEEDED(hr = type->addpart(part->id))) {
-        return hr;
+        return error(MDCERR_particle);
     }
     
     part->typeId = type->id;
@@ -1080,76 +1068,62 @@ HRESULT TissueForge::ParticleHandle::become(ParticleType *type) {
 }
 
 ParticleList *TissueForge::ParticleHandle::neighbors(const FPTYPE *distance, const std::vector<ParticleType> *types) {
-    try {
-        TF_PARTICLE_SELFW(this, NULL)
-        
-        FPTYPE radius = distance ? *distance : _Engine.s.cutoff;
+    TF_PARTICLE_SELFW(this, NULL)
+    
+    FPTYPE radius = distance ? *distance : _Engine.s.cutoff;
 
-        std::set<short int> typeIds;
-        if(types) for (auto &type : *types) typeIds.insert(type.id);
-        else for(int i = 0; i < _Engine.nr_types; ++i) typeIds.insert(_Engine.types[i].id);
-        
-        // take into account the radius of this particle.
-        radius += self->radius;
-        
-        uint16_t nr_parts = 0;
-        int32_t *parts = NULL;
-        
-        metrics::particleNeighbors(self, radius, &typeIds, &nr_parts, &parts);
-        
-        ParticleList *result = new ParticleList(nr_parts, parts);
-        if(parts) std::free(parts);
-        return result;
-    }
-    catch(std::exception &e) {
-        TF_RETURN_EXP(e);
-    }
+    std::set<short int> typeIds;
+    if(types) for (auto &type : *types) typeIds.insert(type.id);
+    else for(int i = 0; i < _Engine.nr_types; ++i) typeIds.insert(_Engine.types[i].id);
+    
+    // take into account the radius of this particle.
+    radius += self->radius;
+    
+    uint16_t nr_parts = 0;
+    int32_t *parts = NULL;
+    
+    metrics::particleNeighbors(self, radius, &typeIds, &nr_parts, &parts);
+    
+    ParticleList *result = new ParticleList(nr_parts, parts);
+    if(parts) std::free(parts);
+    return result;
 }
 
 ParticleList *TissueForge::ParticleHandle::getBondedNeighbors() {
-    try {
-        TF_PARTICLE_SELFW(this, NULL)
+    TF_PARTICLE_SELFW(this, NULL)
 
-        auto id = self->id;
-        
-        ParticleList *list = new ParticleList(5);
-        
-        for(int i = 0; i < _Engine.nr_bonds; ++i) {
-            Bond *b = &_Engine.bonds[i];
-            if(b->flags & BOND_ACTIVE) {
-                if(b->i == id) {
-                    list->insert(b->j);
-                }
-                else if(b->j == id) {
-                    list->insert(b->i);
-                }
+    auto id = self->id;
+    
+    ParticleList *list = new ParticleList(5);
+    
+    for(int i = 0; i < _Engine.nr_bonds; ++i) {
+        Bond *b = &_Engine.bonds[i];
+        if(b->flags & BOND_ACTIVE) {
+            if(b->i == id) {
+                list->insert(b->j);
+            }
+            else if(b->j == id) {
+                list->insert(b->i);
             }
         }
-        return list;
     }
-    catch(std::exception &e) {
-        TF_RETURN_EXP(e);
-    }
+    return list;
 }
 
 std::vector<BondHandle> TissueForge::ParticleHandle::getBonds() {
     
     std::vector<BondHandle> bonds;
 
-    try {
-        TF_PARTICLE_SELFW(this, bonds)
+    TF_PARTICLE_SELFW(this, bonds)
 
-        auto id = self->id;
-        
-        for(int i = 0; i < _Engine.bonds_size; ++i) {
-            Bond *b = &_Engine.bonds[i];
-            if((b->flags & BOND_ACTIVE) && (b->i == id || b->j == id)) {
-                bonds.push_back(BondHandle(i));
-            }
+    auto id = self->id;
+    bonds.reserve(_Engine.nr_active_bonds);
+    
+    for(int i = 0; i < _Engine.bonds_size; ++i) {
+        Bond *b = &_Engine.bonds[i];
+        if((b->flags & BOND_ACTIVE) && (b->i == id || b->j == id)) {
+            bonds.push_back(BondHandle(i));
         }
-    }
-    catch(std::exception &e) {
-        tf_exp(e);
     }
 
     return bonds;
@@ -1157,23 +1131,18 @@ std::vector<BondHandle> TissueForge::ParticleHandle::getBonds() {
 
 std::vector<AngleHandle> TissueForge::ParticleHandle::getAngles() {
     
-    std::vector<AngleHandle> angles = std::vector<AngleHandle>();
+    std::vector<AngleHandle> angles;
 
-    try {
-        TF_PARTICLE_SELFW(this, angles)
+    TF_PARTICLE_SELFW(this, angles)
 
-        auto id = self->id;
-        
-        for(int i = 0; i < _Engine.angles_size; ++i) {
-            Angle *a = &_Engine.angles[i];
-            if((a->flags & ANGLE_ACTIVE) && (a->i == id || a->j == id || a->k == id)) {
-                angles.push_back(AngleHandle(i));
-            }
+    auto id = self->id;
+    angles.reserve(_Engine.nr_active_angles);
+    
+    for(int i = 0; i < _Engine.angles_size; ++i) {
+        Angle *a = &_Engine.angles[i];
+        if((a->flags & ANGLE_ACTIVE) && (a->i == id || a->j == id || a->k == id)) {
+            angles.push_back(AngleHandle(i));
         }
-        
-    }
-    catch(std::exception &e) {
-        tf_exp(e);
     }
 
     return angles;
@@ -1181,23 +1150,18 @@ std::vector<AngleHandle> TissueForge::ParticleHandle::getAngles() {
 
 std::vector<DihedralHandle> TissueForge::ParticleHandle::getDihedrals() {
     
-    std::vector<DihedralHandle> dihedrals = std::vector<DihedralHandle>();
+    std::vector<DihedralHandle> dihedrals;
 
-    try {
-        TF_PARTICLE_SELFW(this, dihedrals)
+    TF_PARTICLE_SELFW(this, dihedrals)
 
-        auto id = self->id;
-        
-        for(int i = 0; i < _Engine.dihedrals_size; ++i) {
-            Dihedral *d = &_Engine.dihedrals[i];
-            if((d->i == id || d->j == id || d->k == id || d->l == id)) {
-                dihedrals.push_back(DihedralHandle(i));
-            }
+    auto id = self->id;
+    dihedrals.reserve(_Engine.nr_active_dihedrals);
+    
+    for(int i = 0; i < _Engine.dihedrals_size; ++i) {
+        Dihedral *d = &_Engine.dihedrals[i];
+        if((d->i == id || d->j == id || d->k == id || d->l == id)) {
+            dihedrals.push_back(DihedralHandle(i));
         }
-        
-    }
-    catch(std::exception &e) {
-        tf_exp(e);
     }
 
     return dihedrals;
@@ -1216,7 +1180,7 @@ FPTYPE TissueForge::ParticleHandle::distance(ParticleHandle *_other) {
     auto other = particleSelf(_other);
     
     if(other == NULL) 
-        return tf_error(E_FAIL, "invalid args, distance(Particle)");
+        return error(MDCERR_null);
     
     FVector3 pos = self->global_position();
     FVector3 opos = other->global_position();
@@ -1226,22 +1190,16 @@ FPTYPE TissueForge::ParticleHandle::distance(ParticleHandle *_other) {
 HRESULT particle_init(ParticleHandle *self, ParticleType *ptype, FVector3 *position, FVector3 *velocity, int *cluster) 
 {
     
-    try {
-        TF_Log(LOG_TRACE);
+    TF_Log(LOG_TRACE);
 
-        FVector3 _position = position ? FVector3(*position) : particle_posdefault();
-        FVector3 _velocity = velocity ? FVector3(*velocity) : particle_veldefault(*ptype);
-        
-        // particle_init_ex will allocate a new particle, this can re-assign the pointers in
-        // the engine particles, so need to pass cluster by id.
-        int _clusterId = cluster ? *cluster : -1;
-        
-        return particle_init_ex(self, ptype, _position, _velocity, _clusterId);
-        
-    }
-    catch (const std::exception &e) {
-        return tf_exp(e);
-    }
+    FVector3 _position = position ? FVector3(*position) : particle_posdefault();
+    FVector3 _velocity = velocity ? FVector3(*velocity) : particle_veldefault(*ptype);
+    
+    // particle_init_ex will allocate a new particle, this can re-assign the pointers in
+    // the engine particles, so need to pass cluster by id.
+    int _clusterId = cluster ? *cluster : -1;
+    
+    return particle_init_ex(self, ptype, _position, _velocity, _clusterId);
 }
 
 HRESULT particle_ex_construct(
@@ -1284,13 +1242,9 @@ HRESULT particle_ex_load(ParticleHandle *self, Particle &part) {
     
     Particle *p = NULL;
     FPTYPE pos[] = {part.position[0], part.position[1], part.position[2]};
-    int result = engine_addpart(&_Engine, &part, pos, &p);
     
-    if(result != engine_err_ok) {
-        std::string err = "error engine_addpart, ";
-        err += engine_err_msg[-engine_err];
-        return tf_error(E_FAIL, err.c_str());
-    }
+    if(engine_addpart(&_Engine, &part, pos, &p) != S_OK) 
+        return error(MDCERR_engine);
     
     self->id = p->id;
     
@@ -1307,14 +1261,13 @@ HRESULT particle_ex_load(ParticleHandle *self, Particle &part) {
 }
 
 HRESULT particles_ex_load(std::vector<ParticleHandle*> selfs, std::vector<Particle*> parts) {
-    if(selfs.size() != parts.size()) {
-        return tf_error(E_FAIL, "data sizes are incompatible");
-    }
+    if(selfs.size() != parts.size()) 
+        return error(MDCERR_bad_el_input);
 
     FPTYPE **positions = (FPTYPE**)malloc(sizeof(FPTYPE*) * parts.size());
     std::vector<int> part_ids(parts.size(), 0);
-    if(engine_next_partids(&_Engine, part_ids.size(), part_ids.data()) != engine_err_ok) 
-        return tf_error(E_FAIL, engine_err_msg[-engine_err]);
+    if(engine_next_partids(&_Engine, part_ids.size(), part_ids.data()) != S_OK) 
+        return error(MDCERR_engine);
 
     for(int i = 0; i < parts.size(); i++) {
         Particle *part = parts[i];
@@ -1323,8 +1276,8 @@ HRESULT particles_ex_load(std::vector<ParticleHandle*> selfs, std::vector<Partic
         for(int k = 0; k < 3; k++) positions[i][k] = part->position[k];
     }
     
-    if(engine_addparts(&_Engine, parts.size(), parts.data(), positions) != engine_err_ok) 
-        return tf_error(E_FAIL, engine_err_msg[-engine_err]);
+    if(engine_addparts(&_Engine, parts.size(), parts.data(), positions) != S_OK) 
+        return error(MDCERR_engine);
     
     for(int i = 0; i < selfs.size(); i++) {
         Particle *part = parts[i];
@@ -1359,13 +1312,13 @@ HRESULT particle_init_ex(
 {
     
     Particle part;
-    HRESULT result;
+    int result;
 
     if((result = particle_ex_construct(self, ptype, position, velocity, clusterId, part)) != S_OK) {
-        return tf_error(result, engine_err_msg[-engine_err]);
+        return error(MDCERR_particle);
     }
     if((result = particle_ex_load(self, part)) != S_OK) {
-        return tf_error(result, engine_err_msg[-engine_err]);
+        return error(MDCERR_particle);
     }
     
     return S_OK;
@@ -1399,7 +1352,7 @@ HRESULT TissueForge::Particle_Verify() {
         result = p->verify() && result;
     }
 
-    return result ? S_OK : E_FAIL;
+    return result ? S_OK : error(MDCERR_verify);
 }
 
 
@@ -1409,14 +1362,14 @@ namespace TissueForge::io {
     #define TF_PARTICLEIOTOEASY(fe, key, member) \
         fe = new IOElement(); \
         if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
+            return error(MDCERR_io); \
         fe->parent = fileElement; \
         fileElement->children[key] = fe;
 
     #define TF_PARTICLEIOFROMEASY(feItr, children, metaData, key, member_p) \
         feItr = children.find(key); \
         if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
+            return error(MDCERR_io);
 
     template <>
     HRESULT toFile(const Particle &dataElement, const MetaData &metaData, IOElement *fileElement) { 
@@ -1508,7 +1461,7 @@ namespace TissueForge::io {
         if(feItr != fileElement.children.end()) {
             dataElement->style = new rendering::Style();
             if(fromFile(*feItr->second, metaData, dataElement->style) != S_OK) 
-                return E_FAIL;
+                return error(MDCERR_io);
         } 
         else dataElement->style = NULL;
         
@@ -1516,7 +1469,7 @@ namespace TissueForge::io {
         if(feItr != fileElement.children.end()) {
             dataElement->state_vector = NULL;
             if(fromFile(*feItr->second, metaData, &dataElement->state_vector) != S_OK) 
-                return E_FAIL;
+                return error(MDCERR_io);
             dataElement->state_vector->owner = dataElement;
         }
         else dataElement->state_vector = NULL;
@@ -1603,7 +1556,7 @@ namespace TissueForge::io {
         if(feItr != fileElement.children.end()) { 
             dataElement->style = new rendering::Style();
             if(fromFile(*feItr->second, metaData, dataElement->style) != S_OK) 
-                return E_FAIL;
+                return error(MDCERR_io);
         } 
         else {
             fVector3 c = Magnum::Color3::fromSrgb(colors[(dataElement->id - 1) % (sizeof(colors)/sizeof(unsigned))]);
@@ -1614,7 +1567,7 @@ namespace TissueForge::io {
         if(feItr != fileElement.children.end()) {
             dataElement->species = new state::SpeciesList();
             if(fromFile(*feItr->second, metaData, dataElement->species) != S_OK) 
-                return E_FAIL;
+                return error(MDCERR_io);
         } 
         else dataElement->species = NULL;
 

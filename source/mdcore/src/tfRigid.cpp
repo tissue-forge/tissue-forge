@@ -49,38 +49,16 @@
 #include <tfSpace.h>
 #include <tfEngine.h>
 #include <tfRigid.h>
+#include <tfError.h>
 
 
 using namespace TissueForge;
 
 
-/* Global variables. */
-/** The ID of the last error. */
-int TissueForge::rigid_err = rigid_err_ok;
-
-/* the error macro. */
-#define error(id)				(rigid_err = errs_register(id, rigid_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-
-/* list of error messages. */
-const char *rigid_err_msg[3] = {
-	"Nothing bad happened.",
-    "An unexpected NULL pointer was encountered.",
-    "A call to malloc failed, probably due to insufficient memory."
-};
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
     
 
-/**
- * @brief Evaluate (SHAKE) a list of rigid constraints
- *
- * @param rs Pointer to an array of #rigid.
- * @param N Nr of rigids in @c r.
- * @param e Pointer to the #engine in which these rigids are evaluated.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- * 
- * @return #rigid_err_ok or <0 on error (see #rigid_err)
- */
- 
-int TissueForge::rigid_eval_shake(struct rigid *rs, int N, struct engine *e) {
+HRESULT TissueForge::rigid_eval_shake(struct rigid *rs, int N, struct engine *e) {
 
     int iter, rid, k, j, pid, pjd, nr_parts, nr_constr, shift;
     struct Particle *p[rigid_maxparts], **partlist;
@@ -101,7 +79,7 @@ int TissueForge::rigid_eval_shake(struct rigid *rs, int N, struct engine *e) {
     dt = e->dt;
     idt = 1.0/dt;
     if(rs == NULL || e == NULL)
-        return error(rigid_err_null);
+        return error(MDCERR_null);
         
     /* Get some local values. */
     for(k = 0 ; k < 3 ; k++)
@@ -224,23 +202,11 @@ int TissueForge::rigid_eval_shake(struct rigid *rs, int N, struct engine *e) {
     } /* Loop over the constraints. */
         
     /* Bail quitely. */
-    return rigid_err_ok;
+    return S_OK;
         
 }
-    
-    
-/**
- * @brief Evaluate (P-SHAKE) a list of rigid constraints
- *
- * @param rs Pointer to an array of #rigid.
- * @param N Nr of rigids in @c r.
- * @param e Pointer to the #engine in which these rigids are evaluated.
- * @param a_update flag whether to force updates of the constraint coeffs.
- * 
- * @return #rigid_err_ok or <0 on error (see #rigid_err)
- */
- 
-int TissueForge::rigid_eval_pshake(struct rigid *rs, int N, struct engine *e, int a_update) {
+
+HRESULT TissueForge::rigid_eval_pshake(struct rigid *rs, int N, struct engine *e, int a_update) {
 
     int iter, rid, k, j, i, pid, pjd, nr_parts, nr_constr, shift;
     struct Particle *p[rigid_maxparts], **partlist;
@@ -260,7 +226,7 @@ int TissueForge::rigid_eval_pshake(struct rigid *rs, int N, struct engine *e, in
     dt = e->dt;
     idt = 1.0/dt;
     if(rs == NULL || e == NULL)
-        return error(rigid_err_null);
+        return error(MDCERR_null);
         
     /* Get some local values. */
     for(k = 0 ; k < 3 ; k++)
@@ -438,6 +404,6 @@ int TissueForge::rigid_eval_pshake(struct rigid *rs, int N, struct engine *e, in
     } /* Loop over the constraints. */
         
     /* Bail quitely. */
-    return rigid_err_ok;
+    return S_OK;
         
 }

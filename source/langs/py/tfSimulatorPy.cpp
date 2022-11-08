@@ -24,6 +24,7 @@
 
 #include <tfLogger.h>
 #include <tf_util.h>
+#include <tfError.h>
 #include <types/tf_cast.h>
 #include <rendering/tfApplication.h>
 #include <rendering/tfClipPlane.h>
@@ -32,6 +33,10 @@
 
 
 using namespace TissueForge;
+
+
+static TissueForge::ErrorCallback *pySimErrCb = NULL;
+static unsigned int pySimErrCbId = 0;
 
 
 #define TF_SIMPY_CHECK(hr) \
@@ -92,6 +97,38 @@ struct ArgumentsWrapper  {
     T *pArgs = NULL;
     int argsIntReference;
 };
+
+static void SimulatorPy_ErrorCallback(const TissueForge::Error &err) {
+    PyErr_SetString(PyExc_RuntimeError, errStr(err).c_str());
+}
+
+static HRESULT SimulatorPy_setErrorCallback() {
+    if(!pySimErrCb) {
+        pySimErrCb = new ErrorCallback(SimulatorPy_ErrorCallback);
+        pySimErrCbId = addErrorCallback(*pySimErrCb);
+    }
+    return S_OK;
+}
+
+static HRESULT SimulatorPy_unsetErrorCallback() {
+    if(pySimErrCb) {
+        removeErrorCallback(pySimErrCbId);
+        delete pySimErrCb;
+        pySimErrCb = 0;
+        pySimErrCbId = 0;
+    }
+    return S_OK;
+}
+
+HRESULT py::SimulatorPy::_throwExceptions(const bool &_throw) {
+    if(_throw && !pySimErrCb) SimulatorPy_setErrorCallback();
+    else if(pySimErrCb) SimulatorPy_unsetErrorCallback();
+    return S_OK;
+}
+
+bool py::SimulatorPy::_throwingExceptions() {
+    return pySimErrCb;
+}
 
 static void parse_kwargs(PyObject *kwargs, Simulator::Config &conf) {
 
@@ -203,6 +240,14 @@ static void parse_kwargs(PyObject *kwargs, Simulator::Config &conf) {
     } 
     else seed = NULL;
 
+    bool *throw_exc;
+    if((o = PyDict_GetItemString(kwargs, "throw_exc"))) {
+        throw_exc = new bool(cast<PyObject, bool>(o));
+
+        TF_Log(LOG_INFORMATION) << "got throw_exc: " << std::to_string(*throw_exc);
+    }
+    else throw_exc = NULL;
+
     uint32_t *perfcounters;
     if((o = PyDict_GetItemString(kwargs, "perfcounters"))) {
         perfcounters = new uint32_t(cast<PyObject, uint32_t>(o));
@@ -287,6 +332,7 @@ static void parse_kwargs(PyObject *kwargs, Simulator::Config &conf) {
     if(windowless) conf.setWindowless(*windowless);
     if(window_size) conf.setWindowSize(*window_size);
     if(seed) conf.setSeed(*seed);
+    if(throw_exc) conf.setThrowingExceptions(*throw_exc);
     if(perfcounters) conf.universeConfig.timers_mask = *perfcounters;
     if(perfcounter_period) conf.universeConfig.timer_output_period = *perfcounter_period;
     if(logger_level) Logger::setLevel(*logger_level);
@@ -486,6 +532,8 @@ PyObject *py::SimulatorPy_init(PyObject *args, PyObject *kwargs) {
         }
 
         TF_Log(LOG_INFORMATION) << "successfully parsed args";
+
+        SimulatorPy::_throwExceptions(conf.throwingExceptions());
         
         if(!conf.windowless() && py::ZMQInteractiveShell()) {
             TF_Log(LOG_WARNING) << "requested window mode in Jupyter notebook, will fail badly if there is no X-server";

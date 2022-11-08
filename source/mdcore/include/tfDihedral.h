@@ -29,11 +29,6 @@
 
 #include <mdcore_config.h>
 
-/* dihedral error codes */
-#define dihedral_err_ok                    0
-#define dihedral_err_null                  -1
-#define dihedral_err_malloc                -2
-
 
 namespace TissueForge { 
 
@@ -41,10 +36,6 @@ namespace TissueForge {
     namespace rendering {
         struct Style;
     }
-
-
-    /** ID of the last error */
-    CAPI_DATA(int) dihedral_err;
 
 
     typedef enum DihedralFlags {
@@ -166,8 +157,6 @@ namespace TissueForge {
 
         /**
          * @brief Destroy the dihedral
-         * 
-         * @return HRESULT 
          */
         HRESULT destroy();
 
@@ -208,20 +197,38 @@ namespace TissueForge {
      * @brief Destroys a dihedral
      * 
      * @param d dihedral to destroy
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Dihedral_Destroy(Dihedral *d);
 
     /**
      * @brief Destroys all dihedrals in the universe
-     * 
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Dihedral_DestroyAll();
 
     /* associated functions */
-    int dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTYPE *epot_out);
-    int dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of dihedraled interactions
+     *
+     * @param b Pointer to an array of #dihedral.
+     * @param N Nr of dihedrals in @c b.
+     * @param e Pointer to the #engine in which these dihedrals are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     */
+    HRESULT dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of dihedraled interactions
+     *
+     * @param b Pointer to an array of #dihedral.
+     * @param N Nr of dihedrals in @c b.
+     * @param e Pointer to the #engine in which these dihedrals are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     *
+     * This function differs from #dihedral_eval in that the forces are added to
+     * the array @c f instead of directly in the particle data.
+     */
+    HRESULT dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
 
     /**
      * find all the dihedrals that interact with the given particle id

@@ -95,6 +95,15 @@
         def redraw():
             return _SimulatorPy.redraw()
 
+        @property
+        def throw_exceptions(self) -> bool:
+            """Whether errors result in exceptions"""
+            return _SimulatorPy._throwingExceptions()
+
+        @throw_exceptions.setter
+        def throw_exceptions(self, _throw: bool):
+            _SimulatorPy._throwExceptions(_throw)
+
     Simulator = SimulatorInterface()
     
     from enum import Enum as EnumPy

@@ -17,6 +17,7 @@
  * 
  ******************************************************************************/
 
+#include <tf_errs.h>
 #include <tfFlux.h>
 #include <tfParticle.h>
 #include <state/tfSpeciesList.h>
@@ -34,37 +35,54 @@
 using namespace TissueForge;
 
 
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
+
+
+static std::string err_type_no_species(const std::string &name) {
+    return std::string("particle type ") + name + " does not have any defined species";
+}
+
+static std::string err_type_no_species_name(const std::string &type_name, const std::string &species_name) {
+    return std::string("particle type ") + type_name + " does not have species " + species_name;
+}
+
+static std::string err_simd_size() {
+    std::string msg = "currently only ";
+    msg += std::to_string(TF_SIMD_SIZE) + " flux species supported, please let the Tissue Forge development team know you want more. ";
+    return msg;
+}
+
+
 Fluxes *TissueForge::Fluxes::create(FluxKind kind, ParticleType *a, ParticleType *b,
                            const std::string& name, FPTYPE k, FPTYPE decay, FPTYPE target) 
 {
     
     if(!a || !b) {
-        throw std::invalid_argument("Invalid particle types");
+        tf_error(E_FAIL, "Invalid particle types");
+        return NULL;
     }
     
     if(!a->species) {
-        std::string msg = std::string("particle type ") + a->name + " does not have any defined species";
-        throw std::invalid_argument(msg);
+        tf_error(E_FAIL, err_type_no_species(a->name).c_str());
+        return NULL;
     }
     
     if(!b->species) {
-        std::string msg = std::string("particle type ") + b->name + " does not have any defined species";
-        throw std::invalid_argument(msg);
+        tf_error(E_FAIL, err_type_no_species(b->name).c_str());
+        return NULL;
     }
     
     int index_a = a->species->index_of(name.c_str());
     int index_b = b->species->index_of(name.c_str());
     
     if(index_a < 0) {
-        std::string msg = std::string("particle type ") +
-        a->name + " does not have species " + name;
-        throw std::invalid_argument(msg);
+        tf_error(E_FAIL, err_type_no_species_name(a->name, name).c_str());
+        return NULL;
     }
     
     if(index_b < 0) {
-        std::string msg = std::string("particle type ") +
-        b->name + " does not have species " + name;
-        throw std::invalid_argument(msg);
+        tf_error(E_FAIL, err_type_no_species_name(b->name, name).c_str());
+        return NULL;
     }
     
     Fluxes *fluxes = engine_getfluxes(&_Engine, a->id, b->id);
@@ -75,18 +93,16 @@ Fluxes *TissueForge::Fluxes::create(FluxKind kind, ParticleType *a, ParticleType
     
     fluxes = Fluxes::addFlux(kind, fluxes, a->id, b->id, index_a, index_b, k, decay, target);
     
-    engine_addfluxes(&_Engine, fluxes, a->id, b->id);
+    if(engine_addfluxes(&_Engine, fluxes, a->id, b->id) != S_OK) {
+        error(MDCERR_engine);
+        return NULL;
+    }
     
     return fluxes;
 }
 
 Fluxes *TissueForge::Fluxes::fluxFick(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &decay) {
-    try {
-        return Fluxes::create(FLUX_FICK, A, B, name, k, decay, 0.f);
-    }
-    catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
-    }
+    return Fluxes::create(FLUX_FICK, A, B, name, k, decay, 0.f);
 }
 
 Fluxes *TissueForge::Fluxes::flux(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &decay) {
@@ -94,21 +110,11 @@ Fluxes *TissueForge::Fluxes::flux(ParticleType *A, ParticleType *B, const std::s
 }
 
 Fluxes *TissueForge::Fluxes::secrete(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &target, const FPTYPE &decay) {
-    try {
-        return Fluxes::create(FLUX_SECRETE, A, B, name, k, decay, target);
-    }
-    catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
-    }
+    return Fluxes::create(FLUX_SECRETE, A, B, name, k, decay, target);
 }
 
 Fluxes *TissueForge::Fluxes::uptake(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &target, const FPTYPE &decay) {
-    try {
-        return Fluxes::create(FLUX_UPTAKE, A, B, name, k, decay, target);
-    }
-    catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
-    }
+    return Fluxes::create(FLUX_UPTAKE, A, B, name, k, decay, target);
 }
 
 std::string TissueForge::Fluxes::toString() {
@@ -172,9 +178,8 @@ Fluxes *TissueForge::Fluxes::addFlux(FluxKind kind, Fluxes *fluxes,
         fluxes->fluxes[0].size += 1;
     }
     else {
-        std::string msg = "currently only ";
-        msg += std::to_string(TF_SIMD_SIZE) + " flux species supported, please let the Tissue Forge development team know you want more. ";
-        throw std::logic_error(msg);
+        tf_error(E_FAIL, err_simd_size().c_str());
+        return NULL;
     }
     
     Flux *flux = &fluxes->fluxes[0];
@@ -202,6 +207,7 @@ Fluxes* TissueForge::Fluxes::newFluxes(int32_t init_size) {
 
     /* allocate the potential */
     if ((obj = (Fluxes *)aligned_Malloc(total_size, 16)) == NULL) {
+        error(MDCERR_null);
         return NULL;
     }
     
@@ -220,14 +226,14 @@ namespace TissueForge::io {
     #define TFC_FLUXIOTOEASY(fe, key, member) \
         fe = new IOElement(); \
         if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
+            return error(MDCERR_io); \
         fe->parent = fileElement; \
         fileElement->children[key] = fe;
 
     #define TFC_FLUXIOFROMEASY(feItr, children, metaData, key, member_p) \
         feItr = children.find(key); \
         if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
+            return error(MDCERR_io);
 
     template <>
     HRESULT toFile(const TypeIdPair &dataElement, const MetaData &metaData, IOElement *fileElement) {

@@ -41,6 +41,34 @@
 namespace TissueForge::cuda {
 
 
+    enum ErrorCode : int {
+        TFCUDAERR_ok = 0,
+        TFCUDAERR_setdevice,
+        TFCUDAERR_setblocks,
+        TFCUDAERR_setthreads,
+        TFCUDAERR_ondevice,
+        TFCUDAERR_notondevice,
+        TFCUDAERR_cleardevices,
+        TFCUDAERR_refresh,
+        TFCUDAERR_send,
+        TFCUDAERR_pull,
+        TFCUDAERR_LAST
+    };
+
+    /* list of error messages. */
+    static const char *tfcuda_err_msg[TFCUDAERR_LAST] = {
+        "No CUDA errors.",
+        "Failed to set device.",
+        "Failed to set blocks.",
+        "Failed to set threads.",
+        "Already on device.",
+        "Not on device.",
+        "Failed to clear devices.",
+        "Refresh failed.",
+        "Attempting send to device failed.",
+        "Attempting pull from device when not sent."
+    };
+
     inline CUresult cuda_errorchk(CUresult retCode, const char *file, int line) {
         if(retCode != CUDA_SUCCESS) {
             std::string msg = "CUDA failed with error: ";

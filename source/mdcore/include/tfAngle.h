@@ -30,11 +30,6 @@
 #include <mdcore_config.h>
 #include "tfPotential.h"
 
-/* angle error codes */
-#define angle_err_ok                     0
-#define angle_err_null                  -1
-#define angle_err_malloc                -2
-
 
 namespace TissueForge {
 
@@ -42,10 +37,6 @@ namespace TissueForge {
     namespace rendering {
         struct Style;
     }
-
-
-    /** ID of the last error */
-    CAPI_DATA(int) angle_err;
 
 
     typedef enum AngleFlags {
@@ -176,8 +167,6 @@ namespace TissueForge {
          * @brief Destroy the angle. 
          * 
          * Automatically updates when running on a CUDA device. 
-         * 
-         * @return HRESULT 
          */
         HRESULT destroy();
 
@@ -218,7 +207,6 @@ namespace TissueForge {
      * @brief Destroys an angle
      * 
      * @param a angle to destroy
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Angle_Destroy(Angle *a);
 
@@ -226,14 +214,33 @@ namespace TissueForge {
      * @brief Destroys all angles in the universe. 
      * 
      * Automatically updates when running on a CUDA device. 
-     * 
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Angle_DestroyAll();
 
     /* associated functions */
-    int angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *epot_out);
-    int angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
+    
+    /**
+     * @brief Evaluate a list of angleed interactions
+     *
+     * @param a Pointer to an array of #angle.
+     * @param N Nr of angles in @c b.
+     * @param e Pointer to the #engine in which these angles are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     */
+    HRESULT angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of angleed interactions
+     *
+     * @param a Pointer to an array of #angle.
+     * @param N Nr of angles in @c b.
+     * @param e Pointer to the #engine in which these angles are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     *
+     * This function differs from #angle_eval in that the forces are added to
+     * the array @c f instead of directly in the particle data.
+     */
+    HRESULT angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
 
     /**
      * find all the angles that interact with the given particle id

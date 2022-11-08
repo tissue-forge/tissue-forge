@@ -68,18 +68,8 @@ using namespace TissueForge;
 
 rendering::Style *Bond_StylePtr = new rendering::Style("lime");
 
-/* Global variables. */
-/** The ID of the last error. */
-int TissueForge::bond_err = bond_err_ok;
 
-/* the error macro. */
-#define error(id)				(bond_err = errs_register(id, bond_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-
-/* list of error messages. */
-const char *bond_err_msg[2] = {
-	"Nothing bad happened.",
-    "An unexpected NULL pointer was encountered."
-};
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
 /**
@@ -103,18 +93,7 @@ static bool Bond_decays(Bond *b, std::uniform_real_distribution<FPTYPE> *uniform
     return result;
 }
 
-/**
- * @brief Evaluate a list of bonded interactoins
- *
- * @param b Pointer to an array of #bond.
- * @param N Nr of bonds in @c b.
- * @param e Pointer to the #engine in which these bonds are evaluated.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- * 
- * @return #bond_err_ok or <0 on error (see #bond_err)
- */
- 
-int TissueForge::bond_eval(struct Bond *bonds, int N, struct engine *e, FPTYPE *epot_out) {
+HRESULT TissueForge::bond_eval(struct Bond *bonds, int N, struct engine *e, FPTYPE *epot_out) {
 
     #ifdef HAVE_CUDA
     if(e->bonds_cuda) {
@@ -151,7 +130,7 @@ int TissueForge::bond_eval(struct Bond *bonds, int N, struct engine *e, FPTYPE *
     
     /* Check inputs. */
     if(bonds == NULL || e == NULL)
-        return error(bond_err_null);
+        return error(MDCERR_null);
         
     /* Get local copies of some variables. */
     s = &e->s;
@@ -360,28 +339,11 @@ int TissueForge::bond_eval(struct Bond *bonds, int N, struct engine *e, FPTYPE *
         *epot_out += epot;
     
     /* We're done here. */
-    return bond_err_ok;
+    return S_OK;
     
 }
 
-
-
-/**
- * @brief Evaluate a list of bonded interactoins
- *
- * @param bonds Pointer to an array of #bond.
- * @param N Nr of bonds in @c b.
- * @param e Pointer to the #engine in which these bonds are evaluated.
- * @param forces An array of @c FPTYPE in which to aggregate the resulting forces.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- * 
- * This function differs from #bond_eval in that the forces are added to
- * the array @c f instead of directly in the particle data.
- * 
- * @return #bond_err_ok or <0 on error (see #bond_err)
- */
- 
-int TissueForge::bond_evalf(struct Bond *bonds, int N, struct engine *e, FPTYPE *forces, FPTYPE *epot_out) {
+HRESULT TissueForge::bond_evalf(struct Bond *bonds, int N, struct engine *e, FPTYPE *forces, FPTYPE *epot_out) {
 
     int bid, pid, pjd, k, *loci, *locj, shift[3], ld_pots;
     FPTYPE h[3], epot = 0.0;
@@ -412,7 +374,7 @@ int TissueForge::bond_evalf(struct Bond *bonds, int N, struct engine *e, FPTYPE 
     
     /* Check inputs. */
     if(bonds == NULL || e == NULL || forces == NULL)
-        return error(bond_err_null);
+        return error(MDCERR_null);
         
     /* Get local copies of some variables. */
     s = &e->s;
@@ -616,11 +578,11 @@ int TissueForge::bond_evalf(struct Bond *bonds, int N, struct engine *e, FPTYPE 
         *epot_out += epot;
     
     /* We're done here. */
-    return bond_err_ok;
+    return S_OK;
     
 }
 
-int TissueForge::BondHandle::_init(
+HRESULT TissueForge::BondHandle::_init(
     uint32_t flags, 
     int32_t i, 
     int32_t j, 
@@ -629,16 +591,14 @@ int TissueForge::BondHandle::_init(
     struct Potential *potential) 
 {
     // check whether this handle has previously been initialized and return without error if so
-    if (this->id > 0 && _Engine.nr_bonds > 0) return 0;
+    if (this->id > 0 && _Engine.nr_bonds > 0) return S_OK;
 
     Bond *bond = NULL;
     
     int result = engine_bond_alloc(&_Engine, &bond);
     
-    if(result < 0) {
-        throw std::runtime_error("could not allocate bond");
-        return E_FAIL;
-    }
+    if(result < 0) 
+        return error(MDCERR_malloc);
     
     bond->flags = flags;
     bond->i = i;
@@ -662,12 +622,12 @@ int TissueForge::BondHandle::_init(
     #ifdef HAVE_CUDA
     if(_Engine.bonds_cuda) 
         if(cuda::engine_cuda_add_bond(bond) < 0) 
-            return error(engine_err);
+            return error(MDCERR_cuda);
     #endif
 
     TF_Log(LOG_TRACE) << "Created bond: " << this->id  << ", i: " << bond->i << ", j: " << bond->j;
 
-    return 0;
+    return S_OK;
 }
 
 rendering::Style *TissueForge::Bond::styleDef() {
@@ -682,7 +642,10 @@ BondHandle *TissueForge::Bond::create(
     FPTYPE *bond_energy, 
     uint32_t flags)
 {
-    if(!potential || !i || !j) return NULL;
+    if(!potential || !i || !j) {
+        error(MDCERR_null);
+        return NULL;
+    }
 
     auto _half_life = half_life ? *half_life : std::numeric_limits<FPTYPE>::max();
     auto _bond_energy = bond_energy ? *bond_energy : std::numeric_limits<FPTYPE>::max();
@@ -703,7 +666,7 @@ Bond *TissueForge::BondHandle::get() {
 
 TissueForge::BondHandle::BondHandle(int id) {
     if(id >= 0 && id < _Engine.nr_bonds) this->id = id;
-    else throw std::range_error("invalid id");
+    else error(MDCERR_id);
 }
 
 TissueForge::BondHandle::BondHandle(
@@ -718,7 +681,7 @@ TissueForge::BondHandle::BondHandle(
     _init(flags, i, j, half_life, bond_energy, potential);
 }
 
-int TissueForge::BondHandle::init(
+HRESULT TissueForge::BondHandle::init(
     Potential *pot, 
     ParticleHandle *p1, 
     ParticleHandle *p2, 
@@ -729,19 +692,14 @@ int TissueForge::BondHandle::init(
 
     TF_Log(LOG_DEBUG);
 
-    try {
-        return _init(
-            flags, 
-            p1->id, 
-            p2->id, 
-            half_life < FPTYPE_ZERO ? std::numeric_limits<FPTYPE>::max() : half_life, 
-            bond_energy < FPTYPE_ZERO ? std::numeric_limits<FPTYPE>::max() : bond_energy, 
-            pot
-        );
-    }
-    catch (const std::exception &e) {
-        return tf_exp(e);
-    }
+    return _init(
+        flags, 
+        p1->id, 
+        p2->id, 
+        half_life < FPTYPE_ZERO ? std::numeric_limits<FPTYPE>::max() : half_life, 
+        bond_energy < FPTYPE_ZERO ? std::numeric_limits<FPTYPE>::max() : bond_energy, 
+        pot
+    );
 }
 
 std::string TissueForge::BondHandle::str() {
@@ -896,7 +854,7 @@ static void make_pairlist(
 
 static bool Bond_destroyingAll = false;
 
-CAPI_FUNC(HRESULT) TissueForge::Bond_Destroy(struct Bond *b) {
+HRESULT TissueForge::Bond_Destroy(struct Bond *b) {
     
     std::unique_lock<std::mutex> lock(_Engine.bonds_mutex);
     
@@ -904,7 +862,7 @@ CAPI_FUNC(HRESULT) TissueForge::Bond_Destroy(struct Bond *b) {
         #ifdef HAVE_CUDA
         if(_Engine.bonds_cuda && !Bond_destroyingAll) 
             if(cuda::engine_cuda_finalize_bond(b->id) < 0) 
-                return E_FAIL;
+                return error(MDCERR_cuda);
         #endif
 
         // this clears the BOND_ACTIVE flag
@@ -920,7 +878,7 @@ HRESULT TissueForge::Bond_DestroyAll() {
     #ifdef HAVE_CUDA
     if(_Engine.bonds_cuda) 
         if(cuda::engine_cuda_finalize_bonds_all(&_Engine) < 0) 
-            return E_FAIL;
+            return error(MDCERR_cuda);
     #endif
 
     for(auto bh : BondHandle::items()) bh->destroy();
@@ -942,25 +900,20 @@ std::vector<BondHandle*>* TissueForge::BondHandle::pairwise(
     PairList pairs;
     std::vector<BondHandle*> *bonds = new std::vector<BondHandle*>();
     
-    try {
-        make_pairlist(parts, cutoff, ppairs, pairs);
-        
-        for(auto &pair : pairs) {
-            auto bond = new BondHandle(pot, pair.i, pair.j, half_life, bond_energy, flags);
-            if(!bond) {
-                throw std::logic_error("failed to allocated bond");
-            }
-            
-            bonds->push_back(bond);
+    make_pairlist(parts, cutoff, ppairs, pairs);
+    
+    for(auto &pair : pairs) {
+        auto bond = new BondHandle(pot, pair.i, pair.j, half_life, bond_energy, flags);
+        if(!bond) {
+            error(MDCERR_malloc);
+            delete bonds;
+            return NULL;
         }
         
-        return bonds;
+        bonds->push_back(bond);
     }
-    catch (const std::exception &e) {
-        delete bonds;
-        tf_exp(e);
-    }
-    return NULL;
+    
+    return bonds;
 }
 
 HRESULT TissueForge::BondHandle::destroy()
@@ -990,14 +943,14 @@ bool TissueForge::BondHandle::decays() {
 ParticleHandle *TissueForge::BondHandle::operator[](unsigned int index) {
     auto *b = get();
     if(!b) {
-        TF_Log(LOG_ERROR) << "Invalid bond handle";
+        error(MDCERR_null);
         return NULL;
     }
 
     if(index == 0) return Particle_FromId(b->i)->handle();
     else if(index == 1) return Particle_FromId(b->j)->handle();
     
-    tf_exp(std::range_error("Index out of range (must be 0 or 1)"));
+    error(MDCERR_range);
     return NULL;
 }
 
@@ -1024,23 +977,23 @@ HRESULT TissueForge::Bond_Energy (Bond *b, FPTYPE *epot_out) {
     pix[3] = FPTYPE_ZERO;
     
     if(!(b->flags & BOND_ACTIVE))
-        return -1;
+        return S_OK;
     
     /* Get the particles involved. */
     pid = b->i; pjd = b->j;
     if((pi = partlist[ pid ]) == NULL)
-        return -1;
+        return error(MDCERR_null);
     if((pj = partlist[ pjd ]) == NULL)
-        return -1;
+        return error(MDCERR_null);
     
     /* Skip if both ghosts. */
     if((pi->flags & PARTICLE_GHOST) && (pj->flags & PARTICLE_GHOST))
-        return 0;
+        return S_OK;
     
     /* Get the potential. */
     pot = b->potential;
     if (!pot) {
-        return 0;
+        return error(MDCERR_null);
     }
     
     /* get the distance between both particles */
@@ -1071,7 +1024,7 @@ HRESULT TissueForge::Bond_Energy (Bond *b, FPTYPE *epot_out) {
         *epot_out += epot;
     
     /* We're done here. */
-    return bond_err_ok;
+    return S_OK;
 }
 
 std::vector<int32_t> TissueForge::Bond_IdsForParticle(int32_t pid) {
@@ -1141,14 +1094,14 @@ namespace TissueForge::io {
     #define TF_BONDIOTOEASY(fe, key, member) \
         fe = new IOElement(); \
         if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
+            return error(MDCERR_io); \
         fe->parent = fileElement; \
         fileElement->children[key] = fe;
 
     #define TF_BONDIOFROMEASY(feItr, children, metaData, key, member_p) \
         feItr = children.find(key); \
         if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
+            return error(MDCERR_io);
 
     template <>
     HRESULT toFile(const Bond &dataElement, const MetaData &metaData, IOElement *fileElement) {

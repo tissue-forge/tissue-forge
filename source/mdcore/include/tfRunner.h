@@ -30,20 +30,6 @@
 #include "tf_platform.h"
 #include "cycle.h"
 
-/* runner error codes */
-#define runner_err_ok                    0
-#define runner_err_null                  -1
-#define runner_err_malloc                -2
-#define runner_err_space                 -3
-#define runner_err_pthread               -4
-#define runner_err_engine                -5
-#define runner_err_spe                   -6
-#define runner_err_mfc                   -7
-#define runner_err_unavail               -8
-#define runner_err_fifo                  -9
-#define runner_err_verlet_overflow       -10
-#define runner_err_tasktype              -11
-
 
 /* some constants */
 /* Minimum number of nanoseconds to sleep if no task available. */
@@ -110,9 +96,6 @@ MDCORE_BEGIN_DECLS
 namespace TissueForge { 
 
 
-	/* the last error */
-	CAPI_DATA(int) runner_err;
-
 	/* The fifo-queue for dispatching. */
 	typedef struct runner_fifo {
 
@@ -149,17 +132,120 @@ namespace TissueForge {
 	} runner;
 
 	/* associated functions */
-	int runner_dopair_unsorted(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j);
 
-	int runner_init(struct runner *r, struct engine *e, int id);
-	int runner_run(struct runner *r);
+	/**
+	 * @brief Compute the pairwise interactions for the given pair.
+	 *
+	 * @param r The #runner computing the pair.
+	 * @param cell_i The first cell.
+	 * @param cell_j The second cell.
+	 * @param shift A pointer to an array of three floating point values containing
+	 *      the vector separating the centers of @c cell_i and @c cell_j.
+	 *
+	 * Computes the interactions between all the particles in @c cell_i and all
+	 * the paritcles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
+	 *
+	 * @sa #runner_sortedpair.
+	 */
+	HRESULT runner_dopair_unsorted(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j);
+
+	/**
+	 * @brief Initialize the runner associated to the given engine.
+	 * 
+	 * @param r The #runner to be initialized.
+	 * @param e The #engine with which it is associated.
+	 * @param id The ID of this #runner.
+	 */
+	HRESULT runner_init(struct runner *r, struct engine *e, int id);
+
+	/** Run a #runner */
+	HRESULT runner_run(struct runner *r);
+
+	/**
+	 * @brief Sort the particles in ascending order using QuickSort.
+	 *
+	 * @param parts The particle IDs and distances in compact form
+	 * @param N The number of particles.
+	 *
+	 * The particle data is assumed to contain the distance in the lower
+	 * 16 bits and the particle ID in the upper 16 bits.
+	 */
 	void runner_sort_ascending(unsigned int *parts, int N);
+
+	/**
+	 * @brief Sort the particles in descending order using QuickSort.
+	 *
+	 * @param parts The particle IDs and distances in compact form
+	 * @param N The number of particles.
+	 *
+	 * The particle data is assumed to contain the distance in the lower
+	 * 16 bits and the particle ID in the upper 16 bits.
+	 */
 	void runner_sort_descending(unsigned int *parts, int N);
-	int runner_verlet_eval(struct runner *r, struct space_cell *c, FPTYPE *f_out);
-	int runner_verlet_fill(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, FPTYPE *pshift);
-	int runner_dosort(struct runner *r, struct space_cell *c, int flags);
-	int runner_dopair(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, int sid);
-	int runner_doself(struct runner *r, struct space_cell *cell_i);
+
+	/**
+	 * @brief Compute the interactions between the particles in the given
+	 *        space_cell using the verlet list.
+	 *
+	 * @param r The #runner.
+	 * @param c The #cell containing the particles to traverse.
+	 * @param f A pointer to an array of #FPTYPE in which to aggregate the
+	 *        interaction forces.
+	 */
+	HRESULT runner_verlet_eval(struct runner *r, struct space_cell *c, FPTYPE *f_out);
+
+	/**
+	 * @brief Fill in the Verlet list entries for the given space_cell pair.
+	 * 
+	 * @param r The #runner computing the pair.
+	 * @param cell_i The first cell.
+	 * @param cell_j The second cell.
+	 * @param pshift A pointer to an array of three floating point values containing
+	 *      the vector separating the centers of @c cell_i and @c cell_j.
+	 */
+	HRESULT runner_verlet_fill(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, FPTYPE *pshift);
+
+	/**
+	 * @brief Fill in the pairwise Verlet list entries for the given cell pair
+	 *        if needed and compute the interactions.
+	 * 
+	 * @param r The #runner computing the pair.
+	 * @param c The cell.
+	 * @param flags Bitmask for the sorting directions.
+	 *
+	 * This routine differs from #runner_dopair_verlet in that instead of
+	 * storing a Verlet table, the sorted particle ids are stored. This
+	 * requires only (size_i + size_j) entries as opposed to size_i*size_j
+	 * for the Verlet table, yet may be less efficient since particles
+	 * within the skin along the cell-pair axis are inspected, as opposed
+	 * to particles simply within the skin of each other.
+	 *
+	 */
+	HRESULT runner_dosort(struct runner *r, struct space_cell *c, int flags);
+
+	/**
+	 * @brief Compute the pairwise interactions for the given pair.
+	 *
+	 * @param r The #runner computing the pair.
+	 * @param cell_i The first cell.
+	 * @param cell_j The second cell.
+	 * @param shift A pointer to an array of three floating point values containing
+	 *      the vector separating the centers of @c cell_i and @c cell_j.
+	 *
+	 * Computes the interactions between all the particles in @c cell_i and all
+	 * the paritcles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
+	 *
+	 * @sa #runner_sortedpair.
+	 */
+	HRESULT runner_dopair(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, int sid);
+
+	/**
+	 * @brief Compute the self-interactions for the given cell.
+	 *
+	 * @param r The #runner computing the pair.
+	 * @param cell_i The first cell.
+	 */
+	HRESULT runner_doself(struct runner *r, struct space_cell *cell_i);
 
 };
 

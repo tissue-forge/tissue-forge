@@ -32,11 +32,16 @@
 #include <tfSpace.h>
 #include <tfSpace_cell.h>
 #include <tf_metrics.h>
+#include <tf_errs.h>
 
 #include <rendering/tfStyle.h>
 
 
 using namespace TissueForge;
+
+
+/* the error macro. */
+#define error(id)( tf_error(E_FAIL, errs_err_msg[id]) )
 
 
 /**
@@ -133,10 +138,10 @@ static ParticleHandle* cluster_fission_axis(Particle *cluster, const FVector3 &a
     return cluster_fission_plane(cluster, plane);
 }
 
-int TissueForge::Cluster_ComputeAggregateQuantities(struct Cluster *cluster) {
+HRESULT TissueForge::Cluster_ComputeAggregateQuantities(struct Cluster *cluster) {
     
     if(cluster->nr_parts <= 0) {
-        return 0;
+        return S_OK;
     }
     
     FVector3 pos;
@@ -150,7 +155,7 @@ int TissueForge::Cluster_ComputeAggregateQuantities(struct Cluster *cluster) {
     
     cluster->set_global_position(pos / cluster->nr_parts);
     
-    return 0;
+    return S_OK;
 }
 
 
@@ -188,8 +193,6 @@ bool TissueForge::ClusterParticleType::hasType(const ParticleType *type) {
     return false;
 }
 
-// Registers a type with the engine. 
-// Also registers all unregistered constituent types
 HRESULT TissueForge::ClusterParticleType::registerType() {
     for (int tid = 0; tid < types.nr_parts; ++tid) {
         auto type = types.item(tid);
@@ -223,6 +226,10 @@ ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *par
                                                                FVector3 *velocity) 
 {
     auto p = Cluster_CreateParticle((Cluster*)part(), partType, position, velocity);
+    if(!p) {
+        error(MDCERR_null);
+        return NULL;
+    }
     return new ParticleHandle(p->id);
 }
 
@@ -252,10 +259,6 @@ ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *par
  # default version of split uses a random cleavage plane that intersects the
  # cell center
  split()
- 
- # the old style, were randomly picks contained objects, and assigns half of them
- # to the daughter cell
- split(random=True)
 */
 ParticleHandle* TissueForge::ClusterParticleHandle::fission(FVector3 *axis, 
                                                             bool *random, 
@@ -305,7 +308,6 @@ ParticleHandle* TissueForge::ClusterParticleHandle::fission(FVector3 *axis,
     }
     
     return cluster_fission_normal_point(cluster, _normal, _point);
-    // return cluster_fission(this, axis, random, time, normal, point);
 }
 
 ParticleHandle* TissueForge::ClusterParticleHandle::split(FVector3 *axis, 
@@ -351,7 +353,7 @@ FMatrix3 TissueForge::ClusterParticleHandle::getMomentOfInertia() {
 /**
  * adds an existing particle to the cluster.
  */
-int TissueForge::Cluster_AddParticle(struct Cluster *cluster, struct Particle *part) {
+HRESULT TissueForge::Cluster_AddParticle(struct Cluster *cluster, struct Particle *part) {
     part->flags |= PARTICLE_BOUND;
     cluster->addpart(part->id);
     return S_OK;
@@ -368,14 +370,23 @@ Particle *TissueForge::Cluster_CreateParticle(Cluster *cluster,
     TF_Log(LOG_TRACE);
     
     auto *type = &_Engine.types[cluster->typeId];
-    if (!type->isCluster()) return NULL;
+    if (!type->isCluster()) {
+        error(MDCERR_notcluster);
+        return NULL;
+    }
     
     auto *clusterType = (ClusterParticleType*)type;
     TF_Log(LOG_TRACE) << type->id << ", " << particleType->id << ", " << clusterType->hasType(particleType);
-    if (!clusterType->hasType(particleType)) return NULL;
+    if (!clusterType->hasType(particleType)) {
+        error(MDCERR_wrongptype);
+        return NULL;
+    }
 
     auto handle = Particle_New(particleType, position, velocity, &cluster->id);
-    if (!handle) return NULL;
+    if (!handle) {
+        error(MDCERR_null);
+        return NULL;
+    }
 
     return handle->part();
 
@@ -391,7 +402,7 @@ HRESULT TissueForge::_Cluster_init() {
     TF_Log(LOG_TRACE);
 
     if(engine::nr_types != 1) {
-        return tf_error(E_FAIL, "engine types already set, or not initialized in correct order");
+        return error(MDCERR_initorder);
     }
 
     auto type = new ClusterParticleType();

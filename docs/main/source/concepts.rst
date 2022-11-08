@@ -25,5 +25,6 @@ Concepts
     controls
     rendering
     file_io
+    logging_and_errors
     numerical_details
     cuda
