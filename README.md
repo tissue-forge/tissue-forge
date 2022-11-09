@@ -51,7 +51,7 @@ Tissue Forge documentation is available online,
 Binary distributions of Tissue Forge are available via conda from the `tissue-forge` channel, 
 
 ```bash
-conda install -c tissue-forge tissue-forge
+conda install -c conda-forge -c tissue-forge tissue-forge
 ```
 
 Pre-built binaries of the latest Tissue Forge developments are also archived at the 
