@@ -56,6 +56,27 @@
 
 %extend TissueForge::ParticleHandle {
     %pythoncode %{
+        def __str__(self) -> str:
+            return self.str()
+
+        def __lt__(self, rhs) -> bool:
+            return self.id < rhs.id
+
+        def __gt__(self, rhs) -> bool:
+            return rhs < self
+
+        def __le__(self, rhs) -> bool:
+            return not (self > rhs)
+
+        def __ge__(self, rhs) -> bool:
+            return not (self < rhs)
+
+        def __eq__(self, rhs) -> bool:
+            return self.id == rhs.id
+
+        def __ne__(self, rhs) -> bool:
+            return not (self == rhs)
+
         @property
         def charge(self):
             """Particle charge"""
@@ -219,6 +240,33 @@
 
 %extend TissueForge::ParticleType {
     %pythoncode %{
+        def __getitem__(self, index: int):
+            return self.parts.__getitem__(index)
+
+        def __contains__(self, item):
+            return self.has(item)
+
+        def __str__(self):
+            return self.str()
+
+        def __lt__(self, rhs) -> bool:
+            return self.id < rhs.id
+
+        def __gt__(self, rhs) -> bool:
+            return rhs < self
+
+        def __le__(self, rhs) -> bool:
+            return not (self > rhs)
+
+        def __ge__(self, rhs) -> bool:
+            return not (self < rhs)
+
+        def __eq__(self, rhs) -> bool:
+            return self.id == rhs.id
+
+        def __ne__(self, rhs) -> bool:
+            return not (self == rhs)
+
         def __call__(self, *args, **kwargs):
             position = kwargs.get('position')
             velocity = kwargs.get('velocity')

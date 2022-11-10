@@ -185,12 +185,44 @@ TissueForge::ClusterParticleType::ClusterParticleType(const bool &noReg) :
     this->particle_flags |= PARTICLE_CLUSTER;
 }
 
+std::string TissueForge::ClusterParticleType::str() const {
+    std::stringstream ss;
+
+    ss << "ClusterParticleType(id=" << this->id << ", name=" << this->name << ")";
+
+    return ss.str();
+}
+
 bool TissueForge::ClusterParticleType::hasType(const ParticleType *type) {
     for (int tid = 0; tid < types.nr_parts; ++tid) {
         if (type->id == types.item(tid)->id) 
             return true;
     }
     return false;
+}
+
+bool TissueForge::ClusterParticleType::has(const int32_t &pid) {
+    for(int tid = 0; tid < types.nr_parts; tid++) {
+        if(types.parts[tid] == pid) 
+            return true;
+
+        ParticleType *ptype = types.item(tid);
+        if(ptype->isCluster()) {
+            ClusterParticleType *ctype = (ClusterParticleType*)ptype;
+            if(ctype->has(pid)) 
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool TissueForge::ClusterParticleType::has(ParticleType *ptype) {
+    return ptype ? has(ptype->id) : false;
+}
+
+bool TissueForge::ClusterParticleType::has(ParticleHandle *part) {
+    return part ? parts.has(part) : false;
 }
 
 HRESULT TissueForge::ClusterParticleType::registerType() {
@@ -217,6 +249,19 @@ TissueForge::ClusterParticleHandle::ClusterParticleHandle(const int &id) :
     ParticleHandle(id) 
 {}
 
+std::string TissueForge::ClusterParticleHandle::str() const {
+    std::stringstream  ss;
+    
+    ss << "ClusterParticleHandle(";
+    if(this->id >= 0) {
+        ClusterParticleHandle ph(this->id);
+        ss << "id=" << ph.getId() << ", typeId=" << ph.getTypeId() << ", clusterId=" << ph.getClusterId();
+    }
+    ss << ")";
+    
+    return ss.str();
+}
+
 Cluster *TissueForge::ClusterParticleHandle::cluster() {
     return (Cluster*)this->part();
 }
@@ -238,6 +283,28 @@ ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *par
     ParticleHandle *p = (*this)(partType, &dummy->position, &dummy->velocity);
     delete dummy;
     return p;
+}
+
+bool TissueForge::ClusterParticleHandle::has(const int32_t &pid) {
+    ParticleList plist = this->items();
+
+    for(size_t i = 0; i < plist.nr_parts; i++) {
+        if(plist.parts[i] == pid) 
+            return true;
+
+        ParticleHandle *ph = plist.item(i);
+        if(ph->getClusterId() >= 0) {
+            ClusterParticleHandle *ch = (ClusterParticleHandle*)ph;
+            if(ch->has(pid)) 
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool TissueForge::ClusterParticleHandle::has(ParticleHandle *part) {
+    return part ? has(part->id) : false;
 }
 
 /**
@@ -317,9 +384,9 @@ ParticleHandle* TissueForge::ClusterParticleHandle::split(FVector3 *axis,
                                                           FVector3 *point) 
 { return fission(axis, random, time, normal, point); }
 
-ParticleList *TissueForge::ClusterParticleHandle::items() {
+ParticleList TissueForge::ClusterParticleHandle::items() {
     Particle *self = this->part();
-    return new ParticleList(self->nr_parts, self->parts);
+    return ParticleList(self->nr_parts, self->parts);
 }
 
 FPTYPE TissueForge::ClusterParticleHandle::getRadiusOfGyration() {
@@ -355,9 +422,13 @@ uint16_t TissueForge::ClusterParticleHandle::getNumParts() {
     return self->nr_parts;
 }
 
-ParticleList TissueForge::ClusterParticleHandle::getParts() {
+std::vector<int32_t> TissueForge::ClusterParticleHandle::getPartIds() {
     Particle *self = this->part();
-    return ParticleList(self->nr_parts, self->parts);
+    std::vector<int32_t> result;
+    result.reserve(self->nr_parts);
+    for(size_t i = 0; i < self->nr_parts; i++) 
+        result.push_back(self->parts[i]);
+    return result;
 }
 
 /**

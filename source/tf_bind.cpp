@@ -127,13 +127,13 @@ HRESULT bind::force(Force *force, ParticleType *a_type, const std::string& coupl
 
 HRESULT bind::bonds(
     Potential* potential,
-    ParticleList *particles, 
+    ParticleList &particles, 
     const FloatP_t &cutoff, 
     std::vector<std::pair<ParticleType*, ParticleType*>* > *pairs, 
     const FloatP_t &half_life, 
     const FloatP_t &bond_energy, 
     uint32_t flags, 
-    std::vector<BondHandle*> **out) 
+    std::vector<BondHandle> *out) 
 { 
     TF_Log(LOG_DEBUG);
     auto result = BondHandle::pairwise(potential, particles, cutoff, pairs, half_life, bond_energy, flags);
@@ -148,7 +148,8 @@ HRESULT bind::sphere(
     const FloatP_t &radius,
     std::pair<FloatP_t, FloatP_t> *phi, 
     ParticleType *type, 
-    std::pair<ParticleList*, std::vector<BondHandle*>*> **out)
+    ParticleList *partList,
+    std::vector<BondHandle> *bondList)
 {
     TF_Log(LOG_TRACE);
 
@@ -186,8 +187,8 @@ HRESULT bind::sphere(
 
     FVector3 velocity;
 
-    ParticleList *parts = new ParticleList(vertices.size());
-    parts->nr_parts = vertices.size();
+    ParticleList parts(vertices.size());
+    parts.nr_parts = vertices.size();
 
     // Euler formula for graphs:
     // For a closed polygon -- non-manifold mesh: T−E+V=1 -> E = T + V - 1
@@ -206,12 +207,12 @@ HRESULT bind::sphere(
 
     if(edges <= 0) return tf_error(E_FAIL, "No edges resulted from input.");
 
-    std::vector<BondHandle*> *bonds = new std::vector<BondHandle*>();
+    std::vector<BondHandle> bonds;
 
     for(int i = 0; i < vertices.size(); ++i) {
         FVector3 pos = m.transformPoint(vertices[i]);
         ParticleHandle *p = (*type)(&pos, &velocity);
-        parts->parts[i] = p->id;
+        parts.parts[i] = p->id;
     }
 
     if(vertices.size() > 0 && indices.size() == 0) return tf_error(E_FAIL, "No vertices resulted from input.");
@@ -222,12 +223,12 @@ HRESULT bind::sphere(
         int b = indices[i+1];
         int c = indices[i+2];
 
-        nbonds += insert_bond(*bonds, a, b, potential, parts);
-        nbonds += insert_bond(*bonds, b, c, potential, parts);
-        nbonds += insert_bond(*bonds, c, a, potential, parts);
+        nbonds += insert_bond(bonds, a, b, potential, &parts);
+        nbonds += insert_bond(bonds, b, c, potential, &parts);
+        nbonds += insert_bond(bonds, c, a, potential, &parts);
     }
 
-    if(nbonds != bonds->size()) {
+    if(nbonds != bonds.size()) {
         std::string msg = "unknown error in finding edges for sphere mesh, \n";
         msg += "vertices: " + std::to_string(vertices.size()) + "\n";
         msg += "indices: " + std::to_string(indices.size()) + "\n";
@@ -236,7 +237,8 @@ HRESULT bind::sphere(
         tf_error(E_FAIL, msg.c_str());
     }
 
-    if(out) *out = new std::pair<ParticleList*, std::vector<BondHandle*>*>(parts, bonds);
+    if(partList) *partList = parts;
+    if(bondList) *bondList = bonds;
 
     return S_OK;
 }

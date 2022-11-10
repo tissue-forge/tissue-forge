@@ -29,6 +29,7 @@
 
 #include <mdcore_config.h>
 #include "tfPotential.h"
+#include <tfParticleList.h>
 
 
 namespace TissueForge {
@@ -150,10 +151,8 @@ namespace TissueForge {
 
         /**
          * @brief Get a summary string of the angle
-         * 
-         * @return std::string 
          */
-        std::string str();
+        std::string str() const;
 
         /**
          * @brief Check the validity of the handle
@@ -172,10 +171,8 @@ namespace TissueForge {
 
         /**
          * @brief Gets all angles in the universe
-         * 
-         * @return std::vector<AngleHandle*> 
          */
-        static std::vector<AngleHandle*> items();
+        static std::vector<AngleHandle> items();
 
         /**
          * @brief Tests whether this bond decays
@@ -186,8 +183,15 @@ namespace TissueForge {
 
         struct ParticleHandle *operator[](unsigned int index);
 
+        /** Test whether the bond has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the bond has a particle */
+        bool has(ParticleHandle *part);
+
         FPTYPE getEnergy();
         std::vector<int32_t> getParts();
+        ParticleList getPartList();
         Potential *getPotential();
         uint32_t getId();
         FPTYPE getDissociationEnergy();
@@ -249,5 +253,19 @@ namespace TissueForge {
 
 
 };
+
+
+inline bool operator< (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id < rhs.id; }
+inline bool operator> (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return rhs < lhs; }
+inline bool operator<=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs > rhs); }
+inline bool operator>=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs < rhs); }
+inline bool operator==(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id == rhs.id; }
+inline bool operator!=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs == rhs); }
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::AngleHandle &h)
+{
+    os << h.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFANGLE_H_

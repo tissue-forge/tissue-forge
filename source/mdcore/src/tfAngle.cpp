@@ -685,7 +685,7 @@ HRESULT TissueForge::Angle_DestroyAll() {
             return error(MDCERR_cuda);
     #endif
 
-    for(auto ah: TissueForge::AngleHandle::items()) ah->destroy();
+    for(auto ah: TissueForge::AngleHandle::items()) ah.destroy();
 
     Angle_destroyingAll = false;
     return S_OK;
@@ -758,13 +758,23 @@ Angle *TissueForge::AngleHandle::get() {
     return &_Engine.angles[this->id];
 }
 
-std::string TissueForge::AngleHandle::str() {
+static std::string AngleHandle_str(const AngleHandle *h) {
     std::stringstream ss;
-    auto *a = this->get();
-    
-    ss << "Bond(i=" << a->i << ", j=" << a->j << ", k=" << a->k << ")";
+
+    ss << "AngleHandle(id=" << h->id;
+    if(h->id >= 0) {
+        AngleHandle _h(h->id);
+        const Angle &o = *_h.get();
+        if(o.flags & ANGLE_ACTIVE) 
+            ss << ", i=" << o.i << ", j=" << o.j << ", k=" << o.k;
+    }
+    ss << ")";
     
     return ss.str();
+}
+
+std::string TissueForge::AngleHandle::str() const {
+    return AngleHandle_str(this);
 }
 
 bool TissueForge::AngleHandle::check() {
@@ -780,11 +790,11 @@ HRESULT TissueForge::AngleHandle::destroy() {
     return Angle_Destroy(this->get());
 }
 
-std::vector<AngleHandle*> TissueForge::AngleHandle::items() {
-    std::vector<AngleHandle*> list;
+std::vector<AngleHandle> TissueForge::AngleHandle::items() {
+    std::vector<AngleHandle> list;
 
     for(int i = 0; i < _Engine.nr_angles; ++i)
-        list.push_back(new AngleHandle(i));
+        list.emplace_back(i);
 
     return list;
 }
@@ -808,6 +818,14 @@ ParticleHandle *TissueForge::AngleHandle::operator[](unsigned int index) {
     return NULL;
 }
 
+bool TissueForge::AngleHandle::has(const int32_t &pid) {
+    return getPartList().has(pid);
+}
+
+bool TissueForge::AngleHandle::has(ParticleHandle *part) {
+    return part ? getPartList().has(part) : false;
+}
+
 FPTYPE TissueForge::AngleHandle::getEnergy() {
 
     Angle angles[] = {*this->get()};
@@ -822,6 +840,17 @@ std::vector<int32_t> TissueForge::AngleHandle::getParts() {
     Angle *a = this->get();
     if(a && a->flags & ANGLE_ACTIVE) {
         result = std::vector<int32_t>{a->i, a->j, a->k};
+    }
+    return result;
+}
+
+ParticleList TissueForge::AngleHandle::getPartList() {
+    ParticleList result;
+    Angle *a = this->get();
+    if(a && a->flags & ANGLE_ACTIVE) {
+        result.insert(a->i);
+        result.insert(a->j);
+        result.insert(a->k);
     }
     return result;
 }

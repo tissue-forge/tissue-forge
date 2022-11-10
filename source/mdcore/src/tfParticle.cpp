@@ -520,12 +520,20 @@ TissueForge::ParticleType::ParticleType(const bool &noReg) {
     if(!noReg) registerType();
 }
 
-CAPI_FUNC(ParticleType*) TissueForge::Particle_GetType()
+std::string TissueForge::ParticleType::str() const {
+    std::stringstream ss;
+
+    ss << "ParticleType(id=" << this->id << ", name=" << this->name << ")";
+
+    return ss.str();
+}
+
+ParticleType* TissueForge::Particle_GetType()
 {
     return &engine::types[0];
 }
 
-CAPI_FUNC(ParticleType*) TissueForge::Cluster_GetType()
+ParticleType* TissueForge::Cluster_GetType()
 {
     return &engine::types[1];
 }
@@ -655,6 +663,14 @@ ParticleType* TissueForge::ParticleType::newType(const char *_name) {
     auto type = new ParticleType(*this);
     std::strncpy(type->name, std::string(_name).c_str(), ParticleType::MAX_NAME);
     return type;
+}
+
+bool TissueForge::ParticleType::has(const int32_t &pid) {
+    return parts.has(pid);
+}
+
+bool TissueForge::ParticleType::has(ParticleHandle *part) {
+    return part ? has(part->id) : false;
 }
 
 HRESULT TissueForge::ParticleType::registerType() {
@@ -794,6 +810,22 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
     TF_Log(LOG_TRACE) << "Simple fission for type " << (int)_Engine.types[self->typeId].id;
 
     return p->handle();
+}
+
+std::string TissueForge::ParticleHandle::str() const {
+    std::stringstream  ss;
+    
+    ss << "ParticleHandle(";
+    if(this->id >= 0) {
+        ParticleHandle ph(this->id);
+        ss << "id=" << ph.getId() << ", typeId=" << ph.getTypeId();
+        auto clusterId = ph.getClusterId();
+        if(clusterId >= 0) 
+            ss << ", clusterId=" << clusterId;
+    }
+    ss << ")";
+    
+    return ss.str();
 }
 
 ParticleHandle* TissueForge::ParticleHandle::fission()
@@ -1171,8 +1203,16 @@ static ParticleList *particletype_items(ParticleType *self) {
     return &self->parts;
 }
 
-ParticleList *TissueForge::ParticleType::items() {
-    return &parts;
+ParticleList &TissueForge::ParticleType::items() {
+    return parts;
+}
+
+uint16_t TissueForge::ParticleType::getNumParts() {
+    return this->items().nr_parts;
+}
+
+std::vector<int32_t> TissueForge::ParticleType::getPartIds() {
+    return this->items().vector();
 }
 
 FPTYPE TissueForge::ParticleHandle::distance(ParticleHandle *_other) {

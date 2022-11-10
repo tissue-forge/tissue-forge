@@ -177,10 +177,16 @@ Universe* Universe::get() {
     return &_Universe;
 }
 
-ParticleList *Universe::particles() {
+ParticleList Universe::particles() {
     TF_UNIVERSE_TRY();
     return ParticleList::all();
-    TF_UNIVERSE_FINALLY(NULL);
+    TF_UNIVERSE_FINALLY(ParticleList());
+}
+
+std::vector<int32_t> Universe::particleIds() {
+    TF_UNIVERSE_TRY();
+    return ParticleList::all().vector();
+    TF_UNIVERSE_FINALLY({});
 }
 
 void Universe::resetSpecies() {
@@ -206,10 +212,10 @@ void Universe::resetSpecies() {
     TF_UNIVERSE_FINALLY();
 }
 
-std::vector<std::vector<std::vector<ParticleList*> > > Universe::grid(iVector3 shape) {
+std::vector<std::vector<std::vector<ParticleList> > > Universe::grid(iVector3 shape) {
     TF_UNIVERSE_TRY();
     return metrics::particleGrid(shape);
-    TF_UNIVERSE_FINALLY(std::vector<std::vector<std::vector<ParticleList*> > >());
+    TF_UNIVERSE_FINALLY(std::vector<std::vector<std::vector<ParticleList> > >());
 }
 
 std::vector<BondHandle> Universe::bonds() {
@@ -393,7 +399,7 @@ namespace TissueForge::io {
 
         TF_UNIVERSEIOTOEASY(fe, "name", u->name);
         
-        ParticleList pl = *u->particles();
+        ParticleList pl = u->particles();
         if(pl.nr_parts > 0) {
             std::vector<Particle> particles;
             particles.reserve(pl.nr_parts);
@@ -585,19 +591,19 @@ namespace TissueForge::io {
         TF_UNIVERSEIOTOEASY(fe, "temperature", u->getTemperature());
         TF_UNIVERSEIOTOEASY(fe, "kineticEnergy", u->getKineticEnergy());
 
-        ParticleTypeList *ptl = ParticleTypeList::all();
+        ParticleTypeList ptl = ParticleTypeList::all();
         std::vector<ParticleType> partTypes;
-        partTypes.reserve(ptl->nr_parts);
-        for(unsigned int i = 0; i < ptl->nr_parts; i++) 
-            partTypes.push_back(*ptl->item(i));
+        partTypes.reserve(ptl.nr_parts);
+        for(unsigned int i = 0; i < ptl.nr_parts; i++) 
+            partTypes.push_back(*ptl.item(i));
         TF_UNIVERSEIOTOEASY(fe, "particleTypes", partTypes);
 
         Potential *p, *p_cluster;
         std::vector<Potential*> pV, pV_cluster;
         std::vector<unsigned int> pIdxA, pIdxB, pIdxA_cluster, pIdxB_cluster;
-        for(unsigned int i = 0; i < ptl->nr_parts; i++) {
-            for(unsigned int j = i; j < ptl->nr_parts; j++) {
-                unsigned int k = ptl->parts[i] * _Engine.max_type + ptl->parts[j];
+        for(unsigned int i = 0; i < ptl.nr_parts; i++) {
+            for(unsigned int j = i; j < ptl.nr_parts; j++) {
+                unsigned int k = ptl.parts[i] * _Engine.max_type + ptl.parts[j];
                 p = _Engine.p[k];
                 p_cluster = _Engine.p_cluster[k];
                 if(p != NULL) {
@@ -628,8 +634,8 @@ namespace TissueForge::io {
         std::vector<Force*> forces;
         Force *f;
         std::vector<unsigned int> fIdx;
-        for(unsigned int i = 0; i < ptl->nr_parts; i++) { 
-            auto pTypeId = ptl->parts[i];
+        for(unsigned int i = 0; i < ptl.nr_parts; i++) { 
+            auto pTypeId = ptl.parts[i];
             f = _Engine.forces[pTypeId];
             if(f != NULL) {
                 bool storeForce = true;
@@ -647,8 +653,6 @@ namespace TissueForge::io {
             TF_UNIVERSEIOTOEASY(fe, "forces", forces);
             TF_UNIVERSEIOTOEASY(fe, "forceType", fIdx);
         }
-
-        delete ptl;
 
         fileElement->type = "Universe";
 

@@ -702,13 +702,23 @@ HRESULT TissueForge::BondHandle::init(
     );
 }
 
-std::string TissueForge::BondHandle::str() {
-    std::stringstream  ss;
-    Bond *bond = &_Engine.bonds[this->id];
-    
-    ss << "Bond(i=" << bond->i << ", j=" << bond->j << ")";
+static std::string BondHandle_str(const BondHandle *h) {
+    std::stringstream ss;
+
+    ss << "BondHandle(id=" << h->id;
+    if(h->id >= 0) {
+        BondHandle _h(h->id);
+        const Bond &o = *_h.get();
+        if(o.flags & BOND_ACTIVE) 
+            ss << ", i=" << o.i << ", j=" << o.j;
+    }
+    ss << ")";
     
     return ss.str();
+}
+
+std::string TissueForge::BondHandle::str() const {
+    return BondHandle_str(this);
 }
 
 bool TissueForge::BondHandle::check() {
@@ -732,6 +742,16 @@ std::vector<int32_t> TissueForge::BondHandle::getParts() {
     Bond *bond = get();
     if(bond && bond->flags & BOND_ACTIVE) {
         result = std::vector<int32_t>{bond->i, bond->j};
+    }
+    return result;
+}
+
+ParticleList TissueForge::BondHandle::getPartList() {
+    ParticleList result;
+    Bond *bond = get();
+    if(bond && bond->flags & BOND_ACTIVE) {
+        result.insert(bond->i);
+        result.insert(bond->j);
     }
     return result;
 }
@@ -799,7 +819,7 @@ FPTYPE TissueForge::BondHandle::getAge() {
 }
 
 static void make_pairlist(
-    const ParticleList *parts,
+    const ParticleList &parts,
     FPTYPE cutoff, std::vector<std::pair<ParticleType*, ParticleType*>* > *paircheck_list,
     PairList& pairs) 
 {
@@ -819,10 +839,10 @@ static void make_pairlist(
     // of outer particle.
     
     /* loop over all particles */
-    for(i = 1 ; i < parts->nr_parts ; i++) {
+    for(i = 1 ; i < parts.nr_parts ; i++) {
         
         /* get the particle */
-        part_i = _Engine.s.partlist[parts->parts[i]];
+        part_i = _Engine.s.partlist[parts.parts[i]];
         
         // global position
         FPTYPE *oi = _Engine.s.celllist[part_i->id]->origin;
@@ -834,7 +854,7 @@ static void make_pairlist(
         for(j = 0 ; j < i ; j++) {
             
             /* get the other particle */
-            part_j = _Engine.s.partlist[parts->parts[j]];
+            part_j = _Engine.s.partlist[parts.parts[j]];
             
             // global position
             FPTYPE *oj = _Engine.s.celllist[part_j->id]->origin;
@@ -881,15 +901,15 @@ HRESULT TissueForge::Bond_DestroyAll() {
             return error(MDCERR_cuda);
     #endif
 
-    for(auto bh : BondHandle::items()) bh->destroy();
+    for(auto bh : BondHandle::items()) bh.destroy();
 
     Bond_destroyingAll = false;
     return S_OK;
 }
 
-std::vector<BondHandle*>* TissueForge::BondHandle::pairwise(
+std::vector<BondHandle> TissueForge::BondHandle::pairwise(
     struct Potential* pot,
-    struct ParticleList *parts,
+    struct ParticleList &parts,
     const FPTYPE &cutoff,
     std::vector<std::pair<ParticleType*, ParticleType*>* > *ppairs,
     const FPTYPE &half_life,
@@ -898,20 +918,12 @@ std::vector<BondHandle*>* TissueForge::BondHandle::pairwise(
 {
     
     PairList pairs;
-    std::vector<BondHandle*> *bonds = new std::vector<BondHandle*>();
+    std::vector<BondHandle> bonds;
     
     make_pairlist(parts, cutoff, ppairs, pairs);
     
-    for(auto &pair : pairs) {
-        auto bond = new BondHandle(pot, pair.i, pair.j, half_life, bond_energy, flags);
-        if(!bond) {
-            error(MDCERR_malloc);
-            delete bonds;
-            return NULL;
-        }
-        
-        bonds->push_back(bond);
-    }
+    for(auto &pair : pairs) 
+        bonds.emplace_back(pot, pair.i, pair.j, half_life, bond_energy, flags);
     
     return bonds;
 }
@@ -923,16 +935,16 @@ HRESULT TissueForge::BondHandle::destroy()
     return Bond_Destroy(this->get());
 }
 
-std::vector<BondHandle*> TissueForge::BondHandle::bonds() {
-    std::vector<BondHandle*> list;
+std::vector<BondHandle> TissueForge::BondHandle::bonds() {
+    std::vector<BondHandle> list;
     
     for(int i = 0; i < _Engine.nr_bonds; ++i) 
-        list.push_back(new BondHandle(i));
+        list.emplace_back(i);
     
     return list;
 }
 
-std::vector<BondHandle*> TissueForge::BondHandle::items() {
+std::vector<BondHandle> TissueForge::BondHandle::items() {
     return bonds();
 }
 
@@ -952,6 +964,14 @@ ParticleHandle *TissueForge::BondHandle::operator[](unsigned int index) {
     
     error(MDCERR_range);
     return NULL;
+}
+
+bool TissueForge::BondHandle::has(const int32_t &pid) {
+    return getPartList().has(pid);
+}
+
+bool TissueForge::BondHandle::has(ParticleHandle *part) {
+    return part ? getPartList().has(part) : false;
 }
 
 HRESULT TissueForge::Bond_Energy (Bond *b, FPTYPE *epot_out) {
@@ -1057,9 +1077,9 @@ bool pair_check(std::vector<std::pair<ParticleType*, ParticleType*>* > *pairs, s
     return false;
 }
 
-bool TissueForge::contains_bond(const std::vector<BondHandle*> &bonds, int a, int b) {
+bool TissueForge::contains_bond(const std::vector<BondHandle> &bonds, int a, int b) {
     for(auto h : bonds) {
-        Bond *bond = &_Engine.bonds[h->id];
+        Bond *bond = &_Engine.bonds[h.id];
         if((bond->i == a && bond->j == b) || (bond->i == b && bond->j == a)) {
             return true;
         }
@@ -1068,7 +1088,7 @@ bool TissueForge::contains_bond(const std::vector<BondHandle*> &bonds, int a, in
 }
 
 int TissueForge::insert_bond(
-    std::vector<BondHandle*> &bonds, 
+    std::vector<BondHandle> &bonds, 
     int a, 
     int b,
     Potential *pot, 
@@ -1077,11 +1097,7 @@ int TissueForge::insert_bond(
     int p1 = parts->parts[a];
     int p2 = parts->parts[b];
     if(!contains_bond(bonds, p1, p2)) {
-        BondHandle *bond = new BondHandle(pot, p1, p2,
-                                          std::numeric_limits<FPTYPE>::max(),
-                                          std::numeric_limits<FPTYPE>::max(),
-                                          0);
-        bonds.push_back(bond);
+        bonds.emplace_back(pot, p1, p2, std::numeric_limits<FPTYPE>::max(), std::numeric_limits<FPTYPE>::max(), 0);
         return 1;
     }
     return 0;

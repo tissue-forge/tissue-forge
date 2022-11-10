@@ -154,9 +154,9 @@
             """
             Gets all particles in the universe
             
-            :rtype: ParticleList* 
+            :rtype: ParticleList
             """
-            return _tfUniverse.particles()
+            return ParticleList(_tfUniverse.particleIds())
 
         def reset_species(self):
             """

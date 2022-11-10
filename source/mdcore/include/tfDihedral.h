@@ -28,6 +28,7 @@
 #define _MDCORE_INCLUDE_TFDIHEDRAL_H_
 
 #include <mdcore_config.h>
+#include <tfParticleList.h>
 
 
 namespace TissueForge { 
@@ -142,10 +143,8 @@ namespace TissueForge {
 
         /**
          * @brief Get a summary string of the dihedral
-         * 
-         * @return std::string 
          */
-        std::string str();
+        std::string str() const;
 
         /**
          * @brief Check the validity of the handle
@@ -162,10 +161,8 @@ namespace TissueForge {
 
         /**
          * @brief Gets all dihedrals in the universe
-         * 
-         * @return std::vector<DihedralHandle*> 
          */
-        static std::vector<DihedralHandle*> items();
+        static std::vector<DihedralHandle> items();
 
         /**
          * @brief Tests whether this bond decays
@@ -176,8 +173,15 @@ namespace TissueForge {
 
         ParticleHandle *operator[](unsigned int index);
 
+        /** Test whether the bond has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the bond has a particle */
+        bool has(ParticleHandle *part);
+
         FPTYPE getEnergy();
         std::vector<int32_t> getParts();
+        ParticleList getPartList();
         Potential *getPotential();
         uint32_t getId();
         FPTYPE getDissociationEnergy();
@@ -236,5 +240,19 @@ namespace TissueForge {
     std::vector<int32_t> Dihedral_IdsForParticle(int32_t pid);
 
 };
+
+
+inline bool operator< (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id < rhs.id; }
+inline bool operator> (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return rhs < lhs; }
+inline bool operator<=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs > rhs); }
+inline bool operator>=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs < rhs); }
+inline bool operator==(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id == rhs.id; }
+inline bool operator!=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs == rhs); }
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::DihedralHandle &h)
+{
+    os << h.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFDIHEDRAL_H_

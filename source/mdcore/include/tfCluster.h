@@ -27,6 +27,8 @@
 
 #include "tfParticle.h"
 
+#include <vector>
+
 
 namespace TissueForge {
 
@@ -47,13 +49,26 @@ namespace TissueForge {
 
         ClusterParticleType(const bool &noReg=false);
 
+        std::string str() const override;
+
         /**
-         * @brief Tests where this cluster has a particle type
+         * @brief Tests where this cluster has a particle type. 
+         * 
+         * Only tests for immediate ownership and ignores multi-level clusters.
          * 
          * @param type type to test
          * @return true if this cluster has the type
          */
         bool hasType(const ParticleType *type);
+
+        /** Test whether the type has a type id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the type has a type */
+        bool has(ParticleType *ptype);
+
+        /** Test whether the type has a particle */
+        bool has(ParticleHandle *part);
 
         /**
          * @brief Registers a type with the engine. 
@@ -65,14 +80,14 @@ namespace TissueForge {
          * 
          * @return HRESULT 
          */
-        HRESULT registerType();
+        HRESULT registerType() override;
 
         /**
          * @brief Get the type engine instance
          * 
          * @return ClusterParticleType* 
          */
-        virtual ClusterParticleType *get();
+        virtual ClusterParticleType *get() override;
 
     };
 
@@ -86,6 +101,8 @@ namespace TissueForge {
     struct CAPI_EXPORT ClusterParticleHandle : ParticleHandle {
         ClusterParticleHandle();
         ClusterParticleHandle(const int &id);
+
+        std::string str() const override;
 
         /**
          * @brief Gets the actual cluster of this handle. 
@@ -125,6 +142,12 @@ namespace TissueForge {
          */
         ParticleHandle *operator()(ParticleType *partType, const std::string &str);
 
+        /** Test whether the cluster has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the cluster has a particle */
+        bool has(ParticleHandle *part);
+
         ParticleHandle* fission(
             FVector3 *axis=NULL, 
             bool *random=NULL, 
@@ -156,7 +179,7 @@ namespace TissueForge {
          * 
          * @return ParticleList* 
          */
-        ParticleList *items();
+        ParticleList items();
 
         /** radius of gyration of this cluster. */
         FPTYPE getRadiusOfGyration();
@@ -173,8 +196,8 @@ namespace TissueForge {
         /** number of particles that belong to this cluster. */
         uint16_t getNumParts();
 
-        /** list of particles that belong to this cluster. */
-        ParticleList getParts();
+        /** list of particle ids that belong to this cluster. */
+        std::vector<int32_t> getPartIds();
     };
 
     /**
@@ -230,5 +253,18 @@ namespace TissueForge {
     ClusterParticleType *ClusterParticleType_fromString(const std::string &str);
 
 };
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::ClusterParticleHandle &p)
+{
+    os << p.str().c_str();
+    return os;
+}
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::ClusterParticleType &p)
+{
+    os << p.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFCLUSTER_H_

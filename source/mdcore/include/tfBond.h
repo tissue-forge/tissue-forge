@@ -28,6 +28,7 @@
 #define _MDCORE_INCLUDE_TFBOND_H_
 
 #include <mdcore_config.h>
+#include <tfParticleList.h>
 
 
 namespace TissueForge {
@@ -213,10 +214,8 @@ namespace TissueForge {
         
         /**
          * @brief Get a summary string of the bond
-         * 
-         * @return std::string 
          */
-        std::string str();
+        std::string str() const;
 
         /**
          * @brief Check the validity of the handle
@@ -240,9 +239,9 @@ namespace TissueForge {
          * @param flags bond flags
          * @return std::vector<BondHandle*>* 
          */
-        static std::vector<BondHandle*>* pairwise(
+        static std::vector<BondHandle> pairwise(
             TissueForge::Potential* pot,
-            TissueForge::ParticleList *parts,
+            TissueForge::ParticleList &parts,
             const FPTYPE &cutoff,
             std::vector<std::pair<TissueForge::ParticleType*, TissueForge::ParticleType*>* > *ppairs,
             const FPTYPE &half_life,
@@ -259,17 +258,13 @@ namespace TissueForge {
 
         /**
          * @brief Get a handle to each bond in the universe
-         * 
-         * @return std::vector<BondHandle*> 
          */
-        static std::vector<BondHandle*> bonds();
+        static std::vector<BondHandle> bonds();
 
         /**
          * @brief Gets all bonds in the universe
-         * 
-         * @return std::vector<BondHandle*> 
          */
-        static std::vector<BondHandle*> items();
+        static std::vector<BondHandle> items();
 
         /**
          * @brief Tests whether this bond decays
@@ -279,9 +274,16 @@ namespace TissueForge {
         bool decays();
 
         TissueForge::ParticleHandle *operator[](unsigned int index);
+
+        /** Test whether the bond has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the bond has a particle */
+        bool has(ParticleHandle *part);
         
         FPTYPE getEnergy();
         std::vector<int32_t> getParts();
+        ParticleList getPartList();
         TissueForge::Potential *getPotential();
         uint32_t getId();
         FPTYPE getDissociationEnergy();
@@ -305,7 +307,7 @@ namespace TissueForge {
         );
     };
 
-    bool contains_bond(const std::vector<BondHandle*> &bonds, int a, int b);
+    bool contains_bond(const std::vector<BondHandle> &bonds, int a, int b);
 
     /**
      * deletes, marks a bond ready for deleteion, removes the potential,
@@ -358,7 +360,7 @@ namespace TissueForge {
     std::vector<int32_t> Bond_IdsForParticle(int32_t pid);
 
     int insert_bond(
-        std::vector<BondHandle*> &bonds, 
+        std::vector<BondHandle> &bonds, 
         int a, 
         int b,
         Potential *pot, 
@@ -367,5 +369,19 @@ namespace TissueForge {
 
 
 };
+
+
+inline bool operator< (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id < rhs.id; }
+inline bool operator> (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return rhs < lhs; }
+inline bool operator<=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs > rhs); }
+inline bool operator>=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs < rhs); }
+inline bool operator==(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id == rhs.id; }
+inline bool operator!=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs == rhs); }
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::BondHandle &h)
+{
+    os << h.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFBOND_H_

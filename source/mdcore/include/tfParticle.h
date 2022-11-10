@@ -37,6 +37,7 @@
 #include "tfParticleList.h"
 #include "tfParticleTypeList.h"
 #include <set>
+#include <vector>
 
 /**
  * increment size of cluster particle list.
@@ -325,6 +326,8 @@ namespace TissueForge {
 
         ParticleHandle() : id(0) {}
         ParticleHandle(const int &id) : id(id) {}
+
+        virtual std::string str() const;
 
         virtual ParticleHandle* fission();
 
@@ -694,6 +697,12 @@ namespace TissueForge {
          */
         ParticleType* newType(const char *_name);
 
+        /** Test whether the type has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the type has a particle */
+        bool has(ParticleHandle *part);
+
         /**
          * @brief Registers a type with the engine.
          * 
@@ -724,6 +733,8 @@ namespace TissueForge {
 
         ParticleType(const bool &noReg=false);
         virtual ~ParticleType() {}
+
+        virtual std::string str() const;
 
         /** Type frozen state */
         bool getFrozen();
@@ -761,7 +772,13 @@ namespace TissueForge {
         /**
          * @brief Get all particles of this type. 
          */
-        TissueForge::ParticleList *items();
+        TissueForge::ParticleList &items();
+
+        /** number of particles that belong to this type. */
+        uint16_t getNumParts();
+
+        /** list of particle ids that belong to this type. */
+        std::vector<int32_t> getPartIds();
 
         /**
          * @brief Get a JSON string representation
@@ -887,5 +904,32 @@ namespace TissueForge {
 
 
 };
+
+
+inline bool operator< (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id < rhs.id; }
+inline bool operator> (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return rhs < lhs; }
+inline bool operator<=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs > rhs); }
+inline bool operator>=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs < rhs); }
+inline bool operator==(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id == rhs.id; }
+inline bool operator!=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs == rhs); }
+
+inline bool operator< (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id < rhs.id; }
+inline bool operator> (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return rhs < lhs; }
+inline bool operator<=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs > rhs); }
+inline bool operator>=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs < rhs); }
+inline bool operator==(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id == rhs.id; }
+inline bool operator!=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs == rhs); }
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::ParticleHandle &p)
+{
+    os << p.str().c_str();
+    return os;
+}
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::ParticleType &p)
+{
+    os << p.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFPARTICLE_H_

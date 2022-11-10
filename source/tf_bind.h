@@ -117,13 +117,13 @@ namespace TissueForge::bind {
      */
     CPPAPI_FUNC(HRESULT) bonds(
         Potential* potential,
-        ParticleList *particles, 
+        ParticleList &particles, 
         const FloatP_t &cutoff, 
         std::vector<std::pair<ParticleType*, ParticleType*>* > *pairs=NULL, 
         const FloatP_t &half_life=std::numeric_limits<FloatP_t>::max(), 
         const FloatP_t &bond_energy=std::numeric_limits<FloatP_t>::max(), 
         uint32_t flags=0, 
-        std::vector<BondHandle*> **out=NULL
+        std::vector<BondHandle> *out=NULL
     );
 
     CPPAPI_FUNC(HRESULT) sphere(
@@ -133,7 +133,8 @@ namespace TissueForge::bind {
         const FloatP_t &radius=1.0,
         std::pair<FloatP_t, FloatP_t> *phi=NULL, 
         ParticleType *type=NULL, 
-        std::pair<ParticleList*, std::vector<BondHandle*>*> **out=NULL
+        ParticleList *partList=NULL,
+        std::vector<BondHandle> *bondList=NULL
     );
 
 };

@@ -209,9 +209,27 @@ namespace TissueForge {
         template <typename O, typename H> 
         HRESULT getBondAge(H *handle, tfFloatP_t *value) {
             O *bhandle = castC<O, H>(handle);
-            TFC_PTRCHECK(bhandle) 
+            TFC_PTRCHECK(bhandle);
             TFC_PTRCHECK(value);
             *value = bhandle->getAge();
+            return S_OK;
+        }
+
+        template <typename O, typename H> 
+        HRESULT getBondPartList(H *handle, tfParticleListHandle *plist) {
+            O *bhandle = castC<O, H>(handle);
+            TFC_PTRCHECK(bhandle);
+            TFC_PTRCHECK(plist);
+            plist->tfObj = (void*)(new ParticleList(bhandle->getPartList()));
+            return S_OK;
+        }
+
+        template <typename O, typename H, typename D> 
+        HRESULT bondHas(H *handle, D data, bool *result) {
+            O *bhandle = castC<O, H>(handle);
+            TFC_PTRCHECK(bhandle);
+            TFC_PTRCHECK(result);
+            *result = bhandle->has(data);
             return S_OK;
         }
 
@@ -248,7 +266,7 @@ namespace TissueForge {
             if(!_handles) 
                 return E_OUTOFMEMORY;
             for(unsigned int i = 0; i < *numBonds; i++) 
-                _handles[i].tfObj = (void*)_items[i];
+                _handles[i].tfObj = (void*)(new O(_items[i]));
             *handles = _handles;
             return S_OK;
         }
@@ -306,7 +324,7 @@ HRESULT tfBondHandle_getId(struct tfBondHandleHandle *handle, int *id) {
     return TissueForge::capi::getBondId<BondHandle, tfBondHandleHandle>(handle, id);
 }
 
-HRESULT tfBondHandle_getStr(struct tfBondHandleHandle *handle, char **str, unsigned int *numChars) {
+HRESULT tfBondHandle_str(struct tfBondHandleHandle *handle, char **str, unsigned int *numChars) {
     return TissueForge::capi::getBondStr<BondHandle, tfBondHandleHandle>(handle, str, numChars);
 }
 
@@ -322,6 +340,15 @@ HRESULT tfBondHandle_decays(struct tfBondHandleHandle *handle, bool *flag) {
     return TissueForge::capi::bondDecays<BondHandle, tfBondHandleHandle>(handle, flag);
 }
 
+HRESULT tfBondHandle_hasPartId(struct tfBondHandleHandle *handle, int pid, bool *result) {
+    return TissueForge::capi::bondHas<BondHandle, tfBondHandleHandle, int>(handle, pid, result);
+}
+
+HRESULT tfBondHandle_hasPart(struct tfBondHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_PTRCHECK(part);
+    return TissueForge::capi::bondHas<BondHandle, tfBondHandleHandle, ParticleHandle*>(handle, (ParticleHandle*)part->tfObj, result);
+}
+
 HRESULT tfBondHandle_getEnergy(struct tfBondHandleHandle *handle, tfFloatP_t *value) {
     return TissueForge::capi::getBondEnergy<BondHandle, tfBondHandleHandle>(handle, value);
 }
@@ -334,6 +361,10 @@ HRESULT tfBondHandle_getParts(struct tfBondHandleHandle *handle, int *parti, int
     *parti = pids[0];
     *partj = pids[1];
     return S_OK;
+}
+
+HRESULT tfBondHandle_getPartList(struct tfBondHandleHandle *handle, struct tfParticleListHandle *plist) {
+    return TissueForge::capi::getBondPartList<BondHandle, tfBondHandleHandle>(handle, plist);
 }
 
 HRESULT tfBondHandle_getPotential(struct tfBondHandleHandle *handle, struct tfPotentialHandle *potential) {
@@ -388,6 +419,30 @@ HRESULT tfBondHandle_fromString(struct tfBondHandleHandle *handle, const char *s
     return TissueForge::capi::bondFromString<BondHandle, tfBondHandleHandle, Bond>(handle, str);
 }
 
+HRESULT tfBondHandle_lt(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_lt<BondHandle, tfBondHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfBondHandle_gt(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_gt<BondHandle, tfBondHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfBondHandle_le(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_le<BondHandle, tfBondHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfBondHandle_ge(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ge<BondHandle, tfBondHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfBondHandle_eq(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_eq<BondHandle, tfBondHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfBondHandle_ne(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ne<BondHandle, tfBondHandleHandle>(lhs, rhs, result);
+}
+
 
 /////////////////
 // AngleHandle //
@@ -428,6 +483,10 @@ HRESULT tfAngleHandle_getStr(struct tfAngleHandleHandle *handle, char **str, uns
     return TissueForge::capi::getBondStr<AngleHandle, tfAngleHandleHandle>(handle, str, numChars);
 }
 
+HRESULT tfAngleHandle_str(struct tfAngleHandleHandle *handle, char **str, unsigned int *numChars) {
+    return TissueForge::capi::getBondStr<AngleHandle, tfAngleHandleHandle>(handle, str, numChars);
+}
+
 HRESULT tfAngleHandle_check(struct tfAngleHandleHandle *handle, bool *flag) {
     return TissueForge::capi::bondCheck<AngleHandle, tfAngleHandleHandle>(handle, flag);
 }
@@ -438,6 +497,15 @@ HRESULT tfAngleHandle_destroy(struct tfAngleHandleHandle *handle) {
 
 HRESULT tfAngleHandle_decays(struct tfAngleHandleHandle *handle, bool *flag) {
     return TissueForge::capi::bondDecays<AngleHandle, tfAngleHandleHandle>(handle, flag);
+}
+
+HRESULT tfAngleHandle_hasPartId(struct tfAngleHandleHandle *handle, int pid, bool *result) {
+    return TissueForge::capi::bondHas<AngleHandle, tfAngleHandleHandle, int>(handle, pid, result);
+}
+
+HRESULT tfAngleHandle_hasPart(struct tfAngleHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_PTRCHECK(part);
+    return TissueForge::capi::bondHas<AngleHandle, tfAngleHandleHandle, ParticleHandle*>(handle, (ParticleHandle*)part->tfObj, result);
 }
 
 HRESULT tfAngleHandle_getEnergy(struct tfAngleHandleHandle *handle, tfFloatP_t *value) {
@@ -454,6 +522,10 @@ HRESULT tfAngleHandle_getParts(struct tfAngleHandleHandle *handle, int *parti, i
     *partj = pids[1];
     *partk = pids[2];
     return S_OK;
+}
+
+HRESULT tfAngleHandle_getPartList(struct tfAngleHandleHandle *handle, struct tfParticleListHandle *plist) {
+    return TissueForge::capi::getBondPartList<AngleHandle, tfAngleHandleHandle>(handle, plist);
 }
 
 HRESULT tfAngleHandle_getPotential(struct tfAngleHandleHandle *handle, struct tfPotentialHandle *potential) {
@@ -508,6 +580,30 @@ HRESULT tfAngleHandle_fromString(struct tfAngleHandleHandle *handle, const char 
     return TissueForge::capi::bondFromString<AngleHandle, tfAngleHandleHandle, Angle>(handle, str);
 }
 
+HRESULT tfAngleHandle_lt(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_lt<AngleHandle, tfAngleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfAngleHandle_gt(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_gt<AngleHandle, tfAngleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfAngleHandle_le(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_le<AngleHandle, tfAngleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfAngleHandle_ge(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ge<AngleHandle, tfAngleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfAngleHandle_eq(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_eq<AngleHandle, tfAngleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfAngleHandle_ne(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ne<AngleHandle, tfAngleHandleHandle>(lhs, rhs, result);
+}
+
 
 ////////////////////
 // DihedralHandle //
@@ -552,6 +648,10 @@ HRESULT tfDihedralHandle_getStr(struct tfDihedralHandleHandle *handle, char **st
     return TissueForge::capi::getBondStr<DihedralHandle, tfDihedralHandleHandle>(handle, str, numChars);
 }
 
+HRESULT tfDihedralHandle_str(struct tfDihedralHandleHandle *handle, char **str, unsigned int *numChars) {
+    return TissueForge::capi::getBondStr<DihedralHandle, tfDihedralHandleHandle>(handle, str, numChars);
+}
+
 HRESULT tfDihedralHandle_check(struct tfDihedralHandleHandle *handle, bool *flag) {
     return TissueForge::capi::bondCheck<DihedralHandle, tfDihedralHandleHandle>(handle, flag);
 }
@@ -562,6 +662,15 @@ HRESULT tfDihedralHandle_destroy(struct tfDihedralHandleHandle *handle) {
 
 HRESULT tfDihedralHandle_decays(struct tfDihedralHandleHandle *handle, bool *flag) {
     return TissueForge::capi::bondDecays<DihedralHandle, tfDihedralHandleHandle>(handle, flag);
+}
+
+HRESULT tfDihedralHandle_hasPartId(struct tfDihedralHandleHandle *handle, int pid, bool *result) {
+    return TissueForge::capi::bondHas<DihedralHandle, tfDihedralHandleHandle, int>(handle, pid, result);
+}
+
+HRESULT tfDihedralHandle_hasPart(struct tfDihedralHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_PTRCHECK(part);
+    return TissueForge::capi::bondHas<DihedralHandle, tfDihedralHandleHandle, ParticleHandle*>(handle, (ParticleHandle*)part->tfObj, result);
 }
 
 HRESULT tfDihedralHandle_getEnergy(struct tfDihedralHandleHandle *handle, tfFloatP_t *value) {
@@ -580,6 +689,10 @@ HRESULT tfDihedralHandle_getParts(struct tfDihedralHandleHandle *handle, int *pa
     *partk = pids[2];
     *partl = pids[3];
     return S_OK;
+}
+
+HRESULT tfDihedralHandle_getPartList(struct tfDihedralHandleHandle *handle, struct tfParticleListHandle *plist) {
+    return TissueForge::capi::getBondPartList<DihedralHandle, tfDihedralHandleHandle>(handle, plist);
 }
 
 HRESULT tfDihedralHandle_getPotential(struct tfDihedralHandleHandle *handle, struct tfPotentialHandle *potential) {
@@ -634,6 +747,30 @@ HRESULT tfDihedralHandle_fromString(struct tfDihedralHandleHandle *handle, const
     return TissueForge::capi::bondFromString<DihedralHandle, tfDihedralHandleHandle, Dihedral>(handle, str);
 }
 
+HRESULT tfDihedralHandle_lt(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_lt<DihedralHandle, tfDihedralHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfDihedralHandle_gt(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_gt<DihedralHandle, tfDihedralHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfDihedralHandle_le(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_le<DihedralHandle, tfDihedralHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfDihedralHandle_ge(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ge<DihedralHandle, tfDihedralHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfDihedralHandle_eq(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_eq<DihedralHandle, tfDihedralHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfDihedralHandle_ne(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ne<DihedralHandle, tfDihedralHandleHandle>(lhs, rhs, result);
+}
+
 //////////////////////
 // Module functions //
 //////////////////////
@@ -672,13 +809,11 @@ HRESULT tfBond_pairwise(
     }
     tfFloatP_t _half_life = half_life ? *half_life : 0.0;
     tfFloatP_t _bond_energy = bond_energy ? *bond_energy : 0.0;
-    auto _items = BondHandle::pairwise((Potential*)pot->tfObj, (ParticleList*)parts->tfObj, cutoff, &ppairs, _half_life, _bond_energy, BOND_ACTIVE);
+    auto _items = BondHandle::pairwise((Potential*)pot->tfObj, *(ParticleList*)parts->tfObj, cutoff, &ppairs, _half_life, _bond_energy, BOND_ACTIVE);
     for(unsigned int i = 0; i < numTypePairs; i++) 
         delete ppairs[i];
-    if(!_items)
-        return E_FAIL;
 
-    *numBonds = _items->size();
+    *numBonds = _items.size();
     if(*numBonds == 0) 
         return S_OK;
 
@@ -686,7 +821,7 @@ HRESULT tfBond_pairwise(
     if(!_bonds) 
         return E_OUTOFMEMORY;
     for(unsigned int i = 0; i < *numBonds; i++) 
-        _bonds[i].tfObj = (void*)(*_items)[i];
+        _bonds[i].tfObj = (void*)(new BondHandle(_items[i]));
     *bonds = _bonds;
     return S_OK;
 }

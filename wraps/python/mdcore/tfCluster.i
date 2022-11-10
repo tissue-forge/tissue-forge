@@ -46,6 +46,15 @@
 
 %extend TissueForge::ClusterParticleHandle {
     %pythoncode %{
+        def __getitem__(self, index: int):
+            return self.parts.__getitem__(index)
+
+        def __contains__(self, item):
+            return self.has(item)
+
+        def __str__(self):
+            return self.str()
+
         def __call__(self, particle_type, *args, **kwargs):
             position = kwargs.get('position')
             velocity = kwargs.get('velocity')
@@ -112,12 +121,21 @@
         @property
         def parts(self):
             """particles that belong to this cluster."""
-            return self.getParts()
+            return ParticleList(self.getPartIds())
     %}
 }
 
 %extend TissueForge::ClusterParticleType {
     %pythoncode %{
+        def __getitem__(self, index: int):
+            return self.parts.__getitem__(index)
+
+        def __contains__(self, item):
+            return self.has(item)
+
+        def __str__(self):
+            return self.str()
+
         def __call__(self, position=None, velocity=None, cluster_id=None):
             ph = ParticleType.__call__(self, position, velocity, cluster_id)
             return ClusterParticleHandle(ph.id)

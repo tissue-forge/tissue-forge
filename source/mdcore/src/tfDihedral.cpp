@@ -811,13 +811,23 @@ Dihedral *TissueForge::DihedralHandle::get() {
     return &_Engine.dihedrals[this->id];
 }
 
-std::string TissueForge::DihedralHandle::str() {
+static std::string DihedralHandle_str(const DihedralHandle *h) {
     std::stringstream ss;
-    auto *d = this->get();
-    
-    ss << "Bond(i=" << d->i << ", j=" << d->j << ", k=" << d->k << ", l=" << d->l << ")";
+
+    ss << "DihedralHandle(id=" << h->id;
+    if(h->id >= 0) {
+        DihedralHandle _h(h->id);
+        const Dihedral &o = *_h.get();
+        if(o.flags & DIHEDRAL_ACTIVE) 
+            ss << ", i=" << o.i << ", j=" << o.j << ", k=" << o.k << ", l=" << o.l;
+    }
+    ss << ")";
     
     return ss.str();
+}
+
+std::string TissueForge::DihedralHandle::str() const {
+    return DihedralHandle_str(this);
 }
 
 bool TissueForge::DihedralHandle::check() {
@@ -828,11 +838,11 @@ HRESULT TissueForge::DihedralHandle::destroy() {
     return Dihedral_Destroy(this->get());
 }
 
-std::vector<DihedralHandle*> TissueForge::DihedralHandle::items() {
-    std::vector<DihedralHandle*> list;
+std::vector<DihedralHandle> TissueForge::DihedralHandle::items() {
+    std::vector<DihedralHandle> list;
 
     for(int i = 0; i < _Engine.nr_dihedrals; ++i)
-        list.push_back(new DihedralHandle(i));
+        list.emplace_back(i);
 
     return list;
 }
@@ -857,6 +867,14 @@ ParticleHandle *TissueForge::DihedralHandle::operator[](unsigned int index) {
     return NULL;
 }
 
+bool TissueForge::DihedralHandle::has(const int32_t &pid) {
+    return getPartList().has(pid);
+}
+
+bool TissueForge::DihedralHandle::has(ParticleHandle *part) {
+    return part ? getPartList().has(part) : false;
+}
+
 FPTYPE TissueForge::DihedralHandle::getEnergy() {
 
     Dihedral dihedrals[] = {*this->get()};
@@ -869,7 +887,21 @@ FPTYPE TissueForge::DihedralHandle::getEnergy() {
 std::vector<int32_t> TissueForge::DihedralHandle::getParts() {
     std::vector<int32_t> result;
     Dihedral *d = this->get();
-    return std::vector<int32_t>{d->i, d->j, d->k};
+    if(d && d->flags & DIHEDRAL_ACTIVE) 
+        result = std::vector<int32_t>{d->i, d->j, d->k, d->l};
+    return result;
+}
+
+ParticleList TissueForge::DihedralHandle::getPartList() {
+    ParticleList result;
+    Dihedral *d = this->get();
+    if(d && d->flags & DIHEDRAL_ACTIVE) {
+        result.insert(d->i);
+        result.insert(d->j);
+        result.insert(d->k);
+        result.insert(d->l);
+    }
+    return result;
 }
 
 Potential *TissueForge::DihedralHandle::getPotential() {
@@ -929,7 +961,7 @@ HRESULT TissueForge::Dihedral_Destroy(Dihedral *d) {
 }
 
 HRESULT TissueForge::Dihedral_DestroyAll() {
-    for (auto dh: TissueForge::DihedralHandle::items()) dh->destroy();
+    for (auto dh: TissueForge::DihedralHandle::items()) dh.destroy();
     return S_OK;
 }
 

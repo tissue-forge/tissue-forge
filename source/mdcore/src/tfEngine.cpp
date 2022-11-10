@@ -2057,12 +2057,12 @@ FVector3 TissueForge::engine_center() {
 
 HRESULT TissueForge::engine_reset(struct engine *e) {
     
-    ParticleList *parts = ParticleList::all();
+    ParticleList parts = ParticleList::all();
     
     HRESULT hr;
     
-    for(int i = 0; i < parts->nr_parts; ++i) {
-        if(FAILED(hr = engine_del_particle(e, parts->parts[i]))) {
+    for(int i = 0; i < parts.nr_parts; ++i) {
+        if(FAILED(hr = engine_del_particle(e, parts.parts[i]))) {
             return hr;
         }
     }

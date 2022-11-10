@@ -129,7 +129,12 @@ namespace TissueForge {
         /**
          * @brief Gets all particles in the universe
          */
-        static ParticleList *particles();
+        static ParticleList particles();
+
+        /**
+         * @brief Gets all particles in the universe
+         */
+        static std::vector<int32_t> particleIds();
 
         /**
          * @brief Reset all species in all particles
@@ -142,7 +147,7 @@ namespace TissueForge {
          * 
          * @param shape shape of grid
          */
-        static std::vector<std::vector<std::vector<ParticleList*> > > grid(iVector3 shape);
+        static std::vector<std::vector<std::vector<ParticleList> > > grid(iVector3 shape);
 
         /**
          * @brief Get all bonds in the universe
