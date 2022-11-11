@@ -213,6 +213,7 @@ typedef TissueForge::types::TQuaternion<float> fQuaternion;
 
 %extend name<dataType> {
     dataType _length() { return $self->length(); }
+    dataType _angle(const name<dataType> &other) { return $self->angle(other); }
     name<dataType> _normalized() { return $self->normalized(); }
     name<dataType> _resized(dataType length) { return $self->resized(length); }
     name<dataType> _projected(const name<dataType> &other) { return $self->projected(other); }
@@ -222,6 +223,10 @@ typedef TissueForge::types::TQuaternion<float> fQuaternion;
         def length(self):
             """length of vector"""
             return self._length()
+
+        def angle(self, other):
+            """angle made with another vector"""
+            return self._angle(other)
 
         def normalized(self):
             """vector normalized"""
@@ -372,6 +377,7 @@ vector_template_prep_float(TissueForge::types::TVector4, dataType, wrappedName)
 // Do the vector template implementation
 %define vector_template_init(name, dataType, wrappedName)
 %ignore name<dataType>::length;
+%ignore name<dataType>::angle;
 %ignore name<dataType>::normalized;
 %ignore name<dataType>::resized;
 %ignore name<dataType>::projected;

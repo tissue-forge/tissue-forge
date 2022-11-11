@@ -34,9 +34,12 @@ namespace TissueForge::types {
     template<class T>
     class TQuaternion : public QuaternionBase<T> {
         public:
+            /** Initialize from a rotation angle and normalized axis of rotation */
             static TQuaternion<T> rotation(T angle, const TVector3<T>& normalizedAxis) {
                 return QuaternionBase<T>::rotation(Magnum::Math::Rad<T>(angle), normalizedAxis);
             }
+
+            /** Initialize from an orthogonal rotation matrix */
             static TQuaternion<T> fromMatrix(const TMatrix3<T>& matrix) {
                 return QuaternionBase<T>::fromMatrix((const Magnum::Math::Matrix<3, T>&)matrix);
             }
@@ -54,21 +57,44 @@ namespace TissueForge::types {
             template<class U = T> operator QuaternionBase<U>() { return static_cast<QuaternionBase<U>>(*this); }
             template<class U = T> operator const QuaternionBase<U>() const { return static_cast<const QuaternionBase<U>>(*this); }
 
+            /** Get the underlying array */
             T* data() { return QuaternionBase<T>::data(); }
+
+            /** Get the underlying array */
             constexpr const T* data() const { return QuaternionBase<T>::data(); }
             bool operator==(const TQuaternion<T>& other) const { return QuaternionBase<T>::operator==(other); }
             bool operator!=(const TQuaternion<T>& other) const { return QuaternionBase<T>::operator!=(other); }
+
+            /** Test whether the quaternion is normalized */
             bool isNormalized() const { return QuaternionBase<T>::isNormalized(); }
             #ifndef SWIGPYTHON
+
+            /** Get the 3-component vector */
             TVector3<T>& vector() { return (TVector3<T>&)TQuaternion<T>::vector(); }
+
+            /** Get the scalar */
             T& scalar() { return QuaternionBase<T>::scalar(); }
             #endif
+
+            /** Get the 3-component vector */
             constexpr const TVector3<T> vector() const { return QuaternionBase<T>::vector(); }
+
+            /** Get the scalar */
             constexpr T scalar() const { return QuaternionBase<T>::scalar(); }
+
+            /** Get the angle. Quaternion should be normalized. */
             T angle() const { return T(QuaternionBase<T>::angle()); }
+
+            /** Get the angle */
             T angle(const TQuaternion& other) const { return T(Magnum::Math::angle(this->normalized(), other.normalized())); }
+
+            /** Get the rotation axis. Quaternion should be normalized. */
             TVector3<T> axis() const { return QuaternionBase<T>::axis(); }
+
+            /** Get the rotation matrix */
             TMatrix3<T> toMatrix() const { return QuaternionBase<T>::toMatrix(); }
+
+            /** Get the Euler angles */
             TVector3<T> toEuler() const {
                 auto v = QuaternionBase<T>::toEuler();
                 return TVector3<T>(T(v[0]), T(v[1]), T(v[2]));;
@@ -83,13 +109,29 @@ namespace TissueForge::types {
             TQuaternion<T>& operator/=(T scalar) { return (TQuaternion<T>&)QuaternionBase<T>::operator/=(scalar); }
             TQuaternion<T> operator/(T scalar) const { return QuaternionBase<T>::operator/(scalar); }
             TQuaternion<T> operator*(const QuaternionBase<T>& other) const { return QuaternionBase<T>::operator*(other); }
+
+            /** Get the squared length */
             T dot() const { return QuaternionBase<T>::dot(); }
+
+            /** Get the length */
             T length() const { return QuaternionBase<T>::length(); }
+
+            /** Get the normalized quaternion */
             TQuaternion<T> normalized() const { return QuaternionBase<T>::normalized(); }
+
+            /** Get the conjugated quaternion */
             TQuaternion<T> conjugated() const { return QuaternionBase<T>::conjugated(); }
+
+            /** Get the inverted quaternion */
             TQuaternion<T> inverted() const { return QuaternionBase<T>::inverted(); }
+
+            /** Get the inverted and normalized quaternion */
             TQuaternion<T> invertedNormalized() const { return QuaternionBase<T>::invertedNormalized(); }
+
+            /** Transform a vector */
             TVector3<T> transformVector(const TVector3<T>& vector) const { return QuaternionBase<T>::transformVector(vector); }
+
+            /** Transform a normalized vector */
             TVector3<T> transformVectorNormalized(const TVector3<T>& vector) const { return QuaternionBase<T>::transformVectorNormalized(vector); }
 
             operator std::vector<T>&() const {
@@ -100,6 +142,8 @@ namespace TissueForge::types {
             }
             #ifdef SWIGPYTHON
             constexpr explicit TQuaternion(const std::vector<T>& vector, T scalar) noexcept: QuaternionBase<T>(TVector3<T>(vector), scalar) {}
+
+            /** Get the quaternion as a vector */
             std::vector<T>& asVector() { 
                 std::vector<T> *result = new std::vector<T>(*this);
                 return *result;
