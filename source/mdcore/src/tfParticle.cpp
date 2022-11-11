@@ -1099,8 +1099,8 @@ HRESULT TissueForge::ParticleHandle::become(ParticleType *type) {
     return Particle_Become(self, type);
 }
 
-ParticleList *TissueForge::ParticleHandle::neighbors(const FPTYPE *distance, const std::vector<ParticleType> *types) {
-    TF_PARTICLE_SELFW(this, NULL)
+ParticleList TissueForge::ParticleHandle::neighbors(const FPTYPE *distance, const std::vector<ParticleType> *types) {
+    TF_PARTICLE_SELFW(this, ParticleList())
     
     FPTYPE radius = distance ? *distance : _Engine.s.cutoff;
 
@@ -1116,26 +1116,72 @@ ParticleList *TissueForge::ParticleHandle::neighbors(const FPTYPE *distance, con
     
     metrics::particleNeighbors(self, radius, &typeIds, &nr_parts, &parts);
     
-    ParticleList *result = new ParticleList(nr_parts, parts);
+    ParticleList result(nr_parts, parts);
     if(parts) std::free(parts);
     return result;
 }
 
-ParticleList *TissueForge::ParticleHandle::getBondedNeighbors() {
-    TF_PARTICLE_SELFW(this, NULL)
+std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE *distance, const std::vector<ParticleType> *types) {
+    TF_PARTICLE_SELFW(this, {})
+    
+    FPTYPE radius = distance ? *distance : _Engine.s.cutoff;
+
+    std::set<short int> typeIds;
+    if(types) for (auto &type : *types) typeIds.insert(type.id);
+    else for(int i = 0; i < _Engine.nr_types; ++i) typeIds.insert(_Engine.types[i].id);
+    
+    // take into account the radius of this particle.
+    radius += self->radius;
+    
+    uint16_t nr_parts = 0;
+    int32_t *parts = NULL;
+    
+    metrics::particleNeighbors(self, radius, &typeIds, &nr_parts, &parts);
+    
+    std::vector<int32_t> result;
+    result.reserve(nr_parts);
+    for(int i = 0; i < nr_parts; i++) result.push_back(parts[i]);
+
+    if(parts) std::free(parts);
+    return result;
+}
+
+ParticleList TissueForge::ParticleHandle::getBondedNeighbors() {
+    TF_PARTICLE_SELFW(this, ParticleList())
 
     auto id = self->id;
     
-    ParticleList *list = new ParticleList(5);
+    ParticleList list;
     
     for(int i = 0; i < _Engine.nr_bonds; ++i) {
         Bond *b = &_Engine.bonds[i];
         if(b->flags & BOND_ACTIVE) {
             if(b->i == id) {
-                list->insert(b->j);
+                list.insert(b->j);
             }
             else if(b->j == id) {
-                list->insert(b->i);
+                list.insert(b->i);
+            }
+        }
+    }
+    return list;
+}
+
+std::vector<int32_t> TissueForge::ParticleHandle::getBondedNeighborIds() {
+    TF_PARTICLE_SELFW(this, {})
+
+    auto id = self->id;
+    
+    std::vector<int32_t> list;
+    
+    for(int i = 0; i < _Engine.nr_bonds; ++i) {
+        Bond *b = &_Engine.bonds[i];
+        if(b->flags & BOND_ACTIVE) {
+            if(b->i == id) {
+                list.push_back(b->j);
+            }
+            else if(b->j == id) {
+                list.push_back(b->i);
             }
         }
     }

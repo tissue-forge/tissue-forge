@@ -40,6 +40,7 @@
 %ignore TissueForge::ParticleType_New;
 %ignore TissueForge::Particles_New;
 %ignore TissueForge::_Particle_init;
+%ignore TissueForge::ParticleHandle::neighbors;
 
 %include "tfParticle.h"
 
@@ -235,6 +236,21 @@
         def dihedrals(self):
             """Dihedrals attached to particle"""
             return self.getDihedrals()
+
+        def neighbors(self, distance=None, types=None):
+            """
+            Gets a list of nearby particles. 
+
+            :param distance: optional search distance; default is simulation cutoff
+            :param types: optional list of particle types to search by; default is all types
+            :rtype: :py:class:`ParticleList`
+            """
+            return ParticleList(self.neighborIds())
+
+        @property
+        def bonded_neighbors(self):
+            """All bonded neighbor ids. """
+            return ParticleList(self.getBondedNeighborIds())
     %}
 }
 

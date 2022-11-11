@@ -243,14 +243,13 @@ HRESULT tfParticleHandle_become(struct tfParticleHandleHandle *handle, struct tf
     return phandle->become(ptype);
 }
 
-HRESULT package_parts(ParticleList *plist, struct tfParticleHandleHandle **hlist) {
-    TFC_PTRCHECK(plist);
+HRESULT package_parts(ParticleList plist, struct tfParticleHandleHandle **hlist) {
     TFC_PTRCHECK(hlist);
-    tfParticleHandleHandle *_hlist = (tfParticleHandleHandle*)malloc(plist->nr_parts * sizeof(tfParticleHandleHandle));
+    tfParticleHandleHandle *_hlist = (tfParticleHandleHandle*)malloc(plist.nr_parts * sizeof(tfParticleHandleHandle));
     if(!_hlist) 
         return E_OUTOFMEMORY;
-    for(unsigned int i = 0; i < plist->nr_parts; i++) {
-        Particle *p = _Engine.s.partlist[plist->parts[i]];
+    for(unsigned int i = 0; i < plist.nr_parts; i++) {
+        Particle *p = _Engine.s.partlist[plist.parts[i]];
         TFC_PTRCHECK(p);
         ParticleHandle *ph = new ParticleHandle(p->id);
         _hlist[i].tfObj = (void*)ph;
@@ -265,7 +264,7 @@ HRESULT tfParticleHandle_neighborsD(struct tfParticleHandleHandle *handle, tfFlo
     TFC_PTRCHECK(numNeighbors);
     tfFloatP_t _distance = distance;
     auto nbs = phandle->neighbors(&_distance);
-    *numNeighbors = nbs->nr_parts;
+    *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
 
@@ -287,7 +286,7 @@ HRESULT tfParticleHandle_neighborsT(
         _ptypes.push_back(*(ParticleType*)pth.tfObj);
     }
     auto nbs = phandle->neighbors(0, &_ptypes);
-    *numNeighbors = nbs->nr_parts;
+    *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
 
@@ -311,7 +310,7 @@ HRESULT tfParticleHandle_neighborsDT(
     }
     tfFloatP_t _distance = distance;
     auto nbs = phandle->neighbors(&_distance, &_ptypes);
-    *numNeighbors = nbs->nr_parts;
+    *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
 
@@ -321,8 +320,8 @@ HRESULT tfParticleHandle_getBondedNeighbors(struct tfParticleHandleHandle *handl
     TFC_PTRCHECK(neighbors);
     TFC_PTRCHECK(numNeighbors);
     auto plist = phandle->getBondedNeighbors();
-    *numNeighbors = plist->nr_parts;
-    if(plist->nr_parts == 0) 
+    *numNeighbors = plist.nr_parts;
+    if(plist.nr_parts == 0) 
         return S_OK;
     return package_parts(plist, neighbors);
 }
