@@ -60,6 +60,30 @@ HRESULT tfSystem_contextRelease() {
     return system::contextRelease();
 }
 
+bool tfSystem_cameraIsLagging() {
+    return system::cameraIsLagging();
+}
+
+HRESULT tfSystem_cameraEnableLagging() {
+    return system::cameraEnableLagging();
+}
+
+HRESULT tfSystem_cameraDisableLagging() {
+    return system::cameraDisableLagging();
+}
+
+HRESULT tfSystem_cameraToggleLagging() {
+    return system::cameraToggleLagging();
+}
+
+float tfSystem_cameraGetLagging() {
+    return system::cameraGetLagging();
+}
+
+HRESULT tfSystem_cameraSetLagging(float lagging) {
+    return system::cameraSetLagging(lagging);
+}
+
 HRESULT tfSystem_cameraMoveTo(float *eye, float *center, float *up) {
     if(!eye || !center || !up) 
         return E_FAIL;

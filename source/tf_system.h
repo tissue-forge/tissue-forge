@@ -81,6 +81,24 @@ namespace TissueForge::system {
     CPPAPI_FUNC(HRESULT) contextMakeCurrent();
     CPPAPI_FUNC(HRESULT) contextRelease();
 
+    /** Test whether the camera is lagging */
+    CPPAPI_FUNC(bool) cameraIsLagging();
+
+    /** Enable camera lagging */
+    CPPAPI_FUNC(HRESULT) cameraEnableLagging();
+
+    /** Disable camera lagging */
+    CPPAPI_FUNC(HRESULT) cameraDisableLagging();
+
+    /** Toggle camera lagging */
+    CPPAPI_FUNC(HRESULT) cameraToggleLagging();
+
+    /** Get the camera lagging */
+    CPPAPI_FUNC(float) cameraGetLagging();
+
+    /** Set the camera lagging. Value must be in [0, 1) */
+    CPPAPI_FUNC(HRESULT) cameraSetLagging(const float &lagging);
+
     /**
      * @brief Set the camera view parameters
      * 

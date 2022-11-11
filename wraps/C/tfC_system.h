@@ -82,6 +82,48 @@ CAPI_FUNC(HRESULT) tfSystem_contextMakeCurrent();
 CAPI_FUNC(HRESULT) tfSystem_contextRelease();
 
 /**
+ * @brief Test whether the camera is lagging
+ * 
+ * @return value of test
+ */
+CAPI_FUNC(bool) tfSystem_cameraIsLagging();
+
+/**
+ * @brief Enable camera lagging
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraEnableLagging();
+
+/**
+ * @brief Disable camera lagging
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraDisableLagging();
+
+/**
+ * @brief Toggle camera lagging
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraToggleLagging();
+
+/**
+ * @brief Get the camera lagging
+ * 
+ * @return value of lagging
+ */
+CAPI_FUNC(float) tfSystem_cameraGetLagging();
+
+/**
+ * @brief Set the camera lagging. Value must be in [0, 1)
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraSetLagging(float lagging);
+
+/**
 * @brief Set the camera view parameters
 * 
 * @param eye camera eye

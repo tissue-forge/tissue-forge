@@ -34,6 +34,12 @@
 %rename(_system_context_has_current) TissueForge::py::context_has_current;
 %rename(_system_context_make_current) TissueForge::py::context_make_current;
 %rename(_system_context_release) TissueForge::py::context_release;
+%rename(_system_camera_is_lagging) TissueForge::py::camera_is_lagging;
+%rename(_system_camera_enable_lagging) TissueForge::py::camera_enable_lagging;
+%rename(_system_camera_disable_lagging) TissueForge::py::camera_disable_lagging;
+%rename(_system_camera_toggle_lagging) TissueForge::py::camera_toggle_lagging;
+%rename(_system_camera_get_lagging) TissueForge::py::camera_get_lagging;
+%rename(_system_camera_set_lagging) TissueForge::py::camera_set_lagging;
 %rename(_system_camera_move_to) TissueForge::py::camera_move_to;
 %rename(_system_camera_view_bottom) TissueForge::py::camera_view_bottom;
 %rename(_system_camera_view_top) TissueForge::py::camera_view_top;

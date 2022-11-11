@@ -73,6 +73,24 @@ namespace TissueForge::py {
    */
    CPPAPI_FUNC(HRESULT) screenshot(const std::string &filePath, const bool &decorate, const FVector3 &bgcolor);
 
+    /** Test whether the camera is lagging */
+    CPPAPI_FUNC(bool) camera_is_lagging();
+
+    /** Enable camera lagging */
+    CPPAPI_FUNC(HRESULT) camera_enable_lagging();
+
+    /** Disable camera lagging */
+    CPPAPI_FUNC(HRESULT) camera_disable_lagging();
+
+    /** Toggle camera lagging */
+    CPPAPI_FUNC(HRESULT) camera_toggle_lagging();
+
+    /** Get the camera lagging */
+    CPPAPI_FUNC(float) camera_get_lagging();
+
+    /** Set the camera lagging. Value must be in [0, 1) */
+    CPPAPI_FUNC(HRESULT) camera_set_lagging(const float &lagging);
+
    CPPAPI_FUNC(bool) context_has_current();
    CPPAPI_FUNC(HRESULT) context_make_current();
    CPPAPI_FUNC(HRESULT) context_release();

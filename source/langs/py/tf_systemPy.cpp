@@ -31,6 +31,18 @@ HRESULT py::screenshot(const std::string &filePath) { return system::screenshot(
 
 HRESULT py::screenshot(const std::string &filePath, const bool &decorate, const FVector3 &bgcolor) { return system::screenshot(filePath, decorate, bgcolor); }
 
+bool py::camera_is_lagging() { return system::cameraIsLagging(); }
+
+HRESULT py::camera_enable_lagging() { return system::cameraEnableLagging(); }
+
+HRESULT py::camera_disable_lagging() { return system::cameraDisableLagging(); }
+
+HRESULT py::camera_toggle_lagging() { return system::cameraToggleLagging(); }
+
+float py::camera_get_lagging() { return system::cameraGetLagging(); }
+
+HRESULT py::camera_set_lagging(const float &lagging) { return system::cameraSetLagging(lagging); }
+
 bool py::context_has_current() { return system::contextHasCurrent(); }
 
 HRESULT py::context_make_current() { return system::contextMakeCurrent(); }

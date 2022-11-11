@@ -126,6 +126,96 @@ HRESULT system::contextRelease() {
     }
 }
 
+bool system::cameraIsLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        return renderer->isLagging();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+HRESULT system::cameraEnableLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->enableLagging();
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+HRESULT system::cameraDisableLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->disableLagging();
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+HRESULT system::cameraToggleLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->toggleLagging();
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+float system::cameraGetLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        return renderer->getLagging();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+HRESULT system::cameraSetLagging(const float &lagging) {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->setLagging(lagging);
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
 HRESULT system::cameraMoveTo(const FVector3 &eye, const FVector3 &center, const FVector3 &up) {
     try {
         Simulator *sim = Simulator::get();

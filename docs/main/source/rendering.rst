@@ -80,6 +80,8 @@ in terms of rotations, zoom and camera position, ::
     tf.show()
     # Reset the camera after closing and then run
     tf.system.camera_reset()
+    # Enable camera lagging
+    tf.system.camera_enable_lagging()
     tf.run()
 
 Creating and Controlling Clip Planes

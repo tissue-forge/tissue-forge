@@ -259,6 +259,24 @@ namespace TissueForge {
 
             void setMoveRate(const float &moveRate);
 
+            /** Test whether the camera is lagging */
+            const bool isLagging() const;
+
+            /** Enable camera lagging */
+            void enableLagging();
+
+            /** Disable camera lagging */
+            void disableLagging();
+
+            /** Toggle camera lagging */
+            void toggleLagging();
+
+            /** Get the camera lagging */
+            const float getLagging() const;
+
+            /** Set the camera lagging. Value must be in [0, 1) */
+            void setLagging(const float &lagging);
+
             void viewportEvent(Platform::GlfwApplication::ViewportEvent& event);
 
             void cameraTranslateDown();
@@ -435,6 +453,10 @@ namespace TissueForge {
             void setupCallbacks();
             
             ~UniverseRenderer();
+
+        protected:
+
+            float _lagging;
         };
 
 }};

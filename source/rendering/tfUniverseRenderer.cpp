@@ -204,7 +204,8 @@ rendering::UniverseRenderer::UniverseRenderer(const Simulator::Config &conf, ren
     window{win}, 
     _zoomRate(0.05), 
     _spinRate{0.01*M_PI}, 
-    _moveRate{0.01}
+    _moveRate{0.01},
+    _lagging{0.85f}
 {
     TF_Log(LOG_DEBUG) << "Creating UniverseRenderer";
 
@@ -707,13 +708,7 @@ void rendering::UniverseRenderer::keyPressEvent(Platform::GlfwApplication::KeyEv
                 _arcball->translateToOrigin();
             }
             else {
-                if(_arcball->lagging() > 0.0f) {
-                    Debug{} << "Lagging disabled";
-                    _arcball->setLagging(0.0f);
-                } else {
-                    Debug{} << "Lagging enabled";
-                    _arcball->setLagging(0.85f);
-                }
+                toggleLagging();
             }
 
             }
@@ -982,4 +977,38 @@ const float rendering::UniverseRenderer::getMoveRate() {
 
 void rendering::UniverseRenderer::setMoveRate(const float &moveRate) {
     _moveRate = moveRate;
+}
+
+const bool rendering::UniverseRenderer::isLagging() const {
+    return getLagging() > 0;
+}
+
+void rendering::UniverseRenderer::enableLagging() {
+    TF_Log(LOG_INFORMATION) << "Lagging enabled";
+
+    setLagging(_lagging);
+}
+
+void rendering::UniverseRenderer::disableLagging() {
+    TF_Log(LOG_INFORMATION) << "Lagging disabled";
+
+    setLagging(0.f);
+}
+
+void rendering::UniverseRenderer::toggleLagging() {
+    if(isLagging()) 
+        disableLagging();
+    else 
+        enableLagging();
+}
+
+const float rendering::UniverseRenderer::getLagging() const {
+    return _arcball->lagging();
+}
+
+void rendering::UniverseRenderer::setLagging(const float &lagging) {
+    if(lagging < 0 || lagging >= 1.0) 
+        TF_Log(LOG_ERROR) << "Invalid input: lagging must be in [0, 1)";
+    else 
+        _arcball->setLagging(lagging);
 }
