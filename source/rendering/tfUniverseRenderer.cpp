@@ -150,29 +150,18 @@ static inline const bool cameraZoom(rendering::ArcBallCamera *camera, const floa
     return true;
 }
 
-static inline int render_particle(rendering::SphereInstanceData* pData, int i, Particle *p, space_cell *c) {
+static inline int render_largeparticle(rendering::SphereInstanceData* pData, int i, Particle *p) {
 
-    ParticleType *type = &_Engine.types[p->typeId];
-    rendering::Style *style = p->style ? p->style : type->style;
-    
-    if(style->flags & STYLE_VISIBLE) {
-    
-        Magnum::Vector3 position = {
-            (Magnum::Float)(c->origin[0] + p->x[0]),
-            (Magnum::Float)(c->origin[1] + p->x[1]),
-            (Magnum::Float)(c->origin[2] + p->x[2])
-        };
-        
-        float radius = p->flags & PARTICLE_CLUSTER ? 0 : p->radius;
-        pData[i].transformationMatrix =
-            Matrix4::translation(position) * Matrix4::scaling(Vector3{radius});
-        pData[i].normalMatrix =
-            pData[i].transformationMatrix.normalMatrix();
-        pData[i].color = style->map_color(p);
-        return 1;
-    }
-    
-    return 0;
+    rendering::Style *style = p->style ? p->style : (&_Engine.types[p->typeId])->style;
+
+    float radius = style->flags & STYLE_VISIBLE && !(p->flags & PARTICLE_CLUSTER) ? p->radius : 0;
+    pData[i].transformationMatrix =
+        Matrix4::translation(p->position) * Matrix4::scaling(Vector3{radius});
+    pData[i].normalMatrix =
+        pData[i].transformationMatrix.normalMatrix();
+    pData[i].color = style->map_color(p);
+
+    return 1;
 }
 
 static inline int render_cell_particles(rendering::SphereInstanceData* pData, int cid) {
@@ -416,7 +405,7 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::draw(T& camera, const 
 
     auto func_render_large_particles = [&pLargeData](int _pid) -> void {
         Particle *p = &_Engine.s.largeparts.parts[_pid];
-        render_particle(pLargeData, _pid, p, &_Engine.s.largeparts);
+        render_largeparticle(pLargeData, _pid, p);
     };
     parallel_for(_Engine.s.largeparts.count, func_render_large_particles);
     largeSphereInstanceBuffer.unmap();
