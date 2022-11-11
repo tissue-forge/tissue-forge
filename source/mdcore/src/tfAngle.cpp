@@ -792,9 +792,11 @@ HRESULT TissueForge::AngleHandle::destroy() {
 
 std::vector<AngleHandle> TissueForge::AngleHandle::items() {
     std::vector<AngleHandle> list;
+    list.reserve(_Engine.nr_active_angles);
 
     for(int i = 0; i < _Engine.nr_angles; ++i)
-        list.emplace_back(i);
+        if((&_Engine.angles[i])->flags & ANGLE_ACTIVE) 
+            list.emplace_back(i);
 
     return list;
 }

@@ -840,9 +840,11 @@ HRESULT TissueForge::DihedralHandle::destroy() {
 
 std::vector<DihedralHandle> TissueForge::DihedralHandle::items() {
     std::vector<DihedralHandle> list;
+    list.reserve(_Engine.nr_active_dihedrals);
 
     for(int i = 0; i < _Engine.nr_dihedrals; ++i)
-        list.emplace_back(i);
+        if((&_Engine.dihedrals[i])->flags & DIHEDRAL_ACTIVE) 
+            list.emplace_back(i);
 
     return list;
 }

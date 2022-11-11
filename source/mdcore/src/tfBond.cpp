@@ -935,17 +935,15 @@ HRESULT TissueForge::BondHandle::destroy()
     return Bond_Destroy(this->get());
 }
 
-std::vector<BondHandle> TissueForge::BondHandle::bonds() {
+std::vector<BondHandle> TissueForge::BondHandle::items() {
     std::vector<BondHandle> list;
+    list.reserve(_Engine.nr_active_bonds);
     
     for(int i = 0; i < _Engine.nr_bonds; ++i) 
-        list.emplace_back(i);
+        if((&_Engine.bonds[i])->flags & BOND_ACTIVE) 
+            list.emplace_back(i);
     
     return list;
-}
-
-std::vector<BondHandle> TissueForge::BondHandle::items() {
-    return bonds();
 }
 
 bool TissueForge::BondHandle::decays() {

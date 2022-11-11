@@ -257,11 +257,6 @@ namespace TissueForge {
         HRESULT destroy();
 
         /**
-         * @brief Get a handle to each bond in the universe
-         */
-        static std::vector<BondHandle> bonds();
-
-        /**
          * @brief Gets all bonds in the universe
          */
         static std::vector<BondHandle> items();
