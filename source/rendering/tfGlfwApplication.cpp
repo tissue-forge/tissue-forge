@@ -329,8 +329,10 @@ HRESULT rendering::GlfwApplication::mainLoopIteration(double timeout) {
         }
     }
     else {
-        Simulator::get()->redraw();
+        glfwPostEmptyEvent();
     }
+
+    Simulator::get()->redraw();
 
     // process messages
     Magnum::Platform::GlfwApplication::mainLoopIteration();
