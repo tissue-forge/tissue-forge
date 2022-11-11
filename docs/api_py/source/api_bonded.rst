@@ -33,9 +33,25 @@ Bonds
 
     .. autoproperty:: age
 
+    .. automethod:: has
+
     .. automethod:: __str__
 
     .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
 
     .. automethod:: get
 
@@ -78,9 +94,25 @@ Bonds
 
     .. autoproperty:: age
 
+    .. automethod:: has
+
     .. automethod:: __str__
 
     .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
 
     .. automethod:: get
 
@@ -123,9 +155,25 @@ Bonds
 
     .. automethod:: get
 
+    .. automethod:: has
+
     .. automethod:: __str__
 
     .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
 
     .. automethod:: destroy
 

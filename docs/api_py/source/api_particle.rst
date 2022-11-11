@@ -81,6 +81,20 @@ Particles and Clusters
 
     .. automethod:: to_cluster
 
+    .. automethod:: __str__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
+
 
 .. autoclass:: ParticleTypeSpec
 
@@ -157,6 +171,24 @@ Particles and Clusters
 
     .. automethod:: particleTypeIds
 
+    .. automethod:: __str__
+
+    .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
+
     .. automethod:: __call__
 
         Alias of :meth:`_call`
@@ -209,6 +241,26 @@ Particles and Clusters
 
     .. autoattribute:: items
 
+    .. automethod:: has
+
+    .. automethod:: __str__
+
+    .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
+
     .. automethod:: __call__
 
         Alias of :meth:`_call`
@@ -233,3 +285,23 @@ Particles and Clusters
     .. automethod:: hasType
 
     .. automethod:: get
+
+    .. automethod:: has
+
+    .. automethod:: __str__
+
+    .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
