@@ -365,6 +365,7 @@ void rendering::GlfwApplication::keyPressEvent(KeyEvent &event)
         }
         case Magnum::Platform::GlfwApplication::KeyEvent::KeyEvent::Key::S: {
             Universe::step(0, 0);
+            Simulator::redraw();
         }
         default:
             break;
