@@ -373,6 +373,7 @@ struct Potential *potential_create_harmonic(FPTYPE a, FPTYPE b, FPTYPE K, FPTYPE
 
     p->flags = POTENTIAL_HARMONIC & POTENTIAL_R2 ;
     p->name = "Harmonic";
+	p->r0_plusone = r0 + 1;
 
 	/* fill this potential */
 	potential_create_harmonic_K = K;
@@ -1271,6 +1272,7 @@ struct Potential *potential_create_overlapping_sphere(FPTYPE mu, FPTYPE k,
     FPTYPE a, FPTYPE b,FPTYPE tol) {
     
     struct Potential *p = new Potential();
+	p->r0_plusone = harmonic_r0 + 1;
     
     overlapping_sphere_mu = mu;
     overlapping_sphere_k = k;
@@ -1358,8 +1360,8 @@ struct Potential *potential_create_power(FPTYPE k, FPTYPE r0, FPTYPE alpha, FPTY
     power_alpha = alpha;
     
     p->flags =  POTENTIAL_R2;
-    
     p->name = "Power(|r - r0|)^alpha";
+	p->r0_plusone = r0 + 1;
     
     int err = 0;
     
@@ -2065,6 +2067,7 @@ Potential *potential_create_well(FPTYPE k, FPTYPE n, FPTYPE r0, FPTYPE tol, FPTY
 
     p->flags =  POTENTIAL_R2  | POTENTIAL_LJ126 ;
     p->name = "Well";
+	p->r0_plusone = r0 + 1;
 
     /* fill this potential */
     potential_create_well_k = k;
@@ -2145,6 +2148,7 @@ Potential *potential_create_glj(FPTYPE e, FPTYPE m, FPTYPE n, FPTYPE k,
     
     p->flags =  POTENTIAL_R2  | POTENTIAL_LJ126;
     p->name = "Generalized Lennard-Jones";
+	p->r0_plusone = r0 + 1;
     
     /* fill this potential */
     potential_create_glj_e = e;
@@ -2246,6 +2250,7 @@ Potential *potential_create_morse(FPTYPE d, FPTYPE a, FPTYPE r0,
     
     p->flags =  POTENTIAL_R2;
     p->name = "Morse";
+	p->r0_plusone = r0 + 1;
     
     /* fill this potential */
     morse_d = d;
