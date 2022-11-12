@@ -40,7 +40,7 @@
 %ignore TissueForge::ParticleType_New;
 %ignore TissueForge::Particles_New;
 %ignore TissueForge::_Particle_init;
-%ignore TissueForge::ParticleHandle::neighbors;
+%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE*, const std::vector<ParticleType>*);
 
 %include "tfParticle.h"
 
@@ -245,7 +245,7 @@
             :param types: optional list of particle types to search by; default is all types
             :rtype: :py:class:`ParticleList`
             """
-            return ParticleList(self.neighborIds())
+            return ParticleList(self.neighborIds(distance, types))
 
         @property
         def bonded_neighbors(self):
