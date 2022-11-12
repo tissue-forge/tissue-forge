@@ -83,6 +83,11 @@
             return not (self == rhs)
 
         @property
+        def length(self):
+            """bond length"""
+            return self.getLength()
+
+        @property
         def energy(self):
             """bond energy"""
             return self.getEnergy()

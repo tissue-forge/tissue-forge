@@ -69,7 +69,7 @@ namespace TissueForge {
 
         uint32_t flags;
 
-        /* ids of particles involved */
+        /* id of particles involved */
         int32_t i, j;
         
         uint32_t id;
@@ -93,8 +93,6 @@ namespace TissueForge {
 
         /**
          * @brief Get the default style
-         * 
-         * @return rendering::Style* 
          */
         static rendering::Style *styleDef();
 
@@ -121,8 +119,6 @@ namespace TissueForge {
 
         /**
          * @brief Get a JSON string representation
-         * 
-         * @return std::string 
          */
         std::string toString();
 
@@ -132,7 +128,6 @@ namespace TissueForge {
          * The returned bond is not automatically registered with the engine. 
          * 
          * @param str 
-         * @return Bond* 
          */
         static Bond *fromString(const std::string &str);
 
@@ -152,7 +147,7 @@ namespace TissueForge {
         /**
          * @brief Gets the underlying bond
          * 
-         * @return Bond* 
+         * @return bond, if available
          */
         TissueForge::Bond *get();
 
@@ -237,7 +232,7 @@ namespace TissueForge {
          * @param half_life bond half life
          * @param bond_energy bond energy
          * @param flags bond flags
-         * @return std::vector<BondHandle*>* 
+         * @return created bonds
          */
         static std::vector<BondHandle> pairwise(
             TissueForge::Potential* pot,
@@ -275,19 +270,47 @@ namespace TissueForge {
 
         /** Test whether the bond has a particle */
         bool has(ParticleHandle *part);
+
+        /** Get the current length */
+        FloatP_t getLength();
         
+        /** Get the energy */
         FPTYPE getEnergy();
+
+        /** Get the particle ids */
         std::vector<int32_t> getParts();
+
+        /** Get the particle list */
         ParticleList getPartList();
+
+        /** Get the potential */
         TissueForge::Potential *getPotential();
+
+        /** Get the id */
         uint32_t getId();
+
+        /** Get the dissociation energy */
         FPTYPE getDissociationEnergy();
+
+        /** Set the dissociation energy */
         void setDissociationEnergy(const FPTYPE &dissociation_energy);
+
+        /** Get the half life */
         FPTYPE getHalfLife();
+
+        /** Set the half life */
         void setHalfLife(const FPTYPE &half_life);
+
+        /** Test whether the underlying bond is active */
         bool getActive();
+
+        /** Get the style */
         rendering::Style *getStyle();
+
+        /** Set the style */
         void setStyle(rendering::Style *style);
+
+        /** Get the age */
         FPTYPE getAge();
 
     private:

@@ -52,6 +52,7 @@
 #include <io/tfFIO.h>
 #include <rendering/tfStyle.h>
 #include <tf_mdcore_io.h>
+#include <tf_metrics.h>
 
 #ifdef HAVE_CUDA
 #include "tfAngle_cuda.h"
@@ -826,6 +827,21 @@ bool TissueForge::AngleHandle::has(const int32_t &pid) {
 
 bool TissueForge::AngleHandle::has(ParticleHandle *part) {
     return part ? getPartList().has(part) : false;
+}
+
+FloatP_t TissueForge::AngleHandle::getAngle() {
+    FloatP_t result = 0;
+    Angle *a = this->get();
+    if(a && a->flags && ANGLE_ACTIVE) { 
+        ParticleHandle pi(a->i), pj(a->j), pk(a->k);
+        FVector3 ri = pi.getPosition();
+        FVector3 rj = pj.getPosition();
+        FVector3 rk = pk.getPosition();
+        FVector3 rij = metrics::relativePosition(ri, rj);
+        FVector3 rkj = metrics::relativePosition(rk, rj);
+        result = rij.angle(rkj);
+    }
+    return result;
 }
 
 FPTYPE TissueForge::AngleHandle::getEnergy() {

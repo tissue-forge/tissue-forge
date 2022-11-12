@@ -15,6 +15,8 @@ Bonds
 
 .. autoclass:: BondHandle
 
+    .. autoproperty:: length
+
     .. autoproperty:: energy
 
     .. autoproperty:: parts
@@ -76,6 +78,8 @@ Bonds
 
 .. autoclass:: AngleHandle
 
+    .. autoproperty:: angle
+
     .. autoproperty:: energy
 
     .. autoproperty:: parts
@@ -134,6 +138,8 @@ Bonds
     .. automethod:: __reduce__
 
 .. autoclass:: DihedralHandle
+
+    .. autoproperty:: angle
 
     .. autoproperty:: energy
 

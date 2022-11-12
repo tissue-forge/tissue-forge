@@ -79,6 +79,11 @@
             return not (self == rhs)
 
         @property
+        def angle(self):
+            """angle angle"""
+            return self.getAngle()
+
+        @property
         def energy(self):
             """angle energy"""
             return self.getEnergy()

@@ -316,8 +316,17 @@ namespace TissueForge {
 
         /**
          * @brief Gets the actual particle of this handle. 
+         * 
+         * @return particle, if available
          */
         Particle *part();
+
+        /**
+         * @brief Gets the actual particle of this handle. 
+         * 
+         * Alias for consistency with other objects. 
+         */
+        Particle *get() { return part(); }
 
         /**
          * @brief Gets the particle type of this handle. 
@@ -475,6 +484,9 @@ namespace TissueForge {
         
         /** Set the particle radius */
         void setRadius(const FPTYPE &radius);
+
+        /** Particle volume */
+        FPTYPE getVolume();
         
         /** Particle name */
         std::string getName();
@@ -662,7 +674,7 @@ namespace TissueForge {
          * @param position position of new particle, optional
          * @param velocity velocity of new particle, optional
          * @param clusterId id of parent cluster, optional
-         * @return ParticleHandle* 
+         * @return new particle
          */
         TissueForge::ParticleHandle *operator()(
             FVector3 *position=NULL,
@@ -677,7 +689,7 @@ namespace TissueForge {
          * 
          * @param str JSON string
          * @param clusterId id of parent cluster, optional
-         * @return ParticleHandle* 
+         * @return new particle
          */
         TissueForge::ParticleHandle *operator()(const std::string &str, int *clusterId=NULL);
 
@@ -691,7 +703,7 @@ namespace TissueForge {
          * @param positions initial particle positions, optional
          * @param velocities initial particle velocities, optional
          * @param clusterIds parent cluster ids, optional
-         * @return std::vector<int> 
+         * @return new particle ids
          */
         std::vector<int> factory(
             unsigned int nr_parts=0, 
@@ -706,7 +718,7 @@ namespace TissueForge {
          * New type is constructed from the definition of the calling type. 
          * 
          * @param _name name of the new type
-         * @return ParticleType* 
+         * @return new particle type
          */
         ParticleType* newType(const char *_name);
 
@@ -720,8 +732,6 @@ namespace TissueForge {
          * @brief Registers a type with the engine.
          * 
          * Note that this occurs automatically, unless noReg==true in constructor.  
-         * 
-         * @return HRESULT 
          */
         virtual HRESULT registerType();
 
@@ -739,8 +749,6 @@ namespace TissueForge {
 
         /**
          * @brief Get the type engine instance
-         * 
-         * @return ParticleType* 
          */
         virtual ParticleType *get();
 
@@ -748,6 +756,9 @@ namespace TissueForge {
         virtual ~ParticleType() {}
 
         virtual std::string str() const;
+
+        /** Type volume */
+        FPTYPE getVolume();
 
         /** Type frozen state */
         bool getFrozen();
@@ -838,7 +849,7 @@ namespace TissueForge {
      * @brief Get a registered particle type by type name
      * 
      * @param name name of particle type
-     * @return ParticleType* 
+     * @return particle type, if found
      */
     CAPI_FUNC(ParticleType*) ParticleType_FindFromName(const char* name);
 

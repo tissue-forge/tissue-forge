@@ -877,6 +877,22 @@ bool TissueForge::DihedralHandle::has(ParticleHandle *part) {
     return part ? getPartList().has(part) : false;
 }
 
+FloatP_t TissueForge::DihedralHandle::getAngle() {
+    FloatP_t result = 0;
+    Dihedral *d = this->get();
+    if(d && d->flags && DIHEDRAL_ACTIVE) { 
+        ParticleHandle pi(d->i), pj(d->j), pk(d->k), pl(d->l);
+        FVector3 ri = pi.getPosition();
+        FVector3 rj = pj.getPosition();
+        FVector3 rk = pk.getPosition();
+        FVector3 rl = pl.getPosition();
+        FVector3 nlijk = FVector4::planeEquation(ri, rj, rk).xyz();
+        FVector3 nljkl = FVector4::planeEquation(rj, rk, rl).xyz();
+        result = nlijk.angle(nljkl);
+    }
+    return result;
+}
+
 FPTYPE TissueForge::DihedralHandle::getEnergy() {
 
     Dihedral dihedrals[] = {*this->get()};

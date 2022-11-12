@@ -229,6 +229,10 @@ void TissueForge::ParticleHandle::setMass(const FPTYPE &mass) {
     self->imass = 1.f / mass;
 }
 
+FPTYPE TissueForge::ParticleType::getVolume() {
+    return 4.0 / 3.0 * M_PI * radius * radius * radius;
+}
+
 bool TissueForge::ParticleType::getFrozen() {
     return particle_flags & PARTICLE_FROZEN;
 }
@@ -334,6 +338,11 @@ void TissueForge::ParticleHandle::setRadius(const FPTYPE &radius) {
     self->radius = radius;
     if((radius > _Engine.s.cutoff && !(self->flags & PARTICLE_LARGE)) || (radius <= _Engine.s.cutoff && self->flags & PARTICLE_LARGE)) 
         error(MDCERR_large_state);
+}
+
+FPTYPE TissueForge::ParticleHandle::getVolume() {
+    TF_PARTICLE_SELFW(this, 0)
+    return 4.0 / 3.0 * M_PI * self->radius * self->radius * self->radius;
 }
 
 std::string TissueForge::ParticleHandle::getName() {

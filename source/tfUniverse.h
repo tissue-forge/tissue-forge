@@ -72,6 +72,13 @@ namespace TissueForge {
          */
         static FVector3 dim();
 
+        /**
+         * @brief Gets the volume of the universe
+         * 
+         * @return FloatP_t 
+         */
+        static FloatP_t volume();
+
         bool isRunning;
 
         event::EventBaseList *events;

@@ -314,6 +314,12 @@ FVector3 Universe::dim()
     TF_UNIVERSE_FINALLY(FVector3());
 }
 
+FloatP_t Universe::volume() {
+    TF_UNIVERSE_TRY();
+    return FVector3::from(_Engine.s.dim).product();
+    TF_UNIVERSE_FINALLY(0);
+}
+
 HRESULT TissueForge::Universe_Step(FloatP_t until, FloatP_t dt) {
 
     // Ok to call here, since nothing happens if root element is already released. 

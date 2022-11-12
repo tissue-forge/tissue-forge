@@ -79,8 +79,13 @@
             return not (self == rhs)
 
         @property
+        def angle(self):
+            """dihedral angle"""
+            return self.getAngle()
+
+        @property
         def energy(self):
-            """angle energy"""
+            """dihedral energy"""
             return self.getEnergy()
 
         @property
@@ -90,12 +95,12 @@
 
         @property
         def potential(self):
-            """angle potential"""
+            """dihedral potential"""
             return self.getPotential()
 
         @property
         def id(self):
-            """angle id"""
+            """dihedral id"""
             return self.getId()
 
         @property
@@ -109,7 +114,7 @@
 
         @property
         def half_life(self):
-            """angle half life"""
+            """dihedral half life"""
             return self.getHalfLife()
 
         @half_life.setter
@@ -123,7 +128,7 @@
 
         @property
         def style(self):
-            """angle style"""
+            """dihedral style"""
             return self.getStyle()
 
         @style.setter
@@ -132,7 +137,7 @@
 
         @property
         def age(self):
-            """angle age"""
+            """dihedral age"""
             return self.getAge()
     %}
 }

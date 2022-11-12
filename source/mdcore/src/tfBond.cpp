@@ -55,6 +55,7 @@
 #include <tfError.h>
 #include <io/tfFIO.h>
 #include <tf_mdcore_io.h>
+#include <tf_metrics.h>
 
 #ifdef HAVE_CUDA
 #include "tfBond_cuda.h"
@@ -723,6 +724,19 @@ std::string TissueForge::BondHandle::str() const {
 
 bool TissueForge::BondHandle::check() {
     return (bool)this->get();
+}
+
+FloatP_t TissueForge::BondHandle::getLength() {
+    FloatP_t result = 0;
+    Bond *b = this->get();
+    if(b && b->flags && BOND_ACTIVE) { 
+        ParticleHandle pi(b->i), pj(b->j);
+        FVector3 ri = pi.getPosition();
+        FVector3 rj = pj.getPosition();
+        FVector3 rij = metrics::relativePosition(ri, rj);
+        result = rij.length();
+    }
+    return result;
 }
 
 FPTYPE TissueForge::BondHandle::getEnergy()

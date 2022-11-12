@@ -158,6 +158,11 @@
             self.setRadius(radius)
 
         @property
+        def volume(self):
+            """Particle volume"""
+            return self.getVolume()
+
+        @property
         def name(self):
             """Particle name"""
             return self.getName()
@@ -351,6 +356,11 @@
                 [_cluster_ids.push_back(x) for x in cluster_ids]
 
             return self._factory(nr_parts=nr_parts, positions=_positions, velocities=_velocities, clusterIds=_cluster_ids)
+
+        @property
+        def volume(self):
+            """Particle type volume"""
+            return self.getVolume()
 
         @property
         def frozen(self):

@@ -35,6 +35,8 @@ Particles and Clusters
 
     .. autoproperty:: radius
 
+    .. autoproperty:: volume
+
     .. autoproperty:: name
 
     .. autoproperty:: position
@@ -60,6 +62,8 @@ Particles and Clusters
     .. autoproperty:: dihedrals
 
     .. automethod:: part
+
+    .. automethod:: get
 
     .. automethod:: type
 
@@ -148,6 +152,8 @@ Particles and Clusters
     .. autoattribute:: charge
 
     .. autoattribute:: radius
+
+    .. autoproperty:: volume
 
     .. autoattribute:: kinetic_energy
 
