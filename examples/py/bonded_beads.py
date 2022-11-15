@@ -76,6 +76,6 @@ for i in range(1, xx.size):
 
 tf.Bond.create(pot_bond, bead, bead_init)  # create a bond between first and last
 tf.Angle.create(pot_ang, p, bead, bead_init)  # make an angle bond between prev, last, first
-
+tf.system.set_rendering_3d_all(True)  # Visualize bonds with 3d objects
 # run the simulator interactive
 tf.run()
