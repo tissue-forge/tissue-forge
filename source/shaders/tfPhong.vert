@@ -214,8 +214,11 @@ void main() {
         position;
     highp vec3 transformedPosition = transformedPosition4.xyz/transformedPosition4.w;
     
-    highp vec4 instancePosition = instancedTransformationMatrix * position;
-    
+    highp vec4 instancePosition = 
+        #ifdef INSTANCED_TRANSFORMATION
+        instancedTransformationMatrix * 
+        #endif
+        position;
   
     #if CLIP_PLANE_COUNT
     for(int i = 0; i < CLIP_PLANE_COUNT; ++i) {
