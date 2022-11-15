@@ -71,9 +71,12 @@
 
 #include "tfStyle.h"
 #include "tfAngleRenderer.h"
+#include "tfAngleRenderer3D.h"
 #include "tfArrowRenderer.h"
 #include "tfBondRenderer.h"
+#include "tfBondRenderer3D.h"
 #include "tfDihedralRenderer.h"
+#include "tfDihedralRenderer3D.h"
 #include "tfOrientationRenderer.h"
 
 #include <tf_util.h>
@@ -1011,4 +1014,94 @@ void rendering::UniverseRenderer::setLagging(const float &lagging) {
         TF_Log(LOG_ERROR) << "Invalid input: lagging must be in [0, 1)";
     else 
         _arcball->setLagging(lagging);
+}
+
+const bool rendering::UniverseRenderer::getRendering3DBonds() const {
+    return _bonds3d_flags[0];
+}
+
+void rendering::UniverseRenderer::setRendering3DBonds(const bool &_flag) {
+    if(_flag == _bonds3d_flags[0]) 
+        return;
+    _bonds3d_flags[0] = _flag;
+
+    std::vector<FVector4> clipPlanes;
+    for(auto &cp : _clipPlanes) 
+        clipPlanes.push_back(cp);
+
+    delete subRenderers[2];
+    SubRenderer *renderer;
+    if(_flag) renderer = new BondRenderer3D();
+    else renderer = new BondRenderer();
+
+    renderer->start(clipPlanes);
+    subRenderers[2] = renderer;
+}
+
+void rendering::UniverseRenderer::toggleRendering3DBonds() {
+    setRendering3DBonds(!getRendering3DBonds());
+}
+
+const bool rendering::UniverseRenderer::getRendering3DAngles() const {
+    return _bonds3d_flags[1];
+}
+
+void rendering::UniverseRenderer::setRendering3DAngles(const bool &_flag) {
+    if(_flag == _bonds3d_flags[1]) 
+        return;
+    _bonds3d_flags[1] = _flag;
+
+    std::vector<FVector4> clipPlanes;
+    for(auto &cp : _clipPlanes) 
+        clipPlanes.push_back(cp);
+
+    delete subRenderers[0];
+    SubRenderer *renderer;
+    if(_flag) renderer = new AngleRenderer3D();
+    else renderer = new AngleRenderer();
+
+    renderer->start(clipPlanes);
+    subRenderers[0] = renderer;
+}
+
+void rendering::UniverseRenderer::toggleRendering3DAngles() {
+    setRendering3DAngles(!getRendering3DAngles());
+}
+
+const bool rendering::UniverseRenderer::getRendering3DDihedrals() const {
+    return _bonds3d_flags[2];
+}
+
+void rendering::UniverseRenderer::setRendering3DDihedrals(const bool &_flag) {
+    if(_flag == _bonds3d_flags[2]) 
+        return;
+    _bonds3d_flags[2] = _flag;
+
+    std::vector<FVector4> clipPlanes;
+    for(auto &cp : _clipPlanes) 
+        clipPlanes.push_back(cp);
+
+    delete subRenderers[3];
+    SubRenderer *renderer;
+    if(_flag) renderer = new DihedralRenderer3D();
+    else renderer = new DihedralRenderer();
+
+    renderer->start(clipPlanes);
+    subRenderers[3] = renderer;
+}
+
+void rendering::UniverseRenderer::toggleRendering3DDihedrals() {
+    setRendering3DDihedrals(!getRendering3DDihedrals());
+}
+
+void rendering::UniverseRenderer::setRendering3DAll(const bool &_flag) {
+    setRendering3DBonds(_flag);
+    setRendering3DAngles(_flag);
+    setRendering3DDihedrals(_flag);
+}
+
+void rendering::UniverseRenderer::toggleRendering3DAll() {
+    toggleRendering3DBonds();
+    toggleRendering3DAngles();
+    toggleRendering3DDihedrals();
 }

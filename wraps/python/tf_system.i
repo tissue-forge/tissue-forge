@@ -75,6 +75,17 @@
 %rename(_system_camera_rotation) TissueForge::py::camera_rotation;
 %rename(_system_camera_zoom) TissueForge::py::camera_zoom;
 %rename(_system_get_renderer) TissueForge::py::get_renderer;
+%rename(_system_get_rendering_3d_bonds) TissueForge::py::get_rendering_3d_bonds;
+%rename(_system_set_rendering_3d_bonds) TissueForge::py::set_rendering_3d_bonds;
+%rename(_system_toggle_rendering_3d_bonds) TissueForge::py::toggle_rendering_3d_bonds;
+%rename(_system_get_rendering_3d_angles) TissueForge::py::get_rendering_3d_angles;
+%rename(_system_set_rendering_3d_angles) TissueForge::py::set_rendering_3d_angles;
+%rename(_system_toggle_rendering_3d_angles) TissueForge::py::toggle_rendering_3d_angles;
+%rename(_system_get_rendering_3d_dihedrals) TissueForge::py::get_rendering_3d_dihedrals;
+%rename(_system_set_rendering_3d_dihedrals) TissueForge::py::set_rendering_3d_dihedrals;
+%rename(_system_toggle_rendering_3d_dihedrals) TissueForge::py::toggle_rendering_3d_dihedrals;
+%rename(_system_set_rendering_3d_all) TissueForge::py::set_rendering_3d_all;
+%rename(_system_toggle_rendering_3d_all) TissueForge::py::toggle_rendering_3d_all;
 %rename(_system_get_ambient_color) TissueForge::py::get_ambient_color;
 %rename(_system_set_ambient_color) TissueForge::py::set_ambient_color;
 %rename(_system_get_diffuse_color) TissueForge::py::get_diffuse_color;
