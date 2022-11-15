@@ -355,6 +355,39 @@ namespace TissueForge::py {
    */
    CPPAPI_FUNC(struct rendering::UniverseRenderer*) get_renderer();
 
+   /** Get whether bonds are renderered with 3D objects */
+   CPPAPI_FUNC(const bool) get_rendering_3d_bonds();
+
+   /** Set whether bonds are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_bonds(const bool &_flag);
+
+   /** Toggle whether bonds are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_bonds();
+
+   /** Get whether angles are renderered with 3D objects */
+   CPPAPI_FUNC(const bool) get_rendering_3d_angles();
+
+   /** Set whether angles are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_angles(const bool &_flag);
+
+   /** Toggle whether angles are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_angles();
+
+   /** Get whether dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(const bool) get_rendering_3d_dihedrals();
+
+   /** Set whether dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_dihedrals(const bool &_flag);
+
+   /** Toggle whether dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_dihedrals();
+
+   /** Set whether bonds, angle and dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_all(const bool &_flag);
+
+   /** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_all();
+
    /**
    * @brief Get the ambient color
    * 

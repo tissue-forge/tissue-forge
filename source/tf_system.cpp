@@ -869,6 +869,108 @@ struct rendering::UniverseRenderer* system::getRenderer() {
     }
 }
 
+const bool system::getRendering3DBonds() {
+    try {
+        return system::getRenderer()->getRendering3DBonds();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return false;
+    }
+}
+
+void system::setRendering3DBonds(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DBonds(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DBonds() {
+    try {
+        return system::getRenderer()->toggleRendering3DBonds();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+const bool system::getRendering3DAngles() {
+    try {
+        return system::getRenderer()->getRendering3DAngles();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return false;
+    }
+}
+
+void system::setRendering3DAngles(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DAngles(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DAngles() {
+    try {
+        return system::getRenderer()->toggleRendering3DAngles();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+const bool system::getRendering3DDihedrals() {
+    try {
+        return system::getRenderer()->getRendering3DDihedrals();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return false;
+    }
+}
+
+void system::setRendering3DDihedrals(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DDihedrals(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DDihedrals() {
+    try {
+        return system::getRenderer()->toggleRendering3DDihedrals();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::setRendering3DAll(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DAll(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DAll() {
+    try {
+        return system::getRenderer()->toggleRendering3DAll();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
 FVector3 system::getAmbientColor() {
     try {
         return system::getRenderer()->ambientColor();

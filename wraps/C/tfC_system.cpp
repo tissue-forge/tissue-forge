@@ -246,6 +246,63 @@ HRESULT tfSystem_cameraZoom(float *zoom) {
     return S_OK;
 }
 
+HRESULT tfSystem_getRendering3DBonds(bool *flag) {
+    TFC_PTRCHECK(flag);
+    *flag = system::getRendering3DBonds();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DBonds(bool flag) {
+    system::setRendering3DBonds(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DBonds() {
+    system::toggleRendering3DBonds();
+    return S_OK;
+}
+
+HRESULT tfSystem_getRendering3DAngles(bool *flag) {
+    *flag = system::getRendering3DAngles();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DAngles(bool flag) {
+    system::setRendering3DAngles(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DAngles() {
+    system::toggleRendering3DAngles();
+    return S_OK;
+}
+
+HRESULT tfSystem_getRendering3DDihedrals(bool *flag) {
+    TFC_PTRCHECK(flag);
+    *flag = system::getRendering3DDihedrals();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DDihedrals(bool flag) {
+    system::setRendering3DDihedrals(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DDihedrals() {
+    system::toggleRendering3DDihedrals();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DAll(bool flag) {
+    system::setRendering3DAll(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DAll() {
+    system::toggleRendering3DAll();
+    return S_OK;
+}
+
 HRESULT tfSystem_getAmbientColor(float **color) {
     TFC_PTRCHECK(color);
     auto _color = system::getAmbientColor();

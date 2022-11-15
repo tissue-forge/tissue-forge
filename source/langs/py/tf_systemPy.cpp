@@ -121,6 +121,28 @@ float py::camera_zoom() { return system::cameraZoom(); }
 
 struct rendering::UniverseRenderer* py::get_renderer() { return system::getRenderer(); }
 
+const bool py::get_rendering_3d_bonds() { return system::getRendering3DBonds(); }
+
+void py::set_rendering_3d_bonds(const bool &_flag) { return system::setRendering3DBonds(_flag); }
+
+void py::toggle_rendering_3d_bonds() { return system::toggleRendering3DBonds(); }
+
+const bool py::get_rendering_3d_angles() { return system::getRendering3DAngles(); }
+
+void py::set_rendering_3d_angles(const bool &_flag) { return system::setRendering3DAngles(_flag); }
+
+void py::toggle_rendering_3d_angles() { return system::toggleRendering3DAngles(); }
+
+const bool py::get_rendering_3d_dihedrals() { return system::getRendering3DDihedrals(); }
+
+void py::set_rendering_3d_dihedrals(const bool &_flag) { return system::setRendering3DDihedrals(_flag); }
+
+void py::toggle_rendering_3d_dihedrals() { return system::toggleRendering3DDihedrals(); }
+
+void py::set_rendering_3d_all(const bool &_flag) { return system::setRendering3DAll(_flag); }
+
+void py::toggle_rendering_3d_all() { return system::toggleRendering3DAll(); }
+
 FVector3 py::get_ambient_color() { return system::getAmbientColor(); }
 
 HRESULT py::set_ambient_color(const FVector3 &color) { return system::setAmbientColor(color); }

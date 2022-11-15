@@ -80,6 +80,28 @@ System
 .. autofunction:: camera_zoom
     
 .. autofunction:: get_renderer
+
+.. autofunction:: get_rendering_3d_bonds
+
+.. autofunction:: set_rendering_3d_bonds
+
+.. autofunction:: toggle_rendering_3d_bonds
+
+.. autofunction:: get_rendering_3d_angles
+
+.. autofunction:: set_rendering_3d_angles
+
+.. autofunction:: toggle_rendering_3d_angles
+
+.. autofunction:: get_rendering_3d_dihedrals
+
+.. autofunction:: set_rendering_3d_dihedrals
+
+.. autofunction:: toggle_rendering_3d_dihedrals
+
+.. autofunction:: set_rendering_3d_all
+
+.. autofunction:: toggle_rendering_3d_all
     
 .. autofunction:: get_ambient_color
     
