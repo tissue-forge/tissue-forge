@@ -26,7 +26,7 @@ namespace TissueForge::py {
 
     HRESULT particles(Potential *p, Particle *a, Particle *b) { return bind::particles(p, a, b); }
 
-    HRESULT types(Potential *p, ParticleType *a, ParticleType *b, bool bound) { return bind::types(p, a, b); }
+    HRESULT types(Potential *p, ParticleType *a, ParticleType *b, bool bound) { return bind::types(p, a, b, bound); }
 
     HRESULT boundary_conditions(Potential *p, ParticleType *t) { return bind::boundaryConditions(p, t); }
     
