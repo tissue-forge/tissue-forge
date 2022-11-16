@@ -656,6 +656,7 @@ void TissueForge::apply_boundary_particle_crossing(
     if(!p->state_vector) 
         return;
 
+    bool didReset = false;
     if(src_cell->loc[0] != dest_cell->loc[0]) {
         if(bc.periodic & space_periodic_x &&
             src_cell->flags & cell_periodic_x && dest_cell->flags & cell_periodic_x) 
@@ -665,13 +666,13 @@ void TissueForge::apply_boundary_particle_crossing(
                 (dest_cell->flags & cell_periodic_right && bc.right.kind & BOUNDARY_RESETTING)) 
             {
                 p->state_vector->reset();
-                
+                didReset = true;
             }
             
         }
     }
 
-    else if(src_cell->loc[1] != dest_cell->loc[1]) {
+    if(!didReset && src_cell->loc[1] != dest_cell->loc[1]) {
         if(bc.periodic & space_periodic_y &&
             src_cell->flags & cell_periodic_y && dest_cell->flags & cell_periodic_y) 
         {
@@ -680,13 +681,13 @@ void TissueForge::apply_boundary_particle_crossing(
                 (dest_cell->flags & cell_periodic_back  && bc.back.kind  & BOUNDARY_RESETTING)) 
             {
                 p->state_vector->reset();
-                
+                didReset = true;
             }
 
         }
     } 
     
-    else if(src_cell->loc[2] != dest_cell->loc[2]) {
+    if(!didReset && src_cell->loc[2] != dest_cell->loc[2]) {
         if(bc.periodic & space_periodic_z &&
             src_cell->flags & cell_periodic_z && dest_cell->flags & cell_periodic_z) 
         {
