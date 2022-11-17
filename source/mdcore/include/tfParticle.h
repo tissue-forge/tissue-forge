@@ -395,18 +395,76 @@ namespace TissueForge {
         /**
          * @brief Gets a list of nearby particles. 
          * 
-         * @param distance optional search distance; default is simulation cutoff
-         * @param types optional list of particle types to search by; default is all types
+         * @param distance search distance
+         * @param types list of particle types to search by
          */
-        ParticleList neighbors(const FPTYPE *distance=NULL, const std::vector<ParticleType> *types=NULL);
+        ParticleList neighbors(const FPTYPE &distance, const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles. 
+         * 
+         * @param distance search distance
+         * @param types list of particle types to search by
+         */
+        ParticleList neighbors(const FPTYPE &distance, const std::vector<ParticleType> &types);
+
+        /**
+         * @brief Gets a list of nearby particles of all types. 
+         * 
+         * @param distance search distance
+         */
+        ParticleList neighbors(const FPTYPE &distance);
+
+        /**
+         * @brief Gets a list of nearby particles within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        ParticleList neighbors(const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        ParticleList neighbors(const std::vector<ParticleType> &types);
 
         /**
          * @brief Gets a list of nearby particles ids. 
          * 
-         * @param distance optional search distance; default is simulation cutoff
-         * @param types optional list of particle types to search by; default is all types
+         * @param distance search distance
+         * @param types list of particle types to search by
          */
-        std::vector<int32_t> neighborIds(const FPTYPE *distance=NULL, const std::vector<ParticleType> *types=NULL);
+        std::vector<int32_t> neighborIds(const FPTYPE &distance, const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles ids. 
+         * 
+         * @param distance search distance
+         * @param types list of particle types to search by
+         */
+        std::vector<int32_t> neighborIds(const FPTYPE &distance, const std::vector<ParticleType> &types);
+
+        /**
+         * @brief Gets a list of nearby particles ids of all types. 
+         * 
+         * @param distance search distance
+         */
+        std::vector<int32_t> neighborIds(const FPTYPE &distance);
+
+        /**
+         * @brief Gets a list of nearby particles ids within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        std::vector<int32_t> neighborIds(const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles ids within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        std::vector<int32_t> neighborIds(const std::vector<ParticleType> &types);
 
         /**
          * @brief Gets a list of all bonded neighbors. 

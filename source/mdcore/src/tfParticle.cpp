@@ -1108,17 +1108,15 @@ HRESULT TissueForge::ParticleHandle::become(ParticleType *type) {
     return Particle_Become(self, type);
 }
 
-ParticleList TissueForge::ParticleHandle::neighbors(const FPTYPE *distance, const std::vector<ParticleType> *types) {
+ParticleList TissueForge::ParticleHandle::neighbors(const FPTYPE &distance, const ParticleTypeList &types) {
     TF_PARTICLE_SELFW(this, ParticleList())
-    
-    FPTYPE radius = distance ? *distance : _Engine.s.cutoff;
 
     std::set<short int> typeIds;
-    if(types) for (auto &type : *types) typeIds.insert(type.id);
-    else for(int i = 0; i < _Engine.nr_types; ++i) typeIds.insert(_Engine.types[i].id);
+    for(int32_t i = 0; i < types.nr_parts; i++) 
+        typeIds.insert(types.parts[i]);
     
     // take into account the radius of this particle.
-    radius += self->radius;
+    const FPTYPE radius = distance + self->radius;
     
     uint16_t nr_parts = 0;
     int32_t *parts = NULL;
@@ -1130,17 +1128,38 @@ ParticleList TissueForge::ParticleHandle::neighbors(const FPTYPE *distance, cons
     return result;
 }
 
-std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE *distance, const std::vector<ParticleType> *types) {
+ParticleList TissueForge::ParticleHandle::neighbors(const FPTYPE &distance, const std::vector<ParticleType> &types) {
+    ParticleTypeList typeList(types.size());
+    for(auto &t : types) 
+        typeList.insert(&t);
+    return neighbors(distance, typeList);
+}
+
+ParticleList TissueForge::ParticleHandle::neighbors(const FPTYPE &distance) {
+    TF_PARTICLE_SELFW(this, ParticleList())
+
+    ParticleTypeList typeList;
+    for(int i = 0; i < _Engine.nr_types; ++i) typeList.insert(_Engine.types[i].id);
+    return neighbors(distance, typeList);
+}
+
+ParticleList TissueForge::ParticleHandle::neighbors(const ParticleTypeList &types) {
+    return neighbors(_Engine.s.cutoff, types);
+}
+
+ParticleList TissueForge::ParticleHandle::neighbors(const std::vector<ParticleType> &types) {
+    return neighbors(_Engine.s.cutoff, types);
+}
+
+std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE &distance, const ParticleTypeList &types) {
     TF_PARTICLE_SELFW(this, {})
     
-    FPTYPE radius = distance ? *distance : _Engine.s.cutoff;
-
     std::set<short int> typeIds;
-    if(types) for (auto &type : *types) typeIds.insert(type.id);
-    else for(int i = 0; i < _Engine.nr_types; ++i) typeIds.insert(_Engine.types[i].id);
+    for(int32_t i = 0; i < types.nr_parts; i++) 
+        typeIds.insert(types.parts[i]);
     
     // take into account the radius of this particle.
-    radius += self->radius;
+    const FPTYPE radius = distance + self->radius;
     
     uint16_t nr_parts = 0;
     int32_t *parts = NULL;
@@ -1153,6 +1172,29 @@ std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE *dist
 
     if(parts) std::free(parts);
     return result;
+}
+
+std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE &distance, const std::vector<ParticleType> &types) {
+    ParticleTypeList typeList(types.size());
+    for(auto &t : types) 
+        typeList.insert(&t);
+    return neighborIds(distance, typeList);
+}
+
+std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE &distance) {
+    TF_PARTICLE_SELFW(this, {})
+
+    ParticleTypeList typeList;
+    for(int i = 0; i < _Engine.nr_types; ++i) typeList.insert(_Engine.types[i].id);
+    return neighborIds(distance, typeList);
+}
+
+std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const ParticleTypeList &types) {
+    return neighborIds(_Engine.s.cutoff, types);
+}
+
+std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const std::vector<ParticleType> &types) {
+    return neighborIds(_Engine.s.cutoff, types);
 }
 
 ParticleList TissueForge::ParticleHandle::getBondedNeighbors() {

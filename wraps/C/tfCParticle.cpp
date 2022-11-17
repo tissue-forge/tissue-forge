@@ -262,8 +262,7 @@ HRESULT tfParticleHandle_neighborsD(struct tfParticleHandleHandle *handle, tfFlo
     TFC_PARTICLEHANDLE_GET(handle);
     TFC_PTRCHECK(neighbors);
     TFC_PTRCHECK(numNeighbors);
-    tfFloatP_t _distance = distance;
-    auto nbs = phandle->neighbors(&_distance);
+    auto nbs = phandle->neighbors(distance);
     *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
@@ -285,7 +284,7 @@ HRESULT tfParticleHandle_neighborsT(
         TFC_PTRCHECK(pth.tfObj);
         _ptypes.push_back(*(ParticleType*)pth.tfObj);
     }
-    auto nbs = phandle->neighbors(0, &_ptypes);
+    auto nbs = phandle->neighbors(_ptypes);
     *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
@@ -308,8 +307,7 @@ HRESULT tfParticleHandle_neighborsDT(
         TFC_PTRCHECK(pth.tfObj);
         _ptypes.push_back(*(ParticleType*)pth.tfObj);
     }
-    tfFloatP_t _distance = distance;
-    auto nbs = phandle->neighbors(&_distance, &_ptypes);
+    auto nbs = phandle->neighbors(distance, _ptypes);
     *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }

@@ -250,7 +250,17 @@
             :param types: optional list of particle types to search by; default is all types
             :rtype: :py:class:`ParticleList`
             """
-            return ParticleList(self.neighborIds(distance, types))
+            args = []
+            if distance is not None:
+                args.append(distance)
+            if types is not None:
+                if isinstance(types, ParticleTypeList):
+                    _types = types
+                else:
+                    _types = ParticleTypeList()
+                    [_types.insert(t) for t in types]
+                args.append(_types)
+            return ParticleList(self.neighborIds(*args))
 
         @property
         def bonded_neighbors(self):
