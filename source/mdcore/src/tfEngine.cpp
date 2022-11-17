@@ -120,6 +120,8 @@ FPTYPE TissueForge::engine_steps_per_second() {
 
 HRESULT TissueForge::engine_shuffle(struct engine *e) {
 
+	TF_Log(LOG_TRACE);
+
 	struct space *s = &e->s;
 
 #ifdef HAVE_OPENMP
@@ -141,14 +143,14 @@ HRESULT TissueForge::engine_shuffle(struct engine *e) {
 #endif
 
 	/* Shuffle the domain. */
-    if(space_shuffle_local(s) < 0) {
+    if(space_shuffle_local(s) != S_OK) {
 		return error(MDCERR_space);
     }
 
 #ifdef WITH_MPI
 	/* Get the incomming particle from other procs if needed. */
 	if(e->particle_flags & engine_flag_mpi)
-		if(engine_exchange_incomming(e) < 0)
+		if(engine_exchange_incomming(e) != S_OK)
 			return error(MDCERR_mpi);
 #endif
 
@@ -178,6 +180,8 @@ HRESULT TissueForge::engine_shuffle(struct engine *e) {
 	};
 	parallel_for(s->nr_marked, func_space_cell_welcome);
 #endif
+
+	TF_Log(LOG_TRACE);
 
 	/* return quietly */
 	return S_OK;
@@ -290,7 +294,7 @@ if((e->particle_flags & engine_flag_mpi) &&(e->nr_nodes > 1)) {
 		tic = getticks();
 #ifdef WITH_MPI
 		if(e->particle_flags & engine_flag_async)
-			if(engine_exchange_wait(e) < 0)
+			if(engine_exchange_wait(e) != S_OK)
 				return error(MDCERR_mpi);
 #endif
         tic = getticks() - tic;
@@ -298,7 +302,7 @@ if((e->particle_flags & engine_flag_mpi) &&(e->nr_nodes > 1)) {
         e->timers[engine_timer_verlet] -= tic;
 
         /* Move the particles to the respecitve cells. */
-        if(engine_shuffle(e) < 0)
+        if(engine_shuffle(e) != S_OK)
             return error(MDCERR_engine);
 
         /* Store the current positions as a reference. */
@@ -640,7 +644,7 @@ HRESULT TissueForge::engine_flush(struct engine *e) {
 		return error(MDCERR_null);
 
 	/* Clear the space. */
-	if(space_flush(&e->s) < 0)
+	if(space_flush(&e->s) != S_OK)
 		return error(MDCERR_space);
 
 	/* done for now. */
@@ -655,7 +659,7 @@ HRESULT TissueForge::engine_flush_ghosts(struct engine *e) {
 		return error(MDCERR_null);
 
 	/* Clear the space. */
-	if(space_flush_ghosts(&e->s) < 0)
+	if(space_flush_ghosts(&e->s) != S_OK)
 		return error(MDCERR_space);
 
 	/* done for now. */
@@ -919,7 +923,7 @@ HRESULT TissueForge::engine_load(struct engine *e, FPTYPE *x, FPTYPE *v, int *ty
 			p.q = q[j];
 
 		/* add the part to the space. */
-		if(engine_addpart(e, &p, &x[3*j], NULL) < 0)
+		if(engine_addpart(e, &p, &x[3*j], NULL) != S_OK)
 			return error(MDCERR_space);
 
 	}
@@ -968,7 +972,7 @@ HRESULT TissueForge::engine_load_ghosts(struct engine *e, FPTYPE *x, FPTYPE *v, 
 			p.q = q[j];
 
 		/* add the part to the space. */
-		if(engine_addpart(e, &p, &x[3*j], NULL) < 0)
+		if(engine_addpart(e, &p, &x[3*j], NULL) != S_OK)
 			return error(MDCERR_space);
 
 	}
@@ -1062,7 +1066,7 @@ HRESULT TissueForge::engine_addpot(struct engine *e, struct Potential *p, int i,
     if(i != j) pots[ j * e->max_type + i ] = p;
 
 	#if defined(HAVE_CUDA)
-	if(e->flags & engine_flag_cuda && cuda::engine_cuda_refresh_pots(e) < 0)
+	if(e->flags & engine_flag_cuda && cuda::engine_cuda_refresh_pots(e) != S_OK)
 		return error(MDCERR_cuda);
 	#endif
 
@@ -1085,7 +1089,7 @@ HRESULT TissueForge::engine_addfluxes(struct engine *e, struct Fluxes *f, int i,
 	if(i != j) fluxes[j * e->max_type + i] = f;
 
 	#if defined(HAVE_CUDA)
-	if(e->flags & engine_flag_cuda && cuda::engine_cuda_refresh_fluxes(e) < 0)
+	if(e->flags & engine_flag_cuda && cuda::engine_cuda_refresh_fluxes(e) != S_OK)
 		return error(MDCERR_cuda);
 	#endif
 
@@ -1146,7 +1150,7 @@ HRESULT cuda::engine_toCUDA(struct engine *e) {
 
 	// Start cuda run mode
 
-	if(engine_cuda_load(e) < 0)
+	if(engine_cuda_load(e) != S_OK)
 		return error(MDCERR_cuda);
 
 	e->flags |= engine_flag_cuda;
@@ -1174,7 +1178,7 @@ HRESULT cuda::engine_fromCUDA(struct engine *e) {
 
 	// Shut down cuda run mode
 
-	if(engine_cuda_finalize(e) < 0)
+	if(engine_cuda_finalize(e) != S_OK)
 		return S_OK;
 
 	e->flags &= ~engine_flag_cuda;
@@ -1233,7 +1237,7 @@ HRESULT TissueForge::engine_start(struct engine *e, int nr_runners, int nr_queue
 	if(e->flags & engine_flag_verlet) {
 
 		/* Shuffle the domain. */
-		if(engine_shuffle(e) < 0)
+		if(engine_shuffle(e) != S_OK)
 			return error(MDCERR_engine);
 
 		/* Store the current positions as a reference. */
@@ -1269,7 +1273,7 @@ HRESULT TissueForge::engine_start(struct engine *e, int nr_runners, int nr_queue
 
 #if defined(HAVE_CUDA)
 		/* Load the potentials and pairs to the CUDA device. */
-		if(cuda::engine_cuda_load(e) < 0)
+		if(cuda::engine_cuda_load(e) != S_OK)
 			return error(MDCERR_cuda);
 #else
 		/* Was not compiled with CUDA support. */
@@ -1299,7 +1303,7 @@ HRESULT TissueForge::engine_start(struct engine *e, int nr_runners, int nr_queue
 
 				/* initialize the runners. */
 				for(i = 0 ; i < nr_runners ; i++)
-					if(runner_init(&e->runners[ i ], e, i) < 0)
+					if(runner_init(&e->runners[ i ], e, i) != S_OK)
 						return error(MDCERR_runner);
 
 				/* wait for the runners to be in place */
@@ -1317,6 +1321,8 @@ HRESULT TissueForge::engine_start(struct engine *e, int nr_runners, int nr_queue
 }
 
 HRESULT TissueForge::engine_nonbond_eval(struct engine *e) {
+
+	TF_Log(LOG_TRACE);
 
 	int k;
 
@@ -1340,12 +1346,17 @@ HRESULT TissueForge::engine_nonbond_eval(struct engine *e) {
 		if (pthread_cond_wait(&e->done_cond,&e->barrier_mutex) != 0)
 			return error(MDCERR_pthread);
 
+	TF_Log(LOG_TRACE);
+
 	/* All in a days work. */
 	return S_OK;
 
 }
 
 HRESULT TissueForge::engine_step(struct engine *e) {
+
+	TF_Log(LOG_TRACE);
+
 	int i;
     util::WallTime wt;
     util::PerformanceTimer t(engine_timer_step);
@@ -1389,11 +1400,15 @@ HRESULT TissueForge::engine_step(struct engine *e) {
 		if((i = se->postStepJoin()) != S_OK) 
 			return error(MDCERR_subengine);
 
+	TF_Log(LOG_TRACE);
+
 	/* return quietly */
 	return S_OK;
 }
 
 HRESULT TissueForge::engine_force_prep(struct engine *e) {
+
+	TF_Log(LOG_TRACE);
 
     ticks tic = getticks();
 	
@@ -1415,7 +1430,7 @@ HRESULT TissueForge::engine_force_prep(struct engine *e) {
         tic = getticks();
 
         /* Check particle movement and update cells if necessary. */
-        if(engine_verlet_update(e) < 0) {
+        if(engine_verlet_update(e) != S_OK) {
             return error(MDCERR_engine);
         }
 
@@ -1428,7 +1443,7 @@ HRESULT TissueForge::engine_force_prep(struct engine *e) {
        node boundaries. */
     else { // if(e->flags & engine_flag_async) {
         tic = getticks();
-        if(engine_shuffle(e) < 0) {
+        if(engine_shuffle(e) != S_OK) {
             return error(MDCERR_space);
         }
         e->timers[engine_timer_shuffle] += getticks() - tic;
@@ -1457,10 +1472,14 @@ HRESULT TissueForge::engine_force_prep(struct engine *e) {
     }
 #endif
 
+	TF_Log(LOG_TRACE);
+
     return S_OK;
 }
 
 HRESULT TissueForge::engine_force(struct engine *e) {
+
+	TF_Log(LOG_TRACE);
 
     ticks tic = getticks();
 
@@ -1508,6 +1527,7 @@ HRESULT TissueForge::engine_force(struct engine *e) {
     }
     e->timers[engine_timer_bonded] += getticks() - tic;
 
+	TF_Log(LOG_TRACE);
 
     return S_OK;
 }
@@ -1552,7 +1572,7 @@ HRESULT TissueForge::engine_barrier(struct engine *e) {
 int engine_init_mpi(struct engine *e, const FPTYPE *origin, const FPTYPE *dim, FPTYPE *L, FPTYPE cutoff, unsigned int period, int max_type, unsigned int particle_flags, MPI_Comm comm, int rank) {
 
 	/* Init the engine. */
-	if(engine_init(e, origin, dim, L, cutoff, period, max_type, particle_flags | engine_flag_mpi) < 0)
+	if(engine_init(e, origin, dim, L, cutoff, period, max_type, particle_flags | engine_flag_mpi) != S_OK)
 		return error(MDCERR_engine);
 
 	/* Store the MPI Comm and rank. */
@@ -1576,7 +1596,7 @@ HRESULT TissueForge::engine_finalize(struct engine *e) {
     // If running on CUDA, bring run mode back to local
 	if(e->flags & engine_flag_cuda)
 	#if defined(HAVE_CUDA)
-		if(cuda::engine_fromCUDA(e) < 0)
+		if(cuda::engine_fromCUDA(e) != S_OK)
 			return error(MDCERR_cuda);
 	#endif
 
@@ -1694,7 +1714,7 @@ HRESULT TissueForge::engine_init(struct engine *e, const FPTYPE *origin, const F
     e->integrator_flags = 0;
 
     /* init the space with the given parameters */
-    if(space_init(&(e->s), origin, dim, L.data(), cutoff, &e->boundary_conditions) < 0)
+    if(space_init(&(e->s), origin, dim, L.data(), cutoff, &e->boundary_conditions) != S_OK)
         return error(MDCERR_space);
 
     /* Set some flag implications. */
@@ -1712,7 +1732,7 @@ HRESULT TissueForge::engine_init(struct engine *e, const FPTYPE *origin, const F
     e->nr_nodes = 1;
 
     /* Init the timers. */
-    if(engine_timers_reset(e) < 0)
+    if(engine_timers_reset(e) != S_OK)
         return error(MDCERR_engine);
 
     /* Init the runners to 0. */

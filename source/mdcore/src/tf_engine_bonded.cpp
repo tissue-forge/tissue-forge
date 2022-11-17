@@ -200,25 +200,25 @@ HRESULT TissueForge::engine_bonded_eval_sets(struct engine *e) {
 
 	/* Do exclusions. */
 	tic = getticks();
-	if(exclusion_eval(e->exclusions, e->nr_exclusions, e, &epot_exclusion) < 0)
+	if(exclusion_eval(e->exclusions, e->nr_exclusions, e, &epot_exclusion) != S_OK)
 		return error(MDCERR_exclusion);
 	e->timers[engine_timer_exclusions] += getticks() - tic;
 
 	/* Do bonds. */
 	tic = getticks();
-	if(bond_eval(e->bonds, e->nr_bonds, e, &epot_bond) < 0)
+	if(bond_eval(e->bonds, e->nr_bonds, e, &epot_bond) != S_OK)
 		return error(MDCERR_bond);
 	e->timers[engine_timer_bonds] += getticks() - tic;
 
 	/* Do angles. */
 	tic = getticks();
-	if(angle_eval(e->angles, e->nr_angles, e, &epot_angle) < 0)
+	if(angle_eval(e->angles, e->nr_angles, e, &epot_angle) != S_OK)
 		return error(MDCERR_angle);
 	e->timers[engine_timer_angles] += getticks() - tic;
 
 	/* Do dihedrals. */
 	tic = getticks();
-	if(dihedral_eval(e->dihedrals, e->nr_dihedrals, e, &epot_dihedral) < 0)
+	if(dihedral_eval(e->dihedrals, e->nr_dihedrals, e, &epot_dihedral) != S_OK)
 		return error(MDCERR_dihedral);
 	e->timers[engine_timer_dihedrals] += getticks() - tic;
 
@@ -358,7 +358,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					e->dihedrals[k].j == e->dihedrals[j].i || e->dihedrals[k].j == e->dihedrals[j].j || e->dihedrals[k].j == e->dihedrals[j].k || e->dihedrals[k].j == e->dihedrals[j].l ||
 					e->dihedrals[k].k == e->dihedrals[j].i || e->dihedrals[k].k == e->dihedrals[j].j || e->dihedrals[k].k == e->dihedrals[j].k || e->dihedrals[k].k == e->dihedrals[j].l ||
 					e->dihedrals[k].l == e->dihedrals[j].i || e->dihedrals[k].l == e->dihedrals[j].j || e->dihedrals[k].l == e->dihedrals[j].k || e->dihedrals[k].l == e->dihedrals[j].l)
-				if(confl_add(&bs, setid_dihedrals[k], setid_dihedrals[j]) < 0)
+				if(confl_add(&bs, setid_dihedrals[k], setid_dihedrals[j]) != S_OK)
 					return error(MDCERR_sets);
 
 	} /* Loop over dihedrals. */
@@ -390,7 +390,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(e->angles[k].i == e->dihedrals[j].i || e->angles[k].i == e->dihedrals[j].j || e->angles[k].i == e->dihedrals[j].k || e->angles[k].i == e->dihedrals[j].l ||
 					e->angles[k].j == e->dihedrals[j].i || e->angles[k].j == e->dihedrals[j].j || e->angles[k].j == e->dihedrals[j].k || e->angles[k].j == e->dihedrals[j].l ||
 					e->angles[k].k == e->dihedrals[j].i || e->angles[k].k == e->dihedrals[j].j || e->angles[k].k == e->dihedrals[j].k || e->angles[k].k == e->dihedrals[j].l)
-				if(confl_add(&bs, setid_angles[k], setid_dihedrals[j]) < 0)
+				if(confl_add(&bs, setid_angles[k], setid_dihedrals[j]) != S_OK)
 					return error(MDCERR_sets);
 
 		/* Loop over previous angles... */
@@ -399,7 +399,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 					(e->angles[k].i == e->angles[j].i || e->angles[k].i == e->angles[j].j || e->angles[k].i == e->angles[j].k ||
 							e->angles[k].j == e->angles[j].i || e->angles[k].j == e->angles[j].j || e->angles[k].j == e->angles[j].k ||
 							e->angles[k].k == e->angles[j].i || e->angles[k].k == e->angles[j].j || e->angles[k].k == e->angles[j].k))
-				if(confl_add(&bs, setid_angles[k], setid_angles[j]) < 0)
+				if(confl_add(&bs, setid_angles[k], setid_angles[j]) != S_OK)
 					return error(MDCERR_sets);
 
 	} /* Loop over angles. */
@@ -448,7 +448,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 		for(j = 0 ; j < e->nr_dihedrals ; j++)
 			if(e->bonds[k].i == e->dihedrals[j].i || e->bonds[k].i == e->dihedrals[j].j || e->bonds[k].i == e->dihedrals[j].k || e->bonds[k].i == e->dihedrals[j].l ||
 					e->bonds[k].j == e->dihedrals[j].i || e->bonds[k].j == e->dihedrals[j].j || e->bonds[k].j == e->dihedrals[j].k || e->bonds[k].j == e->dihedrals[j].l)
-				if(confl_add(&bs, setid_bonds[k], setid_dihedrals[j]) < 0)
+				if(confl_add(&bs, setid_bonds[k], setid_dihedrals[j]) != S_OK)
 					return error(MDCERR_sets);
 
 		/* Loop over angles... */
@@ -456,7 +456,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(setid_angles[j] >= 0 &&
 					(e->bonds[k].i == e->angles[j].i || e->bonds[k].i == e->angles[j].j || e->bonds[k].i == e->angles[j].k ||
 							e->bonds[k].j == e->angles[j].i || e->bonds[k].j == e->angles[j].j || e->bonds[k].j == e->angles[j].k))
-				if(confl_add(&bs, setid_bonds[k], setid_angles[j]) < 0)
+				if(confl_add(&bs, setid_bonds[k], setid_angles[j]) != S_OK)
 					return error(MDCERR_sets);
 
 		/* Loop over previous bonds... */
@@ -464,7 +464,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(setid_bonds[j] >= 0 &&
 					(e->bonds[k].i == e->bonds[j].i || e->bonds[k].i == e->bonds[j].j ||
 							e->bonds[k].j == e->bonds[j].i || e->bonds[k].j == e->bonds[j].j))
-				if(confl_add(&bs, setid_bonds[k], setid_bonds[j]) < 0)
+				if(confl_add(&bs, setid_bonds[k], setid_bonds[j]) != S_OK)
 					return error(MDCERR_sets);
 
 	} /* Loop over bonds. */
@@ -592,7 +592,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 		for(j = 0 ; j < e->nr_dihedrals ; j++)
 			if(e->exclusions[k].i == e->dihedrals[j].i || e->exclusions[k].i == e->dihedrals[j].j || e->exclusions[k].i == e->dihedrals[j].k || e->exclusions[k].i == e->dihedrals[j].l ||
 					e->exclusions[k].j == e->dihedrals[j].i || e->exclusions[k].j == e->dihedrals[j].j || e->exclusions[k].j == e->dihedrals[j].k || e->exclusions[k].j == e->dihedrals[j].l)
-				if(confl_add(&bs, setid_exclusions[k], setid_dihedrals[j]) < 0)
+				if(confl_add(&bs, setid_exclusions[k], setid_dihedrals[j]) != S_OK)
 					return error(MDCERR_sets);
 
 		/* Loop over angles... */
@@ -600,7 +600,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(setid_angles[j] >= 0 &&
 					(e->exclusions[k].i == e->angles[j].i || e->exclusions[k].i == e->angles[j].j || e->exclusions[k].i == e->angles[j].k ||
 							e->exclusions[k].j == e->angles[j].i || e->exclusions[k].j == e->angles[j].j || e->exclusions[k].j == e->angles[j].k))
-				if(confl_add(&bs, setid_exclusions[k], setid_angles[j]) < 0)
+				if(confl_add(&bs, setid_exclusions[k], setid_angles[j]) != S_OK)
 					return error(MDCERR_sets);
 
 		/* Loop over  bonds... */
@@ -608,7 +608,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(setid_bonds[j] >= 0 &&
 					(e->exclusions[k].i == e->bonds[j].i || e->exclusions[k].i == e->bonds[j].j ||
 							e->exclusions[k].j == e->bonds[j].i || e->exclusions[k].j == e->bonds[j].j))
-				if(confl_add(&bs, setid_exclusions[k], setid_bonds[j]) < 0)
+				if(confl_add(&bs, setid_exclusions[k], setid_bonds[j]) != S_OK)
 					return error(MDCERR_sets);
 
 		/* Loop over previous exclusions... */
@@ -616,7 +616,7 @@ HRESULT TissueForge::engine_bonded_sets(struct engine *e, int max_sets) {
 			if(setid_exclusions[j] >= 0 &&
 					(e->exclusions[k].i == e->exclusions[j].i || e->exclusions[k].i == e->exclusions[j].j ||
 							e->exclusions[k].j == e->exclusions[j].i || e->exclusions[k].j == e->exclusions[j].j))
-				if(confl_add(&bs, setid_exclusions[k], setid_exclusions[j]) < 0)
+				if(confl_add(&bs, setid_exclusions[k], setid_exclusions[j]) != S_OK)
 					return error(MDCERR_sets);
 
 	} /* Loop over exclusions. */
@@ -1312,25 +1312,25 @@ HRESULT TissueForge::engine_bonded_eval(struct engine *e) {
 
 	/* Do exclusions. */
 	tic = getticks();
-	if(exclusion_eval(e->exclusions, nr_exclusions, e, &epot_exclusion) < 0)
+	if(exclusion_eval(e->exclusions, nr_exclusions, e, &epot_exclusion) != S_OK)
 		return error(MDCERR_exclusion);
 	e->timers[engine_timer_exclusions] += getticks() - tic;
 
 	/* Do bonds. */
 	tic = getticks();
-	if(bond_eval(e->bonds, nr_bonds, e, &epot_bond) < 0)
+	if(bond_eval(e->bonds, nr_bonds, e, &epot_bond) != S_OK)
 		return error(MDCERR_bond);
 	e->timers[engine_timer_bonds] += getticks() - tic;
 
 	/* Do angles. */
 	tic = getticks();
-	if(angle_eval(e->angles, nr_angles, e, &epot_angle) < 0)
+	if(angle_eval(e->angles, nr_angles, e, &epot_angle) != S_OK)
 		return error(MDCERR_angle);
 	e->timers[engine_timer_angles] += getticks() - tic;
 
 	/* Do dihedrals. */
 	tic = getticks();
-	if(dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot_dihedral) < 0)
+	if(dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot_dihedral) != S_OK)
 		return error(MDCERR_dihedral);
 	e->timers[engine_timer_dihedrals] += getticks() - tic;
 
@@ -1432,7 +1432,7 @@ HRESULT TissueForge::engine_dihedral_eval(struct engine *e) {
 	else if(omp_get_thread_num() == 0)
 		dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot);
 #else
-	if(dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot) < 0)
+	if(dihedral_eval(e->dihedrals, nr_dihedrals, e, &epot) != S_OK)
 		return error(MDCERR_dihedral);
 #endif
 
@@ -1528,7 +1528,7 @@ HRESULT TissueForge::engine_angle_eval(struct engine *e) {
 	else if(omp_get_thread_num() == 0)
 		angle_eval(e->angles, nr_angles, e, &epot);
 #else
-	if(angle_eval(e->angles, nr_angles, e, &epot) < 0)
+	if(angle_eval(e->angles, nr_angles, e, &epot) != S_OK)
 		return error(MDCERR_angle);
 #endif
 
@@ -1622,7 +1622,7 @@ HRESULT TissueForge::engine_exclusion_eval(struct engine *e) {
 	else if(omp_get_thread_num() == 0)
 		exclusion_eval(e->exclusions, nr_exclusions, e, &epot);
 #else
-	if(exclusion_eval(e->exclusions, nr_exclusions, e, &epot) < 0)
+	if(exclusion_eval(e->exclusions, nr_exclusions, e, &epot) != S_OK)
 		return error(MDCERR_exclusion);
 #endif
 
@@ -1716,7 +1716,7 @@ HRESULT TissueForge::engine_bond_eval(struct engine *e) {
 	else if(omp_get_thread_num() == 0)
 		bond_eval(e->bonds, nr_bonds, e, &epot);
 #else
-	if(bond_eval(e->bonds, nr_bonds, e, &epot) < 0)
+	if(bond_eval(e->bonds, nr_bonds, e, &epot) != S_OK)
 		return error(MDCERR_bond);
 #endif
 

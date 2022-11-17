@@ -304,11 +304,13 @@ static inline void cell_advance_forward_euler_cluster(const FPTYPE h[3], int cid
  */
 HRESULT engine_advance_forward_euler(struct engine *e) {
 
+    TF_Log(LOG_TRACE);
+
     // set the integrator flag to set any persistent forces
     // forward euler is a single step, so alwasy set this flag
     e->integrator_flags |= INTEGRATOR_UPDATE_PERSISTENTFORCE;
 
-    if (engine_force(e) < 0) {
+    if (engine_force(e) != S_OK) {
         TF_Log(LOG_CRITICAL);
         return error(MDCERR_engine);
     }
@@ -464,6 +466,8 @@ HRESULT engine_advance_forward_euler(struct engine *e) {
 
     e->timers[engine_timer_advance] += getticks() - tic;
 
+    TF_Log(LOG_TRACE);
+
     /* return quietly */
     return S_OK;
 }
@@ -575,6 +579,8 @@ HRESULT engine_advance_runge_kutta_4(struct engine *e) {
                 pid = 0;
                 
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
                     if(engine::types[p->typeId].dynamics == PARTICLE_NEWTONIAN) {
                         p->vk[0] = p->force * p->imass;
@@ -607,6 +613,8 @@ HRESULT engine_advance_runge_kutta_4(struct engine *e) {
                 epot_local += c->epot;
                 pid = 0;
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
 
                     if(engine::types[p->typeId].dynamics == PARTICLE_NEWTONIAN) {
@@ -638,6 +646,8 @@ HRESULT engine_advance_runge_kutta_4(struct engine *e) {
                 epot_local += c->epot;
                 pid = 0;
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
 
                     if(engine::types[p->typeId].dynamics == PARTICLE_NEWTONIAN) {
@@ -669,6 +679,8 @@ HRESULT engine_advance_runge_kutta_4(struct engine *e) {
                 epot_local += c->epot;
                 pid = 0;
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
                     toofast = 0;
 

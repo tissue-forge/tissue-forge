@@ -211,6 +211,7 @@ HRESULT TissueForge::space_shuffle(struct space *s) {
         c = &(s->cells[ s->cid_marked[cid] ]);
         pid = 0;
         while(pid < c->count) {
+            TF_Log(LOG_TRACE);
 
             p = &(c->parts[pid]);
             for(k = 0 ; k < 3 ; k++)
@@ -259,6 +260,8 @@ HRESULT TissueForge::space_shuffle(struct space *s) {
 /* TODO: Check non-periodicity and ghost cells. */
 
 HRESULT TissueForge::space_shuffle_local(struct space *s) {
+
+    TF_Log(LOG_TRACE);
 
     int k;
     FPTYPE h[3];
@@ -368,6 +371,8 @@ HRESULT TissueForge::space_shuffle_local(struct space *s) {
     parallel_for(s->nr_real, func_space_shuffle_local);
 #endif
 
+    TF_Log(LOG_TRACE);
+
     /* all is well... */
     return S_OK;
 
@@ -474,7 +479,7 @@ HRESULT TissueForge::space_addpart(struct space *s, struct Particle *p, FPTYPE *
             return error(MDCERR_space);
 
         #if defined(HAVE_CUDA)
-            if(_Engine.flags & engine_flag_cuda && cuda::engine_cuda_refresh_particles(&_Engine) < 0)
+            if(_Engine.flags & engine_flag_cuda && cuda::engine_cuda_refresh_particles(&_Engine) != S_OK)
                 return error(MDCERR_malloc);
         #endif
     }
@@ -523,7 +528,7 @@ HRESULT TissueForge::space_addparts(struct space *s, int nr_parts, struct Partic
             return error(MDCERR_space);
 
         #if defined(HAVE_CUDA)
-            if(_Engine.flags & engine_flag_cuda && cuda::engine_cuda_refresh_particles(&_Engine) < 0)
+            if(_Engine.flags & engine_flag_cuda && cuda::engine_cuda_refresh_particles(&_Engine) != S_OK)
                 return error(MDCERR_malloc);
         #endif
     }
@@ -764,7 +769,7 @@ HRESULT TissueForge::space_init(
                 
                 space_cell *c = &(s->cells[space_cellid(s,l[0],l[1],l[2])]);
                 
-                if(space_cell_init(c, l, o, s->h) < 0)
+                if(space_cell_init(c, l, o, s->h) != S_OK)
                     return error(MDCERR_cell);
                 
                 if(l[0] == 0 && bc->left.kind & BOUNDARY_ACTIVE) {
@@ -1035,7 +1040,7 @@ HRESULT TissueForge::space_init(
     // so has zero offset for loc.
     l[0] = l[1] = l[2] = 0;
     
-    if(space_cell_init(&s->largeparts, l, s->origin, s->h) < 0)
+    if(space_cell_init(&s->largeparts, l, s->origin, s->h) != S_OK)
         return error(MDCERR_cell);
     
 

@@ -40,7 +40,11 @@
 %ignore TissueForge::ParticleType_New;
 %ignore TissueForge::Particles_New;
 %ignore TissueForge::_Particle_init;
-%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE*, const std::vector<ParticleType>*);
+%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE&, const TissueForge::ParticleTypeList&);
+%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE&, const std::vector<ParticleType>&);
+%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE&);
+%ignore TissueForge::ParticleHandle::neighbors(const TissueForge::ParticleTypeList&);
+%ignore TissueForge::ParticleHandle::neighbors(const std::vector<ParticleType>&);
 
 %include "tfParticle.h"
 

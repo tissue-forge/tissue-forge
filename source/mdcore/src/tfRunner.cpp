@@ -221,7 +221,7 @@ HRESULT TissueForge::runner_run(struct runner *r) {
 
         /* wait at the engine barrier */
         /* printf("runner_run: runner %i waiting at barrier...\n",r->id); */
-        if(engine_barrier(e) < 0)
+        if(engine_barrier(e) != S_OK)
             return error(MDCERR_engine);
 
         /* Init the list of queues. */
@@ -311,14 +311,14 @@ HRESULT TissueForge::runner_run(struct runner *r) {
             case task_type_sort:
                 TIMER_TIC_ND
                 if(s->verlet_rebuild && !(e->flags & engine_flag_unsorted))
-                    if(runner_dosort(r, &s->cells[ t->i ], t->flags) < 0)
+                    if(runner_dosort(r, &s->cells[ t->i ], t->flags) != S_OK)
                         return error(MDCERR_runner);
                 s->cells_taboo[ t->i ] = 0;
                 TIMER_TOC(runner_timer_sort);
                 break;
             case task_type_self:
                 TIMER_TIC_ND
-                if(runner_doself(r, &s->cells[ t->i ]) < 0)
+                if(runner_doself(r, &s->cells[ t->i ]) != S_OK)
                     return error(MDCERR_runner);
                 s->cells_taboo[ t->i ] = 0;
                 TIMER_TOC(runner_timer_self);
@@ -326,11 +326,11 @@ HRESULT TissueForge::runner_run(struct runner *r) {
             case task_type_pair:
                 TIMER_TIC_ND
                 if(e->flags & engine_flag_unsorted) {
-                    if(runner_dopair_unsorted(r, &s->cells[ t->i ], &s->cells[ t->j ]) < 0)
+                    if(runner_dopair_unsorted(r, &s->cells[ t->i ], &s->cells[ t->j ]) != S_OK)
                         return error(MDCERR_runner);
                 }
                 else {
-                    if(runner_dopair(r, &s->cells[ t->i ], &s->cells[ t->j ], t->flags) < 0)
+                    if(runner_dopair(r, &s->cells[ t->i ], &s->cells[ t->j ], t->flags) != S_OK)
                         return error(MDCERR_runner);
                 }
                 s->cells_taboo[ t->i ] = 0;
@@ -446,7 +446,7 @@ HRESULT runner_run_verlet(struct runner *r) {
 
         /* wait at the engine barrier */
         /* printf("runner_run: runner %i waiting at barrier...\n",r->id); */
-        if(engine_barrier(e) < 0)
+        if(engine_barrier(e) != S_OK)
             return error(MDCERR_engine);
 
         /* Does the Verlet list need to be reconstructed? */
@@ -496,11 +496,11 @@ HRESULT runner_run_verlet(struct runner *r) {
                             }
 
                         /* Rebuild the Verlet entries for this cell pair. */
-                        if(runner_verlet_fill(r, &(s->cells[ci]), &(s->cells[cj]), shift) < 0)
+                        if(runner_verlet_fill(r, &(s->cells[ci]), &(s->cells[cj]), shift) != S_OK)
                             return error(MDCERR_runner);
 
                         /* release this pair */
-                        if(space_releasepair(s, ci, cj) < 0)
+                        if(space_releasepair(s, ci, cj) != S_OK)
                             return error(MDCERR_space);
 
                         }

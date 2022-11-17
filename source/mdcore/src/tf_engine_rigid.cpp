@@ -432,11 +432,11 @@ HRESULT TissueForge::engine_rigid_eval(struct engine *e) {
         
             /* Shake local rigids. */
             if(e->flags & engine_flag_shake) {
-                if(rigid_eval_shake(e->rigids, nr_local, e) < 0)
+                if(rigid_eval_shake(e->rigids, nr_local, e) != S_OK)
                     return error(MDCERR_rigid);
             }
             else {
-                if(rigid_eval_pshake(e->rigids, nr_local, e, (e->time < engine_pshake_steps)) < 0)
+                if(rigid_eval_pshake(e->rigids, nr_local, e, (e->time < engine_pshake_steps)) != S_OK)
                     return error(MDCERR_rigid);
             }
                 
@@ -453,11 +453,11 @@ HRESULT TissueForge::engine_rigid_eval(struct engine *e) {
                 
             /* Shake semi-local rigids. */
             if(e->flags & engine_flag_shake) {
-                if(rigid_eval_shake(&(e->rigids[nr_local]), nr_rigids-nr_local, e) < 0)
+                if(rigid_eval_shake(&(e->rigids[nr_local]), nr_rigids-nr_local, e) != S_OK)
                     return error(MDCERR_rigid);
             }
             else {
-                if(rigid_eval_pshake(&(e->rigids[nr_local]), nr_rigids-nr_local, e, (e->time < engine_pshake_steps)) < 0)
+                if(rigid_eval_pshake(&(e->rigids[nr_local]), nr_rigids-nr_local, e, (e->time < engine_pshake_steps)) != S_OK)
                     return error(MDCERR_rigid);
             }
                 
@@ -520,11 +520,11 @@ HRESULT TissueForge::engine_rigid_eval(struct engine *e) {
         #else
         
             if(e->flags & engine_flag_shake) {
-                if(rigid_eval_shake(e->rigids, nr_rigids, e) < 0)
+                if(rigid_eval_shake(e->rigids, nr_rigids, e) != S_OK)
                     return error(MDCERR_rigid);
             }
             else {
-                if(rigid_eval_pshake(e->rigids, nr_rigids, e, (e->time < engine_pshake_steps)) < 0)
+                if(rigid_eval_pshake(e->rigids, nr_rigids, e, (e->time < engine_pshake_steps)) != S_OK)
                     return error(MDCERR_rigid);
             }
                 
