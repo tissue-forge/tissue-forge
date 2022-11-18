@@ -385,16 +385,16 @@ namespace TissueForge {
         ParticleList *parts
     );
 
+    inline bool operator< (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs == rhs); }
+
 
 };
 
-
-inline bool operator< (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id < rhs.id; }
-inline bool operator> (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return rhs < lhs; }
-inline bool operator<=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs > rhs); }
-inline bool operator>=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs < rhs); }
-inline bool operator==(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id == rhs.id; }
-inline bool operator!=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs == rhs); }
 
 inline std::ostream &operator<<(std::ostream& os, const TissueForge::BondHandle &h)
 {

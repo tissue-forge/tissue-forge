@@ -262,15 +262,16 @@ namespace TissueForge {
      */
     std::vector<int32_t> Dihedral_IdsForParticle(int32_t pid);
 
+    inline bool operator< (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs == rhs); }
+
+
 };
 
-
-inline bool operator< (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id < rhs.id; }
-inline bool operator> (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return rhs < lhs; }
-inline bool operator<=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs > rhs); }
-inline bool operator>=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs < rhs); }
-inline bool operator==(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id == rhs.id; }
-inline bool operator!=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs == rhs); }
 
 inline std::ostream &operator<<(std::ostream& os, const TissueForge::DihedralHandle &h)
 {

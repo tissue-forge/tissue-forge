@@ -984,23 +984,23 @@ namespace TissueForge {
      */
     HRESULT _Particle_init();
 
+    inline bool operator< (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs == rhs); }
+
+    inline bool operator< (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs == rhs); }
+
 
 };
 
-
-inline bool operator< (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id < rhs.id; }
-inline bool operator> (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return rhs < lhs; }
-inline bool operator<=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs > rhs); }
-inline bool operator>=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs < rhs); }
-inline bool operator==(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id == rhs.id; }
-inline bool operator!=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs == rhs); }
-
-inline bool operator< (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id < rhs.id; }
-inline bool operator> (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return rhs < lhs; }
-inline bool operator<=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs > rhs); }
-inline bool operator>=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs < rhs); }
-inline bool operator==(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id == rhs.id; }
-inline bool operator!=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs == rhs); }
 
 inline std::ostream &operator<<(std::ostream& os, const TissueForge::ParticleHandle &p)
 {

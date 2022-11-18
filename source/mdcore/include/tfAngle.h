@@ -274,16 +274,16 @@ namespace TissueForge {
      */
     std::vector<int32_t> Angle_IdsForParticle(int32_t pid);
 
+    inline bool operator< (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs == rhs); }
+
 
 };
 
-
-inline bool operator< (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id < rhs.id; }
-inline bool operator> (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return rhs < lhs; }
-inline bool operator<=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs > rhs); }
-inline bool operator>=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs < rhs); }
-inline bool operator==(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id == rhs.id; }
-inline bool operator!=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs == rhs); }
 
 inline std::ostream &operator<<(std::ostream& os, const TissueForge::AngleHandle &h)
 {
