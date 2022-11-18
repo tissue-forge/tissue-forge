@@ -61,6 +61,7 @@
 #include <tfEngine.h>
 #include <tfRunner_cuda.h>
 #include <tf_cuda.h>
+#include <tfError.h>
 
 
 using namespace TissueForge;
@@ -70,65 +71,41 @@ using namespace TissueForge;
 #ifdef HAVE_CUDA
 
 /* the error macro. */
-#define error(id)				(engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-#define cuda_error(id)			(engine_err = errs_register(id, cudaGetErrorString(cudaGetLastError()), __LINE__, __FUNCTION__, __FILE__))
+#define error(id)               (tf_error(E_FAIL, errs_err_msg[id]))
+#define cuda_error()			(tf_error(E_FAIL, cudaGetErrorString(cudaGetLastError())))
 
 
 /* The parts (non-texture access). */
 extern __constant__ float4 *cuda_parts;
 
 
-/**
- * @brief Set the number of threads of a CUDA device to use
- * 
- * @param id The CUDA device id
- * @param nr_threads The number of threads to use
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_setthreads(struct engine *e, int id, int nr_threads) {
+extern "C" HRESULT cuda::engine_cuda_setthreads(struct engine *e, int id, int nr_threads) {
     if(id >= e->nr_devices)
-        return engine_err_cuda;
+        return error(MDCERR_cuda);
 
     for(int i = 0; i < e->nr_devices; i++) {
         if(e->devices[i] == id) {
             e->nr_threads[i] = nr_threads;
-            return engine_err_ok;
+            return S_OK;
         }
     }
-    return engine_err_cuda;
+    return error(MDCERR_cuda);
 }
 
-/**
- * @brief Set the number of blocks of a CUDA device to use
- * 
- * @param id The CUDA device id
- * @param nr_blocks The number of blocks to use
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_setblocks(struct engine *e, int id, int nr_blocks) {
+extern "C" HRESULT cuda::engine_cuda_setblocks(struct engine *e, int id, int nr_blocks) {
     if(id >= e->nr_devices)
-        return engine_err_cuda;
+        return error(MDCERR_cuda);
 
     for(int i = 0; i < e->nr_devices; i++) {
         if(e->devices[i] == id) {
             e->nr_blocks[i] = nr_blocks;
-            return engine_err_ok;
+            return S_OK;
         }
     }
-    return engine_err_cuda;
+    return error(MDCERR_cuda);
 }
 
-/**
- * @brief Set the ID of the CUDA device to use
- *
- * @param id The CUDA device ID.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-extern "C" int cuda::engine_cuda_setdevice(struct engine *e, int id) {
+extern "C" HRESULT cuda::engine_cuda_setdevice(struct engine *e, int id) {
 
     /* Store the single device ID in the engine. */
     e->nr_devices = 1;
@@ -137,32 +114,23 @@ extern "C" int cuda::engine_cuda_setdevice(struct engine *e, int id) {
     /* Make sure the device works, init a stream on it. */
     if(cudaSetDevice(id) != cudaSuccess ||
          cudaStreamCreate((cudaStream_t *)&e->streams[0]) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     else {
         // Do auto configuration
         engine_cuda_setthreads(e, id, cuda::maxThreadsPerBlock(id));
         engine_cuda_setblocks(e, id, cuda::maxBlockDimX(id));
-        return engine_err_ok;
+        return S_OK;
     }
         
 }
 
-
-/**
- * @brief Set the number of CUDA devices to use, as well as their IDs.
- *
- * @param id The CUDA device ID.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-extern "C" int cuda::engine_cuda_setdevices(struct engine *e, int nr_devices, int *ids) {
+extern "C" HRESULT cuda::engine_cuda_setdevices(struct engine *e, int nr_devices, int *ids) {
 
     int k;
     
     /* Sanity check. */
     if(nr_devices > engine_maxgpu)
-        return error(engine_err_range);
+        return error(MDCERR_range);
 
     /* Store the single device ID in the engine. */
     e->nr_devices = nr_devices;
@@ -173,7 +141,7 @@ extern "C" int cuda::engine_cuda_setdevices(struct engine *e, int nr_devices, in
 
         /* Make sure the device works, init a stream on it. */
         if(cudaSetDevice(ids[k]) != cudaSuccess || cudaStreamCreate((cudaStream_t *)&e->streams[k]) != cudaSuccess)
-            return cuda_error(engine_err_cuda);
+            return cuda_error();
             
         // Do auto configuration
         engine_cuda_setthreads(e, ids[k], cuda_defthreads);
@@ -182,31 +150,26 @@ extern "C" int cuda::engine_cuda_setdevices(struct engine *e, int nr_devices, in
         }
         
     /* That's it. */
-    return engine_err_ok;
+    return S_OK;
         
 }
 
-/**
- * @brief Clear CUDA devices. Engine must not be in CUDA run mode. 
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_cleardevices(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_cleardevices(struct engine *e) {
     
     // Check inputs
     
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
 
     // Check state
 
     //  If nothing to do, then do nothing
     if(e->nr_devices == 0)
-        return engine_err_ok;
+        return S_OK;
 
 	//  If already on device, then error
     if(e->flags & engine_flag_cuda)
-		return engine_err_cuda;
+		return error(MDCERR_cuda);
 
     // Clear all set devices
     
@@ -215,7 +178,7 @@ extern "C" int cuda::engine_cuda_cleardevices(struct engine *e) {
     }
     e->nr_devices = 0;
 
-    return engine_err_ok;
+    return S_OK;
 }
     
 

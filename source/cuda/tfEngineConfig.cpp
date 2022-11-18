@@ -19,11 +19,16 @@
 
 #include "tfEngineConfig.h"
 
+#include <tfError.h>
 #include <tfEngine.h>
 #include <tfLogger.h>
+#include <tf_cuda.h>
 
 
 using namespace TissueForge;
+
+
+#define error(id)   tf_error(E_FAIL, tfcuda_err_msg[id])
 
 
 cuda::EngineConfig::EngineConfig() : 
@@ -40,34 +45,34 @@ int cuda::EngineConfig::getDevice() {
 }
 
 HRESULT cuda::EngineConfig::setDevice(int deviceId) {
-    if(this->onDevice()) tf_error(E_FAIL, "Engine already on device");
+    if(this->onDevice()) 
+        return error(TFCUDAERR_ondevice);
 
     if(engine_cuda_setdevice(&_Engine, deviceId) < 0)
-        return E_FAIL;
+        return error(TFCUDAERR_setdevice);
 
     return S_OK;
 }
 
 HRESULT cuda::EngineConfig::clearDevice() {
-    if(this->onDevice()) tf_error(E_FAIL, "Engine on device");
+    if(this->onDevice()) 
+        return error(TFCUDAERR_ondevice);
 
     if(engine_cuda_cleardevices(&_Engine) < 0)
-        return E_FAIL;
+        return error(TFCUDAERR_cleardevices);
 
     return S_OK;
 }
 
 HRESULT cuda::EngineConfig::toDevice() {
     if(this->onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting send to device when already sent. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_ondevice] << " Ignoring.";
         return S_OK;
     }
 
     if(_Engine.nr_devices == 0) this->setDevice();
-    if(engine_toCUDA(&_Engine) < 0) {
-        TF_Log(LOG_CRITICAL) << "Attempting send to device failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(engine_toCUDA(&_Engine) < 0) 
+        return error(TFCUDAERR_send);
 
     TF_Log(LOG_INFORMATION) << "Successfully sent engine to device";
     this->on_device = true;
@@ -77,14 +82,12 @@ HRESULT cuda::EngineConfig::toDevice() {
 
 HRESULT cuda::EngineConfig::fromDevice() {
     if(!this->onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting pull from device when not sent. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_notondevice] << " Ignoring.";
         return S_OK;
     }
 
-    if(engine_fromCUDA(&_Engine) < 0) {
-        TF_Log(LOG_CRITICAL) << "Attempting pull from device failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(engine_fromCUDA(&_Engine) < 0) 
+        return error(TFCUDAERR_pull);
 
     TF_Log(LOG_INFORMATION) << "Successfully pulled engine from device";
     this->on_device = false;
@@ -94,84 +97,76 @@ HRESULT cuda::EngineConfig::fromDevice() {
 
 HRESULT cuda::EngineConfig::setBlocks(unsigned int numBlocks, int deviceId) {
     if(this->onDevice()) {
-        tf_error(E_FAIL, "Engine already on device.");
+        return error(TFCUDAERR_ondevice);
     }
     
     if(_Engine.nr_devices == 0) this->setDevice();
     if(deviceId < 0) deviceId = _Engine.devices[0];
     
     if(engine_cuda_setblocks(&_Engine, deviceId, numBlocks) < 0)
-        return E_FAIL;
+        return error(TFCUDAERR_setblocks);
 
     return S_OK;
 }
 
 HRESULT cuda::EngineConfig::setThreads(unsigned int numThreads, int deviceId) {
     if(this->onDevice()) {
-        tf_error(E_FAIL, "Engine already on device.");
+        return error(TFCUDAERR_ondevice);
     }
 
     if(_Engine.nr_devices == 0) this->setDevice();
     if(deviceId < 0) deviceId = _Engine.devices[0];
 
     if(engine_cuda_setthreads(&_Engine, deviceId, numThreads) < 0)
-        return E_FAIL;
+        return error(TFCUDAERR_setthreads);
 
     return S_OK;
 }
 
 HRESULT cuda::EngineConfig::refreshPotentials() {
     if(!this->onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting to refresh potentials when not on device. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_refresh] << " Ignoring.";
         return S_OK;
     }
 
-    if(engine_cuda_refresh_pots(&_Engine) < 0) {
-        TF_Log(LOG_CRITICAL) << "Attempting to refresh potentials failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(engine_cuda_refresh_pots(&_Engine) < 0) 
+        return error(TFCUDAERR_refresh);
 
     return S_OK;
 }
 
 HRESULT cuda::EngineConfig::refreshFluxes() {
     if(!this->onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting to refresh fluxes when not on device. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_refresh] << " Ignoring.";
         return S_OK;
     }
 
-    if(engine_cuda_refresh_fluxes(&_Engine) < 0) {
-        TF_Log(LOG_CRITICAL) << "Attempting to refresh fluxes failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(engine_cuda_refresh_fluxes(&_Engine) < 0) 
+        return error(TFCUDAERR_refresh);
 
     return S_OK;
 }
 
 HRESULT cuda::EngineConfig::refreshBoundaryConditions() {
     if(!this->onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting to refresh boundary conditions when not on device. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_refresh] << " Ignoring.";
         return S_OK;
     }
 
-    if(engine_cuda_boundary_conditions_refresh(&_Engine) < 0) {
-        TF_Log(LOG_CRITICAL) << "Attempting to refresh boundary conditions failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(engine_cuda_boundary_conditions_refresh(&_Engine) < 0) 
+        return error(TFCUDAERR_refresh);
 
     return S_OK;
 }
 
 HRESULT cuda::EngineConfig::refresh() {
     if(!this->onDevice()) {
-        TF_Log(LOG_DEBUG) << "Attempting to refresh engine when not on device. Ignoring.";
+        TF_Log(LOG_DEBUG) << tfcuda_err_msg[TFCUDAERR_refresh] << " Ignoring.";
         return S_OK;
     }
 
-    if(engine_cuda_refresh(&_Engine) < 0) {
-        TF_Log(LOG_CRITICAL) << "Attempting to refresh engine failed (" << engine_err << ").";
-        return E_FAIL;
-    }
+    if(engine_cuda_refresh(&_Engine) < 0) 
+        return error(TFCUDAERR_refresh);
 
     return S_OK;
 }

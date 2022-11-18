@@ -76,6 +76,15 @@ namespace TissueForge {
          */
         void extend(const ParticleTypeList &other);
 
+        /** Test whether the list has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the list has a particle type */
+        bool has(ParticleType *ptype);
+
+        /** Test whether the list has a particle */
+        bool has(ParticleHandle *part);
+
         /**
          * @brief looks for the item at the given index and returns it if found, otherwise returns NULL
          * 
@@ -84,22 +93,25 @@ namespace TissueForge {
          */
         ParticleType *item(const int32_t &i);
 
-        // packs a variable number of particle type ids into a new list
-        static ParticleTypeList *pack(size_t n, ...);
+        /** get an item at a given index */
+        int32_t operator[](const size_t &i);
+
+        /** returns the list as a vector */
+        std::vector<int32_t> vector();
 
         /**
          * @brief returns a list populated with particles of all current particle types
          * 
          * @return ParticleList* 
          */
-        ParticleList *particles();
+        ParticleList particles();
 
         /**
          * @brief returns an instance populated with all current particle types
          * 
          * @return ParticleTypeList* 
          */
-        static ParticleTypeList *all();
+        static ParticleTypeList all();
 
         FMatrix3 getVirial();
         FPTYPE getRadiusOfGyration();
@@ -121,9 +133,11 @@ namespace TissueForge {
         ParticleTypeList();
         ParticleTypeList(uint16_t init_size, uint16_t flags = PARTICLELIST_OWNDATA |PARTICLELIST_MUTABLE | PARTICLELIST_OWNSELF);
         ParticleTypeList(ParticleType *ptype);
+        ParticleTypeList(std::vector<ParticleType> ptypes);
         ParticleTypeList(std::vector<ParticleType*> ptypes);
         ParticleTypeList(uint16_t nr_parts, int32_t *ptypes);
         ParticleTypeList(const ParticleTypeList &other);
+        ParticleTypeList(const std::vector<int32_t> &pids);
         ~ParticleTypeList();
 
         /**

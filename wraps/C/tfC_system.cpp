@@ -60,6 +60,30 @@ HRESULT tfSystem_contextRelease() {
     return system::contextRelease();
 }
 
+bool tfSystem_cameraIsLagging() {
+    return system::cameraIsLagging();
+}
+
+HRESULT tfSystem_cameraEnableLagging() {
+    return system::cameraEnableLagging();
+}
+
+HRESULT tfSystem_cameraDisableLagging() {
+    return system::cameraDisableLagging();
+}
+
+HRESULT tfSystem_cameraToggleLagging() {
+    return system::cameraToggleLagging();
+}
+
+float tfSystem_cameraGetLagging() {
+    return system::cameraGetLagging();
+}
+
+HRESULT tfSystem_cameraSetLagging(float lagging) {
+    return system::cameraSetLagging(lagging);
+}
+
 HRESULT tfSystem_cameraMoveTo(float *eye, float *center, float *up) {
     if(!eye || !center || !up) 
         return E_FAIL;
@@ -219,6 +243,63 @@ HRESULT tfSystem_cameraRotation(float **rotation) {
 HRESULT tfSystem_cameraZoom(float *zoom) {
     TFC_PTRCHECK(zoom);
     *zoom = system::cameraZoom();
+    return S_OK;
+}
+
+HRESULT tfSystem_getRendering3DBonds(bool *flag) {
+    TFC_PTRCHECK(flag);
+    *flag = system::getRendering3DBonds();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DBonds(bool flag) {
+    system::setRendering3DBonds(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DBonds() {
+    system::toggleRendering3DBonds();
+    return S_OK;
+}
+
+HRESULT tfSystem_getRendering3DAngles(bool *flag) {
+    *flag = system::getRendering3DAngles();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DAngles(bool flag) {
+    system::setRendering3DAngles(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DAngles() {
+    system::toggleRendering3DAngles();
+    return S_OK;
+}
+
+HRESULT tfSystem_getRendering3DDihedrals(bool *flag) {
+    TFC_PTRCHECK(flag);
+    *flag = system::getRendering3DDihedrals();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DDihedrals(bool flag) {
+    system::setRendering3DDihedrals(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DDihedrals() {
+    system::toggleRendering3DDihedrals();
+    return S_OK;
+}
+
+HRESULT tfSystem_setRendering3DAll(bool flag) {
+    system::setRendering3DAll(flag);
+    return S_OK;
+}
+
+HRESULT tfSystem_toggleRendering3DAll() {
+    system::toggleRendering3DAll();
     return S_OK;
 }
 

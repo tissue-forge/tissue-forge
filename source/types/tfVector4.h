@@ -32,10 +32,23 @@ namespace TissueForge::types {
     template<typename T>
     class TVector4 : public Vector4Base<T> {
         public:
+            /**
+             * @brief Initialize a plane equation
+             * 
+             * @param normal plane normal
+             * @param point point on the plane
+             */
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             static TVector4<T> planeEquation(const TVector3<T> &normal, const TVector3<T> &point) {
                 return Magnum::Math::planeEquation(normal, point);
             }
+
+            /**
+             * @brief Initialize a plane equation
+             * 
+             * @param normal plane normal
+             * @param point point on the plane
+             */
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             static TVector4<T> planeEquation(const TVector3<T>& p0, const TVector3<T>& p1, const TVector3<T>& p2) {
                 return Magnum::Math::planeEquation(p0, p1, p2);
@@ -51,45 +64,85 @@ namespace TissueForge::types {
 
             template<class U> constexpr explicit TVector4(const TVector4<U>& other) noexcept: Vector4Base<T>(other) {}
 
+            /** Get the X (first) component */
             T& x() { return Vector4Base<T>::x(); }
+
+            /** Get the Y (second) component */
             T& y() { return Vector4Base<T>::y(); }
+
+            /** Get the Z (third) component */
             T& z() { return Vector4Base<T>::z(); }
+
+            /** Get the W (fourth) component */
             T& w() { return Vector4Base<T>::w(); }
 
+            /** Get the X (first) component */
             constexpr T x() const { return Vector4Base<T>::x(); }
+
+            /** Get the Y (second) component */
             constexpr T y() const { return Vector4Base<T>::y(); }
+
+            /** Get the Z (third) component */
             constexpr T z() const { return Vector4Base<T>::z(); }
+
+            /** Get the W (fourth) component */
             constexpr T w() const { return Vector4Base<T>::w(); }
 
+            /** Get the red (first) component */
             T& r() { return Vector4Base<T>::r(); }
+
+            /** Get the green (second) component */
             T& g() { return Vector4Base<T>::g(); }
+
+            /** Get the blue (third) component */
             T& b() { return Vector4Base<T>::b(); }
+
+            /** Get the alpha (fourth) component */
             T& a() { return Vector4Base<T>::a(); }
 
+            /** Get the red (first) component */
             constexpr T r() const { return Vector4Base<T>::r(); }
+
+            /** Get the green (second) component */
             constexpr T g() const { return Vector4Base<T>::g(); }
+
+            /** Get the blue (third) component */
             constexpr T b() const { return Vector4Base<T>::b(); }
+
+            /** Get the alpha (fourth) component */
             constexpr T a() const { return Vector4Base<T>::a(); }
 
+            /** Get the x-y-z (first-second-third) components */
             TVector3<T>& xyz() { return TVector3<T>::from(Vector4Base<T>::data()); }
+
+            /** Get the x-y-z (first-second-third) components */
             constexpr const TVector3<T> xyz() const {
                 return {Vector4Base<T>::_data[0], Vector4Base<T>::_data[1], Vector4Base<T>::_data[2]};
             }
 
+            /** Get the red-green-blue (first-second-third) components */
             TVector3<T>& rgb() { return TVector3<T>::from(Vector4Base<T>::data()); }
+
+            /** Get the red-green-blue (first-second-third) components */
             constexpr const TVector3<T> rgb() const {
                 return {Vector4Base<T>::_data[0], Vector4Base<T>::_data[1], Vector4Base<T>::_data[2]};
             }
 
+            /** Get the x-y (first-second) components */
             TVector2<T>& xy() { return TVector2<T>::from(Vector4Base<T>::data()); }
+
+            /** Get the x-y (first-second) components */
             constexpr const TVector2<T> xy() const {
                 return {Vector4Base<T>::_data[0], Vector4Base<T>::_data[1]};
             }
 
+            /** Get the distance to a point */
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             T distance(const TVector3<T> &point) const {
                 return Magnum::Math::Distance::pointPlane(point, *this);
             }
+
+            /** Get the distance to a point, scaled by the length of the plane normal */
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             T distanceScaled(const TVector3<T> &point) const {
                 return Magnum::Math::Distance::pointPlaneScaled(point, *this);

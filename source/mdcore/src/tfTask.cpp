@@ -40,46 +40,28 @@
 #include <tf_fptype.h>
 #include <tf_lock.h>
 #include <tfTask.h>
+#include <tfError.h>
 
 
 using namespace TissueForge;
 
 
-/* Global variables. */
-/** The ID of the last error. */
-int TissueForge::task_err = task_err_ok;
-
 /* the error macro. */
-#define error(id)				(task_err = errs_register(id, task_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
-/* list of error messages. */
-const char *task_err_msg[4] = {
-	"Nothing bad happened.",
-    "An unexpected NULL pointer was encountered.",
-    "A call to malloc failed, probably due to insufficient memory.",
-    "Attempted to add an unlock to a full task.",
-};
 
-/**
- * @brief Add a task dependency.
- * 
- * @param ta The unlocking #task.
- * @param tb The unlocked #task.
- *
- */
- 
-int TissueForge::task_addunlock(struct task *ta, struct task *tb) {
+HRESULT TissueForge::task_addunlock(struct task *ta, struct task *tb) {
 
     /* Is there space for this? */
     if(ta->nr_unlock >= task_max_unlock)
-        return error(task_err_maxunlock);
+        return error(MDCERR_taskmaxunlock);
 
     /* Add the unlock. */
     ta->unlock[ ta->nr_unlock ] = tb;
     ta->nr_unlock += 1;
     
     /* Ta-da! */
-    return task_err_ok;
+    return S_OK;
     
 }
 
@@ -120,5 +102,3 @@ std::ostream& operator<<(std::ostream& os, const struct task* t) {
     
     return os;
 }
-
-    

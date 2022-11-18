@@ -145,6 +145,26 @@ CAPI_FUNC(HRESULT) tfClusterParticleHandle_createParticleS(
 );
 
 /**
+ * @brief Test whether the cluster has an id
+ * 
+ * @param handle populated handle
+ * @param pid particle id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleHandle_hasPartId(struct tfClusterParticleHandleHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the cluster has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleHandle_hasPart(struct tfClusterParticleHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result);
+
+/**
  * @brief Split the cluster along an axis. 
  * 
  * @param handle populated handle
@@ -187,6 +207,15 @@ CAPI_FUNC(HRESULT) tfClusterParticleHandle_split(struct tfClusterParticleHandleH
 CAPI_FUNC(HRESULT) tfClusterParticleHandle_getNumParts(struct tfClusterParticleHandleHandle *handle, int *numParts);
 
 /**
+ * @brief Get the particles that are a member of this cluster
+ * 
+ * @param handle populated handle
+ * @param parts particles
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleHandle_getParts(struct tfClusterParticleHandleHandle *handle, struct tfParticleListHandle *parts);
+
+/**
  * @brief Get the i'th particle that's a member of this cluster.
  * 
  * @param handle populated handle
@@ -195,6 +224,16 @@ CAPI_FUNC(HRESULT) tfClusterParticleHandle_getNumParts(struct tfClusterParticleH
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfClusterParticleHandle_getParticle(struct tfClusterParticleHandleHandle *handle, int i, struct tfParticleHandleHandle *parthandle);
+
+/**
+ * @brief Get a summary string of the cluster
+ * 
+ * @param handle populated handle
+ * @param str array to populate
+ * @param numChars number of array characters
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleHandle_str(struct tfClusterParticleHandleHandle *handle, char **str, unsigned int *numChars);
 
 /**
  * @brief Get the radius of gyration
@@ -257,11 +296,53 @@ CAPI_FUNC(HRESULT) tfClusterParticleType_initD(struct tfClusterParticleTypeHandl
 CAPI_FUNC(HRESULT) tfClusterParticleType_addType(struct tfClusterParticleTypeHandle *handle, struct tfParticleTypeHandle *phandle);
 
 /**
- * @brief Tests where this cluster has a particle type
+ * @brief Get a summary string of the type
+ * 
+ * @param handle populated handle
+ * @param str array to populate
+ * @param numChars number of array characters
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleType_str(struct tfClusterParticleTypeHandle *handle, char **str, unsigned int *numChars);
+
+/**
+ * @brief Tests where this cluster has a particle type.
+ * 
+ * Only tests for immediate ownership and ignores multi-level clusters.
  * 
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfClusterParticleType_hasType(struct tfClusterParticleTypeHandle *handle, struct tfParticleTypeHandle *phandle, bool *hasType);
+
+/**
+ * @brief Test whether the type has a type id
+ * 
+ * @param handle populated handle
+ * @param pid id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleType_hasTypeId(struct tfClusterParticleTypeHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the type has a type
+ * 
+ * @param handle populated handle
+ * @param ptype type to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleType_hasTypeML(struct tfClusterParticleTypeHandle *handle, struct tfParticleTypeHandle *ptype, bool *result);
+
+/**
+ * @brief Test whether the type has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfClusterParticleType_hasPart(struct tfClusterParticleTypeHandle *handle, struct tfParticleHandleHandle *part, bool *result);
 
 /**
  * @brief Registers a type with the engine. 

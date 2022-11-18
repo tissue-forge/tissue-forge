@@ -154,7 +154,7 @@
             import warnings
 
             min = kwargs["min"] if "min" in kwargs else 0.00001
-            max = kwargs["max"] if "max" in kwargs else self.max
+            max = kwargs["max"] if "max" in kwargs else min + 1
             step = kwargs["step"] if "step" in kwargs else 0.001
             range = kwargs["range"] if "range" in kwargs else (min, max, step)
 

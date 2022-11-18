@@ -37,11 +37,7 @@
 #include "tfParticleList.h"
 #include "tfParticleTypeList.h"
 #include <set>
-
-/* error codes */
-#define PARTICLE_ERR_OK                 0
-#define PARTICLE_ERR_NULL              -1
-#define PARTICLE_ERR_MALLOC            -2
+#include <vector>
 
 /**
  * increment size of cluster particle list.
@@ -318,21 +314,29 @@ namespace TissueForge {
         /** Particle id */
         int id;
 
-        /** Particle type id */
-        int typeId;
+        /**
+         * @brief Gets the actual particle of this handle. 
+         * 
+         * @return particle, if available
+         */
+        Particle *part();
 
         /**
          * @brief Gets the actual particle of this handle. 
+         * 
+         * Alias for consistency with other objects. 
          */
-        Particle *part();
+        Particle *get() { return part(); }
 
         /**
          * @brief Gets the particle type of this handle. 
          */
         ParticleType *type();
 
-        ParticleHandle() : id(0), typeId(0) {}
-        ParticleHandle(const int &id, const int &typeId) : id(id), typeId(typeId) {}
+        ParticleHandle() : id(0) {}
+        ParticleHandle(const int &id) : id(id) {}
+
+        virtual std::string str() const;
 
         virtual ParticleHandle* fission();
 
@@ -391,15 +395,86 @@ namespace TissueForge {
         /**
          * @brief Gets a list of nearby particles. 
          * 
-         * @param distance optional search distance; default is simulation cutoff
-         * @param types optional list of particle types to search by; default is all types
+         * @param distance search distance
+         * @param types list of particle types to search by
          */
-        ParticleList *neighbors(const FPTYPE *distance=NULL, const std::vector<ParticleType> *types=NULL);
+        ParticleList neighbors(const FPTYPE &distance, const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles. 
+         * 
+         * @param distance search distance
+         * @param types list of particle types to search by
+         */
+        ParticleList neighbors(const FPTYPE &distance, const std::vector<ParticleType> &types);
+
+        /**
+         * @brief Gets a list of nearby particles of all types. 
+         * 
+         * @param distance search distance
+         */
+        ParticleList neighbors(const FPTYPE &distance);
+
+        /**
+         * @brief Gets a list of nearby particles within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        ParticleList neighbors(const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        ParticleList neighbors(const std::vector<ParticleType> &types);
+
+        /**
+         * @brief Gets a list of nearby particles ids. 
+         * 
+         * @param distance search distance
+         * @param types list of particle types to search by
+         */
+        std::vector<int32_t> neighborIds(const FPTYPE &distance, const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles ids. 
+         * 
+         * @param distance search distance
+         * @param types list of particle types to search by
+         */
+        std::vector<int32_t> neighborIds(const FPTYPE &distance, const std::vector<ParticleType> &types);
+
+        /**
+         * @brief Gets a list of nearby particles ids of all types. 
+         * 
+         * @param distance search distance
+         */
+        std::vector<int32_t> neighborIds(const FPTYPE &distance);
+
+        /**
+         * @brief Gets a list of nearby particles ids within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        std::vector<int32_t> neighborIds(const TissueForge::ParticleTypeList &types);
+
+        /**
+         * @brief Gets a list of nearby particles ids within the global cutoff distance. 
+         * 
+         * @param types list of particle types to search by
+         */
+        std::vector<int32_t> neighborIds(const std::vector<ParticleType> &types);
 
         /**
          * @brief Gets a list of all bonded neighbors. 
          */
-        ParticleList *getBondedNeighbors();
+        ParticleList getBondedNeighbors();
+
+        /**
+         * @brief Gets a list of all bonded neighbor ids. 
+         */
+        std::vector<int32_t> getBondedNeighborIds();
 
         /**
          * @brief Calculates the distance to another particle
@@ -467,6 +542,9 @@ namespace TissueForge {
         
         /** Set the particle radius */
         void setRadius(const FPTYPE &radius);
+
+        /** Particle volume */
+        FPTYPE getVolume();
         
         /** Particle name */
         std::string getName();
@@ -654,7 +732,7 @@ namespace TissueForge {
          * @param position position of new particle, optional
          * @param velocity velocity of new particle, optional
          * @param clusterId id of parent cluster, optional
-         * @return ParticleHandle* 
+         * @return new particle
          */
         TissueForge::ParticleHandle *operator()(
             FVector3 *position=NULL,
@@ -669,7 +747,7 @@ namespace TissueForge {
          * 
          * @param str JSON string
          * @param clusterId id of parent cluster, optional
-         * @return ParticleHandle* 
+         * @return new particle
          */
         TissueForge::ParticleHandle *operator()(const std::string &str, int *clusterId=NULL);
 
@@ -683,7 +761,7 @@ namespace TissueForge {
          * @param positions initial particle positions, optional
          * @param velocities initial particle velocities, optional
          * @param clusterIds parent cluster ids, optional
-         * @return std::vector<int> 
+         * @return new particle ids
          */
         std::vector<int> factory(
             unsigned int nr_parts=0, 
@@ -698,16 +776,20 @@ namespace TissueForge {
          * New type is constructed from the definition of the calling type. 
          * 
          * @param _name name of the new type
-         * @return ParticleType* 
+         * @return new particle type
          */
         ParticleType* newType(const char *_name);
+
+        /** Test whether the type has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the type has a particle */
+        bool has(ParticleHandle *part);
 
         /**
          * @brief Registers a type with the engine.
          * 
          * Note that this occurs automatically, unless noReg==true in constructor.  
-         * 
-         * @return HRESULT 
          */
         virtual HRESULT registerType();
 
@@ -725,13 +807,16 @@ namespace TissueForge {
 
         /**
          * @brief Get the type engine instance
-         * 
-         * @return ParticleType* 
          */
         virtual ParticleType *get();
 
         ParticleType(const bool &noReg=false);
         virtual ~ParticleType() {}
+
+        virtual std::string str() const;
+
+        /** Type volume */
+        FPTYPE getVolume();
 
         /** Type frozen state */
         bool getFrozen();
@@ -769,7 +854,13 @@ namespace TissueForge {
         /**
          * @brief Get all particles of this type. 
          */
-        TissueForge::ParticleList *items();
+        TissueForge::ParticleList &items();
+
+        /** number of particles that belong to this type. */
+        uint16_t getNumParts();
+
+        /** list of particle ids that belong to this type. */
+        std::vector<int32_t> getPartIds();
 
         /**
          * @brief Get a JSON string representation
@@ -816,7 +907,7 @@ namespace TissueForge {
      * @brief Get a registered particle type by type name
      * 
      * @param name name of particle type
-     * @return ParticleType* 
+     * @return particle type, if found
      */
     CAPI_FUNC(ParticleType*) ParticleType_FindFromName(const char* name);
 
@@ -882,7 +973,7 @@ namespace TissueForge {
     CAPI_DATA(unsigned int) *Particle_Colors;
 
     // Returns 1 if a type has been registered, otherwise 0
-    CAPI_FUNC(HRESULT) ParticleType_checkRegistered(ParticleType *type);
+    CAPI_FUNC(bool) ParticleType_checkRegistered(ParticleType *type);
 
     /**
      * mandatory internal function to initalize the particle and particle types
@@ -893,7 +984,34 @@ namespace TissueForge {
      */
     HRESULT _Particle_init();
 
+    inline bool operator< (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::ParticleHandle& lhs, const TissueForge::ParticleHandle& rhs) { return !(lhs == rhs); }
+
+    inline bool operator< (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::ParticleType& lhs, const TissueForge::ParticleType& rhs) { return !(lhs == rhs); }
+
 
 };
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::ParticleHandle &p)
+{
+    os << p.str().c_str();
+    return os;
+}
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::ParticleType &p)
+{
+    os << p.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFPARTICLE_H_

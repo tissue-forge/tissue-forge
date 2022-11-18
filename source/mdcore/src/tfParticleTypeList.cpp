@@ -86,6 +86,21 @@ void TissueForge::ParticleTypeList::extend(const ParticleTypeList &other) {
     for(int i = 0; i < other.nr_parts; ++i) this->insert(other.parts[i]);
 }
 
+bool TissueForge::ParticleTypeList::has(const int32_t &pid) {
+    for(size_t i = 0; i < nr_parts; i++) 
+        if(parts[i] == pid) 
+            return true;
+    return false;
+}
+
+bool TissueForge::ParticleTypeList::has(ParticleType *ptype) {
+    return ptype ? has(ptype->id) : false;
+}
+
+bool TissueForge::ParticleTypeList::has(ParticleHandle *part) {
+    return particles().has(part);
+}
+
 ParticleType *TissueForge::ParticleTypeList::item(const int32_t &i) {
     if(i < nr_parts) {
         return &_Engine.types[parts[i]];
@@ -96,102 +111,74 @@ ParticleType *TissueForge::ParticleTypeList::item(const int32_t &i) {
     return NULL;
 }
 
-ParticleTypeList *TissueForge::ParticleTypeList::pack(size_t n, ...) {
-    int i;
-    ParticleTypeList *result = new ParticleTypeList(n, PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF);
-    va_list vargs;
-    
-    va_start(vargs, n);
-    if (result == NULL) {
-        va_end(vargs);
-        return NULL;
+int32_t TissueForge::ParticleTypeList::operator[](const size_t &i) {
+    if(i < nr_parts) {
+        return this->parts[i];
     }
+    else {
+        throw std::runtime_error("index out of range");
+    }
+    return NULL;
+}
 
-    for (i = 0; i < n; i++) {
-        int o = va_arg(vargs, int);
-        result->parts[i] = o;
-    }
-    va_end(vargs);
+std::vector<int32_t> TissueForge::ParticleTypeList::vector() {
+    std::vector<int32_t> result;
+    result.reserve(this->nr_parts);
+    for(size_t i = 0; i < nr_parts; i++) 
+        result.push_back(parts[i]);
     return result;
 }
 
-ParticleList *TissueForge::ParticleTypeList::particles() {
-    ParticleList *list = new ParticleList();
+ParticleList TissueForge::ParticleTypeList::particles() {
+    ParticleList list;
 
-    for(int tid = 0; tid < this->nr_parts; ++tid) list->extend(this->item(tid)->parts);
+    for(int tid = 0; tid < this->nr_parts; ++tid) list.extend(this->item(tid)->parts);
 
     return list;
 }
 
-ParticleTypeList* TissueForge::ParticleTypeList::all() {
-    ParticleTypeList* list = new ParticleTypeList();
+ParticleTypeList TissueForge::ParticleTypeList::all() {
+    ParticleTypeList list;
     
-    for(int tid = 0; tid < _Engine.nr_types; tid++) list->insert(tid);
+    for(int tid = 0; tid < _Engine.nr_types; tid++) list.insert(tid);
     
     return list;
 }
 
 FMatrix3 TissueForge::ParticleTypeList::getVirial() {
-    auto p = this->particles();
-    auto r = p->getVirial();
-    delete p;
-    return r;
+    return this->particles().getVirial();
 }
 
 FPTYPE TissueForge::ParticleTypeList::getRadiusOfGyration() {
-    auto p = this->particles();
-    auto r = p->getRadiusOfGyration();
-    delete p;
-    return r;
+    return this->particles().getRadiusOfGyration();
 }
 
 FVector3 TissueForge::ParticleTypeList::getCenterOfMass() {
-    auto p = this->particles();
-    auto r = p->getCenterOfMass();
-    delete p;
-    return r;
+    return this->particles().getCenterOfMass();
 }
 
 FVector3 TissueForge::ParticleTypeList::getCentroid() {
-    auto p = this->particles();
-    auto r = p->getCentroid();
-    delete p;
-    return r;
+    return this->particles().getCentroid();
 }
 
 FMatrix3 TissueForge::ParticleTypeList::getMomentOfInertia() {
-    auto p = this->particles();
-    auto r = p->getMomentOfInertia();
-    delete p;
-    return r;
+    return this->particles().getMomentOfInertia();
 }
 
 std::vector<FVector3> TissueForge::ParticleTypeList::getPositions() {
-    auto p = this->particles();
-    auto r = p->getPositions();
-    delete p;
-    return r;
+    return this->particles().getPositions();
 }
 
 std::vector<FVector3> TissueForge::ParticleTypeList::getVelocities() {
-    auto p = this->particles();
-    auto r = p->getVelocities();
-    delete p;
-    return r;
+    return this->particles().getVelocities();
 }
 
 std::vector<FVector3> TissueForge::ParticleTypeList::getForces() {
-    auto p = this->particles();
-    auto r = p->getForces();
-    delete p;
-    return r;
+    return this->particles().getForces();
 }
 
 std::vector<FVector3> TissueForge::ParticleTypeList::sphericalPositions(FVector3 *origin) {
-    auto p = this->particles();
-    auto r = p->sphericalPositions();
-    delete p;
-    return r;
+    return this->particles().sphericalPositions(origin);
 }
 
 TissueForge::ParticleTypeList::ParticleTypeList() : 
@@ -218,6 +205,16 @@ TissueForge::ParticleTypeList::ParticleTypeList(ParticleType *ptype) :
     this->parts[0] = ptype->id;
 }
 
+TissueForge::ParticleTypeList::ParticleTypeList(std::vector<ParticleType> ptypes) : 
+    ParticleTypeList(ptypes.size(), PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
+{
+    this->nr_parts = ptypes.size();
+    
+    for(int i = 0; i < nr_parts; ++i) {
+        this->parts[i] = ptypes[i].id;
+    }
+}
+
 TissueForge::ParticleTypeList::ParticleTypeList(std::vector<ParticleType*> ptypes) : 
     ParticleTypeList(ptypes.size(), PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
 {
@@ -242,6 +239,14 @@ TissueForge::ParticleTypeList::ParticleTypeList(uint16_t nr_parts, int32_t *ptyp
 TissueForge::ParticleTypeList::ParticleTypeList(const ParticleTypeList &other) : 
     ParticleTypeList(other.nr_parts, other.parts)
 {}
+
+TissueForge::ParticleTypeList::ParticleTypeList(const std::vector<int32_t> &pids) : 
+    ParticleTypeList(pids.size(), PARTICLELIST_OWNSELF | PARTICLELIST_OWNDATA)
+{
+    this->nr_parts = pids.size();
+    for(size_t i = 0; i < pids.size(); i++) 
+        parts[i] = pids[i];
+}
 
 TissueForge::ParticleTypeList::~ParticleTypeList() {
     if(this->flags & PARTICLELIST_OWNDATA && size_parts > 0) {

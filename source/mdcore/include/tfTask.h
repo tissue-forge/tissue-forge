@@ -30,13 +30,6 @@
 #include "tf_platform.h"
 
 
-/* task error codes */
-#define task_err_ok                    0
-#define task_err_null                  -1
-#define task_err_malloc                -2
-#define task_err_maxunlock             -3
-
-
 /* some constants */
 #define task_max_unlock                124
 
@@ -63,9 +56,6 @@ enum {
 namespace TissueForge { 
 
 
-	/** ID of the last error */
-	CAPI_DATA(int) task_err;
-
 	/** The task structure */
 	typedef struct task {
 
@@ -90,7 +80,15 @@ namespace TissueForge {
 	} task;
 
 	/* associated functions */
-	int task_addunlock(struct task *ta, struct task *tb);
+
+	/**
+	 * @brief Add a task dependency.
+	 * 
+	 * @param ta The unlocking #task.
+	 * @param tb The unlocked #task.
+	 *
+	 */
+	HRESULT task_addunlock(struct task *ta, struct task *tb);
 
 };
 

@@ -52,29 +52,55 @@
 %extend TissueForge::DihedralHandle {
     %pythoncode %{
         def __getitem__(self, index: int):
-            return self._getitem(index)
+            return self.parts.__getitem__(index)
+
+        def __contains__(self, item):
+            return self.has(item)
 
         def __str__(self) -> str:
             return self.str()
 
+        def __lt__(self, rhs) -> bool:
+            return self.id < rhs.id
+
+        def __gt__(self, rhs) -> bool:
+            return rhs < self
+
+        def __le__(self, rhs) -> bool:
+            return not (self > rhs)
+
+        def __ge__(self, rhs) -> bool:
+            return not (self < rhs)
+
+        def __eq__(self, rhs) -> bool:
+            return self.id == rhs.id
+
+        def __ne__(self, rhs) -> bool:
+            return not (self == rhs)
+
+        @property
+        def angle(self):
+            """dihedral angle"""
+            return self.getAngle()
+
         @property
         def energy(self):
-            """angle energy"""
+            """dihedral energy"""
             return self.getEnergy()
 
         @property
         def parts(self):
             """bonded particles"""
-            return self.getParts()
+            return ParticleList(self.getParts())
 
         @property
         def potential(self):
-            """angle potential"""
+            """dihedral potential"""
             return self.getPotential()
 
         @property
         def id(self):
-            """angle id"""
+            """dihedral id"""
             return self.getId()
 
         @property
@@ -88,7 +114,7 @@
 
         @property
         def half_life(self):
-            """angle half life"""
+            """dihedral half life"""
             return self.getHalfLife()
 
         @half_life.setter
@@ -102,7 +128,7 @@
 
         @property
         def style(self):
-            """angle style"""
+            """dihedral style"""
             return self.getStyle()
 
         @style.setter
@@ -111,7 +137,7 @@
 
         @property
         def age(self):
-            """angle age"""
+            """dihedral age"""
             return self.getAge()
     %}
 }

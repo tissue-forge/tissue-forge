@@ -99,6 +99,13 @@
             return _tfUniverse.dim()
 
         @property
+        def volume(self) -> float:
+            """
+            Universe volume
+            """
+            return _tfUniverse.volume()
+
+        @property
         def name(self) -> str:
             """
             name of the model / script
@@ -154,9 +161,9 @@
             """
             Gets all particles in the universe
             
-            :rtype: ParticleList* 
+            :rtype: ParticleList
             """
-            return _tfUniverse.particles()
+            return ParticleList(_tfUniverse.particleIds())
 
         def reset_species(self):
             """

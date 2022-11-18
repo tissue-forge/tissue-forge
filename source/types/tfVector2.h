@@ -34,12 +34,16 @@ namespace TissueForge::types {
     template<typename T>
     class TVector2 : public Vector2Base<T> {
         public:
+            /** Get a vector in the X- (first-) direction of specified length */
             constexpr static TVector2<T> xAxis(T length = T(1)) { return (TVector2<T>)Vector2Base<T>::xAxis(length); }
 
+            /** Get a vector in the Y- (second-) direction of specified length */
             constexpr static TVector2<T> yAxis(T length = T(1)) { return (TVector2<T>)Vector2Base<T>::yAxis(length); }
 
+            /** Get a scaling vector in the X- (first-) direction */
             constexpr static TVector2<T> xScale(T scale) { return (TVector2<T>)Vector2Base<T>::xScale(scale); }
 
+            /** Get a scaling vector in the Y- (second-) direction */
             constexpr static TVector2<T> yScale(T scale) { return (TVector2<T>)Vector2Base<T>::yScale(scale); }
 
             constexpr TVector2() noexcept: Vector2Base<T>() {}
@@ -50,15 +54,27 @@ namespace TissueForge::types {
 
             template<class U> constexpr explicit TVector2(const TVector2<U>& other) noexcept: Vector2Base<T>(other) {}
 
+            /** Get the X (first) component */
             T& x() { return Vector2Base<T>::x(); }
+
+            /** Get the Y (second) component */
             T& y() { return Vector2Base<T>::y(); }
 
+            /** Get the X (first) component */
             constexpr T x() const { return Vector2Base<T>::x(); }
+
+            /** Get the Y (second) component */
             constexpr T y() const { return Vector2Base<T>::y(); }
 
+            /** Get the distance to a line defined by two points */
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             T distance(const TVector2<T> &lineStartPt, const TVector2<T> &lineEndPt) {
                 return Magnum::Math::Distance::lineSegmentPoint(lineStartPt, lineEndPt, *this);
+            }
+
+            /** Get the cross product with another vector */
+            T cross(const TVector2<T> &other) {
+                return Magnum::Math::cross(*this, other);
             }
 
             MAGNUM_BASE_VECTOR_CAST_METHODS(2, TVector2, Vector2Base)

@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
     int numBParts;
     unsigned int pindex;
     struct tfParticleHandleHandle part;
-    TFC_TEST_CHECK(tfParticleType_getNumParticles(&BType, &numBParts));
+    TFC_TEST_CHECK(tfParticleType_getNumParts(&BType, &numBParts));
     for(unsigned int i = 0; i < numBParts; i++) {
         TFC_TEST_CHECK(tfParticleType_getParticle(&BType, i, &part));
         TFC_TEST_CHECK(tfParticleList_insertP(&plist, &part, &pindex));

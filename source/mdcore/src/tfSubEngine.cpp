@@ -19,16 +19,22 @@
 
 #include "tfSubEngine.h"
 
+#include <tf_errs.h>
+#include <tfError.h>
 #include <tfEngine.h>
 
 
 using namespace TissueForge;
 
 
+/* the error macro. */
+#define error(id)   (tf_error(E_FAIL, errs_err_msg[id]))
+
+
 HRESULT SubEngine::registerEngine() {
     for(auto &se : _Engine.subengines) 
         if(strcmp(this->name, se->name) == 0) 
-            return engine_err_subengine;
+            return error(MDCERR_subengine);
     
     _Engine.subengines.push_back(this);
     return S_OK;

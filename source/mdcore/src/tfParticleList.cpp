@@ -92,6 +92,17 @@ void TissueForge::ParticleList::extend(const ParticleList &other) {
     for(int i = 0; i < other.nr_parts; ++i) this->insert(other.parts[i]);
 }
 
+bool TissueForge::ParticleList::has(const int32_t &pid) {
+    for(size_t i = 0; i < nr_parts; i++) 
+        if(parts[i] == pid) 
+            return true;
+    return false;
+}
+
+bool TissueForge::ParticleList::has(ParticleHandle *part) {
+    return part ? has(part->id) : false;
+}
+
 ParticleHandle *TissueForge::ParticleList::item(const int32_t &i) {
     if(i < nr_parts) {
         Particle *part = _Engine.s.partlist[parts[i]];
@@ -103,6 +114,24 @@ ParticleHandle *TissueForge::ParticleList::item(const int32_t &i) {
         throw std::runtime_error("index out of range");
     }
     return NULL;
+}
+
+int32_t TissueForge::ParticleList::operator[](const size_t &i) {
+    if(i < nr_parts) {
+        return this->parts[i];
+    }
+    else {
+        throw std::runtime_error("index out of range");
+    }
+    return NULL;
+}
+
+std::vector<int32_t> TissueForge::ParticleList::vector() {
+    std::vector<int32_t> result;
+    result.reserve(this->nr_parts);
+    for(size_t i = 0; i < nr_parts; i++) 
+        result.push_back(parts[i]);
+    return result;
 }
 
 TissueForge::ParticleList::ParticleList() : 
@@ -132,6 +161,20 @@ TissueForge::ParticleList::ParticleList(ParticleHandle *part) :
     this->parts[0] = p->id;
 }
 
+TissueForge::ParticleList::ParticleList(std::vector<ParticleHandle> particles) : 
+    ParticleList(particles.size(), PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
+{
+    this->nr_parts = particles.size();
+    
+    for(int i = 0; i < nr_parts; ++i) {
+        Particle *p = particles[i].part();
+        if(!p) {
+            throw std::runtime_error("Cannot initialize a list with a NULL particle");
+        }
+        this->parts[i] = p->id;
+    }
+}
+
 TissueForge::ParticleList::ParticleList(std::vector<ParticleHandle*> particles) : 
     ParticleList(particles.size(), PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
 {
@@ -156,6 +199,14 @@ TissueForge::ParticleList::ParticleList(uint16_t nr_parts, int32_t *parts) :
 TissueForge::ParticleList::ParticleList(const ParticleList &other) : 
     ParticleList(other.nr_parts, other.parts)
 {}
+
+TissueForge::ParticleList::ParticleList(const std::vector<int32_t> &pids) : 
+    ParticleList(pids.size(), PARTICLELIST_OWNSELF | PARTICLELIST_OWNDATA)
+{
+    this->nr_parts = pids.size();
+    for(size_t i = 0; i < pids.size(); i++) 
+        parts[i] = pids[i];
+}
 
 TissueForge::ParticleList::~ParticleList() {
     if(this->flags & PARTICLELIST_OWNDATA && size_parts > 0) {
@@ -306,40 +357,20 @@ std::vector<FVector3> TissueForge::ParticleList::sphericalPositions(FVector3 *or
     return result;
 }
 
-ParticleList *TissueForge::ParticleList::pack(size_t n, ...)
-{
-    int i;
-    ParticleList *result = new ParticleList(n, PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF);
-    va_list vargs;
-    
-    va_start(vargs, n);
-    if (result == NULL) {
-        va_end(vargs);
-        return NULL;
-    }
-
-    for (i = 0; i < n; i++) {
-        int o = va_arg(vargs, int);
-        result->parts[i] = o;
-    }
-    va_end(vargs);
-    return result;
-}
-
-ParticleList* TissueForge::ParticleList::all() {
-    ParticleList* list = new ParticleList(_Engine.s.nr_parts);
+ParticleList TissueForge::ParticleList::all() {
+    ParticleList list(_Engine.s.nr_parts);
     
     for (int cid = 0 ; cid < _Engine.s.nr_cells ; cid++) {
         space_cell *cell = &_Engine.s.cells[cid];
         for (int pid = 0 ; pid < cell->count ; pid++) {
             Particle *p  = &cell->parts[pid];
-            list->insert(p->id);
+            list.insert(p->id);
         }
     }
     
     for (int pid = 0 ; pid < _Engine.s.largeparts.count ; pid++) {
         Particle *p  = &_Engine.s.largeparts.parts[pid];
-        list->insert(p->id);
+        list.insert(p->id);
     }
     
     return list;

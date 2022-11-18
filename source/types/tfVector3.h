@@ -56,32 +56,65 @@ namespace TissueForge::types {
 
             template<class U> constexpr explicit TVector3(const TVector3<U>& other) noexcept: Vector3Base<T>(other) {}
 
+            /** Get the X (first) component */
             T& x() { return Vector3Base<T>::x(); }
+
+            /** Get the Y (second) component */
             T& y() { return Vector3Base<T>::y(); }
+
+            /** Get the Z (third) component */
             T& z() { return Vector3Base<T>::z(); }
 
+            /** Get the X (first) component */
             constexpr T x() const { return Vector3Base<T>::x(); }
+
+            /** Get the Y (second) component */
             constexpr T y() const { return Vector3Base<T>::y(); }
+
+            /** Get the Z (third) component */
             constexpr T z() const { return Vector3Base<T>::z(); }
 
+            /** Get the red (first) component */
             T& r() { return Vector3Base<T>::r(); }
+
+            /** Get the green (second) component */
             T& g() { return Vector3Base<T>::g(); }
+
+            /** Get the blue (third) component */
             T& b() { return Vector3Base<T>::b(); }
 
+            /** Get the red (first) component */
             constexpr T r() const { return Vector3Base<T>::r(); }
+
+            /** Get the green (second) component */
             constexpr T g() const { return Vector3Base<T>::g(); }
+
+            /** Get the blue (third) component */
             constexpr T b() const { return Vector3Base<T>::b(); }
 
+            /** Get the x-y (first-second) components */
             TVector2<T>& xy() { return TVector2<T>::from(Vector3Base<T>::data()); }
+
+            /** Get the x-y (first-second) components */
             constexpr const TVector2<T> xy() const {
                 return {Vector3Base<T>::_data[0], Vector3Base<T>::_data[1]};
             }
 
+            /** Get the distance to a line defined by two points */
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             T distance(const TVector3<T> &lineStartPt, const TVector3<T> &lineEndPt) {
                 return Magnum::Math::Distance::lineSegmentPoint(lineStartPt, lineEndPt, *this);
             }
 
+            /**
+             * @brief Get the position relative to a point
+             * 
+             * @param origin target point
+             * @param dim dimensions of domain
+             * @param periodic_x flag for whether to apply periodic boundary conditions along the X- (first-) direction
+             * @param periodic_y flag for whether to apply periodic boundary conditions along the Y- (second-) direction
+             * @param periodic_z flag for whether to apply periodic boundary conditions along the Z- (third-) direction
+             */
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             TVector3<T> relativeTo(const TVector3<T> &origin, const TVector3<T> &dim, const bool &periodic_x, const bool &periodic_y, const bool &periodic_z) {
                 TVector3<T> result = *this - origin;
@@ -99,6 +132,11 @@ namespace TissueForge::types {
                     else if(result[2] > crit[2]) result[2] -= dim[2];
                 }
                 return result;
+            }
+
+            /** Get the cross product with another vector */
+            TVector3<T> cross(const TVector3<T> &other) {
+                return Magnum::Math::cross(*this, other);
             }
 
             MAGNUM_BASE_VECTOR_CAST_METHODS(3, TVector3, Vector3Base)

@@ -50,30 +50,45 @@ namespace TissueForge::types {
 
             constexpr /*implicit*/ TMatrixS(const TMatrixS<size, T>& other) noexcept: MatrixBase<size, T>((MatrixBase<size, T>)other) {}
 
+            /** Test whether the matrix is orthogonal */
             bool isOrthogonal() const { return MatrixBase<size, T>::isOrthogonal(); };
 
+            /** Get the trace */
             T trace() const { return MatrixBase<size, T>::trace(); }
 
+            /** Get the matrix without a column and row */
             TMatrixS<size-1, T> ij(std::size_t skipCol, std::size_t skipRow) const { return (TMatrixS<size-1, T>)MatrixBase<size-1, T>::ij(skipCol, skipRow); }
 
+            /** Get the cofactor */
             T cofactor(std::size_t col, std::size_t row) const { return MatrixBase<size, T>::cofactor(col, row); }
 
+            /** Get the comatrix */
             TMatrixS<size, T> comatrix() const { return (TMatrixS<size, T>)MatrixBase<size, T>::comatrix(); }
 
+            /** Get the adjugate */
             TMatrixS<size, T> adjugate() const { return (TMatrixS<size, T>)MatrixBase<size, T>::adjugate(); }
 
+            /** Get the determinant */
             T determinant() const { return MatrixBase<size, T>::determinant(); }
 
+            /** Get the invertex matrix */
             TMatrixS<size, T> inverted() const { return (TMatrixS<size, T>)MatrixBase<size, T>::inverted(); }
 
+            /** Get the orthogonal inverted matrix */
             TMatrixS<size, T> invertedOrthogonal() const { return (TMatrixS<size, T>)MatrixBase<size, T>::invertedOrthogonal(); }
 
             /* Reimplementation of functions to return correct type */
+
             TMatrixS<size, T> operator*(const TMatrixS<size, T>& other) const { return (TMatrixS<size, T>)MatrixBase<size, T>::operator*((MatrixBase<size, T>)other); }
             TVectorS<size, T> operator*(const TVectorS<size, T>& other) const { return (TVectorS<size, T>)MatrixBase<size, T>::operator*(other); }
+
+            /** Get the transpose */
             TMatrixS<size, T> transposed() const { return (TMatrixS<size, T>)MatrixBase<size, T>::transposed(); }
 
+            /** Initialize from an array */
             static TMatrixS<size, T>& from(T* data) { return (TMatrixS<size, T>)MatrixBase<size, T>::from(data); }
+
+            /** Initialize from an array */
             static const TMatrixS<size, T>& from(const T* data) { return (TMatrixS<size, T>)MatrixBase<size, T>::from(data); }
             
             TMatrixS<size, T> operator-() const {
@@ -107,9 +122,13 @@ namespace TissueForge::types {
             TMatrixS<size, T> operator/(T number) const {
                 return (TMatrixS<size, T>)MatrixBase<size, T>::operator/(number);
             }
+
+            /** Get the matrix with flipped columns */
             constexpr TMatrixS<size, T> flippedCols() const {
                 return (TMatrixS<size, T>)MatrixBase<size, T>::flippedCols();
             }
+
+            /** Get the matrix with flipped rows */
             constexpr TMatrixS<size, T> flippedRows() const {
                 return (TMatrixS<size, T>)MatrixBase<size, T>::flippedRows();
             }
@@ -117,6 +136,7 @@ namespace TissueForge::types {
     };
 
     #define REVISED_MAGNUM_MATRIX_SUBCLASS_IMPLEMENTATION(size, Type, MagnumImplType, VectorType) \
+        /** Initialize from an array */                                                     \
         static Type<T>& from(T* data) {                                                     \
         return *reinterpret_cast<Type<T>*>(&MagnumImplType<T>::from(data));                 \
         }                                                                                   \
@@ -152,9 +172,13 @@ namespace TissueForge::types {
         Type<T> operator/(T number) const {                                                 \
             return (Type<T>)MagnumImplType<T>::operator/(number);                           \
         }                                                                                   \
+                                                                                            \
+        /** Get the matrix with flipped columns */                                          \
         constexpr Type<T> flippedCols() const {                                             \
             return (Type<T>)MagnumImplType<T>::flippedCols();                               \
         }                                                                                   \
+                                                                                            \
+        /** Get the matrix with flipped rows */                                             \
         constexpr Type<T> flippedRows() const {                                             \
             return (Type<T>)MagnumImplType<T>::flippedRows();                               \
         }                                                                                   \
@@ -164,6 +188,8 @@ namespace TissueForge::types {
         constexpr const VectorType<T> operator[](std::size_t col) const {                   \
             return VectorType<T>(MagnumImplType<T>::operator[](col));                       \
         }                                                                                   \
+                                                                                            \
+        /** Get a row */                                                                    \
         VectorType<T> row(std::size_t row) const {                                          \
             return VectorType<T>(MagnumImplType<T>::row(row));                              \
         }                                                                                   \
@@ -175,15 +201,24 @@ namespace TissueForge::types {
             return (VectorType<T>)MatrixBase<size, T>::operator*(other);                    \
         }                                                                                   \
                                                                                             \
+        /** Get the transpose */                                                            \
         Type<T> transposed() const { return MatrixBase<size, T>::transposed(); }            \
         constexpr VectorType<T> diagonal() const {                                          \
             return (VectorType<T>)MatrixBase<size, T>::diagonal();                          \
         }                                                                                   \
+                                                                                            \
+        /** Get the inverted matrix */                                                      \
         Type<T> inverted() const { return MatrixBase<size, T>::inverted(); }                \
+                                                                                            \
+        /** Get the orthogonal inverted matrix */                                           \
         Type<T> invertedOrthogonal() const {                                                \
             return MatrixBase<size, T>::invertedOrthogonal();                               \
         }                                                                                   \
+                                                                                            \
+        /** Get the underlying array */                                                     \
         T* data() { return MagnumImplType<T>::data(); }                                     \
+                                                                                            \
+        /** Get the underlying array */                                                     \
         constexpr const T* data() const { return MagnumImplType<T>::data(); }               \
 
     #define SWIGPYTHON_MAGNUM_MATRIX_SUBCLASS_IMPLEMENTATION(size, Type, VectorType)        \

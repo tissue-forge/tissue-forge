@@ -45,7 +45,7 @@ namespace TissueForge::io {
     ThreeDFMeshData *generate3DFMeshByType(ParticleType *pType, const unsigned int &pRefinements) {
 
         ThreeDFPCloudMeshGenerator generatorPCloud;
-        generatorPCloud.pList = *pType->items();
+        generatorPCloud.pList = ParticleList(pType->items());
         generatorPCloud.pRefinements = pRefinements;
 
         if(generatorPCloud.pList.nr_parts == 0 || generatorPCloud.process() != S_OK) 

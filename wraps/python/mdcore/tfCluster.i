@@ -46,6 +46,15 @@
 
 %extend TissueForge::ClusterParticleHandle {
     %pythoncode %{
+        def __getitem__(self, index: int):
+            return self.parts.__getitem__(index)
+
+        def __contains__(self, item):
+            return self.has(item)
+
+        def __str__(self):
+            return self.str()
+
         def __call__(self, particle_type, *args, **kwargs):
             position = kwargs.get('position')
             velocity = kwargs.get('velocity')
@@ -103,14 +112,33 @@
         def moment_of_inertia(self):
             """Moment of inertia"""
             return self.getMomentOfInertia()
+
+        @property
+        def num_parts(self):
+            """number of particles that belong to this cluster."""
+            return self.getNumParts()
+
+        @property
+        def parts(self):
+            """particles that belong to this cluster."""
+            return ParticleList(self.getPartIds())
     %}
 }
 
 %extend TissueForge::ClusterParticleType {
     %pythoncode %{
+        def __getitem__(self, index: int):
+            return self.parts.__getitem__(index)
+
+        def __contains__(self, item):
+            return self.has(item)
+
+        def __str__(self):
+            return self.str()
+
         def __call__(self, position=None, velocity=None, cluster_id=None):
             ph = ParticleType.__call__(self, position, velocity, cluster_id)
-            return ClusterParticleHandle(ph.id, ph.type_id)
+            return ClusterParticleHandle(ph.id)
 
         def __reduce__(self):
             return ClusterParticleType.fromString, (self.toString(),)

@@ -46,6 +46,7 @@
 #include <tfPotential.h>
 #include <tfEngine.h>
 #include <tfQueue.h>
+#include <tfError.h>
 
 #pragma clang diagnostic ignored "-Wwritable-strings"
 
@@ -54,34 +55,11 @@ using namespace TissueForge;
 
 
 /* Global variables. */
-/** The ID of the last error. */
-int TissueForge::queue_err = queue_err_ok;
 
 /* the error macro. */
-#define error(id)				(queue_err = errs_register(id, queue_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
-/* list of error messages. */
-const char *queue_err_msg[5] = {
-	"Nothing bad happened.",
-    "An unexpected NULL pointer was encountered.",
-    "A call to malloc failed, probably due to insufficient memory.",
-    "Attempted to insert into a full queue.",
-    "An error occured in a lock function."
-};
-    
-    
 
-/**
- * @brief Get a task from the queue.
- * 
- * @param q The #queue.
- * @param rid #runner ID for ownership issues.
- * @param keep If true, remove the returned index from the queue.
- *
- * @return A #task with no unresolved dependencies or conflicts
- *      or @c NULL if none could be found.
- */
- 
 struct task *TissueForge::queue_get(struct queue *q, int rid, int keep) {
 
     int j, k, tid = -1, ind_best = -1, score, score_best = -1, hit = 0;
@@ -95,7 +73,7 @@ struct task *TissueForge::queue_get(struct queue *q, int rid, int keep) {
 
     /* Lock the queue. */
     if(lock_lock(&q->lock) != 0) {
-        error(queue_err_lock);
+        error(MDCERR_lock);
         return NULL;
     }
         
@@ -233,7 +211,7 @@ struct task *TissueForge::queue_get(struct queue *q, int rid, int keep) {
 
     /* Unlock the queue. */
     if(lock_unlock(&q->lock) != 0) {
-        error(queue_err_lock);
+        error(MDCERR_lock);
         return NULL;
     }
         
@@ -246,13 +224,6 @@ struct task *TissueForge::queue_get(struct queue *q, int rid, int keep) {
         
 }
 
-
-/**
- * @brief Reset the queue.
- * 
- * @param q The #queue.
- */
- 
 void TissueForge::queue_reset(struct queue *q) {
 
     /* Set the next index to the start of the queue. */
@@ -260,20 +231,6 @@ void TissueForge::queue_reset(struct queue *q) {
 
 }
 
-
-/**
- * @brief Add an index to the given queue.
- * 
- * @param q The #queue.
- * @param thing The thing to be inserted.
- *
- * Inserts a task into the queue at the location of the next pointer
- * and moves all remaining tasks up by one. Thus, if the queue is executing,
- * the inserted task is considered to already have been taken.
- *
- * @return 1 on success, 0 if the queue is full and <0 on error (see #queue_err).
- */
- 
 int TissueForge::queue_insert(struct queue *q, struct task *t) {
 
     int k;
@@ -284,12 +241,12 @@ int TissueForge::queue_insert(struct queue *q, struct task *t) {
         
     /* Lock the queue. */
     if(lock_lock(&q->lock) != 0)
-        return error(queue_err_lock);
+        return error(MDCERR_lock);
         
     /* Is there space left? */
     if(q->count == q->size) {
         if(lock_unlock(&q->lock) != 0)
-            return error(queue_err_lock);
+            return error(MDCERR_lock);
         return 0;
     }
         
@@ -302,40 +259,22 @@ int TissueForge::queue_insert(struct queue *q, struct task *t) {
         
     /* Unlock the queue. */
     if(lock_unlock(&q->lock) != 0)
-        return error(queue_err_lock);
+        return error(MDCERR_lock);
         
     /* No news is good news. */
     return 1;
 
 }
 
-
-/**
- * @brief Initialize a task queue.
- *
- * @param q The #queue to initialize.
- * @param size The maximum number of cellpairs in this queue.
- * @param s The space with which this queue is associated.
- * @param tasks An array containing the #task to which the queue
- *        indices will refer to.
- *
- * @return #queue_err_ok or <0 on error (see #queue_err).
- *
- * Initializes a queue of the maximum given size. The initial queue
- * is empty and can be filled with pair ids.
- *
- * @sa #queue_tuples_init
- */
- 
-int TissueForge::queue_init(struct queue *q, int size, struct space *s, struct task *tasks) {
+HRESULT TissueForge::queue_init(struct queue *q, int size, struct space *s, struct task *tasks) {
 
     /* Sanity check. */
     if(q == NULL || s == NULL || tasks == NULL)
-        return error(queue_err_null);
+        return error(MDCERR_null);
         
     /* Allocate the indices. */
     if((q->ind = (int*)malloc(sizeof(int) * size)) == NULL)
-        return error(queue_err_malloc);
+        return error(MDCERR_malloc);
         
     /* Init the queue data. */
     q->space = s;
@@ -346,9 +285,9 @@ int TissueForge::queue_init(struct queue *q, int size, struct space *s, struct t
 
     /* Init the lock. */
     if(lock_init(&q->lock) != 0)
-        return error(queue_err_lock);
+        return error(MDCERR_lock);
 
     /* Nothing to see here. */
-    return queue_err_ok;
+    return S_OK;
 
 }

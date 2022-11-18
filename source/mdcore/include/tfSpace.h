@@ -32,18 +32,6 @@
 #include <vector>
 
 
-/* space error codes */
-#define space_err_ok                    0
-#define space_err_null                  -1
-#define space_err_malloc                -2
-#define space_err_cell                  -3
-#define space_err_pthread               -4
-#define space_err_range                 -5
-#define space_err_maxpairs              -6
-#define space_err_nrtasks               -7
-#define space_err_task                  -8
-#define space_err_invalid_partid        -9
-
 #define space_partlist_incr             100
 
 /** Maximum number of cells per tuple. */
@@ -82,9 +70,6 @@ namespace TissueForge {
         SPACE_FREESLIP_FULL       = (1 << 6) | (1 << 7) | (1 << 8),
     };
 
-
-    /** ID of the last error */
-    CAPI_DATA(int) space_err;
 
     /** Struct for Verlet list entries. */
     struct verlet_entry {
@@ -259,7 +244,25 @@ namespace TissueForge {
 
 
     /* associated functions */
-    CAPI_FUNC(int) space_init(
+
+    /**
+     * @brief Initialize the space with the given dimensions.
+     *
+     * @param s The #space to initialize.
+     * @param origin Pointer to an array of three FPTYPEs specifying the origin
+     *      of the rectangular domain.
+     * @param dim Pointer to an array of three FPTYPEs specifying the length
+     *      of the rectangular domain along each dimension.
+     * @param L The minimum cell edge length, in each dimension.
+     * @param cutoff A FPTYPE-precision value containing the maximum cutoff lenght
+     *      that will be used in the potentials.
+     * @param period Unsigned integer containing the flags #space_periodic_x,
+     *      #space_periodic_y and/or #space_periodic_z or #space_periodic_full.
+     *
+     * This routine initializes the fields of the #space @c s, creates the cells and
+     * generates the cell-pair list.
+     */
+    CAPI_FUNC(HRESULT) space_init(
         struct space *s, 
         const FPTYPE *origin,
         const FPTYPE *dim, 
@@ -268,6 +271,13 @@ namespace TissueForge {
         const struct BoundaryConditions *bc
     );
 
+    /** 
+     * @brief Get the sort-ID and flip the cells if necessary.
+     *
+     * @param s The #space.
+     * @param ci FPTYPE pointer to the first #cell.
+     * @param cj FPTYPE pointer to the second #cell.
+     */
     CAPI_FUNC(int) space_getsid(
         struct space *s, 
         struct space_cell **ci,
@@ -275,10 +285,35 @@ namespace TissueForge {
         FPTYPE *shift
     );
 
-    CAPI_FUNC(int) space_shuffle(struct space *s);
-    CAPI_FUNC(int) space_shuffle_local(struct space *s);
+    /**
+     * @brief Run through the cells of a #space and make sure every particle is in
+     * its place.
+     *
+     * @param s The #space on which to operate.
+     *
+     * Runs through the cells of @c s and if a particle has stepped outside the
+     * cell bounds, moves it to the correct cell.
+     */
+    CAPI_FUNC(HRESULT) space_shuffle(struct space *s);
 
-    CAPI_FUNC(int) space_growparts(struct space *s, unsigned int size_incr);
+    /**
+     * @brief Run through the non-ghost cells of a #space and make sure every
+     * particle is in its place.
+     *
+     * @param s The #space on which to operate.
+     *
+     * Runs through the cells of @c s and if a particle has stepped outside the
+     * cell bounds, moves it to the correct cell.
+     */
+    CAPI_FUNC(HRESULT) space_shuffle_local(struct space *s);
+
+    /**
+     * @brief Grow the parts allocated to a #space
+     * 
+     * @param s The #space on which to operate.
+     * @param size_incr The increment in size.
+     */
+    CAPI_FUNC(HRESULT) space_growparts(struct space *s, unsigned int size_incr);
 
     /**
      * @brief Add a #part to a #space at the given coordinates. The given
@@ -292,8 +327,6 @@ namespace TissueForge {
      *      position.
      * @param result pointer to the newly allocated particle.
      *
-     * @returns #space_err_ok or < 0 on error (see #space_err).
-     *
      * Inserts a #part @c p into the #space @c s at the position @c x.
      * Note that since particle positions in #part are relative to the cell, that
      * data in @c p is overwritten and @c x is used.
@@ -301,14 +334,14 @@ namespace TissueForge {
      * This is a PRIVATE function, literally only the engine should call this.
      * Does NOT manage ref count on particle types in the engine.
      */
-    CAPI_FUNC(int) space_addpart(
+    CAPI_FUNC(HRESULT) space_addpart(
         struct space *s, 
         struct Particle *p,
         FPTYPE *x, 
         struct Particle **result
     );
 
-    CAPI_FUNC(int) space_addparts(
+    CAPI_FUNC(HRESULT) space_addparts(
         struct space *s, 
         int nr_parts, 
         struct Particle **parts, 
@@ -344,11 +377,63 @@ namespace TissueForge {
      */
     CAPI_FUNC(HRESULT) space_update_style(struct space *s);
 
-    CAPI_FUNC(int) space_prepare(struct space *s);
-    CAPI_FUNC(int) space_getpos(struct space *s, int id, FPTYPE *x);
-    CAPI_FUNC(int) space_setpos(struct space *s, int id, FPTYPE *x);
-    CAPI_FUNC(int) space_flush(struct space *s);
-    CAPI_FUNC(int) space_flush_ghosts(struct space *s);
+    /**
+     * @brief Prepare the space before a time step.
+     *
+     * @param s A pointer to the #space to prepare.
+     *
+     * Initializes a #space for a single time step. This routine runs
+     * through the particles and sets their forces to zero.
+     */
+    CAPI_FUNC(HRESULT) space_prepare(struct space *s);
+
+    /**
+     * @brief Get the absolute position of a particle
+     *
+     * @param s The #space in which the particle resides.
+     * @param id The local id of the #part.
+     * @param x A pointer to a vector of at least three @c FPTYPEs in
+     *      which to store the particle position.
+     *
+     */
+    CAPI_FUNC(HRESULT) space_getpos(struct space *s, int id, FPTYPE *x);
+
+    /**
+     * @brief Set the absolute position of a particle. 
+     * 
+     * @param s The #space in which the particle resides.
+     * @param id The local id of the #part.
+     * @param x A pointer to a vector of at least three @c FPTYPEs in
+     *      which to store the particle position.
+     */
+    CAPI_FUNC(HRESULT) space_setpos(struct space *s, int id, FPTYPE *x);
+
+    /**
+     * @brief Clear all particles from this #space.
+     *
+     * @param s The #space to flush.
+     */
+    CAPI_FUNC(HRESULT) space_flush(struct space *s);
+
+    /**
+     * @brief Clear all particles from the ghost cells in this #space.
+     *
+     * @param s The #space to flush.
+     */
+    CAPI_FUNC(HRESULT) space_flush_ghosts(struct space *s);
+
+    /**
+     * @brief Add a task to the given space.
+     *
+     * @param s The #space.
+     * @param type The task type.
+     * @param subtype The task subtype.
+     * @param flags The task flags.
+     * @param i Index of the first cell/domain.
+     * @param j Index of the second cell/domain.
+     *
+     * @return A pointer to the newly added #task or @c NULL if anything went wrong.
+     */
     CAPI_FUNC(struct task*) space_addtask(
         struct space *s, 
         int type,
@@ -358,12 +443,65 @@ namespace TissueForge {
         int j
     );
 
+    /**
+     * @brief Initialize the Verlet-list data structures.
+     *
+     * @param s The #space.
+     */
+    CAPI_FUNC(HRESULT) space_verlet_init(struct space *s, int list_global);
 
-    CAPI_FUNC(int) space_verlet_init(struct space *s, int list_global);
+    /**
+     * @brief Get the next free #celltuple from the space.
+     *
+     * @param s The #space in which to look for tuples.
+     * @param out A pointer to a #celltuple in which to copy the result.
+     * @param wait A boolean value specifying if to wait for free tuples
+     *      or not.
+     *
+     * @return The number of #celltuple found or 0 if the list is empty and
+     *      < 0 on error.
+     */
     CAPI_FUNC(int) space_gettuple(struct space *s, struct celltuple **out, int wait);
+
+    /**
+     * @brief Get the next unprocessed cell from the spaece.
+     *
+     * @param s The #space.
+     * @param out Pointer to a pointer to #cell in which to store the results.
+     *
+     * @return @c 1 if a cell was found, 0 if the list is empty
+     *      or < 0 on error.
+     */
     CAPI_FUNC(int) space_getcell(struct space *s, struct space_cell **out);
+
+    /**
+     * @brief Collect forces and potential energies
+     *
+     * @param s The #space.
+     * @param maxcount The maximum number of entries.
+     * @param from Pointer to an integer which will contain the index to the
+     *        first entry on success.
+     * @param to Pointer to an integer which will contain the index to the
+     *        last entry on success.
+     *
+     * @return The number of entries returned or < 0 on error.
+     */
     CAPI_FUNC(int) space_verlet_force(struct space *s, FPTYPE *f, FPTYPE epot);
-    CAPI_FUNC(int) space_releasepair(struct space *s, int ci, int cj);
+
+    /**
+     * @brief Free the cells involved in the current pair.
+     *
+     * @param s The #space to operate on.
+     * @param ci ID of the first cell.
+     * @param cj ID of the second cell.
+     *
+     * Decreases the taboo-counter of the cells involved in the pair
+     * and signals any #runner that might be waiting.
+     * Note that only a single waiting #runner is released per released cell
+     * and therefore, if two different cells become free, the condition
+     * @c cellpairs_avail is signaled twice.
+     */
+    CAPI_FUNC(HRESULT) space_releasepair(struct space *s, int ci, int cj);
 
 };
 

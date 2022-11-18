@@ -155,7 +155,7 @@ elif cluster_constituent_clone.id == cluster_constituent.id:
     raise ValueError
 
 # test particle list
-validate(b.items(), ['radius_of_gyration', 'nr_parts'])
+validate(b.parts, ['radius_of_gyration', 'nr_parts'])
 
 # test particle type list
 validate(B.types, ['radius_of_gyration', 'nr_parts'])

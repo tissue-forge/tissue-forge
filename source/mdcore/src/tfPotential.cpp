@@ -54,16 +54,6 @@ using namespace TissueForge;
 /** Macro to easily define vector types. */
 #define simd_vector(elcount, type)  __attribute__((vector_size((elcount)*sizeof(type)))) type
 
-#define potential_init_stderr(err) 								\
-	{ 															\
-		std::string _err_msg = "error creating potential: ";	\
-		_err_msg += std::string(potential_err_msg[-err]);		\
-		tf_error(E_FAIL, _err_msg.c_str()); 					\
-	}
-
-/** The last error */
-int TissueForge::potential_err = potential_err_ok;
-
 FPTYPE c_null[] = { FPTYPE_ZERO, FPTYPE_ZERO, FPTYPE_ZERO, FPTYPE_ZERO, FPTYPE_ZERO, FPTYPE_ZERO, FPTYPE_ZERO, FPTYPE_ZERO };
 
 TissueForge::Potential::Potential() : 
@@ -91,35 +81,17 @@ TissueForge::Potential::Potential() :
 /** The null potential */
 Potential TissueForge::potential_null;
 
-/* the error macro. */
-#define error(id)(potential_err = errs_register(id, potential_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
 
-/* list of error messages. */
-const char *potential_err_msg[] = {
-		"Nothing bad happened.",
-		"An unexpected NULL pointer was encountered.",
-		"A call to malloc failed, probably due to insufficient memory.",
-		"The requested value was out of bounds.",
-		"Not yet implemented.",
-		"Maximum number of intervals reached before tolerance satisfied."
-};
+/* the error macro. */
+#define error(id)( tf_error(E_FAIL, errs_err_msg[id]) )
 
 static Potential *potential_checkerr(Potential *p) {
-    if(p == NULL) {
-        std::string err = errs_getstring(0);
-        throw std::runtime_error(err);
-    }
+    if(p == NULL) 
+		error(MDCERR_null);
     return p;
 }
 
-/**
- * @brief Switching function.
- *
- * @param r The radius.
- * @param A The start of the switching region.
- * @param B The end of the switching region.
- */
-FPTYPE TissueForge::potential_switch(FPTYPE r, FPTYPE A, FPTYPE B) {
+FPTYPE potential_switch(FPTYPE r, FPTYPE A, FPTYPE B) {
 
 	if(r < A)
 		return 1.0;
@@ -136,7 +108,7 @@ FPTYPE TissueForge::potential_switch(FPTYPE r, FPTYPE A, FPTYPE B) {
 
 }
 
-FPTYPE TissueForge::potential_switch_p(FPTYPE r, FPTYPE A, FPTYPE B) {
+FPTYPE potential_switch_p(FPTYPE r, FPTYPE A, FPTYPE B) {
 
 	if(A < r && r < B) {
 
@@ -217,7 +189,7 @@ static Potential* create_periodic_potential(Potential* (*potCtor)(FPTYPE, FPTYPE
  * @return The potential @f$ \left(\frac{A}{r^{12}} - \frac{B}{r^6} \right) @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_LJ126(FPTYPE r, FPTYPE A, FPTYPE B) {
+FPTYPE potential_LJ126(FPTYPE r, FPTYPE A, FPTYPE B) {
 
 	FPTYPE ir = 1.0/r, ir2 = ir * ir, ir6 = ir2*ir2*ir2, ir12 = ir6 * ir6;
 
@@ -236,7 +208,7 @@ FPTYPE TissueForge::potential_LJ126(FPTYPE r, FPTYPE A, FPTYPE B) {
  *      @f$ \left(\frac{A}{r^{12}} - \frac{B}{r^6} \right) @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_LJ126_p(FPTYPE r, FPTYPE A, FPTYPE B) {
+FPTYPE potential_LJ126_p(FPTYPE r, FPTYPE A, FPTYPE B) {
 
 	FPTYPE ir = 1.0/r, ir2 = ir*ir, ir4 = ir2*ir2, ir12 = ir4*ir4*ir4;
 
@@ -255,7 +227,7 @@ FPTYPE TissueForge::potential_LJ126_p(FPTYPE r, FPTYPE A, FPTYPE B) {
  *      @f$ \left(\frac{A}{r^{12}} - \frac{B}{r^6} \right) @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_LJ126_6p(FPTYPE r, FPTYPE A, FPTYPE B) {
+FPTYPE potential_LJ126_6p(FPTYPE r, FPTYPE A, FPTYPE B) {
 
 	FPTYPE r2 = r * r, ir2 = 1.0 / r2, ir6 = ir2*ir2*ir2, ir12 = ir6 * ir6;
 
@@ -271,7 +243,7 @@ FPTYPE TissueForge::potential_LJ126_6p(FPTYPE r, FPTYPE A, FPTYPE B) {
  * @return The potential @f$ \frac{1}{4\pi r} @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_Coulomb(FPTYPE r) {
+FPTYPE potential_Coulomb(FPTYPE r) {
 
 	return potential_escale / r;
 
@@ -285,7 +257,7 @@ FPTYPE TissueForge::potential_Coulomb(FPTYPE r) {
  * @return The first derivative of the potential @f$ \frac{1}{4\pi r} @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_Coulomb_p(FPTYPE r) {
+FPTYPE potential_Coulomb_p(FPTYPE r) {
 
 	return -potential_escale / (r*r);
 
@@ -299,7 +271,7 @@ FPTYPE TissueForge::potential_Coulomb_p(FPTYPE r) {
  * @return The sixth derivative of the potential @f$ \frac{1}{4\pi r} @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_Coulomb_6p(FPTYPE r) {
+FPTYPE potential_Coulomb_6p(FPTYPE r) {
 
 	FPTYPE r2 = r*r, r4 = r2*r2, r7 = r*r2*r4;
 
@@ -317,7 +289,7 @@ FPTYPE TissueForge::potential_Coulomb_6p(FPTYPE r) {
  * @return The potential @f$ \frac{\mbox{erfc}(\kappa r)}{r} @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_Ewald(FPTYPE r, FPTYPE kappa) {
+FPTYPE potential_Ewald(FPTYPE r, FPTYPE kappa) {
 
 	return potential_escale * erfc(kappa * r) / r;
 
@@ -332,7 +304,7 @@ FPTYPE TissueForge::potential_Ewald(FPTYPE r, FPTYPE kappa) {
  * @return The first derivative of the potential @f$ \frac{\mbox{erfc}(\kappa r)}{r} @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_Ewald_p(FPTYPE r, FPTYPE kappa) {
+FPTYPE potential_Ewald_p(FPTYPE r, FPTYPE kappa) {
 
 	FPTYPE r2 = r*r, ir = 1.0 / r, ir2 = ir*ir;
 	const FPTYPE isqrtpi = 0.56418958354775628695;
@@ -351,7 +323,7 @@ FPTYPE TissueForge::potential_Ewald_p(FPTYPE r, FPTYPE kappa) {
  * @return The sixth derivative of the potential @f$ \frac{\mbox{erfc}(\kappa r)}{r} @f$
  *      evaluated at @c r.
  */
-FPTYPE TissueForge::potential_Ewald_6p(FPTYPE r, FPTYPE kappa) {
+FPTYPE potential_Ewald_6p(FPTYPE r, FPTYPE kappa) {
 
 	FPTYPE r2 = r*r, ir2 = 1.0 / r2, r4 = r2*r2, ir4 = ir2*ir2, ir6 = ir2*ir4;
 	FPTYPE kappa2 = kappa*kappa;
@@ -395,12 +367,13 @@ FPTYPE potential_create_harmonic_d6fdr6(FPTYPE r) {
  *      @f$ K(r-r_0)^2 @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_harmonic(FPTYPE a, FPTYPE b, FPTYPE K, FPTYPE r0, FPTYPE tol) {
+struct Potential *potential_create_harmonic(FPTYPE a, FPTYPE b, FPTYPE K, FPTYPE r0, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 
     p->flags = POTENTIAL_HARMONIC & POTENTIAL_R2 ;
     p->name = "Harmonic";
+	p->r0_plusone = r0 + 1;
 
 	/* fill this potential */
 	potential_create_harmonic_K = K;
@@ -414,9 +387,9 @@ struct Potential *TissueForge::potential_create_harmonic(FPTYPE a, FPTYPE b, FPT
 			&potential_create_harmonic_dfdr,
 			&potential_create_harmonic_d6fdr6,
 			a, b, tol
-		)) < 0) {
+		)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -456,7 +429,7 @@ FPTYPE potential_create_linear_d6fdr6(FPTYPE r) {
  *      @f$ K(r-r_0)^2 @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_linear (FPTYPE a, FPTYPE b,
+struct Potential *potential_create_linear (FPTYPE a, FPTYPE b,
                                              FPTYPE k,
                                              FPTYPE tol) {
     
@@ -470,9 +443,9 @@ struct Potential *TissueForge::potential_create_linear (FPTYPE a, FPTYPE b,
 
 	int err = 0;
 
-    if((err = potential_init(p, &potential_create_linear_f, NULL, &potential_create_linear_d6fdr6, a, b, tol)) < 0) {
+    if((err = potential_init(p, &potential_create_linear_f, NULL, &potential_create_linear_d6fdr6, a, b, tol)) != S_OK) {
         aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
         return NULL;
     }
     
@@ -541,7 +514,7 @@ FPTYPE potential_create_cosine_dihedral_d6fdr6(FPTYPE r) {
  *      @f$ K(1 + \cos(n\arccos(r)-delta) @f$ in @f$[-1,1]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_cosine_dihedral(FPTYPE K, int n, FPTYPE delta, FPTYPE tol) {
+struct Potential *potential_create_cosine_dihedral(FPTYPE K, int n, FPTYPE delta, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 	FPTYPE a = -1.0, b = 1.0;
@@ -562,9 +535,9 @@ struct Potential *TissueForge::potential_create_cosine_dihedral(FPTYPE K, int n,
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_cosine_dihedral_f, NULL, &potential_create_cosine_dihedral_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_cosine_dihedral_f, NULL, &potential_create_cosine_dihedral_d6fdr6, a, b, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -611,7 +584,7 @@ FPTYPE potential_create_harmonic_angle_d6fdr6(FPTYPE r) {
  *      @f$ K(\arccos(r)-r_0)^2 @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_harmonic_angle(FPTYPE a, FPTYPE b, FPTYPE K, FPTYPE theta0, FPTYPE tol) {
+struct Potential *potential_create_harmonic_angle(FPTYPE a, FPTYPE b, FPTYPE K, FPTYPE theta0, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 	FPTYPE left, right;
@@ -639,9 +612,9 @@ struct Potential *TissueForge::potential_create_harmonic_angle(FPTYPE a, FPTYPE 
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_harmonic_angle_f, NULL, &potential_create_harmonic_angle_d6fdr6, left, right, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_harmonic_angle_f, NULL, &potential_create_harmonic_angle_d6fdr6, left, right, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -688,7 +661,7 @@ FPTYPE potential_create_harmonic_dihedral_d6fdr6(FPTYPE r) {
  *      @f$ K(\theta - \delta)^2 @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_harmonic_dihedral(FPTYPE a, FPTYPE b, FPTYPE K, FPTYPE delta, FPTYPE tol) {
+struct Potential *potential_create_harmonic_dihedral(FPTYPE a, FPTYPE b, FPTYPE K, FPTYPE delta, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 	FPTYPE left, right;
@@ -710,9 +683,9 @@ struct Potential *TissueForge::potential_create_harmonic_dihedral(FPTYPE a, FPTY
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_harmonic_dihedral_f, NULL, &potential_create_harmonic_dihedral_d6fdr6, left, right, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_harmonic_dihedral_f, NULL, &potential_create_harmonic_dihedral_d6fdr6, left, right, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -753,7 +726,7 @@ FPTYPE potential_create_Ewald_d6fdr6(FPTYPE r) {
  *      @f$ q\frac{\mbox{erfc}(\kappa r}{r} @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_Ewald(FPTYPE a, FPTYPE b, FPTYPE q, FPTYPE kappa, FPTYPE tol) {
+struct Potential *potential_create_Ewald(FPTYPE a, FPTYPE b, FPTYPE q, FPTYPE kappa, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 
@@ -766,9 +739,9 @@ struct Potential *TissueForge::potential_create_Ewald(FPTYPE a, FPTYPE b, FPTYPE
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_Ewald_f, &potential_create_Ewald_dfdr, &potential_create_Ewald_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_Ewald_f, &potential_create_Ewald_dfdr, &potential_create_Ewald_d6fdr6, a, b, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -832,7 +805,7 @@ FPTYPE potential_create_LJ126_Ewald_d6fdr6(FPTYPE r) {
  *      @f$ \left(\frac{A}{r^{12}} - \frac{B}{r^6} \right) @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_LJ126_Ewald(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE q, FPTYPE kappa, FPTYPE tol) {
+struct Potential *potential_create_LJ126_Ewald(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE q, FPTYPE kappa, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 
@@ -847,9 +820,9 @@ struct Potential *TissueForge::potential_create_LJ126_Ewald(FPTYPE a, FPTYPE b, 
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_LJ126_Ewald_f, &potential_create_LJ126_Ewald_dfdr, &potential_create_LJ126_Ewald_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_LJ126_Ewald_f, &potential_create_LJ126_Ewald_dfdr, &potential_create_LJ126_Ewald_d6fdr6, a, b, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -902,7 +875,7 @@ FPTYPE potential_create_LJ126_Ewald_switch_d6fdr6(FPTYPE r) {
  *      @f$ \left(\frac{A}{r^{12}} - \frac{B}{r^6} \right) @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_LJ126_Ewald_switch(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE q, FPTYPE kappa, FPTYPE s, FPTYPE tol) {
+struct Potential *potential_create_LJ126_Ewald_switch(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE q, FPTYPE kappa, FPTYPE s, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 
@@ -919,9 +892,17 @@ struct Potential *TissueForge::potential_create_LJ126_Ewald_switch(FPTYPE a, FPT
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_LJ126_Ewald_switch_f, &potential_create_LJ126_Ewald_switch_dfdr, &potential_create_LJ126_Ewald_switch_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(
+			p, 
+			&potential_create_LJ126_Ewald_switch_f, 
+			&potential_create_LJ126_Ewald_switch_dfdr, 
+			&potential_create_LJ126_Ewald_switch_d6fdr6, 
+			a, 
+			b, 
+			tol)) != S_OK) 
+	{
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -961,7 +942,7 @@ FPTYPE potential_create_Coulomb_d6fdr6(FPTYPE r) {
  *      @f$ \frac{1}{4\pi r} @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_Coulomb(FPTYPE a, FPTYPE b, FPTYPE q, FPTYPE tol) {
+struct Potential *potential_create_Coulomb(FPTYPE a, FPTYPE b, FPTYPE q, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 
@@ -974,9 +955,9 @@ struct Potential *TissueForge::potential_create_Coulomb(FPTYPE a, FPTYPE b, FPTY
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_Coulomb_f, &potential_create_Coulomb_dfdr, &potential_create_Coulomb_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_Coulomb_f, &potential_create_Coulomb_dfdr, &potential_create_Coulomb_d6fdr6, a, b, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -1037,7 +1018,7 @@ FPTYPE potential_create_LJ126_Coulomb_d6fdr6(FPTYPE r) {
  *      @f$ \left(\frac{A}{r^{12}} - \frac{B}{r^6} \right) @f$ in @f$[a,b]@f$
  *      or @c NULL on error (see #potential_err).
  */
-struct Potential *TissueForge::potential_create_LJ126_Coulomb(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE q, FPTYPE tol) {
+struct Potential *potential_create_LJ126_Coulomb(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE q, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 
@@ -1052,9 +1033,17 @@ struct Potential *TissueForge::potential_create_LJ126_Coulomb(FPTYPE a, FPTYPE b
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_LJ126_Coulomb_f, &potential_create_LJ126_Coulomb_dfdr, &potential_create_LJ126_Coulomb_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(
+			p, 
+			&potential_create_LJ126_Coulomb_f, 
+			&potential_create_LJ126_Coulomb_dfdr, 
+			&potential_create_LJ126_Coulomb_d6fdr6, 
+			a, 
+			b, 
+			tol)) != S_OK) 
+	{
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -1095,7 +1084,7 @@ FPTYPE potential_create_LJ126_d6fdr6(FPTYPE r) {
  *      or @c NULL on error (see #potential_err).
  *
  */
-struct Potential *TissueForge::potential_create_LJ126(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE tol) {
+struct Potential *potential_create_LJ126(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE tol) {
 
     Potential *p = new Potential();
 
@@ -1108,9 +1097,9 @@ struct Potential *TissueForge::potential_create_LJ126(FPTYPE a, FPTYPE b, FPTYPE
 
 	int err = 0 ;
 
-	if((err = potential_init(p, &potential_create_LJ126_f, &potential_create_LJ126_dfdr, &potential_create_LJ126_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_LJ126_f, &potential_create_LJ126_dfdr, &potential_create_LJ126_d6fdr6, a, b, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -1155,7 +1144,7 @@ FPTYPE potential_create_LJ126_switch_d6fdr6(FPTYPE r) {
  *      or @c NULL on error (see #potential_err).
  *
  */
-struct Potential *TissueForge::potential_create_LJ126_switch(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE s, FPTYPE tol) {
+struct Potential *potential_create_LJ126_switch(FPTYPE a, FPTYPE b, FPTYPE A, FPTYPE B, FPTYPE s, FPTYPE tol) {
 
 	struct Potential *p = new Potential();
 
@@ -1170,9 +1159,9 @@ struct Potential *TissueForge::potential_create_LJ126_switch(FPTYPE a, FPTYPE b,
 
 	int err = 0;
 
-	if((err = potential_init(p, &potential_create_LJ126_switch_f, &potential_create_LJ126_switch_dfdr, &potential_create_LJ126_switch_d6fdr6, a, b, tol)) < 0) {
+	if((err = potential_init(p, &potential_create_LJ126_switch_f, &potential_create_LJ126_switch_dfdr, &potential_create_LJ126_switch_d6fdr6, a, b, tol)) != S_OK) {
 		aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
 		return NULL;
 	}
 
@@ -1192,11 +1181,6 @@ FPTYPE Power(FPTYPE base, FPTYPE exp) {
 
 #define MLog(x) std::log(x)
 
-/**
- * @brief Free the memory associated with the given potential.
- * 
- * @param p Pointer to the #potential to clear.
- */
 void TissueForge::potential_clear(struct Potential *p) {
 
 	/* Do nothing? */
@@ -1288,6 +1272,7 @@ struct Potential *potential_create_overlapping_sphere(FPTYPE mu, FPTYPE k,
     FPTYPE a, FPTYPE b,FPTYPE tol) {
     
     struct Potential *p = new Potential();
+	p->r0_plusone = harmonic_r0 + 1;
     
     overlapping_sphere_mu = mu;
     overlapping_sphere_k = k;
@@ -1308,10 +1293,10 @@ struct Potential *potential_create_overlapping_sphere(FPTYPE mu, FPTYPE k,
     
     if((err = potential_init(p,&overlapping_sphere_f,
                              &overlapping_sphere_fp,
-                             &overlapping_sphere_f6p, a, b, tol)) < 0) {
+                             &overlapping_sphere_f6p, a, b, tol)) != S_OK) {
         
         aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
         return NULL;
     }
 	
@@ -1375,8 +1360,8 @@ struct Potential *potential_create_power(FPTYPE k, FPTYPE r0, FPTYPE alpha, FPTY
     power_alpha = alpha;
     
     p->flags =  POTENTIAL_R2;
-    
     p->name = "Power(|r - r0|)^alpha";
+	p->r0_plusone = r0 + 1;
     
     int err = 0;
     
@@ -1395,10 +1380,10 @@ struct Potential *potential_create_power(FPTYPE k, FPTYPE r0, FPTYPE alpha, FPTY
     
     if((err = potential_init(p,&power_f,
                              &power_fp,
-                             &power_f6p, fudged_a, 1.2 * b, tol)) < 0) {
+                             &power_f6p, fudged_a, 1.2 * b, tol)) != S_OK) {
         
         aligned_Free(p);
-		potential_init_stderr(err)
+		error(err);
         return NULL;
     }
     
@@ -1408,33 +1393,7 @@ struct Potential *potential_create_power(FPTYPE k, FPTYPE r0, FPTYPE alpha, FPTY
     return p;
 }
 
-
-
-
-/**
- * @brief Construct a #potential from the given function.
- *
- * @param p A pointer to an empty #potential.
- * @param f A pointer to the potential function to be interpolated.
- * @param fp A pointer to the first derivative of @c f.
- * @param f6p A pointer to the sixth derivative of @c f.
- * @param a The smallest radius for which the potential will be constructed.
- * @param b The largest radius for which the potential will be constructed.
- * @param tol The absolute tolerance to which the interpolation should match
- *      the exact potential.
- *
- * @return #potential_err_ok or <0 on error (see #potential_err).
- *
- * Computes an interpolated potential function from @c f in @c [a,b] to the
- * locally relative tolerance @c tol.
- *
- * The sixth derivative @c f6p is used to compute the optimal node
- * distribution. If @c f6p is @c NULL, the derivative is approximated
- * numerically.
- *
- * The zeroth interval contains a linear extension of @c f for values < a.
- */
-int TissueForge::potential_init (struct Potential *p,
+HRESULT TissueForge::potential_init (struct Potential *p,
                     FPTYPE (*f)(FPTYPE),
                     FPTYPE (*fp)(FPTYPE),
                     FPTYPE (*f6p)(FPTYPE),
@@ -1453,13 +1412,13 @@ int TissueForge::potential_init (struct Potential *p,
 	/* check inputs */
 	if(p == NULL || f == NULL) { 
 		TF_Log(LOG_CRITICAL);
-		return error(potential_err_null);
+		return error(MDCERR_null);
 	}
 
 	/* check if we have a user-specified 6th derivative or not. */
 	if(f6p == NULL) {
 		TF_Log(LOG_CRITICAL);
-		return error(potential_err_nyi);
+		return error(MDCERR_nyi);
 	}
     
     /* set the boundaries */
@@ -1492,7 +1451,7 @@ int TissueForge::potential_init (struct Potential *p,
 	c_l = (FPTYPE *)aligned_Malloc(sizeof(FPTYPE) * (l+1) * potential_chunk, potential_align);
 	if (xi_l == NULL || c_l == NULL) {
 		TF_Log(LOG_CRITICAL);
-		return error(potential_err_malloc);
+		return error(MDCERR_malloc);
     }
 	xi_l[0] = a; xi_l[l] = b;
 	for(i = 1 ; i < l ; i++) {
@@ -1504,9 +1463,9 @@ int TissueForge::potential_init (struct Potential *p,
 				break;
 		}
 	}
-	if(potential_getcoeffs(f,fp,xi_l,l,&c_l[potential_chunk],&err_l) < 0) { 
+	if(potential_getcoeffs(f,fp,xi_l,l,&c_l[potential_chunk],&err_l) != S_OK) { 
 		TF_Log(LOG_CRITICAL);
-		return error(potential_err);
+		return error(MDCERR_potential);
 	}
 
 	/* if this interpolation is good enough, stop here! */
@@ -1542,7 +1501,7 @@ int TissueForge::potential_init (struct Potential *p,
 		aligned_Free(xi_l);
         
         assert(int(FPTYPE_FMAX(FPTYPE_ZERO, p->alpha[0] + p->b * (p->alpha[1] + p->b * p->alpha[2]))) < p->n + 1);
-		return potential_err_ok;
+		return S_OK;
 	}
 
 	/* loop until we have an upper bound on the right... */
@@ -1554,7 +1513,7 @@ int TissueForge::potential_init (struct Potential *p,
 		c_r =  (FPTYPE*)aligned_Malloc(sizeof(FPTYPE) * (r + 1) * potential_chunk, potential_align);
         if(xi_r == NULL || c_r == NULL) {
 			TF_Log(LOG_CRITICAL);
-			return error(potential_err_malloc);
+			return error(MDCERR_malloc);
         }
 		xi_r[0] = a; xi_r[r] = b;
 		for(i = 1 ; i < r ; i++) {
@@ -1566,9 +1525,9 @@ int TissueForge::potential_init (struct Potential *p,
 					break;
 			}
 		}
-        if(potential_getcoeffs(f,fp,xi_r,r,&c_r[potential_chunk],&err_r) < 0) {
+        if(potential_getcoeffs(f,fp,xi_r,r,&c_r[potential_chunk],&err_r) != S_OK) {
 			TF_Log(LOG_CRITICAL) << "Error in potential_getcoeffs";
-			return error(potential_err);
+			return error(MDCERR_potential);
         }
 
 		/* if this is better than tolerance, break... */
@@ -1579,7 +1538,7 @@ int TissueForge::potential_init (struct Potential *p,
 		/* Have we too many intervals? */
 		else if(2*r > potential_ivalsmax) {
 			TF_Log(LOG_CRITICAL) << "Too many intervals (" << err_r << ")";
-			return error(potential_err_ivalsmax);
+			return error(MDCERR_ivalsmax);
 		}
 
 		/* otherwise, l=r and r = 2*r */
@@ -1605,7 +1564,7 @@ int TissueForge::potential_init (struct Potential *p,
 
         if(xi_m == NULL || c_m == NULL) {
 			TF_Log(LOG_CRITICAL);
-			return error(potential_err_malloc);
+			return error(MDCERR_malloc);
         }
 		xi_m[0] = a; xi_m[m] = b;
 		for(i = 1 ; i < m ; i++) {
@@ -1617,9 +1576,9 @@ int TissueForge::potential_init (struct Potential *p,
 					break;
 			}
 		}
-		if(potential_getcoeffs(f,fp,xi_m,m,&c_m[potential_chunk],&err_m) != 0) {
+		if(potential_getcoeffs(f,fp,xi_m,m,&c_m[potential_chunk],&err_m) != S_OK) {
 			TF_Log(LOG_CRITICAL);
-			return error(potential_err);
+			return error(MDCERR_potential);
 		}
 
 		/* go left? */
@@ -1671,7 +1630,7 @@ int TissueForge::potential_init (struct Potential *p,
 
 	/* all is well that ends well... */
     
-	return potential_err_ok;
+	return S_OK;
 }
 
 
@@ -1711,7 +1670,7 @@ int potential_getfp(FPTYPE (*f)(FPTYPE), int n, FPTYPE *x, FPTYPE *fp) {
 	if(w == NULL) {
 		if((w = (FPTYPE *)malloc(sizeof(FPTYPE) * potential_N)) == NULL ||
 				(xi = (FPTYPE *)malloc(sizeof(FPTYPE) * potential_N)) == NULL)
-			return error(potential_err_malloc);
+			return error(MDCERR_malloc);
 		for(k = 1 ; k < potential_N-1 ; k++) {
 			xi[k] = cos(k * M_PI / (potential_N - 1));
 			w[k] = 1.0 / sqrt(1.0 - xi[k]*xi[k]);
@@ -1766,7 +1725,7 @@ int potential_getfp(FPTYPE (*f)(FPTYPE), int n, FPTYPE *x, FPTYPE *fp) {
 		fp[i] =(b[i] - d2[i]*fp[i+1]) / d1[i];
 
 	/* Fingers crossed... */
-	return potential_err_ok;
+	return S_OK;
 
 }
 
@@ -1794,7 +1753,7 @@ int potential_getfp_fixend(FPTYPE (*f)(FPTYPE), FPTYPE fpa, FPTYPE fpb, int n, F
 	if(w == NULL) {
 		if((w = (FPTYPE *)malloc(sizeof(FPTYPE) * potential_N)) == NULL ||
 				(xi = (FPTYPE *)malloc(sizeof(FPTYPE) * potential_N)) == NULL)
-			return error(potential_err_malloc);
+			return error(MDCERR_malloc);
 		for(k = 1 ; k < potential_N-1 ; k++) {
 			xi[k] = cos(k * M_PI / (potential_N - 1));
 			w[k] = 1.0 / sqrt(1.0 - xi[k]*xi[k]);
@@ -1849,7 +1808,7 @@ int potential_getfp_fixend(FPTYPE (*f)(FPTYPE), FPTYPE fpa, FPTYPE fpb, int n, F
 		fp[i] =(b[i] - d2[i]*fp[i+1]) / d1[i];
 
 	/* Fingers crossed... */
-	return potential_err_ok;
+	return S_OK;
 
 }
 
@@ -1868,8 +1827,6 @@ int potential_getfp_fixend(FPTYPE (*f)(FPTYPE), FPTYPE fpa, FPTYPE fpb, int n, F
  *      the interpolation error, relative to the maximum of f in each interval,
  *      is stored.
  *
- * @return #potential_err_ok or < 0 on error (see #potential_err).
- *
  * Compute the coefficients of the function @c f with derivative @c fp
  * over the @c n intervals between the @c xi and store an estimate of the
  * maximum locally relative interpolation error in @c err.
@@ -1877,7 +1834,7 @@ int potential_getfp_fixend(FPTYPE (*f)(FPTYPE), FPTYPE fpa, FPTYPE fpb, int n, F
  * The array to which @c c points must be large enough to hold at least
  * #potential_degree x @c n values of type #FPTYPE.
  */
-int TissueForge::potential_getcoeffs(FPTYPE (*f)(FPTYPE), FPTYPE (*fp)(FPTYPE), FPTYPE *xi, int n, FPTYPE *c, FPTYPE *err) {
+HRESULT TissueForge::potential_getcoeffs(FPTYPE (*f)(FPTYPE), FPTYPE (*fp)(FPTYPE), FPTYPE *xi, int n, FPTYPE *c, FPTYPE *err) {
 
 	// TODO, seriously buggy shit here!
 	// make sure all arrays are of length n+1
@@ -1889,12 +1846,12 @@ int TissueForge::potential_getcoeffs(FPTYPE (*f)(FPTYPE), FPTYPE (*fp)(FPTYPE), 
 
 	/* check input sanity */
 	if(f == NULL || xi == NULL || err == NULL)
-		return error(potential_err_null);
+		return error(MDCERR_null);
 
 	/* Do we need to init the pre-computed cosines? */
 	if(coskx == NULL) {
 		if((coskx = (FPTYPE *)malloc(sizeof(FPTYPE) * 7 * potential_N)) == NULL)
-			return error(potential_err_malloc);
+			return error(MDCERR_malloc);
 		for(k = 0 ; k < 7 ; k++)
 			for(j = 0 ; j < potential_N ; j++)
 				coskx[ k*potential_N + j ] = cos(j * k * M_PI / potential_N);
@@ -1908,12 +1865,12 @@ int TissueForge::potential_getcoeffs(FPTYPE (*f)(FPTYPE), FPTYPE (*fp)(FPTYPE), 
 
 	/* Compute the optimal fpx. */
 	if(fp == NULL) {
-		if(potential_getfp(f, n, xi, fpx) < 0)
-			return error(potential_err);
+		if(potential_getfp(f, n, xi, fpx) != S_OK)
+			return error(MDCERR_potential);
 	}
 	else {
-		if(potential_getfp_fixend(f, fp(xi[0]), fp(xi[n]), n, xi, fpx) < 0)
-			return error(potential_err);
+		if(potential_getfp_fixend(f, fp(xi[0]), fp(xi[n]), n, xi, fpx) != S_OK)
+			return error(MDCERR_potential);
 	}
 	/* for(k = 0 ; k <= n ; k++)
         printf("potential_getcoeffs: fp[%i]=%e, fpx[%i]=%e.\n", k, fp(xi[k]), k, fpx[k]);
@@ -1996,7 +1953,7 @@ int TissueForge::potential_getcoeffs(FPTYPE (*f)(FPTYPE), FPTYPE (*fp)(FPTYPE), 
 	}
 
 	/* all is well that ends well... */
-	return potential_err_ok;
+	return S_OK;
 
 }
 
@@ -2077,6 +2034,249 @@ FPTYPE TissueForge::potential_getalpha(FPTYPE (*f6p)(FPTYPE), FPTYPE a, FPTYPE b
 	/* return the average */
 	return (alpha[0] + alpha[3]) / 2;
 
+}
+
+
+static FPTYPE potential_create_well_k;
+static FPTYPE potential_create_well_r0;
+static FPTYPE potential_create_well_n;
+
+
+/* the potential functions */
+static FPTYPE potential_create_well_f(FPTYPE r) {
+    return potential_create_well_k/Power(-r + potential_create_well_r0,potential_create_well_n);
+}
+
+static FPTYPE potential_create_well_dfdr(FPTYPE r) {
+    return potential_create_well_k * potential_create_well_n *
+            Power(-r + potential_create_well_r0,-1 - potential_create_well_n);
+}
+
+static FPTYPE potential_create_well_d6fdr6(FPTYPE r) {
+    return -(potential_create_well_k*(-5 - potential_create_well_n)*
+            (-4 - potential_create_well_n)*(-3 - potential_create_well_n)*
+            (-2 - potential_create_well_n)*(-1 - potential_create_well_n)*
+            potential_create_well_n*
+            Power(-r + potential_create_well_r0,-6 - potential_create_well_n));
+}
+
+
+Potential *potential_create_well(FPTYPE k, FPTYPE n, FPTYPE r0, FPTYPE tol, FPTYPE min, FPTYPE max)
+{
+    Potential *p = new Potential();
+
+    p->flags =  POTENTIAL_R2  | POTENTIAL_LJ126 ;
+    p->name = "Well";
+	p->r0_plusone = r0 + 1;
+
+    /* fill this potential */
+    potential_create_well_k = k;
+    potential_create_well_r0 = r0;
+    potential_create_well_n = n;
+
+	int err = 0;
+
+    if ((err = potential_init(
+			p,
+            &potential_create_well_f,
+            &potential_create_well_dfdr,
+            &potential_create_well_d6fdr6,
+            min, max, tol
+		)) != S_OK) {
+        aligned_Free(p);
+		error(err);
+        return NULL;
+    }
+
+    /* return it */
+    return p;
+}
+
+
+static FPTYPE potential_create_glj_e;
+static FPTYPE potential_create_glj_m;
+static FPTYPE potential_create_glj_n;
+static FPTYPE potential_create_glj_r0;
+static FPTYPE potential_create_glj_k;
+
+/* the potential functions */
+static FPTYPE potential_create_glj_f(FPTYPE r) {
+    FPTYPE e = potential_create_glj_e;
+    FPTYPE n = potential_create_glj_n;
+    FPTYPE m = potential_create_glj_m;
+    FPTYPE r0 = potential_create_glj_r0;
+    FPTYPE k = potential_create_glj_k;
+    return k*Power(-r + r0,2) + (e*(-(n*Power(r0/r,m)) + m*Power(r0/r,n)))/(-m + n);
+}
+
+static FPTYPE potential_create_glj_dfdr(FPTYPE r) {
+    FPTYPE e = potential_create_glj_e;
+    FPTYPE n = potential_create_glj_n;
+    FPTYPE m = potential_create_glj_m;
+    FPTYPE r0 = potential_create_glj_r0;
+    FPTYPE k = potential_create_glj_k;
+    return 2*k*(-r + r0) + (e*((m*n*r0*Power(r0/r,-1 + m))/Power(r,2) - (m*n*r0*Power(r0/r,-1 + n))/Power(r,2)))/(-m + n);
+}
+
+static FPTYPE potential_create_glj_d6fdr6(FPTYPE r) {
+    FPTYPE e = potential_create_glj_e;
+    FPTYPE n = potential_create_glj_n;
+    FPTYPE m = potential_create_glj_m;
+    FPTYPE r0 = potential_create_glj_r0;
+
+    return (e*(-(n*(((-5 + m)*(-4 + m)*(-3 + m)*(-2 + m)*(-1 + m)*m*Power(r0,6)*Power(r0/r,-6 + m))/Power(r,12) +
+                    (30*(-4 + m)*(-3 + m)*(-2 + m)*(-1 + m)*m*Power(r0,5)*Power(r0/r,-5 + m))/Power(r,11) +
+                    (300*(-3 + m)*(-2 + m)*(-1 + m)*m*Power(r0,4)*Power(r0/r,-4 + m))/Power(r,10) +
+                    (1200*(-2 + m)*(-1 + m)*m*Power(r0,3)*Power(r0/r,-3 + m))/Power(r,9) +
+                    (1800*(-1 + m)*m*Power(r0,2)*Power(r0/r,-2 + m))/Power(r,8) + (720*m*r0*Power(r0/r,-1 + m))/Power(r,7))
+                 ) + m*(((-5 + n)*(-4 + n)*(-3 + n)*(-2 + n)*(-1 + n)*n*Power(r0,6)*Power(r0/r,-6 + n))/Power(r,12) +
+                        (30*(-4 + n)*(-3 + n)*(-2 + n)*(-1 + n)*n*Power(r0,5)*Power(r0/r,-5 + n))/Power(r,11) +
+                        (300*(-3 + n)*(-2 + n)*(-1 + n)*n*Power(r0,4)*Power(r0/r,-4 + n))/Power(r,10) +
+                        (1200*(-2 + n)*(-1 + n)*n*Power(r0,3)*Power(r0/r,-3 + n))/Power(r,9) +
+                        (1800*(-1 + n)*n*Power(r0,2)*Power(r0/r,-2 + n))/Power(r,8) + (720*n*r0*Power(r0/r,-1 + n))/Power(r,7))))
+    /(-m + n);
+}
+
+
+Potential *potential_create_glj(FPTYPE e, FPTYPE m, FPTYPE n, FPTYPE k,
+                                  FPTYPE r0, FPTYPE min, FPTYPE max,
+                                  FPTYPE tol, bool shifted)
+{
+    TF_Log(LOG_DEBUG) << "e: " << e << ", r0: " << r0 << ", m: " << m << ", n:"
+                   << n << ", k:" << k << ", min: " << min << ", max: " << max << ", tol: " << tol;
+    Potential *p = new Potential();
+    
+    p->flags =  POTENTIAL_R2  | POTENTIAL_LJ126;
+    p->name = "Generalized Lennard-Jones";
+	p->r0_plusone = r0 + 1;
+    
+    /* fill this potential */
+    potential_create_glj_e = e;
+    potential_create_glj_n = n;
+    potential_create_glj_m = m;
+    potential_create_glj_r0 = r0;
+    potential_create_glj_k = k;
+
+	int err = 0;
+    
+    if ((err = potential_init(
+			p,
+			&potential_create_glj_f,
+			&potential_create_glj_dfdr,
+			&potential_create_glj_d6fdr6,
+			min, max, tol
+		)) != S_OK) {
+        aligned_Free(p);
+		error(err);
+        return NULL;
+    }
+
+	if(shifted) {
+		potential_shift(p, r0);
+	} 
+	else {
+		potential_scale(p);
+	}
+    
+    /* return it */
+    return p;
+}
+
+static FPTYPE morse_d;
+static FPTYPE morse_a;
+static FPTYPE morse_r0;
+
+/* the potential functions */
+static FPTYPE potential_create_morse_f(FPTYPE r) {
+    
+    FPTYPE d = morse_d;
+    FPTYPE a = morse_a;
+	FPTYPE r0 = morse_r0;
+    
+    return d * (Power(M_E, 2 * a * (r0 - r)) - 2 * Power(M_E, a * (r0 - r)));
+}
+
+static FPTYPE potential_create_morse_dfdr(FPTYPE r) {
+    
+    FPTYPE d = morse_d;
+    FPTYPE a = morse_a;
+	FPTYPE r0 = morse_r0;
+    
+    return - 2 * a * d * (Power(M_E, 2 * a * (r0 - r)) - Power(M_E, a * (r0 - r)));
+}
+
+static FPTYPE potential_create_morse_d6fdr6(FPTYPE r) {
+    
+    FPTYPE d = morse_d;
+    FPTYPE a = morse_a;
+	FPTYPE r0 = morse_r0;
+    
+    return 2 * Power(a, 6) * d * (32 * Power(M_E, 2 * a * (r0 - r)) - Power(M_E, a * (r0 - r)));
+}
+
+
+
+static FPTYPE potential_create_morse_shifted_f(FPTYPE r) {
+    
+    FPTYPE d = morse_d;
+    FPTYPE a = morse_a;
+    
+    return d*(Power(M_E,-2*a*(-1 + r)) - 2/Power(M_E,a*(-1 + r)));
+}
+
+static FPTYPE potential_create_morse_shifted_dfdr(FPTYPE r) {
+    
+    FPTYPE d = morse_d;
+    FPTYPE a = morse_a;
+    
+    return d*((-2*a)/Power(M_E,2*a*(-1 + r)) + (2*a)/Power(M_E,a*(-1 + r)));
+}
+
+static FPTYPE potential_create_morse_shifted_d6fdr6(FPTYPE r) {
+    
+    FPTYPE d = morse_d;
+    FPTYPE a = morse_a;
+    
+    return d*((64*Power(a,6))/Power(M_E,2*a*(-1 + r)) - (2*Power(a,6))/Power(M_E,a*(-1 + r)));
+}
+
+
+
+
+Potential *potential_create_morse(FPTYPE d, FPTYPE a, FPTYPE r0,
+                                   FPTYPE min, FPTYPE max, FPTYPE tol, bool shifted)
+{
+    Potential *p = new Potential();
+    
+    p->flags =  POTENTIAL_R2;
+    p->name = "Morse";
+	p->r0_plusone = r0 + 1;
+    
+    /* fill this potential */
+    morse_d = d;
+    morse_a = a;
+	morse_r0 = r0;
+
+	int err = 0;
+
+	if(shifted) {
+		if((err = potential_init(p, &potential_create_morse_shifted_f, &potential_create_morse_shifted_dfdr, &potential_create_morse_shifted_d6fdr6, min + 1, max + 1, tol)) != S_OK) {
+			aligned_Free(p);
+			error(err);
+			return NULL;
+		}
+		potential_shift(p, r0);
+	} 
+	else {
+		if((err = potential_init(p, &potential_create_morse_f, &potential_create_morse_dfdr, &potential_create_morse_d6fdr6, min, max, tol)) != S_OK) {
+			aligned_Free(p);
+			error(err);
+			return NULL;
+		}
+	}
+
+    /* return it */
+    return p;
 }
 
 FPTYPE TissueForge::Potential::operator()(const FPTYPE &r, const FPTYPE &r0) {
@@ -2739,14 +2939,14 @@ Potential* TissueForge::Potential::coulombR(FPTYPE q, FPTYPE kappa, FPTYPE min, 
 
 	int err = 0;
 
-	if((err = potential_init(pc, &_coulombR_cos_f, &_coulombR_cos_fp, &_coulombR_cos_f6p, 0, 2*M_PI, 1e-4)) < 0) {
-		potential_init_stderr(err)
+	if((err = potential_init(pc, &_coulombR_cos_f, &_coulombR_cos_fp, &_coulombR_cos_f6p, 0, 2*M_PI, 1e-4)) != S_OK) {
+		error(err);
 		delete pc;
 		delete ps;
 		return 0;
 	}
-	else if((err = potential_init(ps, &_coulombR_sin_f, &_coulombR_sin_fp, &_coulombR_sin_f6p, 0, 2*M_PI, 1e-4)) < 0) {
-		potential_init_stderr(err)
+	else if((err = potential_init(ps, &_coulombR_sin_f, &_coulombR_sin_fp, &_coulombR_sin_f6p, 0, 2*M_PI, 1e-4)) != S_OK) {
+		error(err);
 		delete pc;
 		delete ps;
 		return 0;
@@ -2967,9 +3167,9 @@ Potential *TissueForge::Potential::custom(FPTYPE min, FPTYPE max, FPTYPE (*f)(FP
 
 		int err;
 
-		if ((err = potential_init(p, f, fp, f6p, min, max, potential_defarg(tol, 0.001)))) {
+		if ((err = potential_init(p, f, fp, f6p, min, max, potential_defarg(tol, 0.001))) != S_OK) {
 			aligned_Free(p);
-			potential_init_stderr(err)
+			error(err);
 
 			if (differencing) {
 				delete customDiff;
@@ -3044,245 +3244,6 @@ bool TissueForge::Potential::getRSquare() {
     return (bool)flags & POTENTIAL_R2;
 }
 
-static FPTYPE potential_create_well_k;
-static FPTYPE potential_create_well_r0;
-static FPTYPE potential_create_well_n;
-
-
-/* the potential functions */
-static FPTYPE potential_create_well_f(FPTYPE r) {
-    return potential_create_well_k/Power(-r + potential_create_well_r0,potential_create_well_n);
-}
-
-static FPTYPE potential_create_well_dfdr(FPTYPE r) {
-    return potential_create_well_k * potential_create_well_n *
-            Power(-r + potential_create_well_r0,-1 - potential_create_well_n);
-}
-
-static FPTYPE potential_create_well_d6fdr6(FPTYPE r) {
-    return -(potential_create_well_k*(-5 - potential_create_well_n)*
-            (-4 - potential_create_well_n)*(-3 - potential_create_well_n)*
-            (-2 - potential_create_well_n)*(-1 - potential_create_well_n)*
-            potential_create_well_n*
-            Power(-r + potential_create_well_r0,-6 - potential_create_well_n));
-}
-
-
-Potential *TissueForge::potential_create_well(FPTYPE k, FPTYPE n, FPTYPE r0, FPTYPE tol, FPTYPE min, FPTYPE max)
-{
-    Potential *p = new Potential();
-
-    p->flags =  POTENTIAL_R2  | POTENTIAL_LJ126 ;
-    p->name = "Well";
-
-    /* fill this potential */
-    potential_create_well_k = k;
-    potential_create_well_r0 = r0;
-    potential_create_well_n = n;
-
-	int err = 0;
-
-    if ((err = potential_init(
-			p,
-            &potential_create_well_f,
-            &potential_create_well_dfdr,
-            &potential_create_well_d6fdr6,
-            min, max, tol
-		)) < 0) {
-        aligned_Free(p);
-		potential_init_stderr(err)
-        return NULL;
-    }
-
-    /* return it */
-    return p;
-}
-
-
-static FPTYPE potential_create_glj_e;
-static FPTYPE potential_create_glj_m;
-static FPTYPE potential_create_glj_n;
-static FPTYPE potential_create_glj_r0;
-static FPTYPE potential_create_glj_k;
-
-/* the potential functions */
-static FPTYPE potential_create_glj_f(FPTYPE r) {
-    FPTYPE e = potential_create_glj_e;
-    FPTYPE n = potential_create_glj_n;
-    FPTYPE m = potential_create_glj_m;
-    FPTYPE r0 = potential_create_glj_r0;
-    FPTYPE k = potential_create_glj_k;
-    return k*Power(-r + r0,2) + (e*(-(n*Power(r0/r,m)) + m*Power(r0/r,n)))/(-m + n);
-}
-
-static FPTYPE potential_create_glj_dfdr(FPTYPE r) {
-    FPTYPE e = potential_create_glj_e;
-    FPTYPE n = potential_create_glj_n;
-    FPTYPE m = potential_create_glj_m;
-    FPTYPE r0 = potential_create_glj_r0;
-    FPTYPE k = potential_create_glj_k;
-    return 2*k*(-r + r0) + (e*((m*n*r0*Power(r0/r,-1 + m))/Power(r,2) - (m*n*r0*Power(r0/r,-1 + n))/Power(r,2)))/(-m + n);
-}
-
-static FPTYPE potential_create_glj_d6fdr6(FPTYPE r) {
-    FPTYPE e = potential_create_glj_e;
-    FPTYPE n = potential_create_glj_n;
-    FPTYPE m = potential_create_glj_m;
-    FPTYPE r0 = potential_create_glj_r0;
-
-    return (e*(-(n*(((-5 + m)*(-4 + m)*(-3 + m)*(-2 + m)*(-1 + m)*m*Power(r0,6)*Power(r0/r,-6 + m))/Power(r,12) +
-                    (30*(-4 + m)*(-3 + m)*(-2 + m)*(-1 + m)*m*Power(r0,5)*Power(r0/r,-5 + m))/Power(r,11) +
-                    (300*(-3 + m)*(-2 + m)*(-1 + m)*m*Power(r0,4)*Power(r0/r,-4 + m))/Power(r,10) +
-                    (1200*(-2 + m)*(-1 + m)*m*Power(r0,3)*Power(r0/r,-3 + m))/Power(r,9) +
-                    (1800*(-1 + m)*m*Power(r0,2)*Power(r0/r,-2 + m))/Power(r,8) + (720*m*r0*Power(r0/r,-1 + m))/Power(r,7))
-                 ) + m*(((-5 + n)*(-4 + n)*(-3 + n)*(-2 + n)*(-1 + n)*n*Power(r0,6)*Power(r0/r,-6 + n))/Power(r,12) +
-                        (30*(-4 + n)*(-3 + n)*(-2 + n)*(-1 + n)*n*Power(r0,5)*Power(r0/r,-5 + n))/Power(r,11) +
-                        (300*(-3 + n)*(-2 + n)*(-1 + n)*n*Power(r0,4)*Power(r0/r,-4 + n))/Power(r,10) +
-                        (1200*(-2 + n)*(-1 + n)*n*Power(r0,3)*Power(r0/r,-3 + n))/Power(r,9) +
-                        (1800*(-1 + n)*n*Power(r0,2)*Power(r0/r,-2 + n))/Power(r,8) + (720*n*r0*Power(r0/r,-1 + n))/Power(r,7))))
-    /(-m + n);
-}
-
-
-Potential *TissueForge::potential_create_glj(FPTYPE e, FPTYPE m, FPTYPE n, FPTYPE k,
-                                  FPTYPE r0, FPTYPE min, FPTYPE max,
-                                  FPTYPE tol, bool shifted)
-{
-    TF_Log(LOG_DEBUG) << "e: " << e << ", r0: " << r0 << ", m: " << m << ", n:"
-                   << n << ", k:" << k << ", min: " << min << ", max: " << max << ", tol: " << tol;
-    Potential *p = new Potential();
-    
-    p->flags =  POTENTIAL_R2  | POTENTIAL_LJ126;
-    p->name = "Generalized Lennard-Jones";
-    
-    /* fill this potential */
-    potential_create_glj_e = e;
-    potential_create_glj_n = n;
-    potential_create_glj_m = m;
-    potential_create_glj_r0 = r0;
-    potential_create_glj_k = k;
-
-	int err = 0;
-    
-    if ((err = potential_init(
-			p,
-			&potential_create_glj_f,
-			&potential_create_glj_dfdr,
-			&potential_create_glj_d6fdr6,
-			min, max, tol
-		)) < 0) {
-        aligned_Free(p);
-		potential_init_stderr(err)
-        return NULL;
-    }
-
-	if(shifted) {
-		potential_shift(p, r0);
-	} 
-	else {
-		potential_scale(p);
-	}
-    
-    /* return it */
-    return p;
-}
-
-static FPTYPE morse_d;
-static FPTYPE morse_a;
-static FPTYPE morse_r0;
-
-/* the potential functions */
-static FPTYPE potential_create_morse_f(FPTYPE r) {
-    
-    FPTYPE d = morse_d;
-    FPTYPE a = morse_a;
-	FPTYPE r0 = morse_r0;
-    
-    return d * (Power(M_E, 2 * a * (r0 - r)) - 2 * Power(M_E, a * (r0 - r)));
-}
-
-static FPTYPE potential_create_morse_dfdr(FPTYPE r) {
-    
-    FPTYPE d = morse_d;
-    FPTYPE a = morse_a;
-	FPTYPE r0 = morse_r0;
-    
-    return - 2 * a * d * (Power(M_E, 2 * a * (r0 - r)) - Power(M_E, a * (r0 - r)));
-}
-
-static FPTYPE potential_create_morse_d6fdr6(FPTYPE r) {
-    
-    FPTYPE d = morse_d;
-    FPTYPE a = morse_a;
-	FPTYPE r0 = morse_r0;
-    
-    return 2 * Power(a, 6) * d * (32 * Power(M_E, 2 * a * (r0 - r)) - Power(M_E, a * (r0 - r)));
-}
-
-
-
-static FPTYPE potential_create_morse_shifted_f(FPTYPE r) {
-    
-    FPTYPE d = morse_d;
-    FPTYPE a = morse_a;
-    
-    return d*(Power(M_E,-2*a*(-1 + r)) - 2/Power(M_E,a*(-1 + r)));
-}
-
-static FPTYPE potential_create_morse_shifted_dfdr(FPTYPE r) {
-    
-    FPTYPE d = morse_d;
-    FPTYPE a = morse_a;
-    
-    return d*((-2*a)/Power(M_E,2*a*(-1 + r)) + (2*a)/Power(M_E,a*(-1 + r)));
-}
-
-static FPTYPE potential_create_morse_shifted_d6fdr6(FPTYPE r) {
-    
-    FPTYPE d = morse_d;
-    FPTYPE a = morse_a;
-    
-    return d*((64*Power(a,6))/Power(M_E,2*a*(-1 + r)) - (2*Power(a,6))/Power(M_E,a*(-1 + r)));
-}
-
-
-
-
-Potential *TissueForge::potential_create_morse(FPTYPE d, FPTYPE a, FPTYPE r0,
-                                   FPTYPE min, FPTYPE max, FPTYPE tol, bool shifted)
-{
-    Potential *p = new Potential();
-    
-    p->flags =  POTENTIAL_R2;
-    p->name = "Morse";
-    
-    /* fill this potential */
-    morse_d = d;
-    morse_a = a;
-	morse_r0 = r0;
-
-	int err = 0;
-
-	if(shifted) {
-		if((err = potential_init(p, &potential_create_morse_shifted_f, &potential_create_morse_shifted_dfdr, &potential_create_morse_shifted_d6fdr6, min + 1, max + 1, tol)) < 0) {
-			aligned_Free(p);
-			potential_init_stderr(err)
-			return NULL;
-		}
-		potential_shift(p, r0);
-	} 
-	else {
-		if((err = potential_init(p, &potential_create_morse_f, &potential_create_morse_dfdr, &potential_create_morse_d6fdr6, min, max, tol)) < 0) {
-			aligned_Free(p);
-			potential_init_stderr(err)
-			return NULL;
-		}
-	}
-
-    /* return it */
-    return p;
-}
-
 
 namespace TissueForge::io {
 
@@ -3290,14 +3251,14 @@ namespace TissueForge::io {
 	#define TF_POTENTIALIOTOEASY(fe, key, member) \
 		fe = new IOElement(); \
 		if(toFile(member, metaData, fe) != S_OK)  \
-			return E_FAIL; \
+			return error(MDCERR_io); \
 		fe->parent = fileElement; \
 		fileElement->children[key] = fe;
 
 	#define TF_POTENTIALIOFROMEASY(feItr, children, metaData, key, member_p) \
 		feItr = children.find(key); \
 		if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-			return E_FAIL;
+			return error(MDCERR_io);
 
 	HRESULT toFile(CoulombRPotential *dataElement, const MetaData &metaData, IOElement *fileElement) {
 
@@ -3406,7 +3367,7 @@ namespace TissueForge::io {
 		if(kind == POTENTIAL_KIND_DPD) {
 			DPDPotential *dpdp = NULL;
 			if(fromFile(fileElement, metaData, &dpdp) != S_OK) 
-				return E_FAIL;
+				return error(MDCERR_io);
 			*dataElement = dpdp;
 			return S_OK;
 		}
@@ -3414,7 +3375,7 @@ namespace TissueForge::io {
 			if(flags | POTENTIAL_COULOMBR) {
 				CoulombRPotential *pcr = NULL;
 				if(fromFile(fileElement, metaData, &pcr) != S_OK) 
-					return E_FAIL;
+					return error(MDCERR_io);
 				*dataElement = pcr;
 				return S_OK;
 			}

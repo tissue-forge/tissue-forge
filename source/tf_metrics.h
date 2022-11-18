@@ -131,9 +131,9 @@ namespace TissueForge::metrics {
     /**
      * Creates an array of ParticleList objects.
      */
-    std::vector<std::vector<std::vector<ParticleList*> > > particleGrid(const iVector3 &shape);
+    std::vector<std::vector<std::vector<ParticleList> > > particleGrid(const iVector3 &shape);
 
-    CAPI_FUNC(HRESULT) particleGrid(const iVector3 &shape, ParticleList **result);
+    CAPI_FUNC(HRESULT) particleGrid(const iVector3 &shape, ParticleList *result);
 
 };
 

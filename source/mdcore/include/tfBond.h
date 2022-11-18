@@ -28,11 +28,7 @@
 #define _MDCORE_INCLUDE_TFBOND_H_
 
 #include <mdcore_config.h>
-
-/* bond error codes */
-#define bond_err_ok                    0
-#define bond_err_null                  -1
-#define bond_err_malloc                -2
+#include <tfParticleList.h>
 
 
 namespace TissueForge {
@@ -41,10 +37,6 @@ namespace TissueForge {
     namespace rendering {
         struct Style;
     }
-
-
-    /** ID of the last error */
-    CAPI_DATA(int) bond_err;
 
 
     typedef enum BondFlags {
@@ -77,7 +69,7 @@ namespace TissueForge {
 
         uint32_t flags;
 
-        /* ids of particles involved */
+        /* id of particles involved */
         int32_t i, j;
         
         uint32_t id;
@@ -101,8 +93,6 @@ namespace TissueForge {
 
         /**
          * @brief Get the default style
-         * 
-         * @return rendering::Style* 
          */
         static rendering::Style *styleDef();
 
@@ -129,8 +119,6 @@ namespace TissueForge {
 
         /**
          * @brief Get a JSON string representation
-         * 
-         * @return std::string 
          */
         std::string toString();
 
@@ -140,7 +128,6 @@ namespace TissueForge {
          * The returned bond is not automatically registered with the engine. 
          * 
          * @param str 
-         * @return Bond* 
          */
         static Bond *fromString(const std::string &str);
 
@@ -160,7 +147,7 @@ namespace TissueForge {
         /**
          * @brief Gets the underlying bond
          * 
-         * @return Bond* 
+         * @return bond, if available
          */
         TissueForge::Bond *get();
 
@@ -210,9 +197,8 @@ namespace TissueForge {
          * @param half_life bond half life
          * @param bond_energy bond energy
          * @param flags bond flags
-         * @return int 
          */
-        int init(
+        HRESULT init(
             TissueForge::Potential *pot, 
             TissueForge::ParticleHandle *p1, 
             TissueForge::ParticleHandle *p2, 
@@ -223,10 +209,8 @@ namespace TissueForge {
         
         /**
          * @brief Get a summary string of the bond
-         * 
-         * @return std::string 
          */
-        std::string str();
+        std::string str() const;
 
         /**
          * @brief Check the validity of the handle
@@ -248,11 +232,11 @@ namespace TissueForge {
          * @param half_life bond half life
          * @param bond_energy bond energy
          * @param flags bond flags
-         * @return std::vector<BondHandle*>* 
+         * @return created bonds
          */
-        static std::vector<BondHandle*>* pairwise(
+        static std::vector<BondHandle> pairwise(
             TissueForge::Potential* pot,
-            TissueForge::ParticleList *parts,
+            TissueForge::ParticleList &parts,
             const FPTYPE &cutoff,
             std::vector<std::pair<TissueForge::ParticleType*, TissueForge::ParticleType*>* > *ppairs,
             const FPTYPE &half_life,
@@ -264,18 +248,13 @@ namespace TissueForge {
          * @brief Destroy the bond. 
          * 
          * Automatically updates when running on a CUDA device. 
-         * 
-         * @return HRESULT 
          */
         HRESULT destroy();
-        static std::vector<BondHandle*> bonds();
 
         /**
          * @brief Gets all bonds in the universe
-         * 
-         * @return std::vector<BondHandle*> 
          */
-        static std::vector<BondHandle*> items();
+        static std::vector<BondHandle> items();
 
         /**
          * @brief Tests whether this bond decays
@@ -285,23 +264,58 @@ namespace TissueForge {
         bool decays();
 
         TissueForge::ParticleHandle *operator[](unsigned int index);
+
+        /** Test whether the bond has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the bond has a particle */
+        bool has(ParticleHandle *part);
+
+        /** Get the current length */
+        FloatP_t getLength();
         
+        /** Get the energy */
         FPTYPE getEnergy();
+
+        /** Get the particle ids */
         std::vector<int32_t> getParts();
+
+        /** Get the particle list */
+        ParticleList getPartList();
+
+        /** Get the potential */
         TissueForge::Potential *getPotential();
+
+        /** Get the id */
         uint32_t getId();
+
+        /** Get the dissociation energy */
         FPTYPE getDissociationEnergy();
+
+        /** Set the dissociation energy */
         void setDissociationEnergy(const FPTYPE &dissociation_energy);
+
+        /** Get the half life */
         FPTYPE getHalfLife();
+
+        /** Set the half life */
         void setHalfLife(const FPTYPE &half_life);
+
+        /** Test whether the underlying bond is active */
         bool getActive();
+
+        /** Get the style */
         rendering::Style *getStyle();
+
+        /** Set the style */
         void setStyle(rendering::Style *style);
+
+        /** Get the age */
         FPTYPE getAge();
 
     private:
 
-        int _init(
+        HRESULT _init(
             uint32_t flags, 
             int32_t i, 
             int32_t j, 
@@ -311,7 +325,7 @@ namespace TissueForge {
         );
     };
 
-    bool contains_bond(const std::vector<BondHandle*> &bonds, int a, int b);
+    bool contains_bond(const std::vector<BondHandle> &bonds, int a, int b);
 
     /**
      * deletes, marks a bond ready for deleteion, removes the potential,
@@ -326,16 +340,36 @@ namespace TissueForge {
      * @brief Deletes all bonds in the universe. 
      * 
      * Automatically updates when running on a CUDA device. 
-     * 
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Bond_DestroyAll();
 
     HRESULT Bond_Energy (Bond *b, FPTYPE *epot_out);
 
     /* associated functions */
-    CAPI_FUNC(int) bond_eval (Bond *b, int N, struct engine *e, FPTYPE *epot_out);
-    CAPI_FUNC(int) bond_evalf (Bond *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of bonded interactions
+     *
+     * @param b Pointer to an array of #bond.
+     * @param N Nr of bonds in @c b.
+     * @param e Pointer to the #engine in which these bonds are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     */
+    CAPI_FUNC(HRESULT) bond_eval (Bond *b, int N, struct engine *e, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of bonded interactions
+     *
+     * @param bonds Pointer to an array of #bond.
+     * @param N Nr of bonds in @c b.
+     * @param e Pointer to the #engine in which these bonds are evaluated.
+     * @param forces An array of @c FPTYPE in which to aggregate the resulting forces.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     * 
+     * This function differs from #bond_eval in that the forces are added to
+     * the array @c f instead of directly in the particle data.
+     */
+    CAPI_FUNC(HRESULT) bond_evalf (Bond *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
 
 
     /**
@@ -344,14 +378,28 @@ namespace TissueForge {
     std::vector<int32_t> Bond_IdsForParticle(int32_t pid);
 
     int insert_bond(
-        std::vector<BondHandle*> &bonds, 
+        std::vector<BondHandle> &bonds, 
         int a, 
         int b,
         Potential *pot, 
         ParticleList *parts
     );
 
+    inline bool operator< (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::BondHandle& lhs, const TissueForge::BondHandle& rhs) { return !(lhs == rhs); }
+
 
 };
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::BondHandle &h)
+{
+    os << h.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFBOND_H_

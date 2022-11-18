@@ -66,7 +66,7 @@ int main(int argc, char const *argv[])
     // list of particles. The bind_pairwise method
     // searches for all possible pairs within a cutoff
     // distance and connects them with a bond.
-    TF_TEST_CHECK(bind::bonds(pot, &beads, 1));
+    TF_TEST_CHECK(bind::bonds(pot, beads, 1));
 
     // run the simulator
     TF_TEST_CHECK(step(Universe::getDt() * 100));

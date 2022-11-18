@@ -333,6 +333,12 @@ namespace TissueForge {
          */
         static HRESULT makeCUDAConfigCurrent(cuda::SimulatorConfig *config);
         #endif
+
+        /** Set whether errors result in exceptions */
+        static HRESULT throwExceptions(const bool &_throw);
+
+        /** Check whether errors result in exceptions */
+        static bool throwingExceptions();
         
         // list of windows.
         std::vector<rendering::GlfwWindow*> windows;
@@ -493,6 +499,14 @@ namespace TissueForge {
             else _seed = new unsigned int(seed);
         }
 
+        bool throwingExceptions() const {
+            return _throwingExceptions;
+        }
+
+        void setThrowingExceptions(const bool &throwingExceptions) {
+            _throwingExceptions = throwingExceptions;
+        }
+
         /** Universe configuration */
         UniverseConfig universeConfig;
 
@@ -516,6 +530,7 @@ namespace TissueForge {
         FVector2 _dpiScaling;
         bool _windowless;
         unsigned int *_seed = NULL;
+        bool _throwingExceptions = false;
     };
 
     /**
@@ -721,7 +736,7 @@ namespace TissueForge {
 
     HRESULT initSimConfigFromFile(const std::string &loadFilePath, Simulator::Config &conf);
 
-    CAPI_FUNC(int) universe_init(const UniverseConfig &conf);
+    CAPI_FUNC(HRESULT) universe_init(const UniverseConfig &conf);
 
     CAPI_FUNC(HRESULT) modules_init();
 

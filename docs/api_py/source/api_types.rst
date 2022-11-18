@@ -31,6 +31,10 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
 
     .. automethod:: dot
 
+    .. automethod:: cross
+
+    .. automethod:: angle
+
     .. automethod:: __len__
 
     .. automethod:: __iadd__
@@ -89,6 +93,10 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
 
     .. automethod:: dot
 
+    .. automethod:: cross
+
+    .. automethod:: angle
+
     .. automethod:: __len__
 
     .. automethod:: __iadd__
@@ -146,6 +154,10 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
     .. automethod:: flipped
 
     .. automethod:: dot
+
+    .. automethod:: cross
+
+    .. automethod:: angle
 
     .. automethod:: __len__
 
@@ -206,6 +218,10 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
     .. automethod:: flipped
 
     .. automethod:: dot
+
+    .. automethod:: cross
+
+    .. automethod:: angle
 
     .. automethod:: __len__
 
@@ -279,6 +295,10 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
 
     .. automethod:: dot
 
+    .. automethod:: cross
+
+    .. automethod:: angle
+
     .. automethod:: __len__
 
     .. automethod:: __iadd__
@@ -351,6 +371,10 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
 
     .. automethod:: dot
 
+    .. automethod:: cross
+
+    .. automethod:: angle
+
     .. automethod:: __len__
 
     .. automethod:: __iadd__
@@ -406,6 +430,8 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
     .. automethod:: flipped
 
     .. automethod:: dot
+
+    .. automethod:: angle
 
     .. automethod:: __len__
 
@@ -479,6 +505,8 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
 
     .. automethod:: dot
 
+    .. automethod:: angle
+
     .. automethod:: __len__
 
     .. automethod:: __iadd__
@@ -550,6 +578,8 @@ types distributed in various Tissue Forge dependencies (*e.g.*,
     .. automethod:: flipped
 
     .. automethod:: dot
+
+    .. automethod:: angle
 
     .. automethod:: __len__
 

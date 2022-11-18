@@ -22,6 +22,7 @@
 
 #include <tfEngine.h>
 #include <tf_errs.h>
+#include <tfError.h>
 #include "tfRunner_cuda.h"
 #include <tf_cuda.h>
 #include <tfTaskScheduler.h>
@@ -107,8 +108,8 @@ static unsigned int cuda_angles_nr_blocks = 0;
 #define cuda_bonds_nrparts_chunk    102400
 #define cuda_bonds_nrparts_incr     100
 
-#define error(id)				(engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-#define cuda_error(id)			(engine_err = errs_register(id, cudaGetErrorString(cudaGetLastError()), __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
+#define cuda_error()			(tf_error(E_FAIL, cudaGetErrorString(cudaGetLastError())))
 
 
 template <typename T> __global__ 
@@ -132,53 +133,53 @@ int cuda_bonds_module_dyn_specs(int *nr_blocks, int *nr_threads) {
     else {
         *nr_blocks = *nr_threads = 1;
     }
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_device_constants_init(engine *e) {
     cuda_bonds_dev_constants++;
 
     if(cuda_bonds_dev_constants > 1) 
-        return engine_err_ok;
+        return S_OK;
 
     int *buffi, i;
     int3 *cloc, *cloc_d;
     float3 cell_edge_lens_cuda = make_float3(e->s.h[0], e->s.h[1], e->s.h[2]);
 
     if(cudaMemcpyToSymbol(cuda_bonds_cell_edge_lens, &cell_edge_lens_cuda, sizeof(float3), 0, cudaMemcpyHostToDevice) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyToSymbol(cuda_bonds_dt, &e->dt, sizeof(float), 0, cudaMemcpyHostToDevice) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     /* Copy the cell locations to the device. */
     if((cloc = (int3 *)malloc(sizeof(int3) * e->s.nr_cells)) == NULL)
-        return error(engine_err_malloc);
+        return error(MDCERR_malloc);
     for(i = 0 ; i < e->s.nr_cells ; i++) {
         buffi = &e->s.cells[i].loc[0];
         cloc[i] = make_int3(buffi[0], buffi[1], buffi[2]);
     }
 
     if(cudaMalloc(&cloc_d, sizeof(int3) * e->s.nr_cells) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMemcpy(cloc_d, cloc, sizeof(int3) * e->s.nr_cells, cudaMemcpyHostToDevice) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMemcpyToSymbol(cuda_bonds_cloc, &cloc_d, sizeof(void *), 0, cudaMemcpyHostToDevice) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(cloc);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_parts_hold() {
     cuda_bonds_parts_checkouts++;
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_parts_release() {
     cuda_bonds_parts_checkouts--;
-    return engine_err_ok;
+    return S_OK;
 }
 
 __global__ 
@@ -193,44 +194,44 @@ int cuda_bonds_parts_load(engine *e) {
     cuda_bonds_parts_counter += 2;
 
     if(cuda_bonds_parts_counter > 2) 
-        return engine_err_ok;
+        return S_OK;
 
     int i;
 
     bool using_engine = e->flags & engine_flag_cuda;
     if(cudaMemcpyToSymbol(cuda_bonds_parts_from_engine, &using_engine, sizeof(bool), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(using_engine) { 
         if(e->s.size_parts != cuda_bonds_parts_from_engine_key_size) {
             if(cuda_bonds_parts_from_engine_key_size > 0) 
                 if(cudaFree(cuda_bonds_parts_from_engine_key_arr) != cudaSuccess) 
-                    return cuda_error(engine_err_cuda);
+                    return cuda_error();
 
             cuda_bonds_parts_from_engine_key_size = e->s.size_parts;
             if(cudaMalloc(&cuda_bonds_parts_from_engine_key_arr, e->s.size_parts * sizeof(unsigned int)) != cudaSuccess) 
-                return cuda_error(engine_err_cuda);
+                return cuda_error();
 
             if(cudaMemcpyToSymbol(cuda_bonds_parts_from_engine_key, &cuda_bonds_parts_from_engine_key_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-                return cuda_error(engine_err_cuda);
+                return cuda_error();
         }
 
         for(i = 0; i < e->nr_devices; i++) 
             if(e->devices[i] == cuda_bonds_device) { 
                 cuda_bonds_parts_arr = (cuda::Particle*)e->parts_cuda[i];
                 if(cudaMemcpyToSymbol(cuda_bonds_parts, &cuda_bonds_parts_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-                    return cuda_error(engine_err_cuda);
+                    return cuda_error();
                 
                 int nr_blocks, nr_threads;
                 cuda_bonds_module_dyn_specs(&nr_blocks, &nr_threads);
                 cuda_bonds_generate_engine_parts_key<<<nr_blocks, nr_threads>>>(e->s.nr_parts);
                 if(cudaPeekAtLastError() != cudaSuccess)
-                    return cuda_error(engine_err_cuda);
+                    return cuda_error();
                 
-                return engine_err_ok;
+                return S_OK;
             }
 
-        return engine_err_cuda;
+        return MDCERR_cuda;
 
     } 
     else {
@@ -238,34 +239,34 @@ int cuda_bonds_parts_load(engine *e) {
         for(i = 0; i < e->s.nr_parts; i++) 
             bonds_parts[i] = cuda::Particle(e->s.partlist[i]);
         if(cudaMalloc(&cuda_bonds_parts_arr, e->s.nr_parts * sizeof(cuda::Particle)) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
+            return cuda_error();
         if(cudaMemcpy(cuda_bonds_parts_arr, bonds_parts, e->s.nr_parts * sizeof(cuda::Particle), cudaMemcpyHostToDevice) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
+            return cuda_error();
         if(cudaMemcpyToSymbol(cuda_bonds_parts, &cuda_bonds_parts_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
+            return cuda_error();
         free(bonds_parts);
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_parts_unload(engine *e) {
     cuda_bonds_parts_counter--;
 
     if(cuda_bonds_parts_counter != cuda_bonds_parts_checkouts) 
-        return engine_err_ok;
+        return S_OK;
 
     cuda_bonds_parts_counter = 0;
 
     if(e->flags & engine_flag_cuda) {
-        return engine_err_ok;
+        return S_OK;
     } 
     else {
         if(cudaFree(cuda_bonds_parts_arr) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
+            return cuda_error();
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 __global__ void cuda_init_rand_unif_device(curandState *rand_unif, int nr_rands, unsigned long long seed) {
@@ -282,26 +283,26 @@ extern "C" int engine_cuda_rand_unif_init(struct engine *e, int nr_rands) {
     cuda_rand_unif_init++;
     
     if(cuda_rand_unif_init > 1 && cuda_rand_unif_states > nr_rands) 
-        return engine_err_ok;
+        return S_OK;
 
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMalloc(&rand_unif_cuda, sizeof(curandState) * nr_rands) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     int nr_blocks, nr_threads;
     cuda_bonds_module_dyn_specs(&nr_blocks, &nr_threads);
     cuda_init_rand_unif_device<<<nr_blocks, nr_threads>>>((curandState *)rand_unif_cuda, nr_rands, cuda_rand_unif_seed);
     if(cudaPeekAtLastError() != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyToSymbol(cuda_rand_unif, &rand_unif_cuda, sizeof(void *), 0, cudaMemcpyHostToDevice) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_rand_unif_states = nr_rands;
 
-    return engine_err_ok;
+    return S_OK;
 
 }
 
@@ -310,17 +311,17 @@ int engine_cuda_rand_unif_finalize(struct engine *e) {
     cuda_rand_unif_init--;
 
     if(cuda_rand_unif_init > 0) 
-        return engine_err_ok;
+        return S_OK;
 
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaFree(rand_unif_cuda) != cudaSuccess)
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_rand_unif_states = 0;
     
-    return engine_err_ok;
+    return S_OK;
 
 }
 
@@ -330,8 +331,6 @@ int engine_cuda_rand_unif_finalize(struct engine *e) {
  * @param e The #engine
  * @param seed The seed
  * @param onDevice A flag specifying whether the engine is current on the device
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
 extern "C" int engine_cuda_rand_unif_setSeed(struct engine *e, unsigned int seed, bool onDevice) { 
 
@@ -340,24 +339,24 @@ extern "C" int engine_cuda_rand_unif_setSeed(struct engine *e, unsigned int seed
 
     if(onDevice) 
         for(int i = 0; i < nr_init; i++) 
-            if(engine_cuda_rand_unif_finalize(e) < 0)
-                return cuda_error(engine_err_cuda);
+            if(engine_cuda_rand_unif_finalize(e) != S_OK)
+                return cuda_error();
 
     cuda_rand_unif_seed = seed;
 
     if(onDevice) {
         for(int i = 0; i < nr_init; i++) 
-            if(engine_cuda_rand_unif_init(e, nr_states) < 0)
-                return cuda_error(engine_err_cuda);
+            if(engine_cuda_rand_unif_init(e, nr_states) != S_OK)
+                return cuda_error();
 
         if(cudaSetDevice(cuda_bonds_device) != cudaSuccess)
-            return cuda_error(engine_err_cuda);
+            return cuda_error();
 
         if(cudaDeviceSynchronize() != cudaSuccess)
-            return cuda_error(engine_err_cuda);
+            return cuda_error();
     }
 
-    return engine_err_ok;
+    return S_OK;
 
 }
 
@@ -382,74 +381,74 @@ int engine_cuda_rand_unifs(int nr_rands, float *result, cudaStream_t stream) {
 
     engine_cuda_rand_unifs_device<<<nr_blocks, cuda_bonds_nr_threads, 0, stream>>>(nr_rands, result);
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_shared_arrays_malloc() {
     cuda_bonds_shared_arrs++;
 
     if(cuda_bonds_shared_arrs > 1) 
-        return engine_err_ok;
+        return S_OK;
 
     if(cudaStreamCreate(&cuda_bonds_stream1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaStreamCreate(&cuda_bonds_stream2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     size_t size_potenergies = cuda_bonds_nrparts_chunk * sizeof(float);
     size_t size_todestroy = cuda_bonds_nrparts_chunk * sizeof(bool);
 
     if(cudaMalloc(&cuda_bonds_potenergies_arr1, size_potenergies) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_bonds_potenergies_arr2, size_potenergies) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if((cuda_bonds_potenergies_local1 = (float*)malloc(size_potenergies)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     if((cuda_bonds_potenergies_local2 = (float*)malloc(size_potenergies)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
 
     if(cudaMalloc(&cuda_bonds_todestroy_arr1, size_todestroy) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_bonds_todestroy_arr2, size_todestroy) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if((cuda_bonds_todestroy_local1 = (bool*)malloc(size_todestroy)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     if((cuda_bonds_todestroy_local2 = (bool*)malloc(size_todestroy)) == NULL)
-        return engine_err_malloc;
+        return MDCERR_malloc;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_shared_arrays_free() { 
     cuda_bonds_shared_arrs--;
 
     if(cuda_bonds_shared_arrs > 0) 
-        return engine_err_ok;
+        return S_OK;
 
     if(cudaStreamDestroy(cuda_bonds_stream1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaStreamDestroy(cuda_bonds_stream2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaFree(cuda_bonds_potenergies_arr1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_bonds_potenergies_arr2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     free(cuda_bonds_potenergies_local1);
     free(cuda_bonds_potenergies_local2);
 
     if(cudaFree(cuda_bonds_todestroy_arr1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_bonds_todestroy_arr2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     free(cuda_bonds_todestroy_local1);
     free(cuda_bonds_todestroy_local2);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_bond_flip_shared() {
@@ -475,7 +474,7 @@ int engine_bond_flip_shared() {
 
         cuda_bonds_front_stream      = 1;
     }
-    return engine_err_ok;
+    return S_OK;
 }
 
 
@@ -525,7 +524,7 @@ int cuda_bonds_bonds_initialize(engine *e, Bond *bonds, int N) {
     size_t size_bonds = N * sizeof(cuda::Bond);
 
     if(cudaMalloc(&cuda_bonds_device_arr, size_bonds) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda::Bond *bonds_cuda = (cuda::Bond*)malloc(size_bonds);
 
@@ -537,16 +536,16 @@ int cuda_bonds_bonds_initialize(engine *e, Bond *bonds, int N) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpy(cuda_bonds_device_arr, bonds_cuda, size_bonds, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyToSymbol(cuda_bonds, &cuda_bonds_device_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(bonds_cuda);
 
     cuda_bonds_size = N;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_bonds_finalize(engine *e) { 
@@ -554,7 +553,7 @@ int cuda_bonds_bonds_finalize(engine *e) {
 
     cuda::Bond *bonds_cuda = (cuda::Bond*)malloc(size_bonds);
     if(cudaMemcpy(bonds_cuda, cuda_bonds_device_arr, size_bonds, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     int nr_runners = e->nr_runners;
     int N = cuda_bonds_size;
@@ -567,11 +566,11 @@ int cuda_bonds_bonds_finalize(engine *e) {
     free(bonds_cuda);
 
     if(cudaFree(cuda_bonds_device_arr) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     
     cuda_bonds_size = 0;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_bonds_extend() {
@@ -583,29 +582,29 @@ int cuda_bonds_bonds_extend() {
 
     cuda::Bond *cuda_bonds_device_arr_new;
     if(cudaMalloc(&cuda_bonds_device_arr_new, Nf * sizeof(cuda::Bond)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     
     engine_cuda_memcpy<cuda::Bond><<<nr_blocks, nr_threads>>>(cuda_bonds_device_arr_new, cuda_bonds_device_arr, Ni * sizeof(cuda::Bond));
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaFree(cuda_bonds_device_arr) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_bonds_device_arr, Nf * sizeof(cuda::Bond)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     engine_cuda_memcpy<cuda::Bond><<<nr_blocks, nr_threads>>>(cuda_bonds_device_arr, cuda_bonds_device_arr_new, Ni * sizeof(cuda::Bond));
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_bonds_device_arr_new) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyToSymbol(cuda_bonds, &cuda_bonds_device_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_bonds_size = Nf;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 __global__ 
@@ -621,14 +620,14 @@ int cuda::engine_cuda_add_bond(TissueForge::Bond *b) {
     auto bid = b->id;
 
     if(bid >= cuda_bonds_size) 
-        if(cuda_bonds_bonds_extend() < 0) 
-            return error(engine_err);
+        if(cuda_bonds_bonds_extend() != S_OK) 
+            return error(MDCERR_cuda);
 
     engine_cuda_set_bond_device<<<1, 1>>>(bc, bid);
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 __global__ 
@@ -647,12 +646,12 @@ int cuda::engine_cuda_add_bonds(TissueForge::Bond *bonds, int nr_bonds) {
     cuda::Bond *bcs = (cuda::Bond*)malloc(nr_bonds * sizeof(cuda::Bond));
     cuda::Bond *bcs_d;
     if(cudaMalloc(&bcs_d, nr_bonds * sizeof(cuda::Bond)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     unsigned int *bids = (unsigned int*)malloc(nr_bonds * sizeof(unsigned int));
     unsigned int *bids_d;
     if(cudaMalloc(&bids_d, nr_bonds * sizeof(unsigned int)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     for(int i = 0; i < nr_bonds; i++) {
         b = &bonds[i];
@@ -662,32 +661,32 @@ int cuda::engine_cuda_add_bonds(TissueForge::Bond *bonds, int nr_bonds) {
     }
 
     if(cudaMemcpyAsync(bcs_d, bcs, nr_bonds * sizeof(cuda::Bond) , cudaMemcpyHostToDevice, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMemcpyAsync(bids_d, bids, nr_bonds * sizeof(unsigned int), cudaMemcpyHostToDevice, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     while(bidmax >= cuda_bonds_size)
-        if(cuda_bonds_bonds_extend() < 0) 
-            return error(engine_err);
+        if(cuda_bonds_bonds_extend() != S_OK) 
+            return error(MDCERR_cuda);
 
     dim3 nr_threads(cuda_bonds_nr_threads, 1, 1);
     dim3 nr_blocks(std::max((unsigned)1, nr_bonds / nr_threads.x), 1, 1);
 
     if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     engine_cuda_set_bonds_device<<<nr_blocks, nr_threads>>>(bcs_d, bids_d, nr_bonds);
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(bcs);
     free(bids);
     if(::cudaFree(bcs_d) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(::cudaFree(bids_d) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_cuda_finalize_bond(int bind) { 
@@ -695,16 +694,16 @@ int cuda::engine_cuda_finalize_bond(int bind) {
 
     cuda::Bond *bonds_cuda = (cuda::Bond*)malloc(cuda_bonds_size * sizeof(cuda::Bond));
     if(cudaMemcpy(bonds_cuda, cuda_bonds_device_arr, size_bonds, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     bonds_cuda[bind].finalize();
 
     if(cudaMemcpy(cuda_bonds_device_arr, bonds_cuda, size_bonds, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(bonds_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_cuda_finalize_bonds(engine *e, int *binds, int nr_bonds) { 
@@ -712,7 +711,7 @@ int cuda::engine_cuda_finalize_bonds(engine *e, int *binds, int nr_bonds) {
 
     cuda::Bond *bonds_cuda = (cuda::Bond*)malloc(cuda_bonds_size * sizeof(cuda::Bond));
     if(cudaMemcpy(bonds_cuda, cuda_bonds_device_arr, size_bonds, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     int nr_runners = e->nr_runners;
     auto func = [&bonds_cuda, &binds, nr_bonds, nr_runners](size_t tid) {
@@ -722,11 +721,11 @@ int cuda::engine_cuda_finalize_bonds(engine *e, int *binds, int nr_bonds) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpy(cuda_bonds_device_arr, bonds_cuda, size_bonds, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(bonds_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_cuda_finalize_bonds_all(engine *e) {
@@ -734,7 +733,7 @@ int cuda::engine_cuda_finalize_bonds_all(engine *e) {
 
     cuda::Bond *bonds_cuda = (cuda::Bond*)malloc(cuda_bonds_size * sizeof(cuda::Bond));
     if(cudaMemcpy(bonds_cuda, cuda_bonds_device_arr, size_bonds, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     int nr_bonds = cuda_bonds_size;
     int nr_runners = e->nr_runners;
@@ -745,21 +744,21 @@ int cuda::engine_cuda_finalize_bonds_all(engine *e) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpy(cuda_bonds_device_arr, bonds_cuda, size_bonds, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(bonds_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_cuda_refresh_bond(TissueForge::Bond *b) {
-    if(cuda::engine_cuda_finalize_bond(b->id) < 0) 
-        return error(engine_err);
+    if(cuda::engine_cuda_finalize_bond(b->id) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda::engine_cuda_add_bond(b) < 0) 
-        return error(engine_err);
+    if(cuda::engine_cuda_add_bond(b) != S_OK) 
+        return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_cuda_refresh_bonds(engine *e, TissueForge::Bond *bonds, int nr_bonds) { 
@@ -768,15 +767,15 @@ int engine_cuda_refresh_bonds(engine *e, TissueForge::Bond *bonds, int nr_bonds)
     for(int i = 0; i < nr_bonds; i++) 
         binds[i] = bonds[i].id;
 
-    if(cuda::engine_cuda_finalize_bonds(e, binds, nr_bonds) < 0) 
-        return error(engine_err);
+    if(cuda::engine_cuda_finalize_bonds(e, binds, nr_bonds) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda::engine_cuda_add_bonds(bonds, nr_bonds) < 0) 
-        return error(engine_err);
+    if(cuda::engine_cuda_add_bonds(bonds, nr_bonds) != S_OK) 
+        return error(MDCERR_cuda);
 
     free(binds);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_arrays_malloc() {
@@ -784,58 +783,58 @@ int cuda_bonds_arrays_malloc() {
     size_t size_forces = 3 * cuda_bonds_nrparts_chunk * sizeof(float);
 
     if(cudaMalloc(&cuda_bonds_forces_arr1, size_forces) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_bonds_forces_arr2, size_forces) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if((cuda_bonds_forces_local1 = (float*)malloc(size_forces)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     if((cuda_bonds_forces_local2 = (float*)malloc(size_forces)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     
     if(cudaMalloc(&cuda_bonds_bonds_arr1, size_bonds) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_bonds_bonds_arr2, size_bonds) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if((cuda_bonds_bonds_local1 = (BondCUDAData*)malloc(size_bonds)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     if((cuda_bonds_bonds_local2 = (BondCUDAData*)malloc(size_bonds)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
 
-    if(cuda_bonds_shared_arrays_malloc() < 0) 
-        return error(engine_err);
+    if(cuda_bonds_shared_arrays_malloc() != S_OK) 
+        return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_bonds_arrays_free() {
     if(cudaFree(cuda_bonds_bonds_arr1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_bonds_bonds_arr2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     free(cuda_bonds_bonds_local1);
     free(cuda_bonds_bonds_local2);
 
     if(cudaFree(cuda_bonds_forces_arr1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_bonds_forces_arr2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     free(cuda_bonds_forces_local1);
     free(cuda_bonds_forces_local2);
 
-    if(cuda_bonds_shared_arrays_free() < 0) 
-        return error(engine_err);
+    if(cuda_bonds_shared_arrays_free() != S_OK) 
+        return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Bond_setBlocks(const unsigned int &nr_blocks) {
     cuda_bonds_nr_blocks = nr_blocks;
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Bond_setThreads(const unsigned int &nr_threads) {
     cuda_bonds_nr_threads = nr_threads;
-    return engine_err_ok;
+    return S_OK;
 }
 
 __device__ 
@@ -988,7 +987,7 @@ int engine_bond_cuda_load_bond_chunk(Bond *bonds, int loc, int N) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpyAsync(cuda_bonds_bonds_arr, cuda_bonds_bonds_local, size_bonds, cudaMemcpyHostToDevice, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     dim3 nr_threads(std::min((int)cuda_bonds_nr_threads, N), 1, 1);
     dim3 nr_blocks(std::min(cuda_bonds_nr_blocks, N / nr_threads.x), 1, 1);
@@ -997,18 +996,18 @@ int engine_bond_cuda_load_bond_chunk(Bond *bonds, int loc, int N) {
         cuda_bonds_bonds_arr, N, cuda_bonds_forces_arr, cuda_bonds_potenergies_arr, cuda_bonds_todestroy_arr
     );
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyAsync(cuda_bonds_forces_local, cuda_bonds_forces_arr, size_forces, cudaMemcpyDeviceToHost, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyAsync(cuda_bonds_potenergies_local, cuda_bonds_potenergies_arr, size_potenergies, cudaMemcpyDeviceToHost, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyAsync(cuda_bonds_todestroy_local, cuda_bonds_todestroy_arr, size_todestroy, cudaMemcpyDeviceToHost, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_bond_cuda_unload_bond_chunk(Bond *bonds, int loc, int N, struct engine *e, float *epot_out) { 
@@ -1040,7 +1039,7 @@ int engine_bond_cuda_unload_bond_chunk(Bond *bonds, int loc, int N, struct engin
     // Store the potential energy.
     *epot_out += epot;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_bond_eval_cuda(struct TissueForge::Bond *bonds, int N, struct engine *e, float *epot_out) {
@@ -1048,64 +1047,64 @@ int cuda::engine_bond_eval_cuda(struct TissueForge::Bond *bonds, int N, struct e
     float epot = 0.0;
 
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    if(cuda_bonds_parts_load(e) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_parts_load(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     engine_bond_flip_stream();
     
     if(N < cuda_bonds_nrparts_chunk) {
-        if(engine_bond_cuda_load_bond_chunk(bonds, 0, N) < 0) 
-            return error(engine_err);
+        if(engine_bond_cuda_load_bond_chunk(bonds, 0, N) != S_OK) 
+            return error(MDCERR_cuda);
         if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
-        if(engine_bond_cuda_unload_bond_chunk(bonds, 0, N, e, epot_out) < 0) 
-            return error(engine_err);
-        if(cuda_bonds_parts_unload(e) < 0) 
-            return error(engine_err);
-        return engine_err_ok;
+            return cuda_error();
+        if(engine_bond_cuda_unload_bond_chunk(bonds, 0, N, e, epot_out) != S_OK) 
+            return error(MDCERR_cuda);
+        if(cuda_bonds_parts_unload(e) != S_OK) 
+            return error(MDCERR_cuda);
+        return S_OK;
     }
 
     n = cuda_bonds_nrparts_chunk;
-    if(engine_bond_cuda_load_bond_chunk(bonds, 0, n) < 0) 
-        return error(engine_err);
+    if(engine_bond_cuda_load_bond_chunk(bonds, 0, n) != S_OK) 
+        return error(MDCERR_cuda);
     for(i = cuda_bonds_nrparts_chunk; i < N; i += cuda_bonds_nrparts_chunk) {
         if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
-        if(engine_bond_cuda_unload_bond_chunk(bonds, i - cuda_bonds_nrparts_chunk, n, e, &epot) < 0) 
-            return error(engine_err);
+            return cuda_error();
+        if(engine_bond_cuda_unload_bond_chunk(bonds, i - cuda_bonds_nrparts_chunk, n, e, &epot) != S_OK) 
+            return error(MDCERR_cuda);
 
         engine_bond_flip_stream();
 
         n = std::min(N - i, cuda_bonds_nrparts_chunk);
-        if(engine_bond_cuda_load_bond_chunk(bonds, i, n) < 0) 
-            return error(engine_err);
+        if(engine_bond_cuda_load_bond_chunk(bonds, i, n) != S_OK) 
+            return error(MDCERR_cuda);
     }
     if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
-    if(engine_bond_cuda_unload_bond_chunk(bonds, N - n, n, e, &epot) < 0) 
-        return error(engine_err);
+        return cuda_error();
+    if(engine_bond_cuda_unload_bond_chunk(bonds, N - n, n, e, &epot) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_bonds_parts_unload(e) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_parts_unload(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     *epot_out += epot;
     
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_bond_cuda_initialize(engine *e) {
     if(e->bonds_cuda) 
-        return engine_err_ok;
+        return S_OK;
 
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_bonds_parts_hold();
 
-    if(cuda_bonds_device_constants_init(e) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_device_constants_init(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     if(cuda_bonds_nr_blocks == 0) {
         cuda_bonds_nr_blocks = cuda::maxBlockDimX(0);
@@ -1116,51 +1115,51 @@ int engine_bond_cuda_initialize(engine *e) {
     }
 
     int nr_rands = cuda_bonds_nr_threads * cuda_bonds_nr_blocks;
-    if(engine_cuda_rand_unif_init(e, nr_rands) < 0) 
-        return error(engine_err);
+    if(engine_cuda_rand_unif_init(e, nr_rands) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_bonds_arrays_malloc() < 0) 
-        return error(engine_err);
+    if(cuda_bonds_arrays_malloc() != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_bonds_bonds_initialize(e, e->bonds, e->nr_bonds) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_bonds_initialize(e, e->bonds, e->nr_bonds) != S_OK) 
+        return error(MDCERR_cuda);
 
     e->bonds_cuda = true;
     
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_bond_cuda_finalize(engine *e) {
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_bonds_parts_release();
 
-    if(cuda_bonds_bonds_finalize(e) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_bonds_finalize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(engine_cuda_rand_unif_finalize(e) < 0) 
-        return error(engine_err);
+    if(engine_cuda_rand_unif_finalize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_bonds_arrays_free() < 0) 
-        return error(engine_err);
+    if(cuda_bonds_arrays_free() != S_OK) 
+        return error(MDCERR_cuda);
 
     e->bonds_cuda = false;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_bond_cuda_refresh(engine *e) {
-    if(engine_bond_cuda_finalize(e) < 0) 
-        return error(engine_err);
+    if(engine_bond_cuda_finalize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(engine_bond_cuda_initialize(e) < 0) 
-        return error(engine_err);
+    if(engine_bond_cuda_initialize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     if(cudaDeviceSynchronize() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Bond_getDevice() {
@@ -1171,68 +1170,68 @@ int cuda::Bond_setDevice(engine *e, const int &deviceId) {
     bool refreshing = e->bonds_cuda;
 
     if(refreshing) 
-        if(engine_bond_cuda_finalize(e) < 0) 
-            return error(engine_err);
+        if(engine_bond_cuda_finalize(e) != S_OK) 
+            return error(MDCERR_cuda);
 
     cuda_bonds_device = deviceId;
 
     if(refreshing) 
-        if(engine_bond_cuda_initialize(e) < 0) 
-            return error(engine_err);
+        if(engine_bond_cuda_initialize(e) != S_OK) 
+            return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Bond_toDevice(engine *e) {
     if(e->bonds_cuda) 
-        return engine_err_ok;
+        return S_OK;
     
     return engine_bond_cuda_initialize(e);
 }
 
 int cuda::Bond_fromDevice(engine *e) {
     if(!e->bonds_cuda) 
-        return engine_err_ok;
+        return S_OK;
     
     return engine_bond_cuda_finalize(e);
 }
 
 int cuda::Bond_refresh(engine *e) {
     if(!e->bonds_cuda) 
-        return engine_err_ok;
+        return S_OK;
     
     return engine_bond_cuda_refresh(e);
 }
 
 int cuda::Bond_refreshBond(engine *e, BondHandle *b) {
     if(e->bonds_cuda) 
-        return engine_err_ok;
+        return S_OK;
 
     if(b == NULL) 
-        return engine_err_null;
+        return MDCERR_null;
 
     return engine_cuda_refresh_bond(b->get());
 }
 
 int cuda::Bond_refreshBonds(engine *e, BondHandle **bonds, int nr_bonds) {
     if(e->bonds_cuda) 
-        return engine_err_ok;
+        return S_OK;
 
     TissueForge::Bond *bs = (TissueForge::Bond*)malloc(nr_bonds * sizeof(TissueForge::Bond));
     BondHandle *bh;
     for(int i = 0; i < nr_bonds; i++) { 
         bh = bonds[i];
         if(bh == NULL) 
-            return engine_err_null;
+            return MDCERR_null;
         bs[i] = *(bh->get());
     }
     
-    if(engine_cuda_refresh_bonds(e, bs, nr_bonds) < 0) 
-        return error(engine_err);
+    if(engine_cuda_refresh_bonds(e, bs, nr_bonds) != S_OK) 
+        return error(MDCERR_cuda);
 
     free(bs);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 
@@ -1282,55 +1281,55 @@ int cuda_angles_arrays_malloc() {
     size_t size_forces = 6 * cuda_bonds_nrparts_chunk * sizeof(float);
 
     if(cudaMalloc(&cuda_angles_forces_arr1, size_forces) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_angles_forces_arr2, size_forces) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if((cuda_angles_forces_local1 = (float*)malloc(size_forces)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     if((cuda_angles_forces_local2 = (float*)malloc(size_forces)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     
     if(cudaMalloc(&cuda_angles_angles_arr1, size_angles) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_angles_angles_arr2, size_angles) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if((cuda_angles_angles_local1 = (AngleCUDAData*)malloc(size_angles)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
     if((cuda_angles_angles_local2 = (AngleCUDAData*)malloc(size_angles)) == NULL) 
-        return engine_err_malloc;
+        return MDCERR_malloc;
 
-    if(cuda_bonds_shared_arrays_malloc() < 0) 
-        return error(engine_err);
+    if(cuda_bonds_shared_arrays_malloc() != S_OK) 
+        return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_angles_arrays_free() {
     if(cudaFree(cuda_angles_angles_arr1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_angles_angles_arr2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     free(cuda_angles_angles_local1);
     free(cuda_angles_angles_local2);
 
     if(cudaFree(cuda_angles_forces_arr1) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_angles_forces_arr2) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     free(cuda_angles_forces_local1);
     free(cuda_angles_forces_local2);
 
-    if(cuda_bonds_shared_arrays_free() < 0) 
-        return error(engine_err);
+    if(cuda_bonds_shared_arrays_free() != S_OK) 
+        return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_angles_angles_initialize(engine *e, Angle *angles, int N) {
     size_t size_angles = N * sizeof(cuda::Angle);
 
     if(cudaMalloc(&cuda_angles_device_arr, size_angles) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda::Angle *angles_cuda = (cuda::Angle*)malloc(size_angles);
 
@@ -1342,16 +1341,16 @@ int cuda_angles_angles_initialize(engine *e, Angle *angles, int N) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpy(cuda_angles_device_arr, angles_cuda, size_angles, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyToSymbol(cuda_angles, &cuda_angles_device_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(angles_cuda);
 
     cuda_angles_size = N;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_angles_angles_finalize(engine *e) {
@@ -1359,7 +1358,7 @@ int cuda_angles_angles_finalize(engine *e) {
 
     cuda::Angle *angles_cuda = (cuda::Angle*)malloc(size_angles);
     if(cudaMemcpy(angles_cuda, cuda_angles_device_arr, size_angles, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     int nr_runners = e->nr_runners;
     int N = cuda_angles_size;
@@ -1372,11 +1371,11 @@ int cuda_angles_angles_finalize(engine *e) {
     free(angles_cuda);
 
     if(cudaFree(cuda_angles_device_arr) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     
     cuda_angles_size = 0;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda_angles_angles_extend() {
@@ -1388,42 +1387,42 @@ int cuda_angles_angles_extend() {
 
     cuda::Angle *cuda_angles_device_arr_new;
     if(cudaMalloc(&cuda_angles_device_arr_new, Nf * sizeof(cuda::Angle)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     
     engine_cuda_memcpy<cuda::Angle><<<nr_blocks, nr_threads>>>(cuda_angles_device_arr_new, cuda_angles_device_arr, Ni * sizeof(cuda::Angle));
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaFree(cuda_angles_device_arr) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMalloc(&cuda_angles_device_arr, Nf * sizeof(cuda::Angle)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     engine_cuda_memcpy<cuda::Angle><<<nr_blocks, nr_threads>>>(cuda_angles_device_arr, cuda_angles_device_arr_new, Ni * sizeof(cuda::Angle));
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(cuda_angles_device_arr_new) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyToSymbol(cuda_angles, &cuda_angles_device_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_angles_size = Nf;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_angle_cuda_initialize(engine *e) {
     if(e->angles_cuda) 
-        return engine_err_ok;
+        return S_OK;
 
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_bonds_parts_hold();
 
-    if(cuda_bonds_device_constants_init(e) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_device_constants_init(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     if(cuda_angles_nr_blocks == 0) {
         cuda_angles_nr_blocks = cuda::maxBlockDimX(0);
@@ -1434,38 +1433,38 @@ int engine_angle_cuda_initialize(engine *e) {
     }
 
     int nr_rands = cuda_angles_nr_threads * cuda_angles_nr_blocks;
-    if(engine_cuda_rand_unif_init(e, nr_rands) < 0) 
-        return error(engine_err);
+    if(engine_cuda_rand_unif_init(e, nr_rands) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_angles_arrays_malloc() < 0) 
-        return error(engine_err);
+    if(cuda_angles_arrays_malloc() != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_angles_angles_initialize(e, e->angles, e->nr_angles) < 0) 
-        return error(engine_err);
+    if(cuda_angles_angles_initialize(e, e->angles, e->nr_angles) != S_OK) 
+        return error(MDCERR_cuda);
 
     e->angles_cuda = true;
     
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_angle_cuda_finalize(engine *e) {
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     cuda_bonds_parts_release();
 
-    if(cuda_angles_angles_finalize(e) < 0) 
-        return error(engine_err);
+    if(cuda_angles_angles_finalize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(engine_cuda_rand_unif_finalize(e) < 0) 
-        return error(engine_err);
+    if(engine_cuda_rand_unif_finalize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_angles_arrays_free() < 0) 
-        return error(engine_err);
+    if(cuda_angles_arrays_free() != S_OK) 
+        return error(MDCERR_cuda);
 
     e->angles_cuda = false;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 __global__ 
@@ -1481,14 +1480,14 @@ int cuda::engine_cuda_add_angle(AngleHandle *ah) {
     auto aid = ah->id;
 
     if(aid >= cuda_angles_size) 
-        if(cuda_angles_angles_extend() < 0) 
-            return error(engine_err);
+        if(cuda_angles_angles_extend() != S_OK) 
+            return error(MDCERR_cuda);
 
     engine_cuda_set_angle_device<<<1, 1>>>(ac, aid);
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_cuda_finalize_angle(int aind) {
@@ -1496,26 +1495,26 @@ int cuda::engine_cuda_finalize_angle(int aind) {
 
     cuda::Angle *angles_cuda = (cuda::Angle*)malloc(cuda_angles_size * sizeof(cuda::Angle));
     if(cudaMemcpy(angles_cuda, cuda_angles_device_arr, size_angles, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     angles_cuda[aind].finalize();
 
     if(cudaMemcpy(cuda_angles_device_arr, angles_cuda, size_angles, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(angles_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_cuda_refresh_angle(AngleHandle *ah) {
-    if(cuda::engine_cuda_finalize_angle(ah->id) < 0) 
-        return error(engine_err);
+    if(cuda::engine_cuda_finalize_angle(ah->id) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda::engine_cuda_add_angle(ah) < 0) 
-        return error(engine_err);
+    if(cuda::engine_cuda_add_angle(ah) != S_OK) 
+        return error(MDCERR_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 __global__ 
@@ -1534,12 +1533,12 @@ int engine_cuda_add_angles(AngleHandle *angles, int nr_angles) {
     cuda::Angle *acs = (cuda::Angle*)malloc(nr_angles * sizeof(cuda::Angle));
     cuda::Angle *acs_d;
     if(cudaMalloc(&acs_d, nr_angles * sizeof(cuda::Angle)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     unsigned int *aids = (unsigned int*)malloc(nr_angles * sizeof(unsigned int));
     unsigned int *aids_d;
     if(cudaMalloc(&aids_d, nr_angles * sizeof(unsigned int)) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     for(int i = 0; i < nr_angles; i++) {
         a = &angles[i];
@@ -1549,32 +1548,32 @@ int engine_cuda_add_angles(AngleHandle *angles, int nr_angles) {
     }
 
     if(cudaMemcpyAsync(acs_d, acs, nr_angles * sizeof(cuda::Angle), cudaMemcpyHostToDevice, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaMemcpyAsync(aids_d, aids, nr_angles * sizeof(unsigned int), cudaMemcpyHostToDevice, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     while(aidmax >= cuda_angles_size)
-        if(cuda_angles_angles_extend() < 0) 
-            return error(engine_err);
+        if(cuda_angles_angles_extend() != S_OK) 
+            return error(MDCERR_cuda);
 
     dim3 nr_threads(cuda_angles_nr_threads, 1, 1);
     dim3 nr_blocks(std::max((unsigned)1, nr_angles / nr_threads.x), 1, 1);
 
     if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     engine_cuda_set_angles_device<<<nr_blocks, nr_threads>>>(acs_d, aids_d, nr_angles);
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(acs);
     free(aids);
     if(cudaFree(acs_d) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
     if(cudaFree(aids_d) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_cuda_finalize_angles(engine *e, int *ainds, int nr_angles) {
@@ -1582,7 +1581,7 @@ int cuda::engine_cuda_finalize_angles(engine *e, int *ainds, int nr_angles) {
 
     cuda::Angle *angles_cuda = (cuda::Angle*)malloc(cuda_angles_size * sizeof(cuda::Angle));
     if(cudaMemcpy(angles_cuda, cuda_angles_device_arr, size_angles, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     int nr_runners = e->nr_runners;
     auto func = [&angles_cuda, &ainds, nr_angles, nr_runners](size_t tid) {
@@ -1592,11 +1591,11 @@ int cuda::engine_cuda_finalize_angles(engine *e, int *ainds, int nr_angles) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpy(cuda_angles_device_arr, angles_cuda, size_angles, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(angles_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_cuda_refresh_angles(engine *e, AngleHandle *angles, int nr_angles) { 
@@ -1605,15 +1604,15 @@ int engine_cuda_refresh_angles(engine *e, AngleHandle *angles, int nr_angles) {
     for(int i = 0; i < nr_angles; i++) 
         ainds[i] = angles[i].id;
 
-    if(cuda::engine_cuda_finalize_angles(e, ainds, nr_angles) < 0) 
-        return error(engine_err);
+    if(cuda::engine_cuda_finalize_angles(e, ainds, nr_angles) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(engine_cuda_add_angles(angles, nr_angles) < 0) 
-        return error(engine_err);
+    if(engine_cuda_add_angles(angles, nr_angles) != S_OK) 
+        return error(MDCERR_cuda);
 
     free(ainds);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_cuda_finalize_angles_all(engine *e) {
@@ -1621,7 +1620,7 @@ int cuda::engine_cuda_finalize_angles_all(engine *e) {
 
     cuda::Angle *angles_cuda = (cuda::Angle*)malloc(cuda_angles_size * sizeof(cuda::Angle));
     if(cudaMemcpy(angles_cuda, cuda_angles_device_arr, size_angles, cudaMemcpyDeviceToHost) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     int nr_angles = cuda_angles_size;
     int nr_runners = e->nr_runners;
@@ -1632,11 +1631,11 @@ int cuda::engine_cuda_finalize_angles_all(engine *e) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpy(cuda_angles_device_arr, angles_cuda, size_angles, cudaMemcpyHostToDevice) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     free(angles_cuda);
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_angle_flip_stream() {
@@ -1863,7 +1862,7 @@ int engine_angle_cuda_load_angle_chunk(Angle *angles, int loc, int N) {
     parallel_for(nr_runners, func);
 
     if(cudaMemcpyAsync(cuda_angles_angles_arr, cuda_angles_angles_local, size_angles, cudaMemcpyHostToDevice, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     dim3 nr_threads(std::min((int)cuda_angles_nr_threads, N), 1, 1);
     dim3 nr_blocks(std::min(cuda_angles_nr_blocks, N / nr_threads.x), 1, 1);
@@ -1872,18 +1871,18 @@ int engine_angle_cuda_load_angle_chunk(Angle *angles, int loc, int N) {
         cuda_angles_angles_arr, N, cuda_angles_forces_arr, cuda_bonds_potenergies_arr, cuda_bonds_todestroy_arr
     );
     if(cudaPeekAtLastError() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyAsync(cuda_angles_forces_local, cuda_angles_forces_arr, size_forces, cudaMemcpyDeviceToHost, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyAsync(cuda_bonds_potenergies_local, cuda_bonds_potenergies_arr, size_potenergies, cudaMemcpyDeviceToHost, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
     if(cudaMemcpyAsync(cuda_bonds_todestroy_local, cuda_bonds_todestroy_arr, size_todestroy, cudaMemcpyDeviceToHost, *cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int engine_angle_cuda_unload_angle_chunk(Angle *angles, int loc, int N, struct engine *e, float *epot_out) { 
@@ -1921,7 +1920,7 @@ int engine_angle_cuda_unload_angle_chunk(Angle *angles, int loc, int N, struct e
     // Store the potential energy.
     *epot_out += epot;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::engine_angle_eval_cuda(struct TissueForge::Angle *angles, int N, struct engine *e, float *epot_out) {
@@ -1929,61 +1928,61 @@ int cuda::engine_angle_eval_cuda(struct TissueForge::Angle *angles, int N, struc
     float epot = 0.0;
 
     if(cudaSetDevice(cuda_bonds_device) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    if(cuda_bonds_parts_load(e) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_parts_load(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     engine_angle_flip_stream();
     
     if(N < cuda_bonds_nrparts_chunk) {
-        if(engine_angle_cuda_load_angle_chunk(angles, 0, N) < 0) 
-            return error(engine_err);
+        if(engine_angle_cuda_load_angle_chunk(angles, 0, N) != S_OK) 
+            return error(MDCERR_cuda);
         if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
-        if(engine_angle_cuda_unload_angle_chunk(angles, 0, N, e, epot_out) < 0) 
-            return error(engine_err);
-        if(cuda_bonds_parts_unload(e) < 0) 
-            return error(engine_err);
-        return engine_err_ok;
+            return cuda_error();
+        if(engine_angle_cuda_unload_angle_chunk(angles, 0, N, e, epot_out) != S_OK) 
+            return error(MDCERR_cuda);
+        if(cuda_bonds_parts_unload(e) != S_OK) 
+            return error(MDCERR_cuda);
+        return S_OK;
     }
 
     n = cuda_bonds_nrparts_chunk;
-    if(engine_angle_cuda_load_angle_chunk(angles, 0, n) < 0) 
-        return error(engine_err);
+    if(engine_angle_cuda_load_angle_chunk(angles, 0, n) != S_OK) 
+        return error(MDCERR_cuda);
     for(i = cuda_bonds_nrparts_chunk; i < N; i += cuda_bonds_nrparts_chunk) {
         if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-            return cuda_error(engine_err_cuda);
-        if(engine_angle_cuda_unload_angle_chunk(angles, i - cuda_bonds_nrparts_chunk, n, e, &epot) < 0) 
-            return error(engine_err);
+            return cuda_error();
+        if(engine_angle_cuda_unload_angle_chunk(angles, i - cuda_bonds_nrparts_chunk, n, e, &epot) != S_OK) 
+            return error(MDCERR_cuda);
 
         engine_angle_flip_stream();
 
         n = std::min(N - i, cuda_bonds_nrparts_chunk);
-        if(engine_angle_cuda_load_angle_chunk(angles, i, n) < 0) 
-            return error(engine_err);
+        if(engine_angle_cuda_load_angle_chunk(angles, i, n) != S_OK) 
+            return error(MDCERR_cuda);
     }
     if(cudaStreamSynchronize(*cuda_bonds_stream) != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
-    if(engine_angle_cuda_unload_angle_chunk(angles, N - n, n, e, &epot) < 0) 
-        return error(engine_err);
+        return cuda_error();
+    if(engine_angle_cuda_unload_angle_chunk(angles, N - n, n, e, &epot) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(cuda_bonds_parts_unload(e) < 0) 
-        return error(engine_err);
+    if(cuda_bonds_parts_unload(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     *epot_out += epot;
     
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Angle_setThreads(const unsigned int &nr_threads) {
     cuda_angles_nr_threads = nr_threads;
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Angle_setBlocks(const unsigned int &nr_blocks) {
     cuda_angles_nr_blocks = nr_blocks;
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Angle_getDevice() {
@@ -1992,58 +1991,58 @@ int cuda::Angle_getDevice() {
 
 int cuda::Angle_toDevice(engine *e) {
     if(e->angles_cuda) 
-        return engine_err_ok;
+        return S_OK;
     
     return engine_angle_cuda_initialize(e);
 }
 
 int cuda::Angle_fromDevice(engine *e) {
     if(!e->angles_cuda) 
-        return engine_err_ok;
+        return S_OK;
     
     return engine_angle_cuda_finalize(e);
 }
 
 int cuda::Angle_refresh(engine *e) {
-    if(engine_angle_cuda_finalize(e) < 0) 
-        return error(engine_err);
+    if(engine_angle_cuda_finalize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
-    if(engine_angle_cuda_initialize(e) < 0) 
-        return error(engine_err);
+    if(engine_angle_cuda_initialize(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     if(cudaDeviceSynchronize() != cudaSuccess) 
-        return cuda_error(engine_err_cuda);
+        return cuda_error();
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 int cuda::Angle_refreshAngle(engine *e, AngleHandle *a) {
     if(e->angles_cuda) 
-        return engine_err_ok;
+        return S_OK;
 
     if(a == NULL) 
-        return engine_err_null;
+        return MDCERR_null;
 
     return engine_cuda_refresh_angle(a);
 }
 
 int cuda::Angle_refreshAngles(engine *e, AngleHandle **angles, int nr_angles) {
     if(e->angles_cuda) 
-        return engine_err_ok;
+        return S_OK;
 
     AngleHandle *as = (AngleHandle*)malloc(nr_angles * sizeof(AngleHandle));
     AngleHandle *ah;
     for(int i = 0; i < nr_angles; i++) { 
         ah = angles[i];
         if(ah == NULL) 
-            return engine_err_null;
+            return MDCERR_null;
         as[i] = *ah;
     }
     
-    if(engine_cuda_refresh_angles(e, as, nr_angles) < 0) 
-        return error(engine_err);
+    if(engine_cuda_refresh_angles(e, as, nr_angles) != S_OK) 
+        return error(MDCERR_cuda);
 
     free(as);
 
-    return engine_err_ok;
+    return S_OK;
 }

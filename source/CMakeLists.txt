@@ -87,14 +87,17 @@ set(
   event/tfTimeEvent.cpp
 
   rendering/tfAngleRenderer.cpp
+  rendering/tfAngleRenderer3D.cpp
   rendering/tfApplication.cpp
   rendering/tfArcBall.cpp
   rendering/tfArcBallInteractor.cpp
   rendering/tfArrowRenderer.cpp
   rendering/tfBondRenderer.cpp
+  rendering/tfBondRenderer3D.cpp
   rendering/tfClipPlane.cpp
   rendering/tfColorMapper.cpp
   rendering/tfDihedralRenderer.cpp
+  rendering/tfDihedralRenderer3D.cpp
   rendering/tfEglInfo.cpp
   rendering/tfGlfwApplication.cpp
   rendering/tfGlfwWindow.cpp
@@ -165,15 +168,18 @@ set(
   event/tfTimeEvent.h
 
   rendering/tfAngleRenderer.h
+  rendering/tfAngleRenderer3D.h
   rendering/tfApplication.h
   rendering/tfArcBall.h
   rendering/tfArcBallCamera.h
   rendering/tfArcBallInteractor.h
   rendering/tfArrowRenderer.h
   rendering/tfBondRenderer.h
+  rendering/tfBondRenderer3D.h
   rendering/tfClipPlane.h
   rendering/tfColorMapper.h
   rendering/tfDihedralRenderer.h
+  rendering/tfDihedralRenderer3D.h
   rendering/tfEglInfo.h
   rendering/tfGlInfo.h
   rendering/tfGlfwApplication.h

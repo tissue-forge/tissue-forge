@@ -31,6 +31,7 @@ set(
   tfCBoundaryConditions.cpp 
   tfCClipPlane.cpp 
   tfCCluster.cpp 
+  tfCError.cpp 
   tfCFlux.cpp 
   tfCForce.cpp 
   tfCLogger.cpp 
@@ -58,6 +59,7 @@ set(
   tfCBoundaryConditions.h 
   tfCClipPlane.h 
   tfCCluster.h 
+  tfCError.h 
   tfCFlux.h 
   tfCForce.h 
   tfCLogger.h 

@@ -57,31 +57,11 @@ using namespace TissueForge;
 
 
 /* Global variables. */
-/** The ID of the last error. */
-int TissueForge::exclusion_err = exclusion_err_ok;
 
-/* the error macro. */
-#define error(id)				(exclusion_err = errs_register(id, exclusion_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-
-/* list of error messages. */
-const char *exclusion_err_msg[2] = {
-	"Nothing bad happened.",
-    "An unexpected NULL pointer was encountered."
-	};
+#define error(id)          ( tf_error(E_FAIL, errs_err_msg[id]) )
     
 
-/**
- * @brief Evaluate a list of exclusioned interactions
- *
- * @param b Pointer to an array of #exclusion.
- * @param N Nr of exclusions in @c b.
- * @param e Pointer to the #engine in which these exclusions are evaluated.
- * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
- * 
- * @return #exclusion_err_ok or <0 on error (see #exclusion_err)
- */
- 
-int TissueForge::exclusion_eval(struct exclusion *b, int N, struct engine *e, FPTYPE *epot_out) {
+HRESULT TissueForge::exclusion_eval(struct exclusion *b, int N, struct engine *e, FPTYPE *epot_out) {
 
     int bid, pid, pjd, k, *loci, *locj, shift[3], ld_pots;
     FPTYPE h[3], epot = 0.0;
@@ -105,7 +85,7 @@ int TissueForge::exclusion_eval(struct exclusion *b, int N, struct engine *e, FP
     
     /* Check inputs. */
     if(b == NULL || e == NULL)
-        return error(exclusion_err_null);
+        return error(MDCERR_null);
         
     /* Get local copies of some variables. */
     s = &e->s;
@@ -258,12 +238,12 @@ int TissueForge::exclusion_eval(struct exclusion *b, int N, struct engine *e, FP
         *epot_out -= epot;
     
     /* We're done here. */
-    return exclusion_err_ok;
+    return S_OK;
     
-    }
+}
 
 
-int TissueForge::exclusion_evalf(struct exclusion *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out) {
+HRESULT TissueForge::exclusion_evalf(struct exclusion *b, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out) {
 
     int bid, pid, pjd, k, *loci, *locj, shift[3], ld_pots;
     FPTYPE h[3], epot = 0.0;
@@ -286,7 +266,7 @@ int TissueForge::exclusion_evalf(struct exclusion *b, int N, struct engine *e, F
     
     /* Check inputs. */
     if(b == NULL || e == NULL)
-        return error(exclusion_err_null);
+        return error(MDCERR_null);
         
     /* Get local copies of some variables. */
     s = &e->s;
@@ -439,6 +419,6 @@ int TissueForge::exclusion_evalf(struct exclusion *b, int N, struct engine *e, F
         *epot_out -= epot;
     
     /* We're done here. */
-    return exclusion_err_ok;
+    return S_OK;
     
-    }
+}

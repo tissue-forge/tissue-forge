@@ -80,6 +80,8 @@ in terms of rotations, zoom and camera position, ::
     tf.show()
     # Reset the camera after closing and then run
     tf.system.camera_reset()
+    # Enable camera lagging
+    tf.system.camera_enable_lagging()
     tf.run()
 
 Creating and Controlling Clip Planes
@@ -136,3 +138,26 @@ their creation, ::
     :attr:`index <rendering.ClipPlane.index>`, though a more reliable approach is to always refer to clip
     planes using the :py:class:`rendering.ClipPlanes` static method :meth:`item <rendering.ClipPlanes.item>`
     (*e.g.*, ``tf.rendering.ClipPlanes.item(1).destroy()``).
+
+.. _rendering_bonds:
+
+Visualizing Bonded Interactions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:ref:`Bonded interactions <bonded_interactions>` are visualized using simple lines by default.
+However, Tissue Forge supports generating production-quality data visualization
+by providing a runtime interface to dynamically control whether bonded interactions
+are visualized using simple lines (performance-friendly) or three-dimensional
+objects (production-friendly).
+At any time during simulation, visualization of
+:ref:`bonds <bonds>`, :ref:`angles <angles>` and :ref:`dihedrals <dihedrals>` can be individually or
+collectively set to either simple lines or three-dimensional objects. ::
+
+    # Enable three-dimensional bond visualization
+    tf.system.set_rendering_3d_bonds(True)
+    # Check whether doing angle three-dimensional visualization
+    angles_3d = tf.system.get_rendering_3d_angles()
+    # Toggle dihedral three-dimensional visualization
+    tf.system.toggle_rendering_3d_dihedrals()
+    # Enable three-dimensional visualization of all bonded interaction
+    tf.system.set_rendering_3d_all(True)

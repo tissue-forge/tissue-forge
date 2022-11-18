@@ -58,34 +58,10 @@
 using namespace TissueForge;
 
 
-/* the error macro. */
-#define error(id)				(runner_err = errs_register(id, runner_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-
-/* list of error messages. */
-extern const char *runner_err_msg[];
 extern unsigned int runner_rcount;
 
 
-/**
- * @brief Fill in the pairwise Verlet list entries for the given cell pair
- *        if needed and compute the interactions.
- * 
- * @param r The #runner computing the pair.
- * @param c The cell.
- * @param flags Bitmask for the sorting directions.
- *
- * @return #runner_err_ok or <0 on error (see #runner_err)
- *
- * This routine differs from #runner_dopair_verlet in that instead of
- * storing a Verlet table, the sorted particle ids are stored. This
- * requires only (size_i + size_j) entries as opposed to size_i*size_j
- * for the Verlet table, yet may be less efficient since particles
- * within the skin along the cell-pair axis are inspected, as opposed
- * to particles simply within the skin of each other.
- *
- */
- 
-__attribute__ ((flatten)) int TissueForge::runner_dosort(struct runner *r, struct space_cell *c, int flags) {
+__attribute__ ((flatten)) HRESULT TissueForge::runner_dosort(struct runner *r, struct space_cell *c, int flags) {
 
     struct Particle *p;
     struct space *s;
@@ -101,7 +77,7 @@ __attribute__ ((flatten)) int TissueForge::runner_dosort(struct runner *r, struc
     /* break early if one of the cells is empty */
     count = c->count;
     if(count == 0)
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     eng = r->e;
@@ -146,5 +122,5 @@ __attribute__ ((flatten)) int TissueForge::runner_dosort(struct runner *r, struc
     }
 
     /* since nothing bad happened to us... */
-    return runner_err_ok;
+    return S_OK;
 }

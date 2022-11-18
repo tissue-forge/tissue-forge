@@ -11,7 +11,7 @@ pr:
     - main
 
 variables:
-  tf_version: '0.0.1'
+  tf_version: '0.0.2'
   tf_buildnum: 0
   tf_buildqual: 'release'
 

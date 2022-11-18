@@ -57,7 +57,7 @@
 #include "tf_potential_eval.h"
 #include <tfEngine.h>
 #include <tfRunner.h>
-
+#include <tfError.h>
 
 
 #ifdef CELL
@@ -67,30 +67,16 @@
 
 
 /* the error macro. */
-#define error(id)				(runner_err = errs_register(id, runner_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
 using namespace TissueForge;
 
 
-/* list of error messages. */
-extern const char *runner_err_msg[];
 extern unsigned int runner_rcount;
 
 
-/**
- * @brief Compute the interactions between the particles in the given
- *        space_cell using the verlet list.
- *
- * @param r The #runner.
- * @param c The #cell containing the particles to traverse.
- * @param f A pointer to an array of #FPTYPE in which to aggregate the
- *        interaction forces.
- * 
- * @return #runner_err_ok or <0 on error (see #runner_err)
- */
- 
-__attribute__ ((flatten)) int TissueForge::runner_verlet_eval(struct runner *r, struct space_cell *c, FPTYPE *f_out) {
+__attribute__ ((flatten)) HRESULT TissueForge::runner_verlet_eval(struct runner *r, struct space_cell *c, FPTYPE *f_out) {
 
     struct space *s;
     struct Particle *part_i, *part_j;
@@ -260,25 +246,11 @@ __attribute__ ((flatten)) int TissueForge::runner_verlet_eval(struct runner *r, 
     r->epot += epot;
 
     /* All has gone well. */
-    return runner_err_ok;
+    return S_OK;
 
-    }
-    
-    
-/**
- * @brief Fill in the Verlet list entries for the given space_cell pair.
- * 
- * @param r The #runner computing the pair.
- * @param cell_i The first cell.
- * @param cell_j The second cell.
- * @param pshift A pointer to an array of three floating point values containing
- *      the vector separating the centers of @c cell_i and @c cell_j.
- *
- * @return #runner_err_ok or <0 on error (see #runner_err)
- *
- */
- 
-__attribute__ ((flatten)) int TissueForge::runner_verlet_fill(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, FPTYPE *pshift) {
+}
+
+__attribute__ ((flatten)) HRESULT TissueForge::runner_verlet_fill(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, FPTYPE *pshift) {
 
     struct Particle *part_i, *part_j;
     struct space *s;
@@ -312,7 +284,7 @@ __attribute__ ((flatten)) int TissueForge::runner_verlet_fill(struct runner *r, 
     count_i = cell_i->count;
     count_j = cell_j->count;
     if(count_i == 0 || count_j == 0 || (cell_i == cell_j && count_i < 2))
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     eng = r->e;
@@ -460,7 +432,7 @@ __attribute__ ((flatten)) int TissueForge::runner_verlet_fill(struct runner *r, 
                 
             /* Adjust verlet_nrpairs. */
             if((s->verlet_nrpairs[pid] = pind) > space_verlet_maxpairs)
-                return error(runner_err_verlet_overflow);
+                return error(MDCERR_verlet_overflow);
         
             } /* loop over all particles */
     
@@ -476,7 +448,7 @@ __attribute__ ((flatten)) int TissueForge::runner_verlet_fill(struct runner *r, 
         
         /* Allocate work arrays on stack. */
         if((parts = (unsigned int*)alloca(sizeof(unsigned int) * (count_i + count_j))) == NULL)
-            return error(runner_err_malloc);
+            return error(MDCERR_malloc);
         
         /* start by filling the particle ids of both cells into ind and d */
         nshift = sqrt(pshift[0]*pshift[0] + pshift[1]*pshift[1] + pshift[2]*pshift[2]);
@@ -617,7 +589,7 @@ __attribute__ ((flatten)) int TissueForge::runner_verlet_fill(struct runner *r, 
 
             /* Adjust verlet_nrpairs. */
             if((s->verlet_nrpairs[pid] = pind) > space_verlet_maxpairs)
-                return error(runner_err_verlet_overflow);
+                return error(MDCERR_verlet_overflow);
         
             } /* loop over all particles in cell_i. */
 
@@ -685,6 +657,6 @@ __attribute__ ((flatten)) int TissueForge::runner_verlet_fill(struct runner *r, 
         }
         
     /* since nothing bad happened to us... */
-    return runner_err_ok;
+    return S_OK;
 
-    }
+}

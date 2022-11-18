@@ -135,7 +135,7 @@ HRESULT tfUniverse_getParticle(unsigned int pidx, struct tfParticleHandleHandle 
         return E_FAIL;
     Particle *p = _Engine.s.partlist[pidx];
     TFC_PTRCHECK(p);
-    ParticleHandle *ph = new ParticleHandle(p->id, p->typeId);
+    ParticleHandle *ph = new ParticleHandle(p->id);
     handle->tfObj = (void*)ph;
     return S_OK;
 }

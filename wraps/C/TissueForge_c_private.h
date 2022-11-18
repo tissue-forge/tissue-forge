@@ -143,6 +143,72 @@ namespace TissueForge {
             return S_OK;
         }
 
+        template <typename O, typename H> 
+        HRESULT obj_lt(H *lhs, H *rhs, bool *result) {
+            TFC_PTRCHECK(result);
+            O *_lhs = castC<O, H>(lhs);
+            O *_rhs = castC<O, H>(rhs);
+            TFC_PTRCHECK(_lhs);
+            TFC_PTRCHECK(_rhs);
+            *result = *_lhs < *_rhs;
+            return S_OK;
+        }
+
+        template <typename O, typename H> 
+        HRESULT obj_gt(H *lhs, H *rhs, bool *result) {
+            TFC_PTRCHECK(result);
+            O *_lhs = castC<O, H>(lhs);
+            O *_rhs = castC<O, H>(rhs);
+            TFC_PTRCHECK(_lhs);
+            TFC_PTRCHECK(_rhs);
+            *result = *_lhs > *_rhs;
+            return S_OK;
+        }
+
+        template <typename O, typename H> 
+        HRESULT obj_le(H *lhs, H *rhs, bool *result) {
+            TFC_PTRCHECK(result);
+            O *_lhs = castC<O, H>(lhs);
+            O *_rhs = castC<O, H>(rhs);
+            TFC_PTRCHECK(_lhs);
+            TFC_PTRCHECK(_rhs);
+            *result = *_lhs <= *_rhs;
+            return S_OK;
+        }
+
+        template <typename O, typename H> 
+        HRESULT obj_ge(H *lhs, H *rhs, bool *result) {
+            TFC_PTRCHECK(result);
+            O *_lhs = castC<O, H>(lhs);
+            O *_rhs = castC<O, H>(rhs);
+            TFC_PTRCHECK(_lhs);
+            TFC_PTRCHECK(_rhs);
+            *result = *_lhs >= *_rhs;
+            return S_OK;
+        }
+
+        template <typename O, typename H> 
+        HRESULT obj_eq(H *lhs, H *rhs, bool *result) {
+            TFC_PTRCHECK(result);
+            O *_lhs = castC<O, H>(lhs);
+            O *_rhs = castC<O, H>(rhs);
+            TFC_PTRCHECK(_lhs);
+            TFC_PTRCHECK(_rhs);
+            *result = *_lhs == *_rhs;
+            return S_OK;
+        }
+
+        template <typename O, typename H> 
+        HRESULT obj_ne(H *lhs, H *rhs, bool *result) {
+            TFC_PTRCHECK(result);
+            O *_lhs = castC<O, H>(lhs);
+            O *_rhs = castC<O, H>(rhs);
+            TFC_PTRCHECK(_lhs);
+            TFC_PTRCHECK(_rhs);
+            *result = *_lhs == *_rhs;
+            return S_OK;
+        }
+
     }
 
 }

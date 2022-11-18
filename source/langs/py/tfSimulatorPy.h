@@ -56,6 +56,12 @@ namespace TissueForge::py {
 
         static void *wait_events(const FloatP_t &timeout=-1);
 
+        /** Set whether errors result in exceptions */
+        static HRESULT _throwExceptions(const bool &_throw);
+
+        /** Check whether errors result in exceptions */
+        static bool _throwingExceptions();
+
     };
 
     CAPI_FUNC(HRESULT) _setIPythonInputHook(PyObject *_ih);

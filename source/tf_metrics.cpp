@@ -197,7 +197,7 @@ static HRESULT virial_pair(
     count_i = cell_i->count;
     count_j = cell_j->count;
     if ( count_i == 0 || count_j == 0 || ( cell_i == cell_j && count_i < 2 ) )
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     cutoff2 = cutoff * cutoff;
@@ -333,7 +333,7 @@ static HRESULT virial_pair(
     }
     
     /* all is well that ends ok */
-    return runner_err_ok;
+    return S_OK;
 }
 
 HRESULT metrics::particlesRadiusOfGyration(int32_t *parts, uint16_t nr_parts, FloatP_t *result)
@@ -469,7 +469,7 @@ HRESULT metrics::particlesMomentOfInertia(int32_t *parts, uint16_t nr_parts, Flo
     return S_OK;
 }
 
-CAPI_FUNC(HRESULT) metrics::particlesVirial(int32_t *parts, uint16_t nr_parts, uint32_t flags, FloatP_t *tensor) {
+HRESULT metrics::particlesVirial(int32_t *parts, uint16_t nr_parts, uint32_t flags, FloatP_t *tensor) {
     FMatrix3 m{0.0};
     int i, j, k;
     struct Particle *part_i, *part_j;
@@ -723,7 +723,7 @@ HRESULT enum_particles(
     count = cell->count;
     
     if ( count == 0 )
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     cutoff2 = radius * radius;
@@ -766,7 +766,7 @@ HRESULT enum_particles(
     
     
     /* all is well that ends ok */
-    return runner_err_ok;
+    return S_OK;
 }
 
 void do_it(const FVector3 &origin, const Particle *part, FMatrix3 &m) {
@@ -795,7 +795,7 @@ HRESULT enum_thing(
     count = cell->count;
     
     if ( count == 0 )
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     cutoff2 = radius * radius;
@@ -836,13 +836,13 @@ HRESULT enum_thing(
     
     
     /* all is well that ends ok */
-    return runner_err_ok;
+    return S_OK;
 }
 
 /**
  * Creates an array of ParticleList objects.
  */
-std::vector<std::vector<std::vector<ParticleList*> > > metrics::particleGrid(const iVector3 &shape) {
+std::vector<std::vector<std::vector<ParticleList> > > metrics::particleGrid(const iVector3 &shape) {
     
     VERIFY_PARTICLES();
     
@@ -850,10 +850,10 @@ std::vector<std::vector<std::vector<ParticleList*> > > metrics::particleGrid(con
         throw std::domain_error("shape must have positive, non-zero values for all dimensions");
     }
     
-    std::vector<std::vector<std::vector<ParticleList*> > > result(
-        shape[0], std::vector<std::vector<ParticleList*> >(
-            shape[1], std::vector<ParticleList*>(
-                shape[2], new ParticleList())));
+    std::vector<std::vector<std::vector<ParticleList> > > result(
+        shape[0], std::vector<std::vector<ParticleList> >(
+            shape[1], std::vector<ParticleList>(
+                shape[2], ParticleList())));
     
     FVector3 dim = {_Engine.s.dim[0], _Engine.s.dim[1], _Engine.s.dim[2]};
     
@@ -875,9 +875,7 @@ std::vector<std::vector<std::vector<ParticleList*> > > metrics::particleGrid(con
             assert(j >= 0 && j <= shape[1]);
             assert(k >= 0 && k <= shape[2]);
             
-            ParticleList *list = result[i][j][k];
-            
-            list->insert(part->id);
+            result[i][j][k].insert(part->id);
         }
     }
     
@@ -895,15 +893,13 @@ std::vector<std::vector<std::vector<ParticleList*> > > metrics::particleGrid(con
         assert(j >= 0 && j <= shape[1]);
         assert(k >= 0 && k <= shape[2]);
         
-        ParticleList *list = result[i][j][k];
-        
-        list->insert(part->id);
+        result[i][j][k].insert(part->id);
     }
     
     return result;
 }
 
-HRESULT metrics::particleGrid(const iVector3 &shape, ParticleList **result) {
+HRESULT metrics::particleGrid(const iVector3 &shape, ParticleList *result) {
     auto pl = metrics::particleGrid(shape);
     unsigned int idx = 0;
     for(unsigned int i2 = 0; i2 < shape[2]; ++i2)

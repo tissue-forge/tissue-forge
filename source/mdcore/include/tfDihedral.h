@@ -28,11 +28,7 @@
 #define _MDCORE_INCLUDE_TFDIHEDRAL_H_
 
 #include <mdcore_config.h>
-
-/* dihedral error codes */
-#define dihedral_err_ok                    0
-#define dihedral_err_null                  -1
-#define dihedral_err_malloc                -2
+#include <tfParticleList.h>
 
 
 namespace TissueForge { 
@@ -41,10 +37,6 @@ namespace TissueForge {
     namespace rendering {
         struct Style;
     }
-
-
-    /** ID of the last error */
-    CAPI_DATA(int) dihedral_err;
 
 
     typedef enum DihedralFlags {
@@ -63,7 +55,7 @@ namespace TissueForge {
 
         uint32_t flags;
 
-        /* ids of particles involved */
+        /* id of particles involved */
         int i, j, k, l;
         
         uint32_t id;
@@ -88,8 +80,6 @@ namespace TissueForge {
 
         /**
          * @brief Get the default style
-         * 
-         * @return rendering::Style* 
          */
         static rendering::Style *styleDef();
 
@@ -117,8 +107,6 @@ namespace TissueForge {
 
         /**
          * @brief Get a JSON string representation
-         * 
-         * @return std::string 
          */
         std::string toString();
 
@@ -128,7 +116,6 @@ namespace TissueForge {
          * The returned dihedral is not automatically registered with the engine. 
          * 
          * @param str 
-         * @return Dihedral* 
          */
         static Dihedral *fromString(const std::string &str);
 
@@ -145,16 +132,14 @@ namespace TissueForge {
         /**
          * @brief Gets the dihedral of this handle
          * 
-         * @return Dihedral* 
+         * @return dihedral, if available
          */
         Dihedral *get();
 
         /**
          * @brief Get a summary string of the dihedral
-         * 
-         * @return std::string 
          */
-        std::string str();
+        std::string str() const;
 
         /**
          * @brief Check the validity of the handle
@@ -166,17 +151,13 @@ namespace TissueForge {
 
         /**
          * @brief Destroy the dihedral
-         * 
-         * @return HRESULT 
          */
         HRESULT destroy();
 
         /**
          * @brief Gets all dihedrals in the universe
-         * 
-         * @return std::vector<DihedralHandle*> 
          */
-        static std::vector<DihedralHandle*> items();
+        static std::vector<DihedralHandle> items();
 
         /**
          * @brief Tests whether this bond decays
@@ -187,17 +168,52 @@ namespace TissueForge {
 
         ParticleHandle *operator[](unsigned int index);
 
+        /** Test whether the bond has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the bond has a particle */
+        bool has(ParticleHandle *part);
+
+        /** Get the current angle */
+        FloatP_t getAngle();
+
+        /** Get the energy */
         FPTYPE getEnergy();
+
+        /** Get the particle ids */
         std::vector<int32_t> getParts();
+
+        /** Get the particle list */
+        ParticleList getPartList();
+
+        /** Get the potential */
         Potential *getPotential();
+
+        /** Get the id */
         uint32_t getId();
+
+        /** Get the dissociation energy */
         FPTYPE getDissociationEnergy();
+
+        /** Set the dissociation energy */
         void setDissociationEnergy(const FPTYPE &dissociation_energy);
+
+        /** Get the half life */
         FPTYPE getHalfLife();
+
+        /** Set the half life */
         void setHalfLife(const FPTYPE &half_life);
+
+        /** Test whether the underlying dihedral is active */
         bool getActive();
+
+        /** Get the style */
         rendering::Style *getStyle();
+
+        /** Set the style */
         void setStyle(rendering::Style *style);
+
+        /** Get the age */
         FPTYPE getAge();
 
         DihedralHandle() : id(-1) {}
@@ -208,26 +224,59 @@ namespace TissueForge {
      * @brief Destroys a dihedral
      * 
      * @param d dihedral to destroy
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Dihedral_Destroy(Dihedral *d);
 
     /**
      * @brief Destroys all dihedrals in the universe
-     * 
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Dihedral_DestroyAll();
 
     /* associated functions */
-    int dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTYPE *epot_out);
-    int dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of dihedraled interactions
+     *
+     * @param b Pointer to an array of #dihedral.
+     * @param N Nr of dihedrals in @c b.
+     * @param e Pointer to the #engine in which these dihedrals are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     */
+    HRESULT dihedral_eval(struct Dihedral *d, int N, struct engine *e, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of dihedraled interactions
+     *
+     * @param b Pointer to an array of #dihedral.
+     * @param N Nr of dihedrals in @c b.
+     * @param e Pointer to the #engine in which these dihedrals are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     *
+     * This function differs from #dihedral_eval in that the forces are added to
+     * the array @c f instead of directly in the particle data.
+     */
+    HRESULT dihedral_evalf(struct Dihedral *d, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
 
     /**
      * find all the dihedrals that interact with the given particle id
      */
     std::vector<int32_t> Dihedral_IdsForParticle(int32_t pid);
 
+    inline bool operator< (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::DihedralHandle& lhs, const TissueForge::DihedralHandle& rhs) { return !(lhs == rhs); }
+
+
 };
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::DihedralHandle &h)
+{
+    os << h.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFDIHEDRAL_H_

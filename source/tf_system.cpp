@@ -126,6 +126,96 @@ HRESULT system::contextRelease() {
     }
 }
 
+bool system::cameraIsLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        return renderer->isLagging();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+HRESULT system::cameraEnableLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->enableLagging();
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+HRESULT system::cameraDisableLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->disableLagging();
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+HRESULT system::cameraToggleLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->toggleLagging();
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+float system::cameraGetLagging() {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        return renderer->getLagging();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+HRESULT system::cameraSetLagging(const float &lagging) {
+    try {
+        Simulator *sim = Simulator::get();
+        
+        rendering::UniverseRenderer *renderer = sim->app->getRenderer();
+
+        renderer->setLagging(lagging);
+
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
 HRESULT system::cameraMoveTo(const FVector3 &eye, const FVector3 &center, const FVector3 &up) {
     try {
         Simulator *sim = Simulator::get();
@@ -776,6 +866,108 @@ struct rendering::UniverseRenderer* system::getRenderer() {
     }
     catch(const std::exception &e) {
         TF_RETURN_EXP(e);
+    }
+}
+
+const bool system::getRendering3DBonds() {
+    try {
+        return system::getRenderer()->getRendering3DBonds();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return false;
+    }
+}
+
+void system::setRendering3DBonds(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DBonds(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DBonds() {
+    try {
+        return system::getRenderer()->toggleRendering3DBonds();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+const bool system::getRendering3DAngles() {
+    try {
+        return system::getRenderer()->getRendering3DAngles();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return false;
+    }
+}
+
+void system::setRendering3DAngles(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DAngles(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DAngles() {
+    try {
+        return system::getRenderer()->toggleRendering3DAngles();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+const bool system::getRendering3DDihedrals() {
+    try {
+        return system::getRenderer()->getRendering3DDihedrals();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return false;
+    }
+}
+
+void system::setRendering3DDihedrals(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DDihedrals(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DDihedrals() {
+    try {
+        return system::getRenderer()->toggleRendering3DDihedrals();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::setRendering3DAll(const bool &_flag) {
+    try {
+        return system::getRenderer()->setRendering3DAll(_flag);
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+    }
+}
+
+void system::toggleRendering3DAll() {
+    try {
+        return system::getRenderer()->toggleRendering3DAll();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
     }
 }
 

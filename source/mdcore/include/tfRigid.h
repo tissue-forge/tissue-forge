@@ -30,11 +30,6 @@
 
 MDCORE_BEGIN_DECLS
 
-/* rigid error codes */
-#define rigid_err_ok                    0
-#define rigid_err_null                  -1
-#define rigid_err_malloc                -2
-
 
 /* Some constants. */
 #define rigid_maxparts                  10
@@ -46,8 +41,6 @@ MDCORE_BEGIN_DECLS
 
 namespace TissueForge { 
 
-
-	CAPI_DATA(int) rigid_err;
 
 	/** The rigid structure */
 	typedef struct rigid {
@@ -74,8 +67,26 @@ namespace TissueForge {
 
 
 	/* associated functions */
-	int rigid_eval_shake(struct rigid *r, int N, struct engine *e);
-	int rigid_eval_pshake(struct rigid *r, int N, struct engine *e, int a_update);
+
+	/**
+	 * @brief Evaluate (SHAKE) a list of rigid constraints
+	 *
+	 * @param rs Pointer to an array of #rigid.
+	 * @param N Nr of rigids in @c r.
+	 * @param e Pointer to the #engine in which these rigids are evaluated.
+	 * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+	 */
+	HRESULT rigid_eval_shake(struct rigid *r, int N, struct engine *e);
+
+	/**
+	 * @brief Evaluate (P-SHAKE) a list of rigid constraints
+	 *
+	 * @param rs Pointer to an array of #rigid.
+	 * @param N Nr of rigids in @c r.
+	 * @param e Pointer to the #engine in which these rigids are evaluated.
+	 * @param a_update flag whether to force updates of the constraint coeffs.
+	 */
+	HRESULT rigid_eval_pshake(struct rigid *r, int N, struct engine *e, int a_update);
 
 };
 

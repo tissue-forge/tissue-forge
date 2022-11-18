@@ -20,6 +20,8 @@
 #ifndef _MDCORE_SOURCE_TF_ENGINE_ADVANCE_H_
 #define _MDCORE_SOURCE_TF_ENGINE_ADVANCE_H_
 
+#include <tf_port.h>
+
 
 namespace TissueForge{ 
 
@@ -28,10 +30,8 @@ namespace TissueForge{
      * @brief Update the particle velocities and positions, re-shuffle if
      *      appropriate.
      * @param e The #engine on which to run.
-     *
-     * @return #engine_err_ok or < 0 on error (see #engine_err).
      */
-    CAPI_FUNC(int) engine_advance(struct engine *e);
+    CAPI_FUNC(HRESULT) engine_advance(struct engine *e);
 
 };
 

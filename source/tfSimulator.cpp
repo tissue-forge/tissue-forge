@@ -77,6 +77,9 @@ static cuda::SimulatorConfig *_SimulatorCUDAConfig = NULL;
 #endif
 static bool _isTerminalInteractiveShell = false;
 
+static TissueForge::ErrorCallback *simErrCb = NULL;
+static unsigned int simErrCbId = 0;
+
 static void simulator_interactive_run();
 
 
@@ -201,7 +204,8 @@ static void parse_kwargs(
     FloatP_t *max_distance=NULL, 
     bool *windowless=NULL, 
     TissueForge::iVector2 *window_size=NULL, 
-    unsigned int *seed=NULL, 
+    unsigned int *seed=NULL,
+    bool *throw_exc=NULL, 
     uint32_t *perfcounters=NULL, 
     int *perfcounter_period=NULL, 
     int *logger_level=NULL, 
@@ -234,6 +238,7 @@ static void parse_kwargs(
     if(windowless) conf.setWindowless(*windowless);
     if(window_size) conf.setWindowSize(*window_size);
     if(seed) conf.setSeed(*seed);
+    if(throw_exc) conf.setThrowingExceptions(*throw_exc);
     if(perfcounters) conf.universeConfig.timers_mask = *perfcounters;
     if(perfcounter_period) conf.universeConfig.timer_output_period = *perfcounter_period;
     if(logger_level) Logger::setLevel(*logger_level);
@@ -417,6 +422,14 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
     }
     else seed = NULL;
 
+    bool *throw_exc;
+    if(parse::has_kwarg(kwargs, "throw_exc")) {
+        throw_exc = new bool(TissueForge::cast<std::string, bool>(parse::kwargVal(kwargs, "throw_exc")));
+
+        TF_Log(LOG_INFORMATION) << "got throw_exc: " << std::to_string(*throw_exc);
+    }
+    else throw_exc = NULL;
+
     uint32_t *perfcounters;
     if(parse::has_kwarg(kwargs, "perfcounters")) {
         s = parse::kwargVal(kwargs, "perfcounters");
@@ -476,6 +489,7 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
         windowless, 
         window_size, 
         seed, 
+        throw_exc, 
         perfcounters, 
         perfcounter_period, 
         logger_level, 
@@ -550,6 +564,39 @@ HRESULT Simulator::makeCUDAConfigCurrent(cuda::SimulatorConfig *config) {
 }
 #endif
 
+static void Simulator_ErrorCallback(const TissueForge::Error &err) {
+    throw std::runtime_error(errStr(err));
+}
+
+static HRESULT Simulator_setErrorCallback() {
+    if(!simErrCb) {
+        simErrCb = new ErrorCallback(Simulator_ErrorCallback);
+        simErrCbId = addErrorCallback(*simErrCb);
+    }
+    return S_OK;
+}
+
+static HRESULT Simulator_unsetErrorCallback() {
+    if(simErrCb) {
+        removeErrorCallback(simErrCbId);
+        delete simErrCb;
+        simErrCb = 0;
+        simErrCbId = 0;
+    }
+    return S_OK;
+}
+
+HRESULT Simulator::throwExceptions(const bool &_throw) {
+    if(_throw && !simErrCb) Simulator_setErrorCallback();
+    else if(simErrCb) Simulator_unsetErrorCallback();
+
+    return S_OK;
+}
+
+bool Simulator::throwingExceptions() {
+    return simErrCb;
+}
+
 bool TissueForge::isTerminalInteractiveShell() {
     return _isTerminalInteractiveShell;
 }
@@ -568,7 +615,7 @@ HRESULT TissueForge::modules_init() {
     return S_OK;
 }
 
-int TissueForge::universe_init(const UniverseConfig &conf ) {
+HRESULT TissueForge::universe_init(const UniverseConfig &conf ) {
 
     _Universe.events = new event::EventBaseList();
 
@@ -588,9 +635,8 @@ int TissueForge::universe_init(const UniverseConfig &conf ) {
     TF_Log(LOG_INFORMATION) << "main: initializing the engine... ";
     
     if ( engine_init( &_Engine , _origin , _dim , cells.data() , cutoff , conf.boundaryConditionsPtr ,
-            conf.maxTypes , engine_flag_none ) != 0 ) {
-        TF_RETURN_EXP(std::runtime_error(errs_getstring(0)));
-    }
+            conf.maxTypes , engine_flag_none ) != S_OK ) 
+        return tf_error(E_FAIL, errs_err_msg[MDCERR_engine]);
 
     _Engine.dt = conf.dt;
     _Engine.time = conf.start_step;
@@ -630,15 +676,8 @@ int TissueForge::universe_init(const UniverseConfig &conf ) {
 
     // start the engine
 
-    if ( engine_start( &_Engine , nr_runners , nr_runners ) != 0 ) {
-        TF_Log(LOG_ERROR) << errs_getstring(0);
-        tf_exp(std::runtime_error(errs_getstring(0)));
-    }
-
-    if ( modules_init() != S_OK ) {
-        TF_Log(LOG_ERROR) << errs_getstring(0);
-        tf_exp(std::runtime_error(errs_getstring(0)));
-    }
+    if(engine_start( &_Engine , nr_runners , nr_runners ) != S_OK || modules_init() != S_OK) 
+        return tf_error(E_FAIL, errs_err_msg[MDCERR_engine]);
 
     // if loading from file, populate universe if data is available
     
@@ -648,17 +687,13 @@ int TissueForge::universe_init(const UniverseConfig &conf ) {
         io::MetaData metaData, metaDataFile;
 
         auto feItr = io::FIO::currentRootElement->children.find(io::FIO::KEY_METADATA);
-        if(feItr == io::FIO::currentRootElement->children.end() || io::fromFile(*feItr->second, metaData, &metaDataFile) != S_OK) {
-            tf_error(E_FAIL, "Error loading metadata");
-            return E_FAIL;
-        }
+        if(feItr == io::FIO::currentRootElement->children.end() || io::fromFile(*feItr->second, metaData, &metaDataFile) != S_OK) 
+            return tf_error(E_FAIL, errs_err_msg[MDCERR_io]);
 
         feItr = io::FIO::currentRootElement->children.find(io::FIO::KEY_UNIVERSE);
         if(feItr != io::FIO::currentRootElement->children.end()) {
-            if(io::fromFile(*feItr->second, metaDataFile, Universe::get()) != S_OK) {
-                tf_error(E_FAIL, "Error loading universe");
-                return E_FAIL;
-            }
+            if(io::fromFile(*feItr->second, metaDataFile, Universe::get()) != S_OK) 
+                return tf_error(E_FAIL, errs_err_msg[MDCERR_io]);
         }
     }
 
@@ -681,75 +716,70 @@ HRESULT TissueForge::Simulator_init(const Simulator::Config &conf, const std::ve
     std::thread::id id = std::this_thread::get_id();
     TF_Log(LOG_INFORMATION) << "thread id: " << id;
 
-    try {
+    if(_Simulator) 
+        return tf_error(E_FAIL, "Error, Simulator is already initialized");
+    
+    Simulator *sim = new Simulator();
 
-        if(_Simulator) {
-            tf_exp(std::domain_error("Error, Simulator is already initialized" ));
-        }
+    #ifdef TF_WITHCUDA
+    cuda::init();
+    cuda::setGLDevice(0);
+    _SimulatorCUDAConfig = new cuda::SimulatorConfig();
+    #endif
+    
+    _Universe.name = conf.title();
+
+    TF_Log(LOG_INFORMATION) << "got universe name: " << _Universe.name;
+
+    Simulator::throwExceptions(conf.throwingExceptions());
+
+    setSeed(const_cast<Simulator::Config&>(conf).seed());
+
+    // init the engine first
+    /* Initialize scene particles */
+    if(universe_init(conf.universeConfig) != S_OK) 
+        return tf_error(E_FAIL, "Error initializing the universe");
+
+    if(conf.windowless()) {
+        TF_Log(LOG_INFORMATION) <<  "creating Windowless app" ;
         
-        Simulator *sim = new Simulator();
+        ArgumentsWrapper<rendering::WindowlessApplication::Arguments> margs(appArgv);
 
-        #ifdef TF_WITHCUDA
-        cuda::init();
-        cuda::setGLDevice(0);
-        _SimulatorCUDAConfig = new cuda::SimulatorConfig();
-        #endif
-        
-        _Universe.name = conf.title();
+        rendering::WindowlessApplication *windowlessApp = new rendering::WindowlessApplication(*margs.pArgs);
 
-        TF_Log(LOG_INFORMATION) << "got universe name: " << _Universe.name;
-
-        setSeed(const_cast<Simulator::Config&>(conf).seed());
-
-        // init the engine first
-        /* Initialize scene particles */
-        universe_init(conf.universeConfig);
-
-        if(conf.windowless()) {
-            TF_Log(LOG_INFORMATION) <<  "creating Windowless app" ;
-            
-            ArgumentsWrapper<rendering::WindowlessApplication::Arguments> margs(appArgv);
-
-            rendering::WindowlessApplication *windowlessApp = new rendering::WindowlessApplication(*margs.pArgs);
-
-            if(FAILED(windowlessApp->createContext(conf))) {
-                delete windowlessApp;
-
-                tf_exp(std::domain_error("could not create windowless gl context"));
-            }
-            else {
-                sim->app = windowlessApp;
-            }
-
-	    TF_Log(LOG_TRACE) << "sucessfully created windowless app";
+        if(FAILED(windowlessApp->createContext(conf))) {
+            TF_Log(LOG_DEBUG) << "deleting failed windowless app";
+            delete windowlessApp;
+            return tf_error(E_FAIL, "Could not create windowless gl context");
         }
         else {
-            TF_Log(LOG_INFORMATION) <<  "creating GLFW app" ;
-            
-            ArgumentsWrapper<rendering::GlfwApplication::Arguments> margs(appArgv);
-
-            rendering::GlfwApplication *glfwApp = new rendering::GlfwApplication(*margs.pArgs);
-            
-            if(FAILED(glfwApp->createContext(conf))) {
-                TF_Log(LOG_DEBUG) << "deleting failed glfwApp";
-                delete glfwApp;
-                tf_exp(std::domain_error("could not create  gl context"));
-            }
-            else {
-                sim->app = glfwApp;
-            }
+            sim->app = windowlessApp;
         }
 
-        TF_Log(LOG_INFORMATION) << "sucessfully created application";
-
-        sim->makeCurrent();
+    TF_Log(LOG_TRACE) << "sucessfully created windowless app";
+    }
+    else {
+        TF_Log(LOG_INFORMATION) <<  "creating GLFW app" ;
         
-        return S_OK;
+        ArgumentsWrapper<rendering::GlfwApplication::Arguments> margs(appArgv);
+
+        rendering::GlfwApplication *glfwApp = new rendering::GlfwApplication(*margs.pArgs);
+        
+        if(FAILED(glfwApp->createContext(conf))) {
+            TF_Log(LOG_DEBUG) << "deleting failed glfw app";
+            delete glfwApp;
+            return tf_error(E_FAIL, "Could not create gl context");
+        }
+        else {
+            sim->app = glfwApp;
+        }
     }
-    catch(const std::exception &e) {
-        tf_exp(e);
-        return E_FAIL;
-    }
+
+    TF_Log(LOG_INFORMATION) << "sucessfully created application";
+
+    sim->makeCurrent();
+    
+    return S_OK;
 }
 
 HRESULT TissueForge::Simulator_init(const std::vector<std::string> &argv) {
@@ -811,7 +841,8 @@ HRESULT Simulator::initConfig(const Simulator::Config &conf, const Simulator::GL
 
     // init the engine first
     /* Initialize scene particles */
-    universe_init(conf.universeConfig);
+    if(universe_init(conf.universeConfig) != S_OK) 
+        return tf_error(E_FAIL, "Error initializing the universe");
 
 
     if(conf.windowless()) {

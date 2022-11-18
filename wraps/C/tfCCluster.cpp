@@ -89,7 +89,7 @@ HRESULT tfClusterParticleHandle_init(struct tfClusterParticleHandleHandle *handl
     Particle *p = _Engine.s.partlist[id];
     TFC_PTRCHECK(p);
 
-    ClusterParticleHandle *phandle = new ClusterParticleHandle(id, p->typeId);
+    ClusterParticleHandle *phandle = new ClusterParticleHandle(id);
     handle->tfObj = (void*)phandle;
     return S_OK;
 }
@@ -146,6 +146,20 @@ HRESULT tfClusterParticleHandle_createParticleS(
     return S_OK;
 }
 
+HRESULT tfClusterParticleHandle_hasPartId(struct tfClusterParticleHandleHandle *handle, int pid, bool *result) {
+    TFC_CLUSTERHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = phandle->has(pid);
+    return S_OK;
+}
+HRESULT tfClusterParticleHandle_hasPart(struct tfClusterParticleHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_CLUSTERHANDLE_GET(handle);
+    TFC_PTRCHECK(part);
+    TFC_PTRCHECK(result);
+    *result = phandle->has((ParticleHandle*)part->tfObj);
+    return S_OK;
+}
+
 HRESULT tfClusterParticleHandle_splitAxis(struct tfClusterParticleHandleHandle *handle, int *cid, tfFloatP_t *axis, tfFloatP_t time) {
     TFC_CLUSTERHANDLE_GET(handle);
     TFC_PTRCHECK(cid);
@@ -191,6 +205,13 @@ HRESULT tfClusterParticleHandle_getNumParts(struct tfClusterParticleHandleHandle
     return S_OK;
 }
 
+HRESULT tfClusterParticleHandle_getParts(struct tfClusterParticleHandleHandle *handle, struct tfParticleListHandle *parts) {
+    TFC_CLUSTERHANDLE_GET(handle);
+    TFC_PTRCHECK(parts);
+    Particle *p = phandle->part();
+    return tfParticleList_initI(parts, p->parts, p->nr_parts);
+}
+
 HRESULT tfClusterParticleHandle_getParticle(struct tfClusterParticleHandleHandle *handle, int i, struct tfParticleHandleHandle *parthandle) {
     TFC_CLUSTERHANDLE_GET(handle);
     TFC_PTRCHECK(parthandle);
@@ -203,9 +224,14 @@ HRESULT tfClusterParticleHandle_getParticle(struct tfClusterParticleHandleHandle
         return E_FAIL;
     Particle *p = _Engine.s.partlist[pid];
     TFC_PTRCHECK(p);
-    ParticleHandle *ph = new ParticleHandle(p->id, p->typeId);
+    ParticleHandle *ph = new ParticleHandle(p->id);
     parthandle->tfObj = (void*)ph;
     return S_OK;
+}
+
+HRESULT tfClusterParticleHandle_str(struct tfClusterParticleHandleHandle *handle, char **str, unsigned int *numChars) {
+    TFC_CLUSTERHANDLE_GET(handle);
+    return TissueForge::capi::str2Char(phandle->str(), str, numChars);
 }
 
 HRESULT tfClusterParticleHandle_getRadiusOfGyration(struct tfClusterParticleHandleHandle *handle, tfFloatP_t *radiusOfGyration) {
@@ -288,12 +314,42 @@ HRESULT tfClusterParticleType_addType(struct tfClusterParticleTypeHandle *handle
     return S_OK;
 }
 
+HRESULT tfClusterParticleType_str(struct tfClusterParticleTypeHandle *handle, char **str, unsigned int *numChars) {
+    TFC_TYPEHANDLE_GET(handle);
+    return TissueForge::capi::str2Char(ptype->str(), str, numChars);
+}
+
 HRESULT tfClusterParticleType_hasType(struct tfClusterParticleTypeHandle *handle, struct tfParticleTypeHandle *phandle, bool *hasType) {
     TFC_TYPEHANDLE_GET(handle);
     TFC_PTRCHECK(phandle); TFC_PTRCHECK(phandle->tfObj);
     TFC_PTRCHECK(hasType);
     ParticleType *partType = (ParticleType*)phandle->tfObj;
     *hasType = ptype->hasType(partType);
+    return S_OK;
+}
+
+HRESULT tfClusterParticleType_hasTypeId(struct tfClusterParticleTypeHandle *handle, int pid, bool *result) {
+    TFC_TYPEHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = ptype->has(pid);
+    return S_OK;
+}
+
+HRESULT tfClusterParticleType_hasTypeML(struct tfClusterParticleTypeHandle *handle, struct tfParticleTypeHandle *_ptype, bool *result) {
+    TFC_TYPEHANDLE_GET(handle);
+    TFC_PTRCHECK(_ptype);
+    TFC_PTRCHECK(result);
+    ParticleType *partType = (ParticleType*)_ptype->tfObj;
+    *result = ptype->has(partType);
+    return S_OK;
+}
+
+HRESULT tfClusterParticleType_hasPart(struct tfClusterParticleTypeHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_TYPEHANDLE_GET(handle);
+    TFC_PTRCHECK(part);
+    TFC_PTRCHECK(result);
+    ParticleHandle *phandle = (ParticleHandle*)part->tfObj;
+    *result = ptype->has(phandle);
     return S_OK;
 }
 

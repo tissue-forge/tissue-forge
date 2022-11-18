@@ -24,6 +24,9 @@
 %}
 
 
+%template(vectorParticleList) std::vector<TissueForge::ParticleList>;
+%template(vector2ParticleList) std::vector<std::vector<TissueForge::ParticleList>>;
+%template(vector3ParticleList) std::vector<std::vector<std::vector<TissueForge::ParticleList>>>;
 %template(vectorParticleList_p) std::vector<TissueForge::ParticleList*>;
 %template(vector2ParticleList_p) std::vector<std::vector<TissueForge::ParticleList*>>;
 %template(vector3ParticleList_p) std::vector<std::vector<std::vector<TissueForge::ParticleList*>>>;
@@ -39,6 +42,9 @@
             if i >= len(self):
                 raise IndexError('Valid indices < ' + str(len(self)))
             return self.item(i)
+
+        def __contains__(self, item):
+            return self.has(item)
 
         @property
         def virial(self):

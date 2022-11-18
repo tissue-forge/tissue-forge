@@ -45,25 +45,25 @@ namespace TissueForge {
 
     TF_ALWAYS_INLINE bool apply_update_pos_vel(Particle *p, space_cell *c, const FPTYPE* h, int* delta) {
         
-        #define ENFORCE_FREESLIP_LOW(i)                              \
-            p->position[i] = -p->position[i] * restitution;          \
-            p->velocity[i] *= -restitution;                          \
-            enforced = true;                                         \
+        #define ENFORCE_FREESLIP_LOW(i)                                                     \
+            p->position[i] = std::max<FPTYPE>(-p->position[i] * restitution, FPTYPE_ZERO);  \
+            p->velocity[i] *= -restitution;                                                 \
+            enforced = true;                                                                \
 
-        #define ENFORCE_FREESLIP_HIGH(i)                                                \
-            p->position[i] = c->dim[i] - (p->position[i] - c->dim[i]) * restitution;    \
-            p->velocity[i] *= -restitution;                                             \
-            enforced = true;                                                            \
+        #define ENFORCE_FREESLIP_HIGH(i)                                                                                \
+            p->position[i] = c->dim[i] - std::max<FPTYPE>((p->position[i] - c->dim[i]) * restitution, FPTYPE_EPSILON);  \
+            p->velocity[i] *= -restitution;                                                                             \
+            enforced = true;                                                                                            \
 
-        #define ENFORCE_VELOCITY_LOW(i, bc)                                 \
-            p->position[i] = -p->position[i] * bc.restore;                  \
-            p->velocity = 2.f * bc.velocity - (p->velocity * bc.restore);   \
-            enforced = true;                                                \
+        #define ENFORCE_VELOCITY_LOW(i, bc)                                                 \
+            p->position[i] = std::max<FPTYPE>(-p->position[i] * bc.restore, FPTYPE_ZERO);   \
+            p->velocity = bc.velocity - ((p->velocity - bc.velocity) * bc.restore);         \
+            enforced = true;                                                                \
 
-        #define ENFORCE_VELOCITY_HIGH(i, bc)                                    \
-            p->position[i] = 2.f * c->dim[i] - (p->position[i] * bc.restore);   \
-            p->velocity = 2.f * bc.velocity - (p->velocity * bc.restore);       \
-            enforced = true;                                                    \
+        #define ENFORCE_VELOCITY_HIGH(i, bc)                                                                            \
+            p->position[i] = c->dim[i] - std::max<FPTYPE>((p->position[i] - c->dim[i]) * bc.restore, FPTYPE_EPSILON);   \
+            p->velocity = bc.velocity - ((p->velocity - bc.velocity) * bc.restore);                                     \
+            enforced = true;                                                                                            \
 
         static const BoundaryConditions *bc = &_Engine.boundary_conditions;
         

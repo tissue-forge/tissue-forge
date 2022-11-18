@@ -57,15 +57,15 @@ using namespace TissueForge;
 
 
 /* the error macro. */
-#define error(id) (engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
-static int engine_advance_forward_euler(struct engine *e);
-static int engine_advance_runge_kutta_4(struct engine *e);
+static HRESULT engine_advance_forward_euler(struct engine *e);
+static HRESULT engine_advance_runge_kutta_4(struct engine *e);
 
 
 
-static int _toofast_error(Particle *p, int line, const char* func) {
+static HRESULT _toofast_error(Particle *p, int line, const char* func) {
     std::stringstream ss;
     ss << "ERROR, particle moving too fast, p: {" << std::endl;
     ss << "\tid: " << p->id << ", " << std::endl;
@@ -75,22 +75,13 @@ static int _toofast_error(Particle *p, int line, const char* func) {
     ss << "\tf: [" << p->f[0] << ", " << p->f[1] << ", " << p->f[2] << "], " << std::endl;
     ss << "}";
     
-    errSet(E_FAIL, ss.str().c_str(), line, __FILE__, func);
-    return error(engine_err_toofast);
+    return tf_error(E_FAIL, ss.str().c_str());
 }
 
 #define toofast_error(p) _toofast_error(p, __LINE__, TF_FUNCTION)
 
 
-/**
- * @brief Update the particle velocities and positions, re-shuffle if
- *      appropriate.
- * @param e The #engine on which to run.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-
-int TissueForge::engine_advance(struct engine *e) {
+HRESULT TissueForge::engine_advance(struct engine *e) {
     if(e->integrator == EngineIntegrator::FORWARD_EULER) {
         return engine_advance_forward_euler(e);
     }
@@ -310,18 +301,18 @@ static inline void cell_advance_forward_euler_cluster(const FPTYPE h[3], int cid
  * @brief Update the particle velocities and positions, re-shuffle if
  *      appropriate.
  * @param e The #engine on which to run.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
-int engine_advance_forward_euler(struct engine *e) {
+HRESULT engine_advance_forward_euler(struct engine *e) {
+
+    TF_Log(LOG_TRACE);
 
     // set the integrator flag to set any persistent forces
     // forward euler is a single step, so alwasy set this flag
     e->integrator_flags |= INTEGRATOR_UPDATE_PERSISTENTFORCE;
 
-    if (engine_force(e) < 0) {
+    if (engine_force(e) != S_OK) {
         TF_Log(LOG_CRITICAL);
-        return error(engine_err);
+        return error(MDCERR_engine);
     }
 
     ticks tic = getticks();
@@ -436,11 +427,12 @@ int engine_advance_forward_euler(struct engine *e) {
             
             // Patching a strange bug here. 
             // When built with CUDA support, space_cell alignment is off in Fluxes_integrate when retrieved from static engine. 
-            // TODO: fix space cell alignment issue when built with CUDA
+            // TODO: determine and fix space cell alignment issue when built with vs. without CUDA
             #ifdef HAVE_CUDA
             Fluxes_integrate(&_Engine.s.cells[_cid], _Engine.dt);
             #else
-            Fluxes_integrate(_cid);
+            // Fluxes_integrate(_cid);                             // Now this shows alignment issue, when previously it worked
+            Fluxes_integrate(&_Engine.s.cells[_cid], _Engine.dt);  // Now this works like when built with CUDA, when previously it showed alignment issue
             #endif
         };
         
@@ -474,8 +466,10 @@ int engine_advance_forward_euler(struct engine *e) {
 
     e->timers[engine_timer_advance] += getticks() - tic;
 
+    TF_Log(LOG_TRACE);
+
     /* return quietly */
-    return engine_err_ok;
+    return S_OK;
 }
 
 #define CHECK_TOOFAST(p, h, h2) \
@@ -493,11 +487,9 @@ int engine_advance_forward_euler(struct engine *e) {
  * @brief Update the particle velocities and positions, re-shuffle if
  *      appropriate.
  * @param e The #engine on which to run.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
  */
 
-int engine_advance_runge_kutta_4(struct engine *e) {
+HRESULT engine_advance_runge_kutta_4(struct engine *e) {
 
     int cid, pid, k, delta[3], step;
     struct space_cell *c, *c_dest;
@@ -572,8 +564,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
         // **  get K1, calculate forces at current position **
         // set the integrator flag to set any persistent forces
         e->integrator_flags |= INTEGRATOR_UPDATE_PERSISTENTFORCE;
-        if (engine_force(e) < 0) {
-            return error(engine_err);
+        if (engine_force(e) != S_OK) {
+            return error(MDCERR_engine);
         }
         e->integrator_flags &= ~INTEGRATOR_UPDATE_PERSISTENTFORCE;
 
@@ -587,6 +579,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
                 pid = 0;
                 
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
                     if(engine::types[p->typeId].dynamics == PARTICLE_NEWTONIAN) {
                         p->vk[0] = p->force * p->imass;
@@ -607,8 +601,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
         }
 
         // ** get K2, calculate forces at x0 + 1/2 dt k1 **
-        if (engine_force_prep(e) < 0 || engine_force(e) < 0) {
-            return error(engine_err);
+        if (engine_force_prep(e) != S_OK || engine_force(e) != S_OK) {
+            return error(MDCERR_engine);
         }
 
 #pragma omp parallel private(cid,c,pid,p,w,k,delta,c_dest,epot_local,ke)
@@ -619,6 +613,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
                 epot_local += c->epot;
                 pid = 0;
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
 
                     if(engine::types[p->typeId].dynamics == PARTICLE_NEWTONIAN) {
@@ -638,8 +634,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
         }
 
         // ** get K3, calculate forces at x0 + 1/2 dt k2 **
-        if (engine_force_prep(e) < 0 || engine_force(e) < 0) {
-            return error(engine_err);
+        if (engine_force_prep(e) != S_OK || engine_force(e) != S_OK) {
+            return error(MDCERR_engine);
         }
 
 #pragma omp parallel private(cid,c,pid,p,w,k,delta,c_dest,epot_local,ke)
@@ -650,6 +646,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
                 epot_local += c->epot;
                 pid = 0;
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
 
                     if(engine::types[p->typeId].dynamics == PARTICLE_NEWTONIAN) {
@@ -669,8 +667,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
         }
 
         // ** get K4, calculate forces at x0 + dt k3, final position calculation **
-        if (engine_force_prep(e) < 0 || engine_force(e) < 0) {
-            return error(engine_err);
+        if (engine_force_prep(e) != S_OK || engine_force(e) != S_OK) {
+            return error(MDCERR_engine);
         }
 
 #pragma omp parallel private(cid,c,pid,p,w,k,delta,c_dest,epot_local,ke)
@@ -681,6 +679,8 @@ int engine_advance_runge_kutta_4(struct engine *e) {
                 epot_local += c->epot;
                 pid = 0;
                 while(pid < c->count) {
+                    TF_Log(LOG_TRACE);
+
                     p = &(c->parts[pid]);
                     toofast = 0;
 
@@ -752,7 +752,5 @@ int engine_advance_runge_kutta_4(struct engine *e) {
     s->epot += epot;
 
     /* return quietly */
-    return engine_err_ok;
+    return S_OK;
 }
-
-

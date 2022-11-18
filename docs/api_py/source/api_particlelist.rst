@@ -21,9 +21,13 @@ ParticleList and ParticleTypeList
 
     .. autoproperty:: forces
 
+    .. automethod:: has
+
     .. automethod:: __len__
 
     .. automethod:: __getitem__
+
+    .. automethod:: __contains__
 
     .. automethod:: reserve
 
@@ -34,6 +38,8 @@ ParticleList and ParticleTypeList
     .. automethod:: extend
 
     .. automethod:: item
+
+    .. automethod:: vector
 
     .. automethod:: all
 
@@ -64,9 +70,13 @@ ParticleList and ParticleTypeList
 
     .. autoproperty:: forces
 
+    .. automethod:: has
+
     .. automethod:: __len__
 
     .. automethod:: __getitem__
+
+    .. automethod:: __contains__
 
     .. automethod:: reserve
 
@@ -77,6 +87,8 @@ ParticleList and ParticleTypeList
     .. automethod:: extend
 
     .. automethod:: item
+
+    .. automethod:: vector
 
     .. automethod:: all
 
