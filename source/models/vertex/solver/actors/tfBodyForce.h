@@ -36,6 +36,12 @@ namespace TissueForge::models::vertex {
             comps = _force;
         }
 
+        /** Name of the actor */
+        virtual std::string name() const override { return "BodyForce"; }
+
+        /** Unique name of the actor */
+        static std::string actorName() { return "BodyForce"; }
+
         HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
         HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;

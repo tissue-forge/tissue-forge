@@ -36,6 +36,12 @@ namespace TissueForge::models::vertex {
             mag = _mag;
         }
 
+        /** Name of the actor */
+        virtual std::string name() const override { return "NormalStress"; }
+
+        /** Unique name of the actor */
+        static std::string actorName() { return "NormalStress"; }
+
         HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
         HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;

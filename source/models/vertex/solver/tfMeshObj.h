@@ -102,6 +102,34 @@ namespace TissueForge::models::vertex {
      */
     struct MeshObjActor { 
 
+        /** Name of the actor */
+        virtual std::string name() const { return "MeshObjActor"; }
+
+        /** Unique name of the actor */
+        static std::string actorName() { return "MeshObjActor"; }
+
+        template <typename T> 
+        static std::vector<T*> get(MeshObj *obj) {
+            std::vector<T*> result;
+            if(!obj) 
+                return result;
+            for(auto &a : obj->actors) 
+                if(strcmp(a->name().c_str(), T::actorName().c_str()) == 0) 
+                    result.push_back((T*)a);
+            return result;
+        }
+
+        template <typename T> 
+        static std::vector<T*> get(struct MeshObjType *objType) {
+            std::vector<T*> result;
+            if(!objType) 
+                return result;
+            for(auto &a : objType->actors) 
+                if(strcmp(a->name().c_str(), T::actorName().c_str()) == 0) 
+                    result.push_back((T*)a);
+            return result;
+        }
+
         /**
          * @brief Calculate the energy of a source object acting on a target object
          * 
@@ -147,6 +175,12 @@ namespace TissueForge::models::vertex {
      * through interactions with a mesh object of another type
      */
     struct MeshObjTypePairActor : MeshObjActor {
+
+        /** Name of the actor */
+        virtual std::string name() { return "MeshObjTypePairActor"; }
+
+        /** Unique name of the actor */
+        static std::string actorName() { return "MeshObjTypePairActor"; }
 
         /** Register a pair of types for this actor */
         HRESULT registerPair(MeshObjType *type1, MeshObjType *type2);

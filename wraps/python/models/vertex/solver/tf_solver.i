@@ -158,6 +158,32 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 %include <models/vertex/solver/actors/tfEdgeTension.h>
 %include <models/vertex/solver/actors/tfAdhesion.h>
 
+%define vertex_solver_MeshObjActor_prep(baseName) 
+
+%inline %{
+
+static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solver_MeshObjActor_get ## baseName(TissueForge::models::vertex::MeshObj *obj) {
+    return TissueForge::models::vertex::MeshObjActor::get<TissueForge::models::vertex:: ## baseName ##>(obj);
+}
+
+static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solver_MeshObjActor_get ## baseName(TissueForge::models::vertex::MeshObjType *objType) {
+    return TissueForge::models::vertex::MeshObjActor::get<TissueForge::models::vertex:: ## baseName ##>(objType);
+}
+
+%}
+
+%template(vectorMesh ## baseName) std::vector<TissueForge::models::vertex:: ## baseName ## *>;
+
+%enddef
+
+vertex_solver_MeshObjActor_prep(BodyForce)
+vertex_solver_MeshObjActor_prep(NormalStress)
+vertex_solver_MeshObjActor_prep(SurfaceAreaConstraint)
+vertex_solver_MeshObjActor_prep(SurfaceTraction)
+vertex_solver_MeshObjActor_prep(VolumeConstraint)
+vertex_solver_MeshObjActor_prep(EdgeTension)
+vertex_solver_MeshObjActor_prep(Adhesion)
+
 %define vertex_solver_MeshObj_extend_py(name) 
 
 %extend name {
@@ -270,6 +296,26 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::StructureType)
         @property
         def area(self):
             return self.getArea()
+
+        @property
+        def normal_stresses(self):
+            return _vertex_solver_MeshObjActor_getNormalStress(self)
+
+        @property
+        def surface_area_constraints(self):
+            return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
+
+        @property
+        def surface_tractions(self):
+            return _vertex_solver_MeshObjActor_getSurfaceTraction(self)
+
+        @property
+        def edge_tensions(self):
+            return _vertex_solver_MeshObjActor_getEdgeTension(self)
+
+        @property
+        def adhesions(self):
+            return _vertex_solver_MeshObjActor_getAdhesion(self)
     %}
 }
 
@@ -318,6 +364,18 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::StructureType)
         @property
         def mass(self):
             return self.getMass()
+
+        @property
+        def body_forces(self):
+            return _vertex_solver_MeshObjActor_getBodyForce(self)
+
+        @property
+        def surface_area_constraints(self):
+            return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
+
+        @property
+        def volume_constraints(self):
+            return _vertex_solver_MeshObjActor_getVolumeConstraint(self)
     %}
 }
 
@@ -338,5 +396,45 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::StructureType)
         @property
         def vertices(self):
             return self.getVertices()
+    %}
+}
+
+%extend TissueForge::models::vertex::SurfaceType {
+    %pythoncode %{
+        @property
+        def normal_stresses(self):
+            return _vertex_solver_MeshObjActor_getNormalStress(self)
+
+        @property
+        def surface_area_constraints(self):
+            return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
+
+        @property
+        def surface_tractions(self):
+            return _vertex_solver_MeshObjActor_getSurfaceTraction(self)
+
+        @property
+        def edge_tensions(self):
+            return _vertex_solver_MeshObjActor_getEdgeTension(self)
+
+        @property
+        def adhesions(self):
+            return _vertex_solver_MeshObjActor_getAdhesion(self)
+    %}
+}
+
+%extend TissueForge::models::vertex::BodyType {
+    %pythoncode %{
+        @property
+        def body_forces(self):
+            return _vertex_solver_MeshObjActor_getBodyForce(self)
+
+        @property
+        def surface_area_constraints(self):
+            return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
+
+        @property
+        def volume_constraints(self):
+            return _vertex_solver_MeshObjActor_getVolumeConstraint(self)
     %}
 }

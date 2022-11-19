@@ -36,6 +36,12 @@ namespace TissueForge::models::vertex {
             constr = _constr;
         }
 
+        /** Name of the actor */
+        virtual std::string name() const override { return "SurfaceAreaConstraint"; }
+
+        /** Unique name of the actor */
+        static std::string actorName() { return "SurfaceAreaConstraint"; }
+
         HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
         HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
