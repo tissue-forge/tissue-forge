@@ -18,6 +18,7 @@
 # ******************************************************************************
 
 from . import bind
+from .mesh_types import BodyTypeSpec, SurfaceTypeSpec
 
 from tissue_forge.tissue_forge import _vertex_solver_Body as Body
 from tissue_forge.tissue_forge import _vertex_solver_BodyType as BodyType

@@ -31,6 +31,7 @@
 
 #include <tfLogger.h>
 #include <tf_metrics.h>
+#include <tf_util.h>
 
 #include <io/tfThreeDFVertexData.h>
 #include <io/tfThreeDFEdgeData.h>
@@ -650,12 +651,53 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     return S_OK;
 }
 
-SurfaceType::SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam) : 
+SurfaceType::SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam, const bool &noReg) : 
     MeshObjType() 
 {
+    name = "Surface";
+
     style = NULL;
+    MeshSolver *solver = MeshSolver::get();
+    if(solver) {
+        auto colors = color3Names();
+        auto c = colors[(solver->numSurfaceTypes() - 1) % colors.size()];
+        style = new rendering::Style(c);
+    }
+
     actors.push_back(new FlatSurfaceConstraint(flatLam));
     actors.push_back(new ConvexPolygonConstraint(convexLam));
+
+    if(!noReg) 
+        this->registerType();
+}
+
+SurfaceType *SurfaceType::findFromName(const std::string &_name) {
+    MeshSolver *solver = MeshSolver::get();
+    if(!solver) 
+        return NULL;
+    return solver->findSurfaceFromName(_name);
+}
+
+HRESULT SurfaceType::registerType() {
+    if(isRegistered()) return S_OK;
+
+    MeshSolver *solver = MeshSolver::get();
+    if(!solver) 
+        return E_FAIL;
+
+    HRESULT result = solver->registerType(this);
+    if(result == S_OK) 
+        on_register();
+
+    return result;
+}
+
+bool SurfaceType::isRegistered() {
+    return get();
+}
+
+SurfaceType *SurfaceType::get() {
+    return findFromName(name);
 }
 
 Surface *SurfaceType::operator() (std::vector<Vertex*> _vertices) {

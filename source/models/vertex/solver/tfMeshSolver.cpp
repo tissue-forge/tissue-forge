@@ -31,6 +31,7 @@
 
 #include <atomic>
 #include <future>
+#include <typeinfo>
 
 
 #define TF_MESHSOLVER_CHECKINIT_RET(retval) { if(!_solver) return retval; }
@@ -207,14 +208,48 @@ HRESULT MeshSolver::unloadMesh(Mesh *mesh) {
     return _solver->_unloadMeshInst(mesh);
 }
 
+template <typename T> 
+static bool MeshSolver_assignUniqueNameAsNecessary(T *inst, std::vector<T*> registeredInsts) {
+    bool uniqueName = true;
+    for(auto &ri : registeredInsts) 
+        if(strcmp(inst->name.c_str(), ri->name.c_str()) == 0) 
+            uniqueName = false;
+
+    if(uniqueName) 
+        return false;
+
+    inst->name = typeid(*inst).name();
+    return true;
+}
+
+HRESULT MeshSolver::_registerTypeInst(StructureType *_type) {
+    if(!_type || _type->id >= 0) 
+        return E_FAIL;
+
+    _type->id = _structureTypes.size();
+    if(MeshSolver_assignUniqueNameAsNecessary(_type, _structureTypes)) 
+        TF_Log(LOG_INFORMATION) << "Type name not unique. Generating name: " << _type->name.c_str();
+    _structureTypes.push_back(_type);
+
+    return S_OK;
+}
+
 HRESULT MeshSolver::_registerTypeInst(BodyType *_type) {
     if(!_type || _type->id >= 0) 
         return E_FAIL;
     
     _type->id = _bodyTypes.size();
+    if(MeshSolver_assignUniqueNameAsNecessary(_type, _bodyTypes)) 
+        TF_Log(LOG_INFORMATION) << "Type name not unique. Generating name: " << _type->name.c_str();
     _bodyTypes.push_back(_type);
 
     return S_OK;
+}
+
+HRESULT MeshSolver::registerType(StructureType *_type) {
+    TF_MESHSOLVER_CHECKINIT
+
+    return _solver->_registerTypeInst(_type);
 }
 
 HRESULT MeshSolver::registerType(BodyType *_type) {
@@ -233,15 +268,55 @@ HRESULT MeshSolver::_registerTypeInst(SurfaceType *_type) {
         auto c = colors[(_surfaceTypes.size() - 1) % colors.size()];
         _type->style = new rendering::Style(c);
     }
+    if(MeshSolver_assignUniqueNameAsNecessary(_type, _surfaceTypes)) 
+        TF_Log(LOG_INFORMATION) << "Type name not unique. Generating name: " << _type->name.c_str();
     _surfaceTypes.push_back(_type);
 
     return S_OK;
+}
+
+template <typename T> 
+T *MeshSolver_findTypeFromName(const std::string name, std::vector<T*> types) {
+    for(auto &t : types) 
+        if(strcmp(name.c_str(), t->name.c_str()) == 0) 
+            return t;
+    return NULL;
+}
+
+SurfaceType *MeshSolver::_findSurfaceFromNameInst(const std::string &_name) {
+    return MeshSolver_findTypeFromName(name, _surfaceTypes);
+}
+
+BodyType *MeshSolver::_findBodyFromNameInst(const std::string &_name) {
+    return MeshSolver_findTypeFromName(name, _bodyTypes);
+}
+
+StructureType *MeshSolver::_findStructureFromNameInst(const std::string &_name) {
+    return MeshSolver_findTypeFromName(name, _structureTypes);
 }
 
 HRESULT MeshSolver::registerType(SurfaceType *_type) {
     TF_MESHSOLVER_CHECKINIT
 
     return _solver->_registerTypeInst(_type);
+}
+
+SurfaceType *MeshSolver::findSurfaceFromName(const std::string &_name) {
+    TF_MESHSOLVER_CHECKINIT_RET(NULL)
+
+    return _solver->_findSurfaceFromNameInst(_name);
+}
+
+BodyType *MeshSolver::findBodyFromName(const std::string &_name) {
+    TF_MESHSOLVER_CHECKINIT_RET(NULL)
+
+    return _solver->_findBodyFromNameInst(_name);
+}
+
+StructureType *MeshSolver::findStructureFromName(const std::string &_name) {
+    TF_MESHSOLVER_CHECKINIT_RET(NULL)
+
+    return _solver->_findStructureFromNameInst(_name);
 }
 
 StructureType *MeshSolver::_getStructureTypeInst(const unsigned int &typeId) const {
@@ -278,6 +353,24 @@ SurfaceType *MeshSolver::getSurfaceType(const unsigned int &typeId) {
     TF_MESHSOLVER_CHECKINIT_RET(NULL);
 
     return _solver->_getSurfaceTypeInst(typeId);
+}
+
+const int MeshSolver::numStructureTypes() {
+    TF_MESHSOLVER_CHECKINIT_RET(-1)
+
+    return _solver->_structureTypes.size();
+}
+
+const int MeshSolver::numBodyTypes() {
+    TF_MESHSOLVER_CHECKINIT_RET(-1)
+
+    return _solver->_bodyTypes.size();
+}
+
+const int MeshSolver::numSurfaceTypes() {
+    TF_MESHSOLVER_CHECKINIT_RET(-1)
+
+    return _solver->_surfaceTypes.size();
 }
 
 unsigned int MeshSolver::numVertices() {

@@ -171,3 +171,41 @@ std::vector<Vertex*> Structure::getVertices() const {
             result.insert(v);
     return std::vector<Vertex*>(result.begin(), result.end());
 }
+
+StructureType::StructureType(const bool &noReg) : 
+    MeshObjType()
+{
+    name = "Structure";
+
+    if(!noReg) 
+        this->registerType();
+}
+
+StructureType *StructureType::findFromName(const std::string &_name) {
+    MeshSolver *solver = MeshSolver::get();
+    if(!solver) 
+        return NULL;
+    return solver->findStructureFromName(_name);
+}
+
+HRESULT StructureType::registerType() {
+    if(isRegistered()) return S_OK;
+
+    MeshSolver *solver = MeshSolver::get();
+    if(!solver) 
+        return E_FAIL;
+
+    HRESULT result = solver->registerType(this);
+    if(result == S_OK) 
+        on_register();
+
+    return result;
+}
+
+bool StructureType::isRegistered() {
+    return get();
+}
+
+StructureType *StructureType::get() {
+    return findFromName(name);
+}

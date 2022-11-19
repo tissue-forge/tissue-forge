@@ -108,8 +108,40 @@ namespace TissueForge::models::vertex {
      */
     struct CAPI_EXPORT StructureType : MeshObjType {
 
+        /** Name of this structure type */
+        std::string name;
+
+        StructureType(const bool &noReg=false);
+
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::STRUCTURE; }
+
+        /** Get a registered type by name */
+        static StructureType *findFromName(const std::string &_name);
+
+        /**
+         * @brief Registers a type with the engine.
+         * 
+         * Note that this occurs automatically, unless noReg==true in constructor.  
+         */
+        virtual HRESULT registerType();
+
+        /**
+         * @brief A callback for when a type is registered
+         */
+        virtual void on_register() {}
+
+        /**
+         * @brief Tests whether this type is registered
+         * 
+         * @return true if registered
+         */
+        bool isRegistered();
+
+        /**
+         * @brief Get the type engine instance
+         */
+        virtual StructureType *get();
         
     };
 

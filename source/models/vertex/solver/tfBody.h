@@ -236,11 +236,43 @@ namespace TissueForge::models::vertex {
      */
     struct CAPI_EXPORT BodyType : MeshObjType {
 
+        /** Name of this body type */
+        std::string name;
+
         /** Mass density */
         FloatP_t density;
 
+        BodyType(const bool &noReg=false);
+
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::BODY; }
+
+        /** Get a registered type by name */
+        static BodyType *findFromName(const std::string &_name);
+
+        /**
+         * @brief Registers a type with the engine.
+         * 
+         * Note that this occurs automatically, unless noReg==true in constructor.  
+         */
+        virtual HRESULT registerType();
+
+        /**
+         * @brief A callback for when a type is registered
+         */
+        virtual void on_register() {}
+
+        /**
+         * @brief Tests whether this type is registered
+         * 
+         * @return true if registered
+         */
+        bool isRegistered();
+
+        /**
+         * @brief Get the type engine instance
+         */
+        virtual BodyType *get();
 
         /** Construct a body of this type from a set of surfaces */
         Body *operator() (std::vector<Surface*> surfaces);

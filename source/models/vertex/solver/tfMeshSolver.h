@@ -152,11 +152,23 @@ namespace TissueForge::models::vertex {
         /** Unload an existing mesh */
         static HRESULT unloadMesh(Mesh *mesh);
 
+        /** Register a structure type */
+        static HRESULT registerType(StructureType *_type);
+
         /** Register a body type */
         static HRESULT registerType(BodyType *_type);
 
         /** Register a surface type */
         static HRESULT registerType(SurfaceType *_type);
+
+        /** Find a registered surface type by name */
+        static SurfaceType *findSurfaceFromName(const std::string &_name);
+
+        /** Find a registered body type by name */
+        static BodyType *findBodyFromName(const std::string &_name);
+
+        /** Find a registered structure type by name */
+        static StructureType *findStructureFromName(const std::string &_name);
 
         /** Get the structure type by id */
         static StructureType *getStructureType(const unsigned int &typeId);
@@ -166,6 +178,15 @@ namespace TissueForge::models::vertex {
 
         /** Get the surface type by id */
         static SurfaceType *getSurfaceType(const unsigned int &typeId);
+
+        /** Get the number of registered structure types */
+        static const int numStructureTypes();
+
+        /** Get the number of registered body types */
+        static const int numBodyTypes();
+
+        /** Get the number of registered surface types */
+        static const int numSurfaceTypes();
 
         /** Get the number of vertices */
         static unsigned int numVertices();
@@ -257,11 +278,23 @@ namespace TissueForge::models::vertex {
         /** Unload an existing mesh */
         HRESULT _unloadMeshInst(Mesh *mesh);
 
+        /** Register a structure type */
+        HRESULT _registerTypeInst(StructureType *_type);
+
         /** Register a body type */
         HRESULT _registerTypeInst(BodyType *_type);
 
         /** Register a surface type */
         HRESULT _registerTypeInst(SurfaceType *_type);
+
+        /** Find a registered surface type by name */
+        SurfaceType *_findSurfaceFromNameInst(const std::string &_name);
+
+        /** Find a registered body type by name */
+        BodyType *_findBodyFromNameInst(const std::string &_name);
+
+        /** Find a registered structure type by name */
+        StructureType *_findStructureFromNameInst(const std::string &_name);
 
         /** Get the structure type by id */
         StructureType *_getStructureTypeInst(const unsigned int &typeId) const;

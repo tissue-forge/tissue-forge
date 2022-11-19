@@ -272,6 +272,9 @@ namespace TissueForge::models::vertex {
      */
     struct CAPI_EXPORT SurfaceType : MeshObjType {
 
+        /** Name of this surface type */
+        std::string name;
+
         /** The style of the surface type */
         rendering::Style *style;
 
@@ -281,13 +284,40 @@ namespace TissueForge::models::vertex {
          * @param flatLam parameter for flat surface constraint
          * @param convexLam parameter for convex surface constraint
          */
-        SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam);
+        SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam, const bool &noReg=false);
 
         /** Construct a new surface type */
-        SurfaceType() : SurfaceType(0.1, 0.1) {};
+        SurfaceType(const bool &noReg=false) : SurfaceType(0.1, 0.1, noReg) {};
 
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::SURFACE; }
+
+        /** Get a registered type by name */
+        static SurfaceType *findFromName(const std::string &_name);
+
+        /**
+         * @brief Registers a type with the engine.
+         * 
+         * Note that this occurs automatically, unless noReg==true in constructor.  
+         */
+        virtual HRESULT registerType();
+
+        /**
+         * @brief A callback for when a type is registered
+         */
+        virtual void on_register() {}
+
+        /**
+         * @brief Tests whether this type is registered
+         * 
+         * @return true if registered
+         */
+        bool isRegistered();
+
+        /**
+         * @brief Get the type engine instance
+         */
+        virtual SurfaceType *get();
 
         /** Construct a surface of this type from a set of vertices */
         Surface *operator() (std::vector<Vertex*> _vertices);

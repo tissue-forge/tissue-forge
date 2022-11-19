@@ -21,6 +21,7 @@ install(
     FILES 
     __init__.py 
     bind.py 
+    mesh_types.py 
     DESTINATION 
     ${TF_SITEPACKAGES}/tissue_forge/models/vertex/solver
 )

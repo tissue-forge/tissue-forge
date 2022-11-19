@@ -381,6 +381,44 @@ static Body *BodyType_fromSurfaces(BodyType *btype, std::vector<Surface*> surfac
     return b;
 }
 
+BodyType::BodyType(const bool &noReg) : 
+    MeshObjType()
+{
+    name = "Body";
+
+    if(!noReg) 
+        this->registerType();
+}
+
+BodyType *BodyType::findFromName(const std::string &_name) {
+    MeshSolver *solver = MeshSolver::get();
+    if(!solver) 
+        return NULL;
+    return solver->findBodyFromName(_name);
+}
+
+HRESULT BodyType::registerType() {
+    if(isRegistered()) return S_OK;
+
+    MeshSolver *solver = MeshSolver::get();
+    if(!solver) 
+        return E_FAIL;
+
+    HRESULT result = solver->registerType(this);
+    if(result == S_OK) 
+        on_register();
+
+    return result;
+}
+
+bool BodyType::isRegistered() {
+    return get();
+}
+
+BodyType *BodyType::get() {
+    return findFromName(name);
+}
+
 Body *BodyType::operator() (std::vector<Surface*> surfaces) {
     return BodyType_fromSurfaces(this, surfaces);
 }
