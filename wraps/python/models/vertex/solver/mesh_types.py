@@ -20,9 +20,11 @@
 from tissue_forge.tissue_forge import FVector3
 from tissue_forge.tissue_forge import _vertex_solver_bind_body_type as bind_body_type
 from tissue_forge.tissue_forge import _vertex_solver_bind_surface_type as bind_surface_type
+from tissue_forge.tissue_forge import _vertex_solver_bind_types as bind_types
 from tissue_forge.tissue_forge import _vertex_solver_MeshSolver as MeshSolver
 from tissue_forge.tissue_forge import _vertex_solver_BodyType as BodyType
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceType as SurfaceType
+from tissue_forge.tissue_forge import _vertex_solver_Adhesion as Adhesion
 from tissue_forge.tissue_forge import _vertex_solver_BodyForce as BodyForce
 from tissue_forge.tissue_forge import _vertex_solver_EdgeTension as EdgeTension
 from tissue_forge.tissue_forge import _vertex_solver_NormalStress as NormalStress
@@ -30,7 +32,7 @@ from tissue_forge.tissue_forge import _vertex_solver_SurfaceAreaConstraint as Su
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceTraction as SurfaceTraction
 from tissue_forge.tissue_forge import _vertex_solver_VolumeConstraint as VolumeConstraint
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Type, Union
 
 
 class _TypeSpecBase:
@@ -95,6 +97,9 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
     surface_traction_comps: Optional[Union[FVector3, List[float]]] = None
     """Surface traction components"""
+
+    adhesion: Optional[Dict[str, float]] = None
+    """Adhesion by name and parameter"""
 
     @classmethod
     def _bind_type(cls, actor, inst):
@@ -169,6 +174,48 @@ class SurfaceTypeSpec(_TypeSpecBase):
         surface_traction_comps = FVector3(*cls.surface_traction_comps) if isinstance(cls.surface_traction_comps, list) else cls.surface_traction_comps
         return SurfaceTraction(surface_traction_comps)
 
+    @staticmethod
+    def bind_adhesion(specs: List[Type]) -> Dict[str, Dict[str, Adhesion]]:
+        specs: List[Type[SurfaceTypeSpec]]
+
+        result = dict()
+
+        for i in range(len(specs)):
+
+            ti = specs[i]
+            ti_name = ti.get_name()
+            ti_instance = SurfaceType.findFromName(ti_name)
+            if ti_instance is None:
+                continue
+
+            for j in range(i, len(specs)):
+
+                tj = specs[j]
+                if tj.adhesion is None:
+                    continue
+
+                tj_name = tj.get_name()
+                tj_instance = SurfaceType.findFromName(tj_name)
+                if tj_instance is None:
+                    continue
+
+                for name, val in tj.adhesion.items():
+                    if name == ti_name:
+                        actor = Adhesion(val)
+                        actor.thisown = 0
+                        bind_types(actor, ti_instance, tj_instance)
+
+                        try:
+                            result[ti_name][tj_name] = actor
+                        except KeyError:
+                            result[ti_name] = {tj_name: actor}
+                        try:
+                            result[tj_name][ti_name] = actor
+                        except KeyError:
+                            result[tj_name] = {ti_name: actor}
+
+        return result
+
 
 class BodyTypeSpec(_TypeSpecBase):
     """
@@ -189,6 +236,9 @@ class BodyTypeSpec(_TypeSpecBase):
 
     volume_val: Optional[float] = None
     """Volume constraint target value"""
+
+    adhesion: Optional[Dict[str, float]] = None
+    """Adhesion by name and parameter"""
 
     @classmethod
     def _bind_type(cls, actor, inst):
@@ -244,3 +294,45 @@ class BodyTypeSpec(_TypeSpecBase):
             return None
 
         return VolumeConstraint(cls.volume_lam, cls.volume_val)
+
+    @staticmethod
+    def bind_adhesion(specs: List[Type]) -> Dict[str, Dict[str, Adhesion]]:
+        specs: List[Type[BodyTypeSpec]]
+
+        result = dict()
+
+        for i in range(len(specs)):
+
+            ti = specs[i]
+            ti_name = ti.get_name()
+            ti_instance = BodyType.findFromName(ti_name)
+            if ti_instance is None:
+                continue
+
+            for j in range(i, len(specs)):
+
+                tj = specs[j]
+                if tj.adhesion is None:
+                    continue
+
+                tj_name = tj.get_name()
+                tj_instance = BodyType.findFromName(tj_name)
+                if tj_instance is None:
+                    continue
+
+                for name, val in tj.adhesion.items():
+                    if name == ti_name:
+                        actor = Adhesion(val)
+                        actor.thisown = 0
+                        bind_types(actor, ti_instance, tj_instance)
+
+                        try:
+                            result[ti_name][tj_name] = actor
+                        except KeyError:
+                            result[ti_name] = {tj_name: actor}
+                        try:
+                            result[tj_name][ti_name] = actor
+                        except KeyError:
+                            result[tj_name] = {ti_name: actor}
+
+        return result
