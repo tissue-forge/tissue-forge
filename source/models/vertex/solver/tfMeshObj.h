@@ -22,6 +22,7 @@
 
 #include <tf_platform.h>
 
+#include <iostream>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
@@ -81,6 +82,9 @@ namespace TissueForge::models::vertex {
 
         /** Remove a parent object */
         virtual HRESULT removeParent(MeshObj *obj) = 0;
+
+        /** Get a summary string */
+        virtual std::string str() const = 0;
 
         /** Destroy the object */
         virtual HRESULT destroy() = 0;
@@ -167,6 +171,9 @@ namespace TissueForge::models::vertex {
         /** Get the mesh object type */
         virtual MeshObj::Type objType() const = 0;
 
+        /** Get a summary string */
+        virtual std::string str() const = 0;
+
     };
 
 
@@ -194,6 +201,19 @@ namespace TissueForge::models::vertex {
 
     };
 
+}
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::vertex::MeshObj &o)
+{
+    os << o.str().c_str();
+    return os;
+}
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::vertex::MeshObjType &o)
+{
+    os << o.str().c_str();
+    return os;
 }
 
 #endif // _MODELS_VERTEX_SOLVER_TFMESHOBJ_H_

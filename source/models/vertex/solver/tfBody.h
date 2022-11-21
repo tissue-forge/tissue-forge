@@ -108,6 +108,9 @@ namespace TissueForge::models::vertex {
         /** Remove a parent object */
         HRESULT removeParent(MeshObj *obj) override;
 
+        /** Get a summary string */
+        std::string str() const override;
+
         /** Add a surface */
         HRESULT add(Surface *s);
 
@@ -247,6 +250,9 @@ namespace TissueForge::models::vertex {
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::BODY; }
 
+        /** Get a summary string */
+        virtual std::string str() const override;
+
         /** Get a registered type by name */
         static BodyType *findFromName(const std::string &_name);
 
@@ -274,6 +280,15 @@ namespace TissueForge::models::vertex {
          */
         virtual BodyType *get();
 
+        /** list of instances that belong to this type */    
+        std::vector<Body*> getInstances();
+
+        /** list of instances ids that belong to this type */
+        std::vector<int> getInstanceIds();
+
+        /** number of instances that belong to this type */
+        unsigned int getNumInstances();
+
         /** Construct a body of this type from a set of surfaces */
         Body *operator() (std::vector<Surface*> surfaces);
 
@@ -281,6 +296,33 @@ namespace TissueForge::models::vertex {
         Body *operator() (io::ThreeDFMeshData* ioMesh, SurfaceType *stype);
     };
 
+    inline bool operator< (const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return lhs.objId < rhs.objId; }
+    inline bool operator> (const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return lhs.objId == rhs.objId; }
+    inline bool operator!=(const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return !(lhs == rhs); }
+
+    inline bool operator< (const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return !(lhs == rhs); }
+
+}
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::vertex::Body &o)
+{
+    os << o.str().c_str();
+    return os;
+}
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::vertex::BodyType &o)
+{
+    os << o.str().c_str();
+    return os;
 }
 
 #endif // _MODELS_VERTEX_SOLVER_TFBODY_H_

@@ -188,6 +188,27 @@ vertex_solver_MeshObjActor_prep(Adhesion)
 
 %extend name {
     %pythoncode %{
+        def __lt__(self, rhs) -> bool:
+            return self.id < rhs.id
+
+        def __gt__(self, rhs) -> bool:
+            return rhs < self
+
+        def __le__(self, rhs) -> bool:
+            return not (self > rhs)
+
+        def __ge__(self, rhs) -> bool:
+            return not (self < rhs)
+
+        def __eq__(self, rhs) -> bool:
+            return self.id == rhs.id
+
+        def __ne__(self, rhs) -> bool:
+            return not (self == rhs)
+
+        def __str__(self) -> str:
+            return self.str()
+
         @property
         def id(self) -> int:
             return _vertex_solver_MeshObj_getObjId(self)
@@ -215,6 +236,36 @@ vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Structure)
 
 %extend name {
     %pythoncode %{
+        def __len__(self) -> int:
+            return self.getNumInstances()
+
+        def __getitem__(self, index: int):
+            return self.getInstances()[index]
+
+        def __contains__(self, item):
+            return item in self.getInstances()
+
+        def __lt__(self, rhs) -> bool:
+            return self.id < rhs.id
+
+        def __gt__(self, rhs) -> bool:
+            return rhs < self
+
+        def __le__(self, rhs) -> bool:
+            return not (self > rhs)
+
+        def __ge__(self, rhs) -> bool:
+            return not (self < rhs)
+
+        def __eq__(self, rhs) -> bool:
+            return self.id == rhs.id
+
+        def __ne__(self, rhs) -> bool:
+            return not (self == rhs)
+
+        def __str__(self) -> str:
+            return self.str()
+
         @property
         def id(self) -> int:
             return _vertex_solver_MeshObjType_getId(self)

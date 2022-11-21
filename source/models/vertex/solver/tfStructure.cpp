@@ -124,6 +124,18 @@ HRESULT Structure::removeParent(MeshObj *obj) {
     return S_OK;
 }
 
+std::string Structure::str() const {
+    std::stringstream ss;
+
+    ss << "Structure(";
+    if(this->objId >= 0) {
+        ss << "id=" << this->objId << ", typeId=" << this->typeId;
+    }
+    ss << ")";
+
+    return ss.str();
+}
+
 HRESULT Structure::destroy() {
     if(this->mesh && this->mesh->remove(this) != S_OK) 
         return E_FAIL;
@@ -181,6 +193,14 @@ StructureType::StructureType(const bool &noReg) :
         this->registerType();
 }
 
+std::string StructureType::str() const {
+    std::stringstream ss;
+
+    ss << "StructureType(id=" << this->id << ", name=" << this->name << ")";
+
+    return ss.str();
+}
+
 StructureType *StructureType::findFromName(const std::string &_name) {
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 
@@ -208,4 +228,36 @@ bool StructureType::isRegistered() {
 
 StructureType *StructureType::get() {
     return findFromName(name);
+}
+
+std::vector<Structure*> StructureType::getInstances() {
+    std::vector<Structure*> result;
+
+    MeshSolver *solver = MeshSolver::get();
+    if(solver) { 
+        result.reserve(solver->numStructures());
+        for(auto &m : solver->meshes) {
+            for(size_t i = 0; i < m->sizeStructures(); i++) {
+                Structure *s = m->getStructure(i);
+                if(s) 
+                    result.push_back(s);
+            }
+        }
+    }
+
+    return result;
+}
+
+std::vector<int> StructureType::getInstanceIds() {
+    auto instances = getInstances();
+    std::vector<int> result;
+    result.reserve(instances.size());
+    for(auto &b : instances) 
+        if(b) 
+            result.push_back(b->objId);
+    return result;
+}
+
+unsigned int StructureType::getNumInstances() {
+    return getInstances().size();
 }

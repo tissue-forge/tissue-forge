@@ -169,6 +169,18 @@ HRESULT Body::removeParent(MeshObj *obj) {
     return S_OK;
 }
 
+std::string Body::str() const {
+    std::stringstream ss;
+
+    ss << "Body(";
+    if(this->objId >= 0) {
+        ss << "id=" << this->objId << ", typeId=" << this->typeId;
+    }
+    ss << ")";
+
+    return ss.str();
+}
+
 #define BODY_RND_IDX(vec_size, idx) {       \
 while(idx < 0) idx += vec_size;             \
 while(idx >= vec_size) idx -= vec_size;     \
@@ -390,6 +402,14 @@ BodyType::BodyType(const bool &noReg) :
         this->registerType();
 }
 
+std::string BodyType::str() const {
+    std::stringstream ss;
+
+    ss << "BodyType(id=" << this->id << ", name=" << this->name << ")";
+
+    return ss.str();
+}
+
 BodyType *BodyType::findFromName(const std::string &_name) {
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 
@@ -417,6 +437,38 @@ bool BodyType::isRegistered() {
 
 BodyType *BodyType::get() {
     return findFromName(name);
+}
+
+std::vector<Body*> BodyType::getInstances() {
+    std::vector<Body*> result;
+
+    MeshSolver *solver = MeshSolver::get();
+    if(solver) { 
+        result.reserve(solver->numBodies());
+        for(auto &m : solver->meshes) {
+            for(size_t i = 0; i < m->sizeBodies(); i++) {
+                Body *b = m->getBody(i);
+                if(b) 
+                    result.push_back(b);
+            }
+        }
+    }
+
+    return result;
+}
+
+std::vector<int> BodyType::getInstanceIds() {
+    auto instances = getInstances();
+    std::vector<int> result;
+    result.reserve(instances.size());
+    for(auto &b : instances) 
+        if(b) 
+            result.push_back(b->objId);
+    return result;
+}
+
+unsigned int BodyType::getNumInstances() {
+    return getInstances().size();
 }
 
 Body *BodyType::operator() (std::vector<Surface*> surfaces) {

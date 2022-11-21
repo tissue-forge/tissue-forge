@@ -205,6 +205,17 @@ HRESULT Vertex::removeChild(MeshObj *obj) {
     return S_OK;
 }
 
+std::string Vertex::str() const {
+    std::stringstream ss;
+
+    ss << "Vertex(";
+    if(this->objId >= 0) 
+        ss << "id=" << this->objId;
+    ss << ")";
+
+    return ss.str();
+}
+
 #define VERTEX_RND_IDX(vec_size, idx) {     \
 while(idx < 0) idx += vec_size;             \
 while(idx >= vec_size) idx -= vec_size;     \

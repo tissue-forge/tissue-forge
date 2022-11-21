@@ -95,6 +95,9 @@ namespace TissueForge::models::vertex {
         /** Remove a parent object */
         HRESULT removeParent(MeshObj *obj) override { return E_FAIL; }
 
+        /** Get a summary string */
+        std::string str() const override;
+
         /** Add a surface */
         HRESULT add(Surface *s);
 
@@ -188,6 +191,20 @@ namespace TissueForge::models::vertex {
 
     };
 
+    inline bool operator< (const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return lhs.objId < rhs.objId; }
+    inline bool operator> (const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return lhs.objId == rhs.objId; }
+    inline bool operator!=(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return !(lhs == rhs); }
+
+}
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::vertex::Vertex &o)
+{
+    os << o.str().c_str();
+    return os;
 }
 
 #endif // _MODELS_VERTEX_SOLVER_TFVERTEX_H_

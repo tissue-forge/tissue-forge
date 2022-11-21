@@ -214,6 +214,18 @@ HRESULT Surface::removeParent(MeshObj *obj) {
     return S_OK;
 }
 
+std::string Surface::str() const {
+    std::stringstream ss;
+
+    ss << "Surface(";
+    if(this->objId >= 0) {
+        ss << "id=" << this->objId << ", typeId=" << this->typeId;
+    }
+    ss << ")";
+
+    return ss.str();
+}
+
 #define SURFACE_RND_IDX(vec_size, idx) {    \
 while(idx < 0) idx += vec_size;             \
 while(idx >= vec_size) idx -= vec_size;     \
@@ -671,6 +683,14 @@ SurfaceType::SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam, con
         this->registerType();
 }
 
+std::string SurfaceType::str() const {
+    std::stringstream ss;
+
+    ss << "SurfaceType(id=" << this->id << ", name=" << this->name << ")";
+
+    return ss.str();
+}
+
 SurfaceType *SurfaceType::findFromName(const std::string &_name) {
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 
@@ -698,6 +718,38 @@ bool SurfaceType::isRegistered() {
 
 SurfaceType *SurfaceType::get() {
     return findFromName(name);
+}
+
+std::vector<Surface*> SurfaceType::getInstances() {
+    std::vector<Surface*> result;
+
+    MeshSolver *solver = MeshSolver::get();
+    if(solver) { 
+        result.reserve(solver->numSurfaces());
+        for(auto &m : solver->meshes) {
+            for(size_t i = 0; i < m->sizeSurfaces(); i++) {
+                Surface *s = m->getSurface(i);
+                if(s) 
+                    result.push_back(s);
+            }
+        }
+    }
+
+    return result;
+}
+
+std::vector<int> SurfaceType::getInstanceIds() {
+    auto instances = getInstances();
+    std::vector<int> result;
+    result.reserve(instances.size());
+    for(auto &s : instances) 
+        if(s) 
+            result.push_back(s->objId);
+    return result;
+}
+
+unsigned int SurfaceType::getNumInstances() {
+    return getInstances().size();
 }
 
 Surface *SurfaceType::operator() (std::vector<Vertex*> _vertices) {
