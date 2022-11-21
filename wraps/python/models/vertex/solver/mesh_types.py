@@ -130,6 +130,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
         cls._bind_generator(cls.surface_traction, type_instance)
 
         solver.registerType(type_instance)
+        type_instance.name = name
         type_instance.thisown = 0
 
         if hasattr(cls, 'on_register'):
@@ -214,6 +215,7 @@ class BodyTypeSpec(_TypeSpecBase):
         cls._bind_generator(cls.volume_constraint, type_instance)
 
         solver.registerType(type_instance)
+        type_instance.name = name
         type_instance.thisown = 0
 
         if hasattr(cls, 'on_register'):

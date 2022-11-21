@@ -284,15 +284,15 @@ T *MeshSolver_findTypeFromName(const std::string name, std::vector<T*> types) {
 }
 
 SurfaceType *MeshSolver::_findSurfaceFromNameInst(const std::string &_name) {
-    return MeshSolver_findTypeFromName(name, _surfaceTypes);
+    return MeshSolver_findTypeFromName(_name, _surfaceTypes);
 }
 
 BodyType *MeshSolver::_findBodyFromNameInst(const std::string &_name) {
-    return MeshSolver_findTypeFromName(name, _bodyTypes);
+    return MeshSolver_findTypeFromName(_name, _bodyTypes);
 }
 
 StructureType *MeshSolver::_findStructureFromNameInst(const std::string &_name) {
-    return MeshSolver_findTypeFromName(name, _structureTypes);
+    return MeshSolver_findTypeFromName(_name, _structureTypes);
 }
 
 HRESULT MeshSolver::registerType(SurfaceType *_type) {
