@@ -222,6 +222,9 @@ class BodyTypeSpec(_TypeSpecBase):
     Interface for class-centric design of BodyType
     """
 
+    density: Optional[float] = None
+    """Mass density"""
+
     body_force_comps: Optional[Union[FVector3, List[float]]] = None
     """Body force components"""
 
@@ -257,6 +260,9 @@ class BodyTypeSpec(_TypeSpecBase):
             return type_instance
 
         type_instance = BodyType(True)
+
+        if cls.density is not None:
+            type_instance.density = cls.density
 
         # process actor generators
 
