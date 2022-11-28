@@ -90,10 +90,12 @@ static HRESULT Adhesion_force_Body(Body *b, Vertex *v, const FloatP_t &lam, cons
         fVector3 posvn = vn->getPosition();
         fVector3 posv_rel = posv - scent;
 
-        fVector3 normvp = Magnum::Math::cross(posv_rel, posvp - scent).normalized();
-        fVector3 normvn = Magnum::Math::cross(posvn - scent, posv_rel).normalized();
+        fVector3 normvp = Magnum::Math::cross(posv_rel, posvp - scent);
+        fVector3 normvn = Magnum::Math::cross(posvn - scent, posv_rel);
 
-        _f += (1.0 / s->getVertices().size() - 1.0) * (Magnum::Math::cross(normvp, posv - posvp) + Magnum::Math::cross(normvn, posvn - posv));
+        if(!normvp.isZero() && !normvn.isZero()) 
+            _f += (1.0 / s->getVertices().size() - 1.0) * (Magnum::Math::cross(normvp.normalized(), posv - posvp) + 
+                Magnum::Math::cross(normvn.normalized(), posvn - posv));
     }
 
     FloatP_t fact = 0.5 * lam;
@@ -125,9 +127,10 @@ static HRESULT Adhesion_force_Surface(Surface *s, Vertex *v, const FloatP_t &lam
     for(auto &sv : v->getSurfaces()) 
         if(sv != s && targetTypes.find(sv->typeId) != targetTypes.end()) {
             std::tie(vp, vn) = s->neighborVertices(v);
-            fVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), posv).normalized();
-            fVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), posv).normalized();
-            _f += posvp_rel + posvn_rel;
+            fVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), posv);
+            fVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), posv);
+            if(!posvp_rel.isZero() && !posvn_rel.isZero())
+                _f += posvp_rel.normalized() + posvn_rel.normalized();
         }
 
     FloatP_t fact = 0.5 * lam;

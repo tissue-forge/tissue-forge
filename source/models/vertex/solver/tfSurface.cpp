@@ -582,9 +582,11 @@ HRESULT Surface::positionChanged() {
         normal += triNormal;
     }
 
-    normal = normal.normalized();
     area /= 2.f;
     _volumeContr /= 6.f;
+    if(normal.isZero()) 
+        return tf_error(E_FAIL, "Zero normal");
+    normal = normal.normalized();
 
     return S_OK;
 }
@@ -779,6 +781,11 @@ Surface *SurfaceType::operator() (io::ThreeDFFaceData *face) {
 }
 
 Surface *SurfaceType::nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2) {
+    if(ax1.isZero() || ax2.isZero()) {
+        tf_error(E_FAIL, "Zero axis");
+        return 0;
+    }
+
     const FVector3 ax3 = Magnum::Math::cross(ax1, ax2);
     FMatrix4 t = FMatrix4::translation(center) * FMatrix4::from(FMatrix3(ax1.normalized(), ax2.normalized(), ax3.normalized()), FVector3(0));
 

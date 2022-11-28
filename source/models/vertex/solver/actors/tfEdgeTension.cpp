@@ -84,11 +84,16 @@ static inline HRESULT EdgeTension_force_order1(const MeshObj *source, const Mesh
     FVector3 posc = v->getPosition();
     FVector3 force;
 
-    force = (metrics::relativePosition(vp->getPosition(), posc).normalized() + metrics::relativePosition(vn->getPosition(), posc).normalized()) * lam;
+    const FVector3 relpos_p = metrics::relativePosition(vp->getPosition(), posc);
+    if(!relpos_p.isZero()) 
+        force += relpos_p.normalized();
+    const FVector3 relpos_n = metrics::relativePosition(vn->getPosition(), posc);
+    if(!relpos_n.isZero()) 
+        force += relpos_n.normalized();
 
-    f[0] += force[0];
-    f[1] += force[1];
-    f[2] += force[2];
+    f[0] += force[0] * lam;
+    f[1] += force[1] * lam;
+    f[2] += force[2] * lam;
     
     return S_OK;
 }

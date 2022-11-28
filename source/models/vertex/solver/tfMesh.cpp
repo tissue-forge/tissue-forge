@@ -964,6 +964,12 @@ HRESULT Mesh::sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf) {
 }
 
 HRESULT Mesh::splitPlan(Vertex *v, const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v) {
+    // Verify inputs
+    if(!v) 
+        return tf_error(E_FAIL, "Vertex not defined");
+    else if(sep.isZero()) 
+        return tf_error(E_FAIL, "Zero separation");
+
     verts_v.clear();
     verts_new_v.clear();
 
@@ -972,14 +978,10 @@ HRESULT Mesh::splitPlan(Vertex *v, const FVector3 &sep, std::vector<Vertex*> &ve
     // Verify that 
     //  1. the vertex is in the mesh
     //  2. the vertex defines at least one surface
-    if(v->mesh != this) {
-        tf_error(E_FAIL, "Vertex not in this mesh");
-        return 0;
-    } 
-    else if(nbs.size() == 0) {
-        tf_error(E_FAIL, "Vertex must define a surface");
-        return 0;
-    }
+    if(v->mesh != this) 
+        return tf_error(E_FAIL, "Vertex not in this mesh");
+    else if(nbs.size() == 0) 
+        return tf_error(E_FAIL, "Vertex must define a surface");
     
     // Define a cut plane at the midpoint of and orthogonal to the new edge
     FVector3 v_pos0 = v->getPosition();
@@ -1245,6 +1247,11 @@ static HRESULT Mesh_SurfaceCutPlanePointsPairs(
 }
 
 Surface *Mesh::split(Surface *s, const FVector3 &cp_pos, const FVector3 &cp_norm) {
+    if(cp_norm.isZero()) {
+        tf_error(E_FAIL, "Zero normal");
+        return 0;
+    }
+
     FVector4 planeEq = FVector4::planeEquation(cp_norm.normalized(), cp_pos);
 
     FVector3 pos_start, pos_end; 
@@ -1420,6 +1427,11 @@ struct Mesh_BodySplitEdge {
 };
 
 Body *Mesh::split(Body *b, const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype) {
+    if(cp_norm.isZero()) {
+        tf_error(E_FAIL, "Zero normal");
+        return 0;
+    }
+
     FVector4 planeEq = FVector4::planeEquation(cp_norm.normalized(), cp_pos);
 
     // Determine which surfaces are moved to new body

@@ -44,7 +44,11 @@ HRESULT NormalStress::force(const MeshObj *source, const MeshObj *target, FloatP
     if(bodies.size() == 2) 
         return S_OK;
     
-    FVector3 snormal = s->getNormal().normalized();
+    FVector3 snormal = s->getNormal();
+    if(snormal.isZero()) 
+        return S_OK;
+
+    snormal = snormal.normalized();
     if(bodies.size() == 1) 
         snormal *= s->volumeSense(bodies[0]);
 

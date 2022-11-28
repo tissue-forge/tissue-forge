@@ -43,13 +43,17 @@ static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const FloatP
         
         auto svertices = s->getVertices();
         unsigned int idx, idxc, idxp, idxn;
-        FVector3 sftotal;
+        FVector3 sftotal, triNorm;
         
         for(idx = 0; idx < svertices.size(); idx++) {
             if(svertices[idx] == v) 
                 idxc = idx;
-            sftotal += Magnum::Math::cross(s->triangleNormal(idx).normalized(), 
-                                           svertices[idx == svertices.size() - 1 ? 0 : idx + 1]->getPosition() - svertices[idx]->getPosition());
+            triNorm = s->triangleNormal(idx);
+            if(!triNorm.isZero()) 
+                sftotal += Magnum::Math::cross(
+                    triNorm.normalized(), 
+                    svertices[idx == svertices.size() - 1 ? 0 : idx + 1]->getPosition() - svertices[idx]->getPosition()
+                );
         }
         sftotal /= svertices.size();
 
@@ -58,8 +62,12 @@ static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const FloatP
 
         const FVector3 scentroid = s->getCentroid();
 
-        sftotal += Magnum::Math::cross(s->triangleNormal(idxc).normalized(), scentroid - svertices[idxn]->getPosition());
-        sftotal -= Magnum::Math::cross(s->triangleNormal(idxp).normalized(), scentroid - svertices[idxp]->getPosition());
+        triNorm = s->triangleNormal(idxc);
+        if(!triNorm.isZero()) 
+            sftotal += Magnum::Math::cross(triNorm.normalized(), scentroid - svertices[idxn]->getPosition());
+        triNorm = s->triangleNormal(idxp);
+        if(!triNorm.isZero()) 
+            sftotal -= Magnum::Math::cross(triNorm.normalized(), scentroid - svertices[idxp]->getPosition());
         ftotal += sftotal;
     }
 
@@ -83,13 +91,17 @@ static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const 
 
     auto svertices = s->getVertices();
     unsigned int idx, idxc, idxp, idxn;
-    FVector3 sftotal;
+    FVector3 sftotal, triNorm;
     
     for(idx = 0; idx < svertices.size(); idx++) {
         if(svertices[idx] == v) 
             idxc = idx;
-        sftotal += Magnum::Math::cross(s->triangleNormal(idx).normalized(), 
-                                       svertices[idx == svertices.size() - 1 ? 0 : idx + 1]->getPosition() - svertices[idx]->getPosition());
+        triNorm = s->triangleNormal(idx);
+        if(!triNorm.isZero())
+            sftotal += Magnum::Math::cross(
+                triNorm.normalized(), 
+                svertices[idx == svertices.size() - 1 ? 0 : idx + 1]->getPosition() - svertices[idx]->getPosition()
+            );
     }
     sftotal /= svertices.size();
 
@@ -98,8 +110,12 @@ static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const 
 
     const FVector3 scentroid = s->getCentroid();
 
-    sftotal += Magnum::Math::cross(s->triangleNormal(idxc).normalized(), scentroid - svertices[idxn]->getPosition());
-    sftotal -= Magnum::Math::cross(s->triangleNormal(idxp).normalized(), scentroid - svertices[idxp]->getPosition());
+    triNorm = s->triangleNormal(idxc);
+    if(!triNorm.isZero()) 
+        sftotal += Magnum::Math::cross(triNorm.normalized(), scentroid - svertices[idxn]->getPosition());
+    triNorm = s->triangleNormal(idxp);
+    if(!triNorm.isZero()) 
+        sftotal -= Magnum::Math::cross(triNorm.normalized(), scentroid - svertices[idxp]->getPosition());
     ftotal += sftotal;
 
     ftotal *= (lam * (constr - s->getArea()));
