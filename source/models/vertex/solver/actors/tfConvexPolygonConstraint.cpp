@@ -30,14 +30,29 @@ using namespace TissueForge::models::vertex;
 
 
 static inline bool ConvexPolygonConstraint_acts(Vertex *vc, Surface *s, FVector3 &rel_c2ab) {
+    if(s->getVertices().size() <= 3) 
+        return false;
+
     Vertex *va, *vb;
     std::tie(va, vb) = s->neighborVertices(vc);
+    const FVector3 posva = va->getPosition();
+    const FVector3 posvb = vb->getPosition();
     const FVector3 posvc = vc->getPosition();
+    const FloatP_t numVerts = s->getVertices().size();
+    const FVector3 cent_loo = (s->getCentroid() * numVerts - posvc) / (numVerts - 1.0);
 
     // Perpindicular vector from vertex to line connecting neighbors should point 
-    //  in the same direction as the vector from the vertex to the centroid
-    rel_c2ab = posvc.lineShortestDisplacementTo(va->getPosition(), vb->getPosition());
-    return rel_c2ab.dot(s->getCentroid() - posvc) < 0;
+    //  in the opposite direction as the vector from the vertex to the centroid of all other vertices
+    // rel_c2ab = posvc.lineShortestDisplacementTo(posva, posvb);
+    // const FVector3 rel_cent2ab = cent_loo.lineShortestDisplacementTo(posva, posvb);
+    FVector3 lineDir = posvb - posva;
+    if(lineDir.isZero()) 
+        return false;
+    lineDir = lineDir.normalized();
+    rel_c2ab = posva + (posvc - posva).dot(lineDir) * lineDir - posvc;
+    const FVector3 rel_cent2ab = posva + (cent_loo - posva).dot(lineDir) * lineDir - cent_loo;
+    
+    return rel_c2ab.dot(rel_cent2ab) > 0;
 }
 
 HRESULT ConvexPolygonConstraint::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
