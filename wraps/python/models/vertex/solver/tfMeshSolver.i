@@ -31,6 +31,7 @@
 %rename(unload_mesh) TissueForge::models::vertex::MeshSolver::unloadMesh;
 %rename(num_meshes) TissueForge::models::vertex::MeshSolver::numMeshes;
 %rename(get_mesh) TissueForge::models::vertex::MeshSolver::getMesh;
+%rename(register_type) TissueForge::models::vertex::MeshSolver::registerType;
 %rename(find_surface_from_name) TissueForge::models::vertex::MeshSolver::findSurfaceFromName;
 %rename(find_body_from_name) TissueForge::models::vertex::MeshSolver::findBodyFromName;
 %rename(find_structure_from_name) TissueForge::models::vertex::MeshSolver::findStructureFromName;

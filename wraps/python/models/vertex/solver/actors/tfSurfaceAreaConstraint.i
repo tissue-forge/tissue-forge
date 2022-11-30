@@ -22,9 +22,8 @@
 #include <models/vertex/solver/actors/tfSurfaceAreaConstraint.h>
 %}
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::SurfaceAreaConstraint::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::SurfaceAreaConstraint::force(const MeshObj *, const MeshObj *, FloatP_t *);
+vertex_solver_MeshObjActor_particularize(SurfaceAreaConstraint, Surface, Vertex)
+vertex_solver_MeshObjActor_particularize(SurfaceAreaConstraint, Body, Vertex)
 
 %rename(_vertex_solver_SurfaceAreaConstraint) TissueForge::models::vertex::SurfaceAreaConstraint;
 

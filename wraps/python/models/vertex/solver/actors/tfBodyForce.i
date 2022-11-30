@@ -22,9 +22,7 @@
 #include <models/vertex/solver/actors/tfBodyForce.h>
 %}
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::BodyForce::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::BodyForce::force(const MeshObj *, const MeshObj *, FloatP_t *);
+vertex_solver_MeshObjActor_particularize(BodyForce, Body, Vertex)
 
 %rename(_vertex_solver_BodyForce) TissueForge::models::vertex::BodyForce;
 

@@ -22,9 +22,7 @@
 #include <models/vertex/solver/actors/tfSurfaceTraction.h>
 %}
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::SurfaceTraction::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::SurfaceTraction::force(const MeshObj *, const MeshObj *, FloatP_t *);
+vertex_solver_MeshObjActor_particularize(SurfaceTraction, Surface, Vertex)
 
 %rename(_vertex_solver_SurfaceTraction) TissueForge::models::vertex::SurfaceTraction;
 

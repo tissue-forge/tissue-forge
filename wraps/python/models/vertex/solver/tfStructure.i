@@ -24,6 +24,13 @@
 
 %template(vectorMeshStructure) std::vector<TissueForge::models::vertex::Structure*>;
 
+%rename(_isRegistered) TissueForge::models::vertex::StructureType::isRegistered;
+%rename(_getInstances) TissueForge::models::vertex::StructureType::getInstances;
+%rename(_getInstanceIds) TissueForge::models::vertex::StructureType::getInstanceIds;
+%rename(_getNumInstances) TissueForge::models::vertex::StructureType::getNumInstances;
+%rename(find_from_name) TissueForge::models::vertex::StructureType::findFromName;
+%rename(register_type) TissueForge::models::vertex::StructureType::registerType;
+
 %rename(_vertex_solver_Structure) TissueForge::models::vertex::Structure;
 %rename(_vertex_solver_StructureType) TissueForge::models::vertex::StructureType;
 

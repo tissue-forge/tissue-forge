@@ -22,9 +22,7 @@
 #include <models/vertex/solver/actors/tfNormalStress.h>
 %}
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::NormalStress::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::NormalStress::force(const MeshObj *, const MeshObj *, FloatP_t *);
+vertex_solver_MeshObjActor_particularize(NormalStress, Surface, Vertex)
 
 %rename(_vertex_solver_NormalStress) TissueForge::models::vertex::NormalStress;
 

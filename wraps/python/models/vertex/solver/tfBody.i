@@ -25,6 +25,25 @@
 %template(vectorMeshBody) std::vector<TissueForge::models::vertex::Body*>;
 %template(vectorvectorvectorMeshBody) std::vector<std::vector<std::vector<TissueForge::models::vertex::Body*> > >;
 
+%rename(position_changed) TissueForge::models::vertex::Body::positionChanged;
+%rename(find_vertex) TissueForge::models::vertex::Body::findVertex;
+%rename(find_surface) TissueForge::models::vertex::Body::findSurface;
+%rename(neighbor_bodies) TissueForge::models::vertex::Body::neighborBodies;
+%rename(neighbor_surfaces) TissueForge::models::vertex::Body::neighborSurfaces;
+%rename(get_vertex_area) TissueForge::models::vertex::Body::getVertexArea;
+%rename(get_vertex_volume) TissueForge::models::vertex::Body::getVertexVolume;
+%rename(get_vertex_mass) TissueForge::models::vertex::Body::getVertexMass;
+%rename(find_interface) TissueForge::models::vertex::Body::findInterface;
+%rename(contact_area) TissueForge::models::vertex::Body::contactArea;
+%rename(is_outside) TissueForge::models::vertex::Body::isOutside;
+
+%rename(_isRegistered) TissueForge::models::vertex::BodyType::isRegistered;
+%rename(_getInstances) TissueForge::models::vertex::BodyType::getInstances;
+%rename(_getInstanceIds) TissueForge::models::vertex::BodyType::getInstanceIds;
+%rename(_getNumInstances) TissueForge::models::vertex::BodyType::getNumInstances;
+%rename(find_from_name) TissueForge::models::vertex::BodyType::findFromName;
+%rename(register_type) TissueForge::models::vertex::BodyType::registerType;
+
 %rename(_vertex_solver_Body) TissueForge::models::vertex::Body;
 %rename(_vertex_solver_BodyType) TissueForge::models::vertex::BodyType;
 

@@ -22,9 +22,8 @@
 #include <models/vertex/solver/actors/tfAdhesion.h>
 %}
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::Adhesion::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::Adhesion::force(const MeshObj *, const MeshObj *, FloatP_t *);
+vertex_solver_MeshObjActor_particularize(Adhesion, Body, Vertex)
+vertex_solver_MeshObjActor_particularize(Adhesion, Surface, Vertex)
 
 %rename(_vertex_solver_Adhesion) TissueForge::models::vertex::Adhesion;
 

@@ -22,9 +22,7 @@
 #include <models/vertex/solver/actors/tfEdgeTension.h>
 %}
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::EdgeTension::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::EdgeTension::force(const MeshObj *, const MeshObj *, FloatP_t *);
+vertex_solver_MeshObjActor_particularize(EdgeTension, Surface, Vertex)
 
 %rename(_vertex_solver_EdgeTension) TissueForge::models::vertex::EdgeTension;
 

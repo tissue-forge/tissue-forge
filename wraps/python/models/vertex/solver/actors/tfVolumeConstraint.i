@@ -22,11 +22,9 @@
 #include <models/vertex/solver/actors/tfVolumeConstraint.h>
 %}
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::VolumeConstraint::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::VolumeConstraint::force(const MeshObj *, const MeshObj *, FloatP_t *);
-
 %rename(_vertex_solver_VolumeConstraint) TissueForge::models::vertex::VolumeConstraint;
+
+vertex_solver_MeshObjActor_particularize(VolumeConstraint, Body, Vertex)
 
 %include <models/vertex/solver/actors/tfVolumeConstraint.h>
 

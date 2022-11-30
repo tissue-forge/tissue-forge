@@ -33,6 +33,41 @@ static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solve
 
 %template(vectorMesh ## baseName) std::vector<TissueForge::models::vertex:: ## baseName ## *>;
 
+%ignore TissueForge::models::vertex::## baseName ##::energy(const MeshObj *, const MeshObj *, FloatP_t &);
+%ignore TissueForge::models::vertex::## baseName ##::force(const MeshObj *, const MeshObj *, FloatP_t *);
+
+%enddef
+
+%inline %{
+
+static TissueForge::FloatP_t _vertex_solver_MeshObjActor_getEnergy(TissueForge::models::vertex::MeshObjActor *actor, TissueForge::models::vertex::MeshObj *source, TissueForge::models::vertex::MeshObj *target) {
+    TissueForge::FloatP_t result;
+    actor->energy(source, target, result);
+    return result;
+}
+
+static TissueForge::FVector3 _vertex_solver_MeshObjActor_getForce(TissueForge::models::vertex::MeshObjActor *actor, TissueForge::models::vertex::MeshObj *source, TissueForge::models::vertex::MeshObj *target) {
+    TissueForge::FVector3 result;
+    actor->force(source, target, result.data());
+    return result;
+}
+
+%}
+
+%define vertex_solver_MeshObjActor_particularize(baseName, sourceTypeBaseName, targetTypeBaseName)
+
+%extend TissueForge::models::vertex::## baseName ## {
+
+    TissueForge::FloatP_t energy(TissueForge::models::vertex::## sourceTypeBaseName ## *source, TissueForge::models::vertex::## targetTypeBaseName ## *target) {
+        return _vertex_solver_MeshObjActor_getEnergy($self, (TissueForge::models::vertex::MeshObj*)source, (TissueForge::models::vertex::MeshObj*)target);
+    }
+
+    TissueForge::FVector3 force(TissueForge::models::vertex::## sourceTypeBaseName ## *source, TissueForge::models::vertex::## targetTypeBaseName ## *target) {
+        return _vertex_solver_MeshObjActor_getForce($self, (TissueForge::models::vertex::MeshObj*)source, (TissueForge::models::vertex::MeshObj*)target);
+    }
+
+}
+
 %enddef
 
 

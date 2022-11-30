@@ -24,6 +24,14 @@
 
 %template(vectorMeshVertex) std::vector<TissueForge::models::vertex::Vertex*>;
 
+%rename(find_surface) TissueForge::models::vertex::Vertex::findSurface;
+%rename(find_body) TissueForge::models::vertex::Vertex::findBody;
+%rename(neighbor_vertices) TissueForge::models::vertex::Vertex::neighborVertices;
+%rename(shared_surfaces) TissueForge::models::vertex::Vertex::sharedSurfaces;
+%rename(position_changed) TissueForge::models::vertex::Vertex::positionChanged;
+%rename(update_properties) TissueForge::models::vertex::Vertex::updateProperties;
+%rename(transfer_bonds_to) TissueForge::models::vertex::Vertex::transferBondsTo;
+
 %rename(_vertex_solver_Vertex) TissueForge::models::vertex::Vertex;
 %rename(_vertex_solver__MeshParticleType_get) TissueForge::models::vertex::MeshParticleType_get;
 

@@ -109,14 +109,34 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 
 %extend name {
     %pythoncode %{
+        @property
+        def registered(self) -> bool:
+            """Tests whether this type is registered"""
+            return self._isRegistered()
+
+        @property
+        def instances(self):
+            """List of instances that belong to this type"""
+            return self._getInstances()
+
+        @property
+        def instance_ids(self):
+            """List of instance ids that belong to this type"""
+            return self._getInstanceIds()
+
+        @property
+        def num_instances(self) -> int:
+            """Number of instances that belong to this type"""
+            return self._getNumInstances()
+
         def __len__(self) -> int:
-            return self.getNumInstances()
+            return self.num_instances
 
         def __getitem__(self, index: int):
-            return self.getInstances()[index]
+            return self.instances[index]
 
         def __contains__(self, item):
-            return item in self.getInstances()
+            return item in self.instances
 
         def __lt__(self, rhs) -> bool:
             return self.id < rhs.id

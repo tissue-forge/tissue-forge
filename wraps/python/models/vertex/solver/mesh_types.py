@@ -113,7 +113,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
             raise RuntimeError('Solver unavailable')
 
         name = cls.get_name()
-        type_instance = SurfaceType.findFromName(name)
+        type_instance = SurfaceType.find_from_name(name)
         if type_instance is not None:
             return type_instance
 
@@ -134,7 +134,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
         cls._bind_generator(cls.surface_area_constaint, type_instance)
         cls._bind_generator(cls.surface_traction, type_instance)
 
-        solver.registerType(type_instance)
+        solver.register_type(type_instance)
         type_instance.name = name
         type_instance.thisown = 0
 
@@ -184,7 +184,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
             ti = specs[i]
             ti_name = ti.get_name()
-            ti_instance = SurfaceType.findFromName(ti_name)
+            ti_instance = SurfaceType.find_from_name(ti_name)
             if ti_instance is None:
                 continue
 
@@ -195,7 +195,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
                     continue
 
                 tj_name = tj.get_name()
-                tj_instance = SurfaceType.findFromName(tj_name)
+                tj_instance = SurfaceType.find_from_name(tj_name)
                 if tj_instance is None:
                     continue
 
@@ -255,7 +255,7 @@ class BodyTypeSpec(_TypeSpecBase):
             raise RuntimeError('Solver unavailable')
 
         name = cls.get_name()
-        type_instance = BodyType.findFromName(name)
+        type_instance = BodyType.find_from_name(name)
         if type_instance is not None:
             return type_instance
 
@@ -270,7 +270,7 @@ class BodyTypeSpec(_TypeSpecBase):
         cls._bind_generator(cls.surface_area_constaint, type_instance)
         cls._bind_generator(cls.volume_constraint, type_instance)
 
-        solver.registerType(type_instance)
+        solver.register_type(type_instance)
         type_instance.name = name
         type_instance.thisown = 0
 
@@ -311,7 +311,7 @@ class BodyTypeSpec(_TypeSpecBase):
 
             ti = specs[i]
             ti_name = ti.get_name()
-            ti_instance = BodyType.findFromName(ti_name)
+            ti_instance = BodyType.find_from_name(ti_name)
             if ti_instance is None:
                 continue
 
@@ -322,7 +322,7 @@ class BodyTypeSpec(_TypeSpecBase):
                     continue
 
                 tj_name = tj.get_name()
-                tj_instance = BodyType.findFromName(tj_name)
+                tj_instance = BodyType.find_from_name(tj_name)
                 if tj_instance is None:
                     continue
 

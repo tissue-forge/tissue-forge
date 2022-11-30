@@ -25,6 +25,31 @@
 %template(vectorMeshSurface) std::vector<TissueForge::models::vertex::Surface*>;
 %template(vectorvectorMeshSurface) std::vector<std::vector<TissueForge::models::vertex::Surface*> >;
 
+%rename(refresh_bodies) TissueForge::models::vertex::Surface::refreshBodies;
+%rename(find_vertex) TissueForge::models::vertex::Surface::findVertex;
+%rename(find_body) TissueForge::models::vertex::Surface::findBody;
+%rename(neighbor_vertices) TissueForge::models::vertex::Surface::neighborVertices;
+%rename(neighbor_surfaces) TissueForge::models::vertex::Surface::neighborSurfaces;
+%rename(connected_surfaces) TissueForge::models::vertex::Surface::connectedSurfaces;
+%rename(contiguous_edge_labels) TissueForge::models::vertex::Surface::contiguousEdgeLabels;
+%rename(num_shared_contiguous_edges) TissueForge::models::vertex::Surface::numSharedContiguousEdges;
+%rename(volume_sense) TissueForge::models::vertex::Surface::volumeSense;
+%rename(get_volume_contr) TissueForge::models::vertex::Surface::getVolumeContr;
+%rename(get_outward_normal) TissueForge::models::vertex::Surface::getOutwardNormal;
+%rename(get_vertex_area) TissueForge::models::vertex::Surface::getVertexArea;
+%rename(triangle_normal) TissueForge::models::vertex::Surface::triangleNormal;
+%rename(normal_distance) TissueForge::models::vertex::Surface::normalDistance;
+%rename(is_outside) TissueForge::models::vertex::Surface::isOutside;
+%rename(position_changed) TissueForge::models::vertex::Surface::positionChanged;
+
+%rename(_isRegistered) TissueForge::models::vertex::SurfaceType::isRegistered;
+%rename(_getInstances) TissueForge::models::vertex::SurfaceType::getInstances;
+%rename(_getInstanceIds) TissueForge::models::vertex::SurfaceType::getInstanceIds;
+%rename(_getNumInstances) TissueForge::models::vertex::SurfaceType::getNumInstances;
+%rename(find_from_name) TissueForge::models::vertex::SurfaceType::findFromName;
+%rename(register_type) TissueForge::models::vertex::SurfaceType::registerType;
+%rename(n_polygon) TissueForge::models::vertex::SurfaceType::nPolygon;
+
 %rename(_vertex_solver_Surface) TissueForge::models::vertex::Surface;
 %rename(_vertex_solver_SurfaceType) TissueForge::models::vertex::SurfaceType;
 
