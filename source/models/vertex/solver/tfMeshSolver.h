@@ -152,6 +152,12 @@ namespace TissueForge::models::vertex {
         /** Unload an existing mesh */
         static HRESULT unloadMesh(Mesh *mesh);
 
+        /** Number of meshes */
+        static const int numMeshes();
+
+        /** Get a mesh */
+        static Mesh *getMesh(const unsigned int &idx);
+
         /** Register a structure type */
         static HRESULT registerType(StructureType *_type);
 

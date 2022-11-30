@@ -209,6 +209,23 @@ HRESULT MeshSolver::unloadMesh(Mesh *mesh) {
     return _solver->_unloadMeshInst(mesh);
 }
 
+const int MeshSolver::numMeshes() {
+    TF_MESHSOLVER_CHECKINIT_RET(-1)
+
+    return _solver->meshes.size();
+}
+
+Mesh *MeshSolver::getMesh(const unsigned int &idx) {
+    TF_MESHSOLVER_CHECKINIT_RET(0)
+
+    if(idx >= _solver->meshes.size()) {
+        tf_error(E_FAIL, "Requested a mesh that does not exist");
+        return 0;
+    }
+
+    return _solver->meshes[idx];
+}
+
 template <typename T> 
 static bool MeshSolver_assignUniqueNameAsNecessary(T *inst, std::vector<T*> registeredInsts) {
     bool uniqueName = true;
