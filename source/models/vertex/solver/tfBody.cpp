@@ -27,6 +27,7 @@
 #include <tfLogger.h>
 
 #include <Magnum/Math/Math.h>
+#include <Magnum/Math/Intersection.h>
 
 
 using namespace TissueForge;
@@ -372,6 +373,254 @@ bool Body::isOutside(const FVector3 &pos) const {
     return rel_pos.dot(findSurface(rel_pos)->getOutwardNormal(this)) > 0;
 }
 
+struct Body_BodySplitEdge {
+    Vertex *v_oldSide;  // Old side
+    Vertex *v_newSide;  // New side
+    FVector3 intersect_pt;
+    std::vector<Surface*> surfaces;
+
+    bool operator==(Body_BodySplitEdge o) const {
+        return v_oldSide == o.v_oldSide && v_newSide == o.v_newSide;
+    }
+
+    static bool intersects(Vertex *v1, Vertex *v2, const FVector4 &planeEq, FVector3 &intersect_pt) {
+        FVector3 pos_old = v1->getPosition();
+        FVector3 rel_pos = v2->getPosition() - pos_old;
+        FloatP_t intersect_t = Magnum::Math::Intersection::planeLine(planeEq, pos_old, rel_pos);
+        
+        // If new position is indeterminant, exit out
+        if(!(intersect_t > 0 && intersect_t < 1)) 
+            return false;
+
+        // Return coordinates
+        intersect_pt = pos_old + intersect_t * rel_pos;
+        return true;
+    }
+
+    static std::vector<Surface*> extractSurfaces(Vertex *v1, Vertex *v2, Body *b) {
+        std::vector<Surface*> surfaces;
+        for(auto &s : b->getSurfaces()) 
+            if(v1->in(s) && v2->in(s)) 
+                surfaces.push_back(s);
+        return surfaces;
+    }
+
+    static std::vector<Body_BodySplitEdge> construct(Body *b, const FVector4 &planeEq) {
+        std::map<std::pair<int, int>, Body_BodySplitEdge> edgeMap;
+        for(auto &s : b->getSurfaces()) {
+            for(auto &v : s->getVertices()) {
+                Vertex *va, *vb;
+                Vertex *v_lower, *v_upper;
+                std::tie(va, vb) = s->neighborVertices(v);
+
+                std::vector<std::pair<Vertex*, Vertex*> > edge_cases;
+                if(v->objId < va->objId) 
+                    edge_cases.push_back({v, va});
+                if(v->objId < vb->objId) 
+                    edge_cases.push_back({v, vb});
+
+                for(auto &ec : edge_cases) {
+                    std::tie(v_lower, v_upper) = ec;
+
+                    FVector3 intersect_pt;
+                    if(intersects(v_lower, v_upper, planeEq, intersect_pt)) {
+                        Body_BodySplitEdge edge;
+                        if(planeEq.distance(v_lower->getPosition()) > 0) {
+                            edge.v_oldSide = v_upper;
+                            edge.v_newSide = v_lower;
+                        } 
+                        else {
+                            edge.v_oldSide = v_lower;
+                            edge.v_newSide = v_upper;
+                        }
+                        edge.intersect_pt = intersect_pt;
+                        edge.surfaces = extractSurfaces(v_lower, v_upper, b);
+
+                        if(edge.surfaces.size() != 2) {
+                            tf_error(E_FAIL, "Incorrect number of extracted surfaces");
+                            return {};
+                        }
+
+                        edgeMap.insert({{v_lower->objId, v_upper->objId}, edge});
+                    }
+                }
+            }
+        }
+
+        std::vector<Body_BodySplitEdge> result;
+        result.reserve(edgeMap.size());
+        for(auto &itr : edgeMap) 
+            result.push_back(itr.second);
+        
+        std::vector<Body_BodySplitEdge> result_sorted;
+        result_sorted.reserve(result.size());
+        result_sorted.push_back(result.back());
+        result.pop_back();
+        Surface *s_target = result_sorted[0].surfaces[1];
+        while(!result.empty()) {
+            std::vector<Body_BodySplitEdge>::iterator itr = result.begin();
+            while(itr != result.end()) { 
+                if(itr->surfaces[0] == s_target) { 
+                    s_target = itr->surfaces[1];
+                    result_sorted.push_back(*itr);
+                    result.erase(itr);
+                    break;
+                } 
+                else if(itr->surfaces[1] == s_target) {
+                    s_target = itr->surfaces[0];
+                    result_sorted.push_back(*itr);
+                    result.erase(itr);
+                    break;
+                }
+                itr++;
+            }
+        }
+        
+        return result_sorted;
+    }
+
+    typedef std::pair<Surface*, std::pair<Body_BodySplitEdge, Body_BodySplitEdge> > surfaceSplitPlanEl_t;
+
+    static HRESULT surfaceSplitPlan(const std::vector<Body_BodySplitEdge> &edges, std::vector<surfaceSplitPlanEl_t> &result) {
+        std::vector<Body_BodySplitEdge> edges_copy(edges);
+        edges_copy.push_back(edges.front());
+        for(size_t i = 0; i < edges.size(); i++) {
+            Body_BodySplitEdge edge_i = edges_copy[i];
+            Body_BodySplitEdge edge_j = edges_copy[i + 1];
+            Surface *s = NULL;
+            for(auto &si : edge_i.surfaces) {
+                auto itr = std::find(edge_j.surfaces.begin(), edge_j.surfaces.end(), si);
+                if(itr != edge_j.surfaces.end()) {
+                    s = *itr;
+                    break;
+                }
+            }
+            if(!s) 
+                return E_FAIL;
+            
+            Vertex *v_old = edge_i.v_oldSide;
+            Vertex *v_new = edge_i.v_newSide;
+            Vertex *v_old_na, *v_old_nb;
+            std::tie(v_old_na, v_old_nb) = s->neighborVertices(v_old);
+            if(v_old_na == v_new) 
+                result.push_back({s, {edge_i, edge_j}});
+            else 
+                result.push_back({s, {edge_j, edge_i}});
+        }
+        return S_OK;
+    }
+
+    static HRESULT vertexConstructorPlan(const std::vector<surfaceSplitPlanEl_t> &splitPlan, std::vector<Body_BodySplitEdge> &vertexPlan) {
+        vertexPlan.clear();
+        for(auto itr = splitPlan.begin(); itr != splitPlan.end(); itr++) {
+            auto edges = itr->second;
+            auto edges_prev = itr == splitPlan.begin() ? splitPlan.back().second : (itr - 1)->second;
+            if(edges.first == edges_prev.first || edges.first == edges_prev.second) 
+                vertexPlan.push_back(edges.first);
+            else 
+                vertexPlan.push_back(edges.second);
+        }
+        return S_OK;
+    }
+};
+
+Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype) {
+    if(cp_norm.isZero()) {
+        tf_error(E_FAIL, "Zero normal");
+        return 0;
+    }
+
+    FVector4 planeEq = FVector4::planeEquation(cp_norm.normalized(), cp_pos);
+
+    // Determine which surfaces are moved to new body
+    std::vector<Surface*> surfs_moved;
+    for(auto &s : surfaces) {
+        size_t num_newSide = 0;
+        for(auto &v : s->vertices) 
+            if(planeEq.distance(v->getPosition()) > 0) 
+                num_newSide++;
+        if(num_newSide == s->vertices.size()) 
+            surfs_moved.push_back(s);
+    }
+
+    // Build edge list
+    std::vector<Body_BodySplitEdge> splitEdges = Body_BodySplitEdge::construct(this, planeEq);
+
+    // Split edges
+    std::vector<Body_BodySplitEdge::surfaceSplitPlanEl_t> sSplitPlan;
+    if(Body_BodySplitEdge::surfaceSplitPlan(splitEdges, sSplitPlan) != S_OK) 
+        return NULL;
+    std::vector<Body_BodySplitEdge> vertexPlan;
+    if(Body_BodySplitEdge::vertexConstructorPlan(sSplitPlan, vertexPlan) != S_OK) 
+        return NULL;
+    std::vector<Vertex*> new_vertices;
+    std::map<std::pair<int, int>, Vertex*> new_vertices_map;
+    for(auto &edge : vertexPlan) {
+        Vertex *v_new = new Vertex(edge.intersect_pt);
+        v_new->insert(edge.v_oldSide, edge.v_newSide);
+        new_vertices.push_back(v_new);
+        new_vertices_map.insert({{edge.v_oldSide->objId, edge.v_newSide->objId}, v_new});
+    }
+
+    // Split surfaces
+    std::vector<Surface*> new_surfs;
+    new_surfs.reserve(sSplitPlan.size());
+    for(size_t i = 0; i < sSplitPlan.size(); i++) {
+        Surface *s = sSplitPlan[i].first;
+        Vertex *v1 = new_vertices_map[{sSplitPlan[i].second.first.v_oldSide->objId,  sSplitPlan[i].second.first.v_newSide->objId}];
+        Vertex *v2 = new_vertices_map[{sSplitPlan[i].second.second.v_oldSide->objId, sSplitPlan[i].second.second.v_newSide->objId}];
+        Surface *s_new = s->split(v1, v2);
+        if(!s_new) 
+            return NULL;
+        new_surfs.push_back(s_new);
+    }
+
+    // Construct interface surface
+    if(!stype) 
+        stype = new_surfs[0]->type();
+    Surface *s_new = (*stype)(new_vertices);
+    if(!s_new || (mesh && mesh->add(s_new) != S_OK)) 
+        return NULL;
+    add(s_new);
+    s_new->add(this);
+    s_new->positionChanged();
+
+    // Transfer moved and new split surfaces to new body
+    for(auto &s : surfs_moved) {
+        s->remove(this);
+        remove(s);
+    }
+    for(auto &s : new_surfs) {
+        s->remove(this);
+        remove(s);
+    }
+    positionChanged();
+
+    // Construct new body
+    std::vector<Surface*> new_body_surfs(surfs_moved);
+    new_body_surfs.push_back(s_new);
+    for(auto &s : new_surfs) 
+        new_body_surfs.push_back(s);
+    Body *b_new = (*type())(new_body_surfs);
+    if(!b_new) 
+        return NULL;
+
+    if(mesh && mesh->add(b_new) != S_OK) 
+        return NULL;
+
+    if(mesh) {
+        MeshSolver *solver = MeshSolver::get();
+        if(solver) {
+            if(!mesh->qualityWorking()) 
+                solver->positionChanged();
+
+            solver->log(mesh, MeshLogEventType::Create, {objId, b_new->objId}, {objType(), b_new->objType()}, "split");
+        }
+    }
+
+    return b_new;
+}
+
 static Body *BodyType_fromSurfaces(BodyType *btype, std::vector<Surface*> surfaces) {
     // Verify that at least 4 surfaces are given
     if(surfaces.size() < 4) {
@@ -484,4 +733,112 @@ Body *BodyType::operator() (io::ThreeDFMeshData* ioMesh, SurfaceType *stype) {
             if(si != sj && Surface::sew(si, sj) != S_OK) 
                 return NULL;
     return BodyType_fromSurfaces(this, surfaces);
+}
+
+Body *BodyType::extend(Surface *base, const FVector3 &pos) {
+    // For every pair of vertices, construct a surface with a new vertex at the given position
+    Vertex *vNew = new Vertex(pos);
+    SurfaceType *stype = base->type();
+    std::vector<Surface*> surfaces(1, base);
+    for(unsigned int i = 0; i < base->vertices.size(); i++) {
+        // Get base vertices
+        Vertex *v0 = base->vertices[i];
+        Vertex *v1 = base->vertices[i == base->vertices.size() - 1 ? 0 : i + 1];
+
+        Surface *s = (*stype)({v0, v1, vNew});
+        if(!s) 
+            return NULL;
+        surfaces.push_back(s);
+    }
+
+    // Construct a body from the surfaces
+    Body *b = (*this)(surfaces);
+    if(!b) 
+        return NULL;
+
+    // Add new parts and return
+    if(base->mesh && base->mesh->add(b) != S_OK) 
+        return NULL;
+
+    MeshSolver *solver = base->mesh ? MeshSolver::get() : NULL;
+
+    if(solver) {
+        if(!base->mesh->qualityWorking()) 
+            solver->positionChanged();
+
+        solver->log(base->mesh, MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extend");
+    }
+
+    return b;
+}
+
+HRESULT Body_surfaceOutwardNormal(Surface *s, Body *b1, Body *b2, FVector3 &onorm) {
+    if(b1 && b2) { 
+        TF_Log(LOG_ERROR) << "Surface is twice-connected";
+        return NULL;
+    } 
+    else if(b1) {
+        onorm = s->getNormal();
+    } 
+    else if(b2) {
+        onorm = -s->getNormal();
+    } 
+    else {
+        onorm = s->getNormal();
+    }
+    return S_OK;
+}
+
+Body *BodyType::extrude(Surface *base, const FloatP_t &normLen) {
+    unsigned int i, j;
+    FVector3 normal;
+
+    // Only permit if the surface has an available slot
+    base->refreshBodies();
+    if(Body_surfaceOutwardNormal(base, base->b1, base->b2, normal) != S_OK) 
+        return NULL;
+
+    std::vector<Vertex*> newVertices(base->vertices.size(), 0);
+    SurfaceType *stype = base->type();
+    MeshParticleType *ptype = MeshParticleType_get();
+    FVector3 disp = normal * normLen;
+
+    for(i = 0; i < base->vertices.size(); i++) {
+        FVector3 pos = base->vertices[i]->getPosition() + disp;
+        ParticleHandle *ph = (*ptype)(&pos);
+        newVertices[i] = new Vertex(ph->id);
+    }
+
+    std::vector<Surface*> newSurfaces;
+    for(i = 0; i < base->vertices.size(); i++) {
+        j = i + 1 >= base->vertices.size() ? i + 1 - base->vertices.size() : i + 1;
+        Surface *s = (*stype)({
+            base->vertices[i], 
+            base->vertices[j], 
+            newVertices[j], 
+            newVertices[i]
+        });
+        if(!s) 
+            return NULL;
+        newSurfaces.push_back(s);
+    }
+    newSurfaces.push_back(base);
+    newSurfaces.push_back((*stype)(newVertices));
+
+    Body *b = (*this)(newSurfaces);
+    if(!b) 
+        return NULL;
+    if(base->mesh && base->mesh->add(b) != S_OK) 
+        return NULL;
+
+    MeshSolver *solver = base->mesh ? MeshSolver::get() : NULL;
+
+    if(solver) {
+        if(!base->mesh->qualityWorking()) 
+            solver->positionChanged();
+
+        solver->log(base->mesh, MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extrude");
+    }
+
+    return b;
 }

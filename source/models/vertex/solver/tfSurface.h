@@ -41,6 +41,7 @@ namespace TissueForge::models::vertex {
     class Mesh;
 
     struct SurfaceType;
+    struct BodyType;
 
 
     /**
@@ -260,8 +261,49 @@ namespace TissueForge::models::vertex {
         */
         static HRESULT sew(Surface *s1, Surface *s2, const FloatP_t &distCf=0.01);
 
+        /** Sew a set of surfaces 
+         * 
+         * All vertices are merged that are a distance apart less than a distance criterion. 
+         * 
+         * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
+        */
+        static HRESULT sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf=0.01);
 
+        /** Merge with a surface. The passed surface is destroyed. 
+         * 
+         * Surfaces must have the same number of vertices. Vertices are paired by nearest distance.
+        */
+        HRESULT merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs);
+
+        /** Create a surface from two vertices and a position */
+        Surface *extend(const unsigned int &vertIdxStart, const FVector3 &pos);
+
+        /** Create a surface from two vertices of a surface in a mesh by extruding along the normal of the surface
+         * 
+         * todo: add support for extruding at an angle w.r.t. the center of the edge and centroid of the base surface
+        */
+        Surface *extrude(const unsigned int &vertIdxStart, const FloatP_t &normLen);
+
+        /** Split into two surfaces
+         * 
+         * Both vertices must already be in the surface and not adjacent
+         * 
+         * Vertices in the winding from from vertex to second go to newly created surface
+         * 
+         * Requires updated surface members (e.g., centroid)
+        */
+        Surface *split(Vertex *v1, Vertex *v2);
+
+        /** Split into two surfaces
+         * 
+         * Requires updated surface members (e.g., centroid)
+        */
+        Surface *split(const FVector3 &cp_pos, const FVector3 &cp_norm);
+
+
+        friend Vertex;
         friend Body;
+        friend BodyType;
         friend Mesh;
 
     };
@@ -345,6 +387,9 @@ namespace TissueForge::models::vertex {
 
         /** Construct a polygon with n vertices circumscribed on a circle */
         Surface *nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2);
+
+        /** Replace a vertex with a surface. Vertices are created for the surface along every destroyed edge. */
+        Surface *replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs);
 
     };
 

@@ -171,7 +171,7 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
         }
     }
 
-    if(mesh->sew(surfs_new) != S_OK) {
+    if(Surface::sew(surfs_new) != S_OK) {
         tf_error(E_FAIL, "Sewing failed");
         return {};
     }
@@ -246,7 +246,7 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
                 surfs_new.push_back(s);
     }
 
-    if(mesh->sew(surfs_new) != S_OK) {
+    if(Surface::sew(surfs_new) != S_OK) {
         tf_error(E_FAIL, "Sewing failed");
         return {};
     }
@@ -345,7 +345,7 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
         offset++;
     }
 
-    if(mesh->sew(surfs_new) != S_OK) {
+    if(Surface::sew(surfs_new) != S_OK) {
         tf_error(E_FAIL, "Sewing failed");
         return {};
     }

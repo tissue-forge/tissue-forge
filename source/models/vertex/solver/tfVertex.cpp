@@ -402,3 +402,393 @@ HRESULT Vertex::transferBondsTo(Vertex *other) {
 
     return S_OK;
 }
+
+HRESULT Vertex_SurfaceDisconnectReplace(
+    Vertex *toInsert, 
+    Surface *toReplace, 
+    Surface *targetSurf, 
+    std::vector<Vertex*> &targetSurf_vertices, 
+    std::set<Vertex*> &totalToRemove) 
+{
+    std::vector<unsigned int> edgeLabels = targetSurf->contiguousEdgeLabels(toReplace);
+    std::vector<Vertex*> toRemove;
+    for(unsigned int i = 0; i < edgeLabels.size(); i++) {
+        unsigned int lab = edgeLabels[i];
+        if(lab > 0) {
+            if(lab > 1) {
+                TF_Log(LOG_ERROR) << "Replacement cannot occur over non-contiguous contacts";
+                return E_FAIL;
+            }
+            toRemove.push_back(targetSurf_vertices[i]);
+        }
+    }
+    
+    if(toRemove.empty()) 
+        return S_OK;
+    
+    targetSurf->insert(toInsert, toRemove[0]);
+    toInsert->add(targetSurf);
+    for(auto &v : toRemove) {
+        targetSurf->remove(v);
+        v->remove(targetSurf);
+        totalToRemove.insert(v);
+    }
+    return S_OK;
+}
+
+HRESULT Vertex::replace(Surface *toReplace) {
+    // For every surface connected to the replaced surface
+    //      Gather every vertex connected to the replaced surface
+    //      Replace all vertices with the inserted vertex
+    // Remove the replaced surface from the mesh
+    // Add the inserted vertex to the mesh
+
+    Mesh *_mesh = toReplace->mesh;
+    MeshSolver *solver = _mesh ? MeshSolver::get() : NULL;
+
+    // Prevent nonsensical resultant bodies
+    if(toReplace->b1 && toReplace->b1->surfaces.size() < 5) { 
+        TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << toReplace->b1->surfaces.size() << ") in first body (" << toReplace->b1->objId << ") for replace";
+        return E_FAIL;
+    }
+    else if(toReplace->b2 && toReplace->b2->surfaces.size() < 5) {
+        TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << toReplace->b2->surfaces.size() << ") in first body (" << toReplace->b2->objId << ") for replace";
+        return E_FAIL;
+    }
+
+    // Gather every contacting surface
+    std::vector<Surface*> connectedSurfaces = toReplace->connectedSurfaces();
+
+    // Disconnect every vertex connected to the replaced surface
+    std::set<Vertex*> totalToRemove;
+    for(auto &s : connectedSurfaces) 
+        if(Vertex_SurfaceDisconnectReplace(this, toReplace, s, s->vertices, totalToRemove) != S_OK) 
+            return E_FAIL;
+
+    // Add the inserted vertex
+    if(_mesh && _mesh->add(this) != S_OK) 
+        return E_FAIL;
+
+    if(solver) 
+        solver->log(_mesh, MeshLogEventType::Create, {objId, toReplace->objId}, {objType(), toReplace->objType()}, "replace");
+
+    // Remove the replaced surface and its vertices
+    while(!toReplace->vertices.empty()) {
+        Vertex *v = toReplace->vertices.front();
+        v->remove(toReplace);
+        toReplace->remove(v);
+        totalToRemove.insert(v);
+    }
+    if(toReplace->b1) { 
+        Body *b1 = toReplace->b1;
+        b1->remove(toReplace);
+        toReplace->remove(b1);
+        b1->positionChanged();
+    }
+    if(toReplace->b2) { 
+        Body *b2 = toReplace->b2;
+        b2->remove(toReplace);
+        toReplace->remove(b2);
+        b2->positionChanged();
+    }
+    if(toReplace->destroy() != S_OK) 
+        return E_FAIL;
+    for(auto &v : totalToRemove) 
+        if(v->destroy() != S_OK) 
+            return E_FAIL;
+
+    if(solver) 
+        if(!_mesh->qualityWorking() && solver->positionChanged() != S_OK)
+            return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT Vertex::replace(Body *toReplace) {
+
+    Mesh *_mesh = toReplace->mesh;
+    MeshSolver *solver = _mesh ? MeshSolver::get() : NULL;
+
+    // Detach surfaces and bodies
+    std::set<Vertex*> totalToRemove;
+    std::vector<Surface*> b_surfaces(toReplace->surfaces);
+    for(auto &s : b_surfaces) { 
+        for(auto &ns : s->neighborSurfaces()) { 
+            if(ns->in(toReplace)) 
+                continue;
+            if(Vertex_SurfaceDisconnectReplace(this, s, ns, ns->vertices, totalToRemove) != S_OK) 
+                return E_FAIL;
+        }
+
+        if(s->b1 && s->b1 != toReplace) {
+            if(s->b1->surfaces.size() < 5) {
+                TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b1->surfaces.size() << ") in first body (" << s->b1->objId << ") for replace";
+                return E_FAIL;
+            }
+            s->b1->remove(s);
+            s->remove(s->b1);
+        }
+        if(s->b2 && s->b2 != toReplace) {
+            if(s->b2->surfaces.size() < 5) {
+                TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b2->surfaces.size() << ") in first body (" << s->b2->objId << ") for replace";
+                return E_FAIL;
+            }
+            s->b2->remove(s);
+            s->remove(s->b2);
+        }
+    }
+
+    // Add the vertex
+    if(_mesh && _mesh->add(this) != S_OK) 
+        return E_FAIL;
+
+    if(solver) 
+        solver->log(_mesh, MeshLogEventType::Create, {objId, toReplace->objId}, {objType(), toReplace->objType()}, "replace");
+
+    while(!toReplace->surfaces.empty()) {
+        Surface *s = toReplace->surfaces.front();
+        while(!s->vertices.empty()) {
+            Vertex *v = s->vertices.front();
+            s->remove(v);
+            v->remove(s);
+            totalToRemove.insert(v);
+        }
+        toReplace->remove(s);
+        s->remove(toReplace);
+        s->destroy();
+    }
+    if(toReplace->destroy() != S_OK) 
+        return E_FAIL;
+    for(auto &v : totalToRemove) 
+        if(v->destroy() != S_OK) 
+            return E_FAIL;
+
+    if(solver) 
+        if(!_mesh->qualityWorking() && solver->positionChanged() != S_OK)
+            return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
+
+    // In common surfaces, just remove; in different surfaces, replace
+    std::vector<Surface*> common_s, different_s;
+    common_s.reserve(toRemove->surfaces.size());
+    different_s.reserve(toRemove->surfaces.size());
+    for(auto &s : toRemove->surfaces) {
+        if(!in(s)) 
+            different_s.push_back(s);
+        else 
+            common_s.push_back(s);
+    }
+    for(auto &s : common_s) {
+        s->remove(toRemove);
+        toRemove->remove(s);
+    }
+    for(auto &s : different_s) {
+        toRemove->remove(s);
+        add(s);
+        s->replace(this, toRemove);
+    }
+    
+    // Set new position
+    const FVector3 posToKeep = getPosition();
+    const FVector3 newPos = posToKeep + (toRemove->getPosition() - posToKeep) * lenCf;
+    if(setPosition(newPos) != S_OK) 
+        return E_FAIL;
+
+    MeshSolver *solver = mesh ? MeshSolver::get() : NULL;
+
+    if(solver) 
+        solver->log(mesh, MeshLogEventType::Create, {objId, toRemove->objId}, {objType(), toRemove->objType()}, "merge");
+    
+    if(toRemove->transferBondsTo(this) != S_OK || toRemove->destroy() != S_OK) 
+        return E_FAIL;
+
+    if(solver) 
+        if(!mesh->qualityWorking() && solver->positionChanged() != S_OK)
+            return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
+
+    Mesh *_mesh = v1->mesh;
+    if(v2->mesh) {
+        if(!_mesh) 
+            _mesh = v2->mesh;
+        else if(v2->mesh != _mesh)
+            return tf_error(E_FAIL, "Vertices are in different meshes");
+    }
+
+    std::vector<Vertex*>::iterator vitr;
+
+    // Find the common surface(s)
+    int nidx;
+    Vertex *vn;
+    for(auto &s1 : v1->surfaces) {
+        nidx = 0;
+        for(vitr = s1->vertices.begin(); vitr != s1->vertices.end(); vitr++) {
+            nidx++;
+            if(nidx >= s1->vertices.size()) 
+                nidx -= s1->vertices.size();
+            vn = s1->vertices[nidx];
+
+            if((*vitr == v1 && vn == v2) || (*vitr == v2 && vn == v1)) {
+                s1->vertices.insert(vitr + 1 == s1->vertices.end() ? s1->vertices.begin() : vitr + 1, this);
+                add(s1);
+                break;
+            }
+        }
+    }
+
+    if(objId < 0 && _mesh && _mesh->add(this) != S_OK) 
+        return E_FAIL;
+
+    MeshSolver *solver = _mesh ? MeshSolver::get() : NULL;
+
+    if(solver) {
+        if(!_mesh->qualityWorking() && solver->positionChanged() != S_OK)
+            return E_FAIL;
+
+        solver->log(_mesh, MeshLogEventType::Create, {objId, v2->objId}, {objType(), v2->objType()}, "insert");
+    }
+
+    return S_OK;
+}
+
+HRESULT Vertex::insert(Vertex *vf, std::vector<Vertex*> nbs) {
+    for(auto &v : nbs) 
+        if(insert(vf, v) != S_OK) 
+            return E_FAIL;
+    return S_OK;
+}
+
+HRESULT Vertex::splitPlan(const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v) {
+    // Verify inputs
+    if(sep.isZero()) 
+        return tf_error(E_FAIL, "Zero separation");
+
+    verts_v.clear();
+    verts_new_v.clear();
+
+    std::vector<Vertex*> nbs = neighborVertices();
+
+    // Verify that 
+    //  1. the vertex is in the mesh
+    //  2. the vertex defines at least one surface
+    if(nbs.size() == 0) 
+        return tf_error(E_FAIL, "Vertex must define a surface");
+    
+    // Define a cut plane at the midpoint of and orthogonal to the new edge
+    FVector4 planeEq = FVector4::planeEquation(sep.normalized(), getPosition());
+
+    // Determine which neighbors will be connected to each vertex
+    verts_new_v.reserve(nbs.size());
+    verts_v.reserve(nbs.size());
+    for(auto nv : nbs) {
+        if(planeEq.distance(nv->getPosition()) >= 0) 
+            verts_new_v.push_back(nv);
+        else 
+            verts_v.push_back(nv);
+    }
+
+    // Reject if either side of the plane has no vertices
+    if(verts_new_v.empty() || verts_v.empty()) {
+        verts_v.clear();
+        verts_new_v.clear();
+        TF_Log(LOG_DEBUG) << "No vertices on both sides of cut plane; ignoring";
+        return S_OK;
+    }
+
+    return S_OK;
+
+}
+
+Vertex *Vertex::splitExecute(const FVector3 &sep, const std::vector<Vertex*> &verts_v, const std::vector<Vertex*> &verts_new_v) {
+    FVector3 v_pos0 = getPosition();
+    FVector3 hsep = sep * 0.5;
+    FVector3 v_pos1 = v_pos0 - hsep;
+    FVector3 u_pos = v_pos0 + hsep;
+
+    // Determine which surfaces the target vertex will no longer partially define
+    // A surface remains partially defined by the target vertex if the target vertex has 
+    // a neighbor on its own side of the cut plane that also partially defines the surface
+    std::set<Surface*> u_surfs, vn_surfs;
+    for(auto &nv : verts_v) 
+        for(auto &s : nv->sharedSurfaces(this)) 
+            vn_surfs.insert(s);
+    for(auto &nv : verts_new_v) 
+        for(auto &s : nv->sharedSurfaces(this)) 
+            u_surfs.insert(s);
+    std::set<Surface*> surfs_keep_v, surfs_remove_v;
+    for(auto &s : u_surfs) {
+        if(std::find(vn_surfs.begin(), vn_surfs.end(), s) == vn_surfs.end()) 
+            surfs_remove_v.insert(s);
+        else 
+            surfs_keep_v.insert(s);
+    }
+
+    // Create and insert the new vertex
+    Vertex *u = new Vertex(u_pos);
+    setPosition(v_pos1);
+    if(mesh && mesh->add(u) != S_OK) {
+        tf_error(E_FAIL, "Could not add vertex");
+        u->destroy();
+        delete u;
+        return 0;
+    }
+
+    //  Replace v with u where removing
+    for(auto &s : surfs_remove_v) {
+        remove(s);
+        u->add(s);
+        s->replace(u, this);
+    }
+
+    //  Insert u between v and neighbor where not removing
+    for(auto &s : surfs_keep_v) {
+        u->add(s);
+        for(auto &nv : verts_new_v) {
+            std::vector<Vertex*>::iterator verts_new_v_itr = std::find(s->vertices.begin(), s->vertices.end(), nv);
+            if(verts_new_v_itr != s->vertices.end()) { 
+                s->insert(u, this, *verts_new_v_itr);
+                break;
+            }
+        }
+    }
+
+    if(mesh) {
+        MeshSolver *solver = MeshSolver::get();
+        if(solver) {
+            if(!mesh->qualityWorking()) 
+                solver->positionChanged();
+
+            solver->log(mesh, MeshLogEventType::Create, {objId, u->objId}, {objType(), u->objType()}, "split");
+        }
+    }
+
+    return u;
+}
+
+Vertex *Vertex::split(const FVector3 &sep) {
+    
+    std::vector<Vertex*> verts_v, new_verts_v;
+    Vertex *u = NULL;
+    if(splitPlan(sep, verts_v, new_verts_v))
+        u = splitExecute(sep, verts_v, new_verts_v);
+
+    if(mesh) {
+        MeshSolver *solver = MeshSolver::get();
+        if(solver) {
+            if(!mesh->qualityWorking()) 
+                solver->positionChanged();
+
+            solver->log(mesh, MeshLogEventType::Create, {objId, u->objId}, {objType(), u->objType()}, "split");
+        }
+    }
+
+    return u;
+}

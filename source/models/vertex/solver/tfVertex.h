@@ -184,6 +184,37 @@ namespace TissueForge::models::vertex {
         /** Transfer all bonds to another vertex */
         HRESULT transferBondsTo(Vertex *other);
 
+        /** Replace a surface */
+        HRESULT replace(Surface *toReplace);
+
+        /** Replace a body */
+        HRESULT replace(Body *toReplace);
+
+        /** Merge with a vertex. The passed vertex is destroyed. */
+        HRESULT merge(Vertex *toRemove, const FloatP_t &lenCf=0.5f);
+
+        /** Inserts a vertex between two vertices */
+        HRESULT insert(Vertex *v1, Vertex *v2);
+
+        /** Insert a vertex between a vertex and each of a set of vertices */
+        HRESULT insert(Vertex *vf, std::vector<Vertex*> nbs);
+
+        /** Calculate the topology of a vertex split without implementing the split */
+        HRESULT splitPlan(const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v);
+
+        /** Implement a pre-calculated vertex split, as determined by splitPlan */
+        Vertex *splitExecute(const FVector3 &sep, const std::vector<Vertex*> &verts_v, const std::vector<Vertex*> &verts_new_v);
+
+        /** Split a vertex into an edge
+         * 
+         * The vertex must define at least one surface.
+         * 
+         * New topology is governed by a cut plane at the midpoint of, and orthogonal to, the new edge. 
+         * Each first-order neighbor vertex is connected to the vertex of the new edge on the same side of 
+         * the cut plane. 
+         */
+        Vertex *split(const FVector3 &sep);
+
 
         friend Surface;
         friend Body;

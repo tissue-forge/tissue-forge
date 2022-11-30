@@ -28,6 +28,7 @@
 #include "actors/tfFlatSurfaceConstraint.h"
 
 #include <Magnum/Math/Math.h>
+#include <Magnum/Math/Intersection.h>
 
 #include <tfLogger.h>
 #include <tf_metrics.h>
@@ -595,6 +596,14 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     if(s1 == s2) 
         return S_OK;
 
+    Mesh *mesh = s1->mesh;
+    if(s2->mesh) {
+        if(!mesh) 
+            mesh = s2->mesh;
+        else if(s2->mesh != mesh) 
+            return tf_error(E_FAIL, "Surfaces not in the same mesh");
+    }
+
     if(s1->positionChanged() != S_OK || s2->positionChanged() != S_OK) 
         return E_FAIL;
 
@@ -662,7 +671,382 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
         delete vj;
     }
 
+    MeshSolver *solver = mesh ? MeshSolver::get() : NULL;
+
+    if(solver) 
+        solver->log(mesh, MeshLogEventType::Create, {s1->objId, s2->objId}, {s1->objType(), s2->objType()}, "sew");
+
     return S_OK;
+}
+
+HRESULT Surface::sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf) {
+    for(std::vector<Surface*>::iterator itri = _surfaces.begin(); itri != _surfaces.end() - 1; itri++) 
+        for(std::vector<Surface*>::iterator itrj = itri + 1; itrj != _surfaces.end(); itrj++) 
+            if(*itri != *itrj && sew(*itri, *itrj, distCf) != S_OK) 
+                return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT Surface::merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
+    if(vertices.size() != toRemove->vertices.size()) {
+        TF_Log(LOG_ERROR) << "Surfaces must have the same number of vertices to merge";
+        return E_FAIL;
+    }
+
+    // Find vertices that are not shared
+    std::vector<Vertex*> toKeepExcl;
+    for(auto &v : vertices) 
+        if(!v->in(toRemove)) 
+            toKeepExcl.push_back(v);
+
+    // Ensure sufficient length cofficients
+    std::vector<FloatP_t> _lenCfs = lenCfs;
+    if(_lenCfs.size() < toKeepExcl.size()) {
+        TF_Log(LOG_DEBUG) << "Insufficient provided length coefficients. Assuming 0.5";
+        for(unsigned int i = _lenCfs.size(); i < toKeepExcl.size(); i++) 
+            _lenCfs.push_back(0.5);
+    }
+
+    // Match vertex order of removed surface to kept surface by nearest distance
+    std::vector<Vertex*> toRemoveOrdered;
+    for(auto &kv : toKeepExcl) {
+        Vertex *mv = NULL;
+        FVector3 kp = kv->getPosition();
+        FloatP_t bestDist = 0.f;
+        for(auto &rv : toRemove->vertices) {
+            FloatP_t dist = (rv->getPosition() - kp).length();
+            if((!mv || dist < bestDist) && std::find(toRemoveOrdered.begin(), toRemoveOrdered.end(), rv) == toRemoveOrdered.end()) {
+                bestDist = dist;
+                mv = rv;
+            }
+        }
+        if(!mv) {
+            TF_Log(LOG_ERROR) << "Could not match surface vertices";
+            return E_FAIL;
+        }
+        toRemoveOrdered.push_back(mv);
+    }
+
+    // Replace vertices in neighboring surfaces
+    for(unsigned int i = 0; i < toKeepExcl.size(); i++) {
+        Vertex *rv = toRemoveOrdered[i];
+        Vertex *kv = toKeepExcl[i];
+        std::vector<Surface*> rvSurfaces = rv->surfaces;
+        for(auto &s : rvSurfaces) 
+            if(s != toRemove) {
+                if(!rv->in(s)) {
+                    TF_Log(LOG_ERROR) << "Something went wrong during surface merge";
+                    return E_FAIL;
+                }
+                s->replace(kv, rv);
+                kv->add(s);
+            }
+    }
+
+    // Replace surface in child bodies
+    for(auto &b : toRemove->getBodies()) {
+        if(!in(b)) {
+            b->add(this);
+            add(b);
+        }
+        b->remove(toRemove);
+        toRemove->remove(b);
+    }
+
+    // Detach removed vertices
+    for(auto &v : toRemoveOrdered) {
+        v->surfaces.clear();
+        toRemove->remove(v);
+    }
+
+    // Move kept vertices by length coefficients
+    for(unsigned int i = 0; i < toKeepExcl.size(); i++) {
+        Vertex *v = toKeepExcl[i];
+        FVector3 posToKeep = v->getPosition();
+        FVector3 newPos = posToKeep + (toRemoveOrdered[i]->getPosition() - posToKeep) * _lenCfs[i];
+        if(v->setPosition(newPos) != S_OK) 
+            return E_FAIL;
+    }
+
+    MeshSolver *solver = mesh ? MeshSolver::get() : NULL;
+
+    if(solver) 
+        solver->log(mesh, MeshLogEventType::Create, {objId, toRemove->objId}, {objType(), toRemove->objType()}, "merge");
+    
+    // Remove surface and vertices that are not shared
+    if(toRemove->destroy() != S_OK) 
+        return E_FAIL;
+    for(auto &v : toRemoveOrdered) 
+        if(v->destroy() != S_OK) 
+            return E_FAIL;
+
+    if(solver) 
+        if(!mesh->qualityWorking() && solver->positionChanged() != S_OK)
+            return E_FAIL;
+
+    return S_OK;
+}
+
+Surface *Surface::extend(const unsigned int &vertIdxStart, const FVector3 &pos) {
+    // Validate indices
+    if(vertIdxStart >= vertices.size()) {
+        TF_Log(LOG_ERROR) << "Invalid vertex indices (" << vertIdxStart << ", " << vertices.size() << ")";
+        return NULL;
+    }
+
+    // Get base vertices
+    Vertex *v0 = vertices[vertIdxStart];
+    Vertex *v1 = vertices[vertIdxStart == vertices.size() - 1 ? 0 : vertIdxStart + 1];
+
+    // Construct new vertex at specified position
+    MeshParticleType *ptype = MeshParticleType_get();
+    FVector3 _pos = pos;
+    ParticleHandle *ph = (*ptype)(&_pos);
+    Vertex *vert = new Vertex(ph->id);
+
+    // Construct new surface, add new parts and return
+    Surface *s = (*type())({v0, v1, vert});
+    if(mesh) 
+        mesh->add(s);
+
+    MeshSolver *solver = mesh ? MeshSolver::get() : NULL;
+
+    if(solver) {
+        if(!mesh->qualityWorking()) 
+            solver->positionChanged();
+
+        solver->log(mesh, MeshLogEventType::Create, {objId, s->objId}, {objType(), s->objType()}, "extend");
+    }
+
+    return s;
+}
+
+Surface *Surface::extrude(const unsigned int &vertIdxStart, const FloatP_t &normLen) {
+    // Validate indices
+    if(vertIdxStart >= vertices.size()) {
+        TF_Log(LOG_ERROR) << "Invalid vertex indices (" << vertIdxStart << ", " << vertices.size() << ")";
+        return NULL;
+    }
+
+    // Get base vertices
+    Vertex *v0 = vertices[vertIdxStart];
+    Vertex *v1 = vertices[vertIdxStart == vertices.size() - 1 ? 0 : vertIdxStart + 1];
+
+    // Construct new vertices
+    FVector3 disp = normal * normLen;
+    FVector3 pos2 = v0->getPosition() + disp;
+    FVector3 pos3 = v1->getPosition() + disp;
+    MeshParticleType *ptype = MeshParticleType_get();
+    ParticleHandle *p2 = (*ptype)(&pos2);
+    ParticleHandle *p3 = (*ptype)(&pos3);
+    Vertex *v2 = new Vertex(p2->id);
+    Vertex *v3 = new Vertex(p3->id);
+
+    // Construct new surface, add new parts and return
+    SurfaceType *stype = type();
+    Surface *s = (*stype)({v0, v1, v2, v3});
+    if(mesh && mesh->add(s) != S_OK) 
+        return NULL;
+
+    MeshSolver *solver = mesh ? MeshSolver::get() : NULL;
+
+    if(solver) {
+        if(!mesh->qualityWorking()) 
+            solver->positionChanged();
+
+        solver->log(mesh, MeshLogEventType::Create, {objId, s->objId}, {objType(), s->objType()}, "extrude");
+    }
+
+    return s;
+}
+
+Surface *Surface::split(Vertex *v1, Vertex *v2) { 
+    // Verify that vertices are in surface
+    if(!v1->in(this) || !v2->in(this)) { 
+        tf_error(E_FAIL, "Vertices are not part of the splitting surface");
+        return NULL;
+    }
+
+    // Verify that vertices are not adjacent
+    const std::vector<Vertex*> v1_nbs = v1->neighborVertices();
+    if(std::find(v1_nbs.begin(), v1_nbs.end(), v2) != v1_nbs.end()) {
+        tf_error(E_FAIL, "Vertices are adjacent");
+        return NULL;
+    }
+
+    // Extract vertices for new surface
+    std::vector<Vertex*> v_new_surf;
+    v_new_surf.reserve(vertices.size());
+    v_new_surf.push_back(v1);
+    std::vector<Vertex*>::iterator v_itr = std::find(vertices.begin(), vertices.end(), v1);
+    while(true) {
+        v_itr++;
+        if(v_itr == vertices.end()) 
+            v_itr = vertices.begin();
+        if(*v_itr == v2) 
+            break;
+        v_new_surf.push_back(*v_itr);
+    }
+    v_new_surf.push_back(v2);
+    for(auto v_itr = v_new_surf.begin() + 1; v_itr != v_new_surf.end() - 1; v_itr++) {
+        remove(*v_itr);
+        (*v_itr)->remove(this);
+    }
+
+    // Build new surface
+    Surface *s_new = (*type())(v_new_surf);
+    if(!s_new) 
+        return NULL;
+    if(mesh) 
+        mesh->add(s_new);
+
+    // Continue hierarchy
+    for(auto &b : getBodies()) {
+        s_new->add(b);
+        b->add(s_new);
+    }
+
+    MeshSolver *solver = mesh ? MeshSolver::get() : NULL;
+
+    if(solver) {
+        if(!mesh->qualityWorking()) 
+            solver->positionChanged();
+
+        solver->log(
+            mesh, MeshLogEventType::Create, 
+            {objId, s_new->objId, v1->objId, v2->objId}, 
+            {objType(), s_new->objType(), v1->objType(), v2->objType()}, 
+            "split"
+        );
+    }
+
+    return s_new;
+}
+
+/** Find a contiguous set of surface vertices partioned by a cut plane */
+static std::vector<Vertex*> Surface_SurfaceCutPlaneVertices(Surface *s, const FVector4 &planeEq) {
+    // Calculate side of cut plane
+    auto s_vertices = s->getVertices();
+    std::vector<bool> planeEq_newSide;
+    planeEq_newSide.reserve(s_vertices.size());
+    size_t num_to_new = 0;
+    for(auto &v : s_vertices) {
+        const bool onNewSide = planeEq.distance(v->getPosition()) > 0;
+        planeEq_newSide.push_back(onNewSide);
+        if(onNewSide) 
+            num_to_new++;
+    }
+
+    // If either the new or current surface has insufficient vertices, exit out
+    if(num_to_new == 0 || num_to_new == s_vertices.size()) {
+        return {};
+    }
+
+    // Determine insertion points
+    Vertex *v_new_start = NULL;
+    Vertex *v_new_end = NULL;
+    std::vector<Vertex*> verts_new_s;
+    verts_new_s.reserve(s_vertices.size());
+    std::vector<bool>::iterator b_itr = planeEq_newSide.begin() + 1;
+    std::vector<bool>::iterator b_itr_prev = b_itr - 1;
+    std::vector<bool>::iterator b_itr_next = b_itr + 1;
+    std::vector<Vertex*>::iterator v_itr = s_vertices.begin() + 1;
+    while(!v_new_end) { 
+        if(!v_new_start) {
+            if(*b_itr && !*b_itr_prev) {
+                v_new_start = *v_itr;
+                verts_new_s.push_back(v_new_start);
+            }
+        }
+        else {
+            if(*b_itr && !*b_itr_next) 
+                v_new_end = *v_itr;
+            
+            verts_new_s.push_back(*v_itr);
+        }
+
+        b_itr_prev = b_itr;
+        b_itr = b_itr_next;
+        b_itr_next = b_itr_next + 1 == planeEq_newSide.end() ? planeEq_newSide.begin() : b_itr_next + 1;
+        v_itr = v_itr + 1 == s_vertices.end() ? s_vertices.begin() : v_itr + 1;
+    }
+
+    return verts_new_s;
+}
+
+/** Find the coordinates and adjacent vertices of the intersections of a surface and cut plane */
+static HRESULT Surface_SurfaceCutPlanePointsPairs(
+    Surface *s, 
+    const FVector4 &planeEq, 
+    FVector3 &pos_start, 
+    FVector3 &pos_end, 
+    Vertex **v_new_start, 
+    Vertex **v_old_start, 
+    Vertex **v_new_end, 
+    Vertex **v_old_end) 
+{
+    // Determine insertion points
+    std::vector<Vertex*> verts_new_s = Surface_SurfaceCutPlaneVertices(s, planeEq);
+    if(verts_new_s.size() == 0) 
+        return E_FAIL;
+    *v_new_start = verts_new_s.front();
+    *v_new_end = verts_new_s.back();
+
+    // Determine coordinates of new vertices where cut plane intersects the surface
+    auto s_vertices = s->getVertices();
+    *v_old_start = (*v_new_start) == s_vertices.front() ? s_vertices.back()  : *(std::find(s_vertices.begin(), s_vertices.end(), *v_new_start) - 1);
+    *v_old_end   = (*v_new_end) == s_vertices.back()    ? s_vertices.front() : *(std::find(s_vertices.begin(), s_vertices.end(), *v_new_end)   + 1);
+
+    FVector3 pos_old_start = (*v_old_start)->getPosition();
+    FVector3 pos_old_end = (*v_old_end)->getPosition();
+
+    FVector3 rel_pos_start = (*v_new_start)->getPosition() - pos_old_start;
+    FVector3 rel_pos_end   = (*v_new_end)->getPosition()   - pos_old_end;
+    
+    FloatP_t intersect_t_start = Magnum::Math::Intersection::planeLine(planeEq, pos_old_start, rel_pos_start);
+    FloatP_t intersect_t_end   = Magnum::Math::Intersection::planeLine(planeEq, pos_old_end,   rel_pos_end);
+    
+    // If new vertices are indeterminant, exit out
+    if(!(intersect_t_start > 0 && intersect_t_start < 1 && intersect_t_end > 0 && intersect_t_end < 1)) {
+        std::string msg = "Indeterminant vertices " + cast<FloatP_t, std::string>(intersect_t_start) + ", " + cast<FloatP_t, std::string>(intersect_t_end);
+        tf_error(E_FAIL, msg.c_str());
+        return E_FAIL;
+    }
+
+    // Return coordinates
+    pos_start = pos_old_start + intersect_t_start * rel_pos_start;
+    pos_end = pos_old_end   + intersect_t_end   * rel_pos_end;
+
+    return S_OK;
+}
+
+Surface *Surface::split(const FVector3 &cp_pos, const FVector3 &cp_norm) {
+    if(cp_norm.isZero()) {
+        tf_error(E_FAIL, "Zero normal");
+        return 0;
+    }
+
+    FVector4 planeEq = FVector4::planeEquation(cp_norm.normalized(), cp_pos);
+
+    FVector3 pos_start, pos_end; 
+    Vertex *v_new_start, *v_old_start, *v_new_end, *v_old_end;
+    if(Surface_SurfaceCutPlanePointsPairs(this, planeEq, pos_start, pos_end, &v_new_start, &v_old_start, &v_new_end, &v_old_end) != S_OK) 
+        return NULL;
+
+    // Create and insert new vertices
+    Vertex *v_start = new Vertex(pos_start);
+    Vertex *v_end   = new Vertex(pos_end);
+    if(v_start->insert(v_old_start, v_new_start) != S_OK || v_end->insert(v_old_end, v_new_end) != S_OK) {
+        v_start->destroy();
+        v_end->destroy();
+        delete v_start;
+        delete v_end;
+        return NULL;
+    }
+
+    // Create new surface
+    return split(v_start, v_end);
 }
 
 SurfaceType::SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam, const bool &noReg) : 
@@ -800,4 +1184,65 @@ Surface *SurfaceType::nPolygon(const unsigned int &n, const FVector3 &center, co
     }
 
     return (*this)(positions);
+}
+
+Surface *SurfaceType::replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs) {
+    Mesh *_mesh = toReplace->mesh;
+
+    std::vector<Vertex*> neighbors = toReplace->neighborVertices();
+    if(lenCfs.size() != neighbors.size()) {
+        TF_Log(LOG_ERROR) << "Length coefficients are inconsistent with connectivity";
+        return NULL;
+    } 
+
+    for(auto &cf : lenCfs) 
+        if(cf <= 0.f || cf >= 1.f) {
+            TF_Log(LOG_ERROR) << "Length coefficients must be in (0, 1)";
+            return NULL;
+        }
+
+    // Insert new vertices
+    FVector3 pos0 = toReplace->getPosition();
+    std::vector<Vertex*> insertedVertices;
+    for(unsigned int i = 0; i < neighbors.size(); i++) {
+        FloatP_t cf = lenCfs[i];
+        if(cf <= 0.f || cf >= 1.f) {
+            TF_Log(LOG_ERROR) << "Length coefficients must be in (0, 1)";
+            return NULL;
+        }
+
+        Vertex *v = neighbors[i];
+        FVector3 pos1 = v->getPosition();
+        FVector3 pos = pos0 + (pos1 - pos0) * cf;
+        MeshParticleType *ptype = MeshParticleType_get();
+        ParticleHandle *ph = (*ptype)(&pos);
+        Vertex *vInserted = new Vertex(ph->id);
+        if(vInserted->insert(toReplace, v) != S_OK) 
+            return NULL;
+        insertedVertices.push_back(vInserted);
+    }
+
+    // Disconnect replaced vertex from all surfaces
+    std::vector<Surface*> toReplaceSurfaces = toReplace->getSurfaces();
+    for(auto &s : toReplaceSurfaces) {
+        s->remove(toReplace);
+        toReplace->remove(s);
+    }
+
+    // Create new surface; its constructor should handle internal connections
+    Surface *inserted = (*this)(insertedVertices);
+
+    // Remove replaced vertex from the mesh and add inserted surface to the mesh
+    if(_mesh && _mesh->add(inserted) != S_OK) 
+        return NULL;
+
+    MeshSolver *solver = _mesh ? MeshSolver::get() : NULL;
+    if(solver) 
+        solver->log(_mesh, MeshLogEventType::Create, {inserted->objId, toReplace->objId}, {inserted->objType(), toReplace->objType()}, "replace"); 
+    toReplace->destroy();
+
+    if(solver && !_mesh->qualityWorking()) 
+        solver->positionChanged();
+
+    return inserted;
 }

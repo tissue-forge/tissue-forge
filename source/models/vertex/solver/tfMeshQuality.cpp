@@ -184,9 +184,11 @@ struct VertexMergeOperation : MeshQualityOperation {
     };
 
     HRESULT implement() override { 
+        Vertex *v = (Vertex*)source;
+
         MeshSolver::engineLock();
         
-        HRESULT res = mesh->merge((Vertex*)source, (Vertex*)targets[0]);
+        HRESULT res = v->merge((Vertex*)targets[0]);
         
         MeshSolver::engineUnlock();
 
@@ -213,7 +215,7 @@ struct VertexInsertOperation : MeshQualityOperation {
         MeshSolver::engineLock();
         
         Vertex *toInsert = new Vertex((v1->getPosition() + v2->getPosition()) * 0.5);
-        HRESULT res = mesh->insert(toInsert, v1, v2);
+        HRESULT res = toInsert->insert(v1, v2);
         
         MeshSolver::engineUnlock();
 
@@ -238,7 +240,7 @@ struct BodyDemoteOperation : MeshQualityOperation {
         MeshSolver::engineLock();
 
         Vertex *toInsert = new Vertex(toReplace->getCentroid());
-        HRESULT res = mesh->replace(toInsert, toReplace);
+        HRESULT res = toInsert->replace(toReplace);
 
         MeshSolver::engineUnlock();
 
@@ -263,7 +265,7 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
         MeshSolver::engineLock();
         
         Vertex *toInsert = new Vertex(toReplace->getCentroid());
-        HRESULT res = mesh->replace(toInsert, toReplace);
+        HRESULT res = toInsert->replace(toReplace);
 
         MeshSolver::engineUnlock();
 
@@ -292,8 +294,10 @@ struct EdgeDemoteOperation : MeshQualityOperation {
     }
 
     HRESULT implement() override {
+        Vertex *v = (Vertex*)source;
+
         MeshSolver::engineLock();
-        HRESULT res = mesh->merge((Vertex*)source, v2);
+        HRESULT res = v->merge(v2);
         MeshSolver::engineUnlock();
         if(res == S_OK) 
             next.clear();
@@ -323,8 +327,8 @@ struct EdgeInsertOperation : MeshQualityOperation {
         FVector3 pos0 = v0->getPosition();
         v01->setPosition((pos0 + v1->getPosition()) * 0.5);
         v02->setPosition((pos0 + v2->getPosition()) * 0.5);
-        mesh->insert(v01, v0, v1);
-        mesh->insert(v02, v0, v2);
+        v01->insert(v0, v1);
+        v02->insert(v0, v2);
         mesh->remove(v0);
 
         MeshSolver::engineUnlock();
@@ -367,7 +371,7 @@ static bool MeshQuality_vertexSplitTest(
     for(int k = 0; k < 3; k++) sep[k] *= mask[k];
 
     // Get split plan along direction of force
-    m->splitPlan(v, sep, vert_nbs, new_vert_nbs);
+    v->splitPlan(sep, vert_nbs, new_vert_nbs);
 
     // Enforce that a split must create a new surface
     if(vert_nbs.size() < 2 || new_vert_nbs.size() < 2) 
@@ -407,9 +411,11 @@ struct VertexSplitOperation : MeshQualityOperation {
 
     HRESULT implement() override { 
 
+        Vertex *v = (Vertex*)source;
+
         // Create a candidate vertex
         MeshSolver::engineLock();
-        Vertex *new_v = mesh->splitExecute((Vertex*)source, sep, vert_nbs, new_vert_nbs);
+        Vertex *new_v = v->splitExecute(sep, vert_nbs, new_vert_nbs);
         MeshSolver::engineUnlock();
 
         // Only invalidate if a vertex was created, since some requested configurations are invalid and subsequently ignored

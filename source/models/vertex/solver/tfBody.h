@@ -224,7 +224,11 @@ namespace TissueForge::models::vertex {
         /** Test whether a point is outside. Test is performed using the nearest surface */
         bool isOutside(const FVector3 &pos) const;
 
+        /** Split into two bodies */
+        Body *split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype=NULL);
+
         
+        friend Vertex;
         friend Mesh;
         friend BodyType;
 
@@ -294,6 +298,16 @@ namespace TissueForge::models::vertex {
 
         /** Construct a body of this type from a mesh */
         Body *operator() (io::ThreeDFMeshData* ioMesh, SurfaceType *stype);
+
+        /** Create a body from a surface in the mesh and a position */
+        Body *extend(Surface *base, const FVector3 &pos);
+
+        /** Create a body from a surface in a mesh by extruding along the outward-facing normal of the surface
+         * 
+         * todo: add support for extruding at an angle
+        */
+        Body *extrude(Surface *base, const FloatP_t &normLen);
+
     };
 
     inline bool operator< (const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return lhs.objId < rhs.objId; }
