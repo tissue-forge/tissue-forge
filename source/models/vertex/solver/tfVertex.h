@@ -187,8 +187,14 @@ namespace TissueForge::models::vertex {
         /** Replace a surface */
         HRESULT replace(Surface *toReplace);
 
+        /** Create a vertex and replace a surface with it */
+        static Vertex *replace(const FVector3 &position, Surface *toReplace);
+
         /** Replace a body */
         HRESULT replace(Body *toReplace);
+
+        /** Create a vertex and replace a body with it */
+        static Vertex *replace(const FVector3 &position, Body *toReplace);
 
         /** Merge with a vertex. The passed vertex is destroyed. */
         HRESULT merge(Vertex *toRemove, const FloatP_t &lenCf=0.5f);
@@ -196,8 +202,14 @@ namespace TissueForge::models::vertex {
         /** Inserts a vertex between two vertices */
         HRESULT insert(Vertex *v1, Vertex *v2);
 
+        /** Create a vertex and inserts it between two vertices */
+        static Vertex *insert(const FVector3 &position, Vertex *v1, Vertex *v2);
+
         /** Insert a vertex between a vertex and each of a set of vertices */
         HRESULT insert(Vertex *vf, std::vector<Vertex*> nbs);
+
+        /** Create a vertex and insert it between a vertex and each of a set of vertices */
+        static Vertex *insert(const FVector3 &position, Vertex *vf, std::vector<Vertex*> nbs);
 
         /** Calculate the topology of a vertex split without implementing the split */
         HRESULT splitPlan(const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v);

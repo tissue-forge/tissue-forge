@@ -224,7 +224,13 @@ namespace TissueForge::models::vertex {
         /** Test whether a point is outside. Test is performed using the nearest surface */
         bool isOutside(const FVector3 &pos) const;
 
-        /** Split into two bodies */
+        /**
+         * @brief Split into two bodies. The split is defined by a cut plane
+         * 
+         * @param cp_pos position on the cut plane
+         * @param cp_norm cut plane normal
+         * @param stype type of newly created surface. taken from connected surfaces if not specified
+         */
         Body *split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype=NULL);
 
         

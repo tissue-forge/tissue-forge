@@ -214,8 +214,7 @@ struct VertexInsertOperation : MeshQualityOperation {
 
         MeshSolver::engineLock();
         
-        Vertex *toInsert = new Vertex((v1->getPosition() + v2->getPosition()) * 0.5);
-        HRESULT res = toInsert->insert(v1, v2);
+        HRESULT res = Vertex::insert((v1->getPosition() + v2->getPosition()) * 0.5, v1, v2) != NULL ? S_OK : E_FAIL;
         
         MeshSolver::engineUnlock();
 
@@ -239,8 +238,7 @@ struct BodyDemoteOperation : MeshQualityOperation {
 
         MeshSolver::engineLock();
 
-        Vertex *toInsert = new Vertex(toReplace->getCentroid());
-        HRESULT res = toInsert->replace(toReplace);
+        HRESULT res = Vertex::replace(toReplace->getCentroid(), toReplace) != NULL ? S_OK : E_FAIL;
 
         MeshSolver::engineUnlock();
 
@@ -264,8 +262,7 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
         
         MeshSolver::engineLock();
         
-        Vertex *toInsert = new Vertex(toReplace->getCentroid());
-        HRESULT res = toInsert->replace(toReplace);
+        HRESULT res = Vertex::replace(toReplace->getCentroid(), toReplace) != NULL ? S_OK : E_FAIL;
 
         MeshSolver::engineUnlock();
 
@@ -321,14 +318,9 @@ struct EdgeInsertOperation : MeshQualityOperation {
 
         MeshSolver::engineLock();
 
-        Vertex *v01 = new Vertex();
-        Vertex *v02 = new Vertex();
-
         FVector3 pos0 = v0->getPosition();
-        v01->setPosition((pos0 + v1->getPosition()) * 0.5);
-        v02->setPosition((pos0 + v2->getPosition()) * 0.5);
-        v01->insert(v0, v1);
-        v02->insert(v0, v2);
+        Vertex::insert((pos0 + v1->getPosition()) * 0.5, v0, v1);
+        Vertex::insert((pos0 + v2->getPosition()) * 0.5, v0, v2);
         mesh->remove(v0);
 
         MeshSolver::engineUnlock();

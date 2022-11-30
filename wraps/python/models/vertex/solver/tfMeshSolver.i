@@ -22,6 +22,11 @@
 #include <models/vertex/solver/tfMeshSolver.h>
 %}
 
+%ignore TissueForge::models::vertex::MeshSolver::preStepStart;
+%ignore TissueForge::models::vertex::MeshSolver::preStepJoin;
+%ignore TissueForge::models::vertex::MeshSolver::postStepStart;
+%ignore TissueForge::models::vertex::MeshSolver::postStepJoin;
+
 %rename(engine_lock) TissueForge::models::vertex::MeshSolver::engineLock;
 %rename(engine_unlock) TissueForge::models::vertex::MeshSolver::engineUnlock;
 %rename(is_dirty) TissueForge::models::vertex::MeshSolver::isDirty;

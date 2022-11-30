@@ -504,6 +504,15 @@ HRESULT Vertex::replace(Surface *toReplace) {
     return S_OK;
 }
 
+Vertex *Vertex::replace(const FVector3 &position, Surface *toReplace) {
+    Vertex *result = new Vertex(position);
+    if(result->replace(toReplace) != S_OK) {
+        delete result;
+        return NULL;
+    }
+    return result;
+}
+
 HRESULT Vertex::replace(Body *toReplace) {
 
     Mesh *_mesh = toReplace->mesh;
@@ -568,6 +577,15 @@ HRESULT Vertex::replace(Body *toReplace) {
             return E_FAIL;
 
     return S_OK;
+}
+
+Vertex *Vertex::replace(const FVector3 &position, Body *toReplace) {
+    Vertex *result = new Vertex(position);
+    if(result->replace(toReplace) != S_OK) {
+        delete result;
+        return NULL;
+    }
+    return result;
 }
 
 HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
@@ -659,11 +677,29 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
     return S_OK;
 }
 
+Vertex *Vertex::insert(const FVector3 &position, Vertex *v1, Vertex *v2) {
+    Vertex *result = new Vertex(position);
+    if(result->insert(v1, v2) != S_OK) {
+        delete result;
+        return NULL;
+    }
+    return result;
+}
+
 HRESULT Vertex::insert(Vertex *vf, std::vector<Vertex*> nbs) {
     for(auto &v : nbs) 
         if(insert(vf, v) != S_OK) 
             return E_FAIL;
     return S_OK;
+}
+
+Vertex *Vertex::insert(const FVector3 &position, Vertex *vf, std::vector<Vertex*> nbs) {
+    Vertex *result = new Vertex(position);
+    if(result->insert(vf, nbs) != S_OK) {
+        delete result;
+        return NULL;
+    }
+    return result;
 }
 
 HRESULT Vertex::splitPlan(const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v) {

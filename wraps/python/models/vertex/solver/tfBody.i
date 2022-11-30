@@ -25,10 +25,11 @@
 %template(vectorMeshBody) std::vector<TissueForge::models::vertex::Body*>;
 %template(vectorvectorvectorMeshBody) std::vector<std::vector<std::vector<TissueForge::models::vertex::Body*> > >;
 
+%rename(_neighborBodies) TissueForge::models::vertex::Body::neighborBodies;
+%rename(_split) TissueForge::models::vertex::Body::split;
 %rename(position_changed) TissueForge::models::vertex::Body::positionChanged;
 %rename(find_vertex) TissueForge::models::vertex::Body::findVertex;
 %rename(find_surface) TissueForge::models::vertex::Body::findSurface;
-%rename(neighbor_bodies) TissueForge::models::vertex::Body::neighborBodies;
 %rename(neighbor_surfaces) TissueForge::models::vertex::Body::neighborSurfaces;
 %rename(get_vertex_area) TissueForge::models::vertex::Body::getVertexArea;
 %rename(get_vertex_volume) TissueForge::models::vertex::Body::getVertexVolume;
@@ -68,7 +69,7 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
 
         @property
         def neighbor_bodies(self):
-            return self.neighborBodies()
+            return self._neighborBodies()
 
         @property
         def density(self):
@@ -109,6 +110,24 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
         @property
         def volume_constraints(self):
             return _vertex_solver_MeshObjActor_getVolumeConstraint(self)
+
+        def split(self, cp_pos, cp_norm, stype=None):
+            """
+            Split into two bodies. The split is defined by a cut plane
+
+            :param cp_pos: position on the cut plane
+            :param cp_norm: cut plane normal
+            :param stype: type of newly created surface. taken from connected surfaces if not specified
+            """
+            if not isinstance(cp_pos, FVector3):
+                cp_pos = FVector3(*cp_pos)
+            if not isinstance(cp_norm, FVector3):
+                cp_norm = FVector3(*cp_norm)
+
+            result = self._split(cp_pos, cp_norm, stype)
+            if result is not None:
+                result.thisown = 0
+            return result
     %}
 }
 

@@ -24,6 +24,10 @@
 
 %template(vectorMesh) std::vector<TissueForge::models::vertex::Mesh*>;
 
+%rename(_add_vertex) TissueForge::models::vertex::Mesh::add(Vertex *obj);
+%rename(_add_surface) TissueForge::models::vertex::Mesh::add(Surface *obj);
+%rename(_add_body) TissueForge::models::vertex::Mesh::add(Body *obj);
+%rename(_add_structure) TissueForge::models::vertex::Mesh::add(Structure *obj);
 %rename(find_vertex) TissueForge::models::vertex::Mesh::findVertex;
 %rename(get_vertex) TissueForge::models::vertex::Mesh::getVertex;
 %rename(get_surface) TissueForge::models::vertex::Mesh::getSurface;
@@ -95,5 +99,20 @@
         def size_structures(self) -> int:
             """Size of the list of structures"""
             return self.sizeStructures()
+
+        def add(self, obj) -> int:
+            """Add an object to the mesh"""
+            result = 1
+            if isinstance(obj, _vertex_solver_Vertex):
+                result = self._add_vertex(obj)
+            elif isinstance(obj, _vertex_solver_Surface):
+                result = self._add_surface(obj)
+            elif isinstance(obj, _vertex_solver_Body):
+                result = self._add_body(obj)
+            elif isinstance(obj, _vertex_solver_Structure):
+                result = self._add_structure(obj)
+            if result == 0:
+                obj.thisown = 0
+            return result
     %}
 }
