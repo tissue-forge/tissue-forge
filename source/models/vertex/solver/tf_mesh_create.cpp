@@ -19,12 +19,17 @@
 
 #include "tf_mesh_create.h"
 
+#include "tfMeshSolver.h"
+
 #include <tfError.h>
 
 #include <map>
 
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
+
+#define TF_MESH_CREATE_GETSOLVER(name, retval) MeshSolver *name = MeshSolver::get(); if(!solver) { tf_error(E_FAIL, "No solver"); return retval; }
+#define TF_MESH_CREATE_VERIFYDEFAULTMESH(solver) {if(solver->meshes.size() == 0) { solver->meshes.push_back(new Mesh()); } }
 
 static int surfRelCoords[6][2] = {
     {1, 0}, 
@@ -178,6 +183,21 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
     return result;
 }
 
+std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
+    SurfaceType *stype,
+    const FVector3 &startPos, 
+    const unsigned int &num_1, 
+    const unsigned int &num_2, 
+    const FloatP_t &len_1,
+    const FloatP_t &len_2,
+    const char *ax_1, 
+    const char *ax_2) 
+{
+    TF_MESH_CREATE_GETSOLVER(solver, {});
+    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
+    return createQuadMesh(solver->meshes[0], stype, startPos, num_1, num_2, len_1, len_2, ax_1, ax_2);
+}
+
 std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::createPLPDMesh(
     Mesh *mesh, 
     BodyType *btype, 
@@ -293,6 +313,24 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
     return result;
 }
 
+std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::createPLPDMesh(
+    BodyType *btype, 
+    SurfaceType *stype,
+    const FVector3 &startPos, 
+    const unsigned int &num_1, 
+    const unsigned int &num_2, 
+    const unsigned int &num_3, 
+    const FloatP_t &len_1,
+    const FloatP_t &len_2,
+    const FloatP_t &len_3,
+    const char *ax_1, 
+    const char *ax_2) 
+{
+    TF_MESH_CREATE_GETSOLVER(solver, {});
+    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
+    return createPLPDMesh(solver->meshes[0], btype, stype, startPos, num_1, num_2, num_3, len_1, len_2, len_3, ax_1, ax_2);
+}
+
 std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh(
     Mesh *mesh, 
     SurfaceType *stype, 
@@ -350,6 +388,20 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
         return {};
     }
     return result;
+}
+
+std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh(
+    SurfaceType *stype, 
+    const FVector3 &startPos, 
+    const unsigned int &num_1, 
+    const unsigned int &num_2, 
+    const FloatP_t &hexRad,
+    const char *ax_1, 
+    const char *ax_2) 
+{
+    TF_MESH_CREATE_GETSOLVER(solver, {});
+    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
+    return createHex2DMesh(solver->meshes[0], stype, startPos, num_1, num_2, hexRad, ax_1, ax_2);
 }
 
 std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::createHex3DMesh(
@@ -488,4 +540,21 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
     }
 
     return result;
+}
+
+std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::createHex3DMesh(
+    BodyType *btype, 
+    SurfaceType *stype,
+    const FVector3 &startPos, 
+    const unsigned int &num_1, 
+    const unsigned int &num_2, 
+    const unsigned int &num_3, 
+    const FloatP_t &hexRad,
+    const FloatP_t &hex_height,
+    const char *ax_1, 
+    const char *ax_2) 
+{
+    TF_MESH_CREATE_GETSOLVER(solver, {});
+    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
+    return createHex3DMesh(solver->meshes[0], btype, stype, startPos, num_1, num_2, num_3, hexRad, hex_height, ax_1, ax_2);
 }

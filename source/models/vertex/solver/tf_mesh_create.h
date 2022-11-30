@@ -27,7 +27,7 @@
 namespace TissueForge::models::vertex {
 
     /**
-     * @brief Create a mesh of quadrilateral surfaces
+     * @brief Populate a mesh with quadrilateral surfaces
      * 
      * @param mesh parent mesh
      * @param stype surface type
@@ -53,7 +53,35 @@ namespace TissueForge::models::vertex {
     );
 
     /**
-     * @brief Create a mesh of parallelepiped bodies
+     * @brief Populate the default mesh with quadrilateral surfaces. 
+     * 
+     * If no mesh exists, then a mesh is created. 
+     * 
+     * Requires an initialized solver. 
+     * 
+     * @param stype surface type
+     * @param startPos starting position
+     * @param num_1 number of elements in the first direction
+     * @param num_2 number of elements in the second direction
+     * @param len_1 length of each element in the first direction
+     * @param len_2 length of each element in the second direction
+     * @param ax_1 axis name of the first direction (e.g., "x")
+     * @param ax_2 axis name of the second direction
+     * @return constructed surfaces
+     */
+    CPPAPI_FUNC(std::vector<std::vector<Surface*> >) createQuadMesh(
+        SurfaceType *stype,
+        const FVector3 &startPos, 
+        const unsigned int &num_1, 
+        const unsigned int &num_2, 
+        const FloatP_t &len_1,
+        const FloatP_t &len_2,
+        const char *ax_1="x", 
+        const char *ax_2="y"
+    );
+
+    /**
+     * @brief Populate a mesh with parallelepiped bodies
      * 
      * @param mesh parent mesh
      * @param btype body type
@@ -85,7 +113,41 @@ namespace TissueForge::models::vertex {
     );
 
     /**
-     * @brief Create a mesh of hexagonal surfaces
+     * @brief Populate the default mesh with parallelepiped bodies.
+     * 
+     * If no mesh exists, then a mesh is created. 
+     * 
+     * Requires an initialized solver. 
+     * 
+     * @param btype body type
+     * @param stype surface type
+     * @param startPos starting position
+     * @param num_1 number of elements in the first direction
+     * @param num_2 number of elements in the second direction
+     * @param num_3 number of elements in the third direction
+     * @param len_1 length of each element in the first direction
+     * @param len_2 length of each element in the second direction
+     * @param len_3 length of each element in the third direction
+     * @param ax_1 axis name of the first direction (e.g., "x")
+     * @param ax_2 axis name of the second direction
+     * @return constructed bodies
+     */
+    CPPAPI_FUNC(std::vector<std::vector<std::vector<Body*> > >) createPLPDMesh(
+        BodyType *btype, 
+        SurfaceType *stype,
+        const FVector3 &startPos, 
+        const unsigned int &num_1, 
+        const unsigned int &num_2, 
+        const unsigned int &num_3, 
+        const FloatP_t &len_1,
+        const FloatP_t &len_2,
+        const FloatP_t &len_3,
+        const char *ax_1="x", 
+        const char *ax_2="y"
+    );
+
+    /**
+     * @brief Populate a mesh with hexagonal surfaces
      * 
      * @param mesh parent mesh
      * @param stype surface type
@@ -109,9 +171,35 @@ namespace TissueForge::models::vertex {
     );
 
     /**
-     * @brief Create a mesh of bodies from extruded hexagonal surfaces. 
+     * @brief Populate the default mesh with hexagonal surfaces.
      * 
-     * Surfaces are places in the plane of the first and second directions, 
+     * If no mesh exists, then a mesh is created. 
+     * 
+     * Requires an initialized solver. 
+     * 
+     * @param stype surface type
+     * @param startPos starting position
+     * @param num_1 number of elements in the first direction
+     * @param num_2 number of elements in the second direction
+     * @param hexRad radius of hexagon vertices
+     * @param ax_1 axis name of the first direction (e.g., "x")
+     * @param ax_2 axis name of the second direction
+     * @return constructed surfaces
+     */
+    CPPAPI_FUNC(std::vector<std::vector<Surface*> >) createHex2DMesh(
+        SurfaceType *stype, 
+        const FVector3 &startPos, 
+        const unsigned int &num_1, 
+        const unsigned int &num_2, 
+        const FloatP_t &hexRad,
+        const char *ax_1="x", 
+        const char *ax_2="y"
+    );
+
+    /**
+     * @brief Populate a mesh with bodies from extruded hexagonal surfaces. 
+     * 
+     * Surfaces are placed in the plane of the first and second directions, 
      * and extruded along the third direction. 
      * 
      * @param mesh parent mesh
@@ -129,6 +217,41 @@ namespace TissueForge::models::vertex {
      */
     CPPAPI_FUNC(std::vector<std::vector<std::vector<Body*> > >) createHex3DMesh(
         Mesh *mesh, 
+        BodyType *btype, 
+        SurfaceType *stype,
+        const FVector3 &startPos, 
+        const unsigned int &num_1, 
+        const unsigned int &num_2, 
+        const unsigned int &num_3, 
+        const FloatP_t &hexRad,
+        const FloatP_t &hex_height,
+        const char *ax_1="x", 
+        const char *ax_2="y"
+    );
+
+    /**
+     * @brief Populate the default mesh with bodies from extruded hexagonal surfaces. 
+     * 
+     * If no mesh exists, then a mesh is created. 
+     * 
+     * Requires an initialized solver. 
+     * 
+     * Surfaces are placed in the plane of the first and second directions, 
+     * and extruded along the third direction.
+     * 
+     * @param btype body type
+     * @param stype surface type
+     * @param startPos starting position
+     * @param num_1 number of elements in the first direction
+     * @param num_2 number of elements in the second direction
+     * @param num_3 number of elements in the third directionnumber of elements in the third direction
+     * @param hexRad radius of hexagon vertices
+     * @param hex_height extrusion length per body
+     * @param ax_1 axis name of the first direction (e.g., "x")
+     * @param ax_2 axis name of the second direction
+     * @return constructed bodies
+     */
+    CPPAPI_FUNC(std::vector<std::vector<std::vector<Body*> > >) createHex3DMesh(
         BodyType *btype, 
         SurfaceType *stype,
         const FVector3 &startPos, 

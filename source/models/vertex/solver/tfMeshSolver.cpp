@@ -110,6 +110,7 @@ HRESULT MeshSolver::init() {
         return S_OK;
 
     _solver = new MeshSolver();
+    _solver->meshes.push_back(new Mesh());
     _solver->_bufferSize = 1;
     _solver->_forces = (FloatP_t*)malloc(3 * sizeof(FloatP_t));
     _solver->timers.reset();
