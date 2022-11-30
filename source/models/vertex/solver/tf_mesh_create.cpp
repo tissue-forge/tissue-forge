@@ -445,7 +445,10 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
                     int nbs_reli = surfRelCoords_j[n][0];
                     int nbs_relj = surfRelCoords_j[n][1];
 
-                    Surface *nbs_surf = surfSides[i + nbs_reli][j + nbs_relj][k][surfSharedVerts[n][1][1]];
+                    Surface *nbs_surf = NULL;
+                    if(i + nbs_reli >= 0 && i + nbs_reli < surfSides.size()) 
+                        if(j + nbs_relj >= 0 && j + nbs_relj < surfSides[i + nbs_reli].size()) 
+                            nbs_surf = surfSides[i + nbs_reli][j + nbs_relj][k][surfSharedVerts[n][1][1]];
                     if(!nbs_surf) {
                         std::vector<Vertex*> verts_bot, verts_top;
                         verts_bot = s_bot->getVertices();
