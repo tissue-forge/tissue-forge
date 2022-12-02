@@ -21,8 +21,13 @@
 
 #include "tfBody.h"
 #include "tfMeshSolver.h"
+#include "tf_mesh_io.h"
+#include "tfVertexSolverFIO.h"
 
+#include <tfError.h>
 #include <tfLogger.h>
+#include <io/tfIO.h>
+#include <io/tfFIO.h>
 
 
 using namespace TissueForge::models::vertex;
@@ -260,4 +265,159 @@ std::vector<int> StructureType::getInstanceIds() {
 
 unsigned int StructureType::getNumInstances() {
     return getInstances().size();
+}
+
+namespace TissueForge::io {
+
+
+    #define TF_MESH_STRUCTUREIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_MESH_STRUCTUREIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::Structure &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_STRUCTUREIOTOEASY(fe, "objId", dataElement.objId);
+        TF_MESH_STRUCTUREIOTOEASY(fe, "meshId", dataElement.mesh == NULL ? -1 : dataElement.mesh->getId());
+        TF_MESH_STRUCTUREIOTOEASY(fe, "typeId", dataElement.typeId);
+
+        if(dataElement.actors.size() > 0) {
+            std::vector<TissueForge::models::vertex::MeshObjActor*> actors;
+            for(auto &a : dataElement.actors) 
+                if(a) 
+                    actors.push_back(a);
+            TF_MESH_STRUCTUREIOTOEASY(fe, "actors", actors);
+        }
+
+        std::vector<int> structures_parent, bodies;
+        for(auto &p : dataElement.parents()) {
+            if(p->objType() == TissueForge::models::vertex::MeshObj::BODY) 
+                bodies.push_back(p->objId);
+            else 
+                structures_parent.push_back(p->objId);
+        }
+        TF_MESH_STRUCTUREIOTOEASY(fe, "structures_parent", structures_parent);
+        TF_MESH_STRUCTUREIOTOEASY(fe, "bodies", bodies);
+
+        std::vector<int> structures_child_ids;
+        for(auto &c : dataElement.children()) 
+            structures_child_ids.push_back(c->objId);
+        TF_MESH_STRUCTUREIOTOEASY(fe, "structures_child", structures_child_ids);
+
+        fileElement->type = "Structure";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Structure **dataElement) {
+        
+        if(!FIO::hasImport()) 
+            return tf_error(E_FAIL, "No import data available");
+        else if(!TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) 
+            return tf_error(E_FAIL, "No vertex import data available");
+
+        TissueForge::models::vertex::MeshSolver *solver = TissueForge::models::vertex::MeshSolver::get();
+        if(!solver) 
+            return tf_error(E_FAIL, "No vertex solver available");
+
+        IOChildMap::const_iterator feItr;
+
+        TissueForge::models::vertex::Mesh *mesh = NULL;
+        int meshIdOld;
+        unsigned int meshId;
+        TF_MESH_STRUCTUREIOFROMEASY(feItr, fileElement.children, metaData, "meshId", &meshIdOld);
+        if(meshIdOld >= 0) {
+            auto meshId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.find(meshIdOld);
+            if(meshId_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.end() && meshId_itr->second < solver->numMeshes()) {
+                meshId = meshId_itr->second;
+                mesh = solver->getMesh(meshId);
+            }
+        }
+        if(!mesh) {
+            return tf_error(E_FAIL, "Could not identify mesh");
+        }
+
+        int typeIdOld;
+        TF_MESH_STRUCTUREIOFROMEASY(feItr, fileElement.children, metaData, "typeId", &typeIdOld);
+        auto typeId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->structureTypeIdMap.find(typeIdOld);
+        if(typeId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->structureTypeIdMap.end()) {
+            return tf_error(E_FAIL, "Could not identify type");
+        }
+
+        *dataElement = new TissueForge::models::vertex::Structure();
+        (*dataElement)->typeId = typeId_itr->second;
+
+        if(mesh->add(*dataElement) != S_OK) 
+            return tf_error(E_FAIL, "Failed to add to mesh");
+
+        int objIdOld;
+        TF_MESH_STRUCTUREIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
+        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->structureIdMap[meshId].insert({objIdOld, (*dataElement)->objId});
+
+        if(fileElement.children.find("actors") != fileElement.children.end()) {
+            TF_MESH_STRUCTUREIOFROMEASY(feItr, fileElement.children, metaData, "actors", &(*dataElement)->actors);
+        }
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::StructureType &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_STRUCTUREIOTOEASY(fe, "id", dataElement.id);
+
+        if(dataElement.actors.size() > 0) {
+            std::vector<TissueForge::models::vertex::MeshObjActor*> actors;
+            for(auto &a : dataElement.actors) 
+                if(a) 
+                    actors.push_back(a);
+            TF_MESH_STRUCTUREIOTOEASY(fe, "actors", actors);
+        }
+
+        TF_MESH_STRUCTUREIOTOEASY(fe, "name", dataElement.name);
+
+        fileElement->type = "StructureType";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::StructureType **dataElement) {
+        
+        IOChildMap::const_iterator feItr;
+
+        *dataElement = new TissueForge::models::vertex::StructureType();
+
+        TF_MESH_STRUCTUREIOFROMEASY(feItr, fileElement.children, metaData, "name", &(*dataElement)->name);
+        if(fileElement.children.find("actors") != fileElement.children.end()) {
+            TF_MESH_STRUCTUREIOFROMEASY(feItr, fileElement.children, metaData, "actors", &(*dataElement)->actors);
+        }
+
+        return S_OK;
+    }
+}
+
+std::string TissueForge::models::vertex::Structure::toString() {
+    return TissueForge::io::toString(*this);
+}
+
+std::string TissueForge::models::vertex::StructureType::toString() {
+    return TissueForge::io::toString(*this);
+}
+
+StructureType *TissueForge::models::vertex::StructureType::fromString(const std::string &str) {
+    return TissueForge::io::fromString<TissueForge::models::vertex::StructureType*>(str);
 }

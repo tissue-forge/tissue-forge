@@ -200,11 +200,17 @@ namespace TissueForge::models::vertex {
             const FloatP_t &_edgeSplitDistCf=2.0
         );
 
+        /** Get a JSON string representation */
+        std::string toString();
+
         /** Perform quality operations work */
         HRESULT doQuality();
 
         /** Test whether quality operations are being done */
         const bool working() const { return _working; }
+
+        /** Get the id of the parent mesh */
+        const int getMeshId() const;
 
         /** Get the distance below which two vertices are scheduled for merging */
         FloatP_t getVertexMergeDistance() const { return vertexMergeDist; };

@@ -26,13 +26,18 @@
 #include "tfMeshSolver.h"
 #include "actors/tfConvexPolygonConstraint.h"
 #include "actors/tfFlatSurfaceConstraint.h"
+#include "tf_mesh_io.h"
+#include "tfVertexSolverFIO.h"
 
 #include <Magnum/Math/Math.h>
 #include <Magnum/Math/Intersection.h>
 
+#include <tfError.h>
 #include <tfLogger.h>
 #include <tf_metrics.h>
 #include <tf_util.h>
+#include <io/tfIO.h>
+#include <io/tfFIO.h>
 
 #include <io/tfThreeDFVertexData.h>
 #include <io/tfThreeDFEdgeData.h>
@@ -76,15 +81,15 @@ Surface::Surface(std::vector<Vertex*> _vertices) :
     }
 }
 
-static HRESULT Surface_order3DFFaceVertices(io::ThreeDFFaceData *face, std::vector<io::ThreeDFVertexData*> &result) {
+static HRESULT Surface_order3DFFaceVertices(TissueForge::io::ThreeDFFaceData *face, std::vector<TissueForge::io::ThreeDFVertexData*> &result) {
     auto vedges = face->getEdges();
     auto vverts = face->getVertices();
     result.clear();
     std::vector<int> edgesLeft;
     for(int i = 1; i < vedges.size(); edgesLeft.push_back(i), i++) {}
     
-    io::ThreeDFVertexData *currentVertex;
-    io::ThreeDFEdgeData *edge = vedges[0];
+    TissueForge::io::ThreeDFVertexData *currentVertex;
+    TissueForge::io::ThreeDFEdgeData *edge = vedges[0];
     currentVertex = edge->vb;
     result.push_back(edge->va);
     result.push_back(currentVertex);
@@ -110,10 +115,10 @@ static HRESULT Surface_order3DFFaceVertices(io::ThreeDFFaceData *face, std::vect
     return S_OK;
 }
 
-Surface::Surface(io::ThreeDFFaceData *face) : 
+Surface::Surface(TissueForge::io::ThreeDFFaceData *face) : 
     Surface()
 {
-    std::vector<io::ThreeDFVertexData*> vverts;
+    std::vector<TissueForge::io::ThreeDFVertexData*> vverts;
     if(Surface_order3DFFaceVertices(face, vverts) == S_OK) {
         for(auto &vv : vverts) {
             Vertex *v = new Vertex(vv);
@@ -1154,8 +1159,8 @@ Surface *SurfaceType::operator() (const std::vector<FVector3> &_positions) {
     return (*this)(_vertices);
 }
 
-Surface *SurfaceType::operator() (io::ThreeDFFaceData *face) {
-    std::vector<io::ThreeDFVertexData*> vverts;
+Surface *SurfaceType::operator() (TissueForge::io::ThreeDFFaceData *face) {
+    std::vector<TissueForge::io::ThreeDFVertexData*> vverts;
     std::vector<FVector3> _positions;
     if(Surface_order3DFFaceVertices(face, vverts) == S_OK) 
         for(auto &vv : vverts) 
@@ -1245,4 +1250,184 @@ Surface *SurfaceType::replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs) {
         solver->positionChanged();
 
     return inserted;
+}
+
+namespace TissueForge::io {
+
+
+    #define TF_MESH_SURFACEIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_MESH_SURFACEIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::Surface &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_SURFACEIOTOEASY(fe, "objId", dataElement.objId);
+        TF_MESH_SURFACEIOTOEASY(fe, "meshId", dataElement.mesh == NULL ? -1 : dataElement.mesh->getId());
+        TF_MESH_SURFACEIOTOEASY(fe, "typeId", dataElement.typeId);
+
+        if(dataElement.actors.size() > 0) {
+            std::vector<TissueForge::models::vertex::MeshObjActor*> actors;
+            for(auto &a : dataElement.actors) 
+                if(a) 
+                    actors.push_back(a);
+            TF_MESH_SURFACEIOTOEASY(fe, "actors", actors);
+        }
+
+        std::vector<int> vertices;
+        for(auto &p : dataElement.parents()) 
+            vertices.push_back(p->objId);
+        TF_MESH_SURFACEIOTOEASY(fe, "vertices", vertices);
+
+        std::vector<int> bodies;
+        for(auto &c : dataElement.children()) 
+            bodies.push_back(c->objId);
+        TF_MESH_SURFACEIOTOEASY(fe, "bodies", bodies);
+
+        TF_MESH_SURFACEIOTOEASY(fe, "normal", dataElement.getNormal());
+        TF_MESH_SURFACEIOTOEASY(fe, "centroid", dataElement.getCentroid());
+        TF_MESH_SURFACEIOTOEASY(fe, "velocity", dataElement.getVelocity());
+        TF_MESH_SURFACEIOTOEASY(fe, "area", dataElement.getArea());
+
+        TF_MESH_SURFACEIOTOEASY(fe, "typeId", dataElement.typeId);
+
+        if(dataElement.species1) {
+            TF_MESH_SURFACEIOTOEASY(fe, "species_outward", *dataElement.species1);
+        }
+        if(dataElement.species2) {
+            TF_MESH_SURFACEIOTOEASY(fe, "species_inward", *dataElement.species2);
+        }
+        if(dataElement.style) {
+            TF_MESH_SURFACEIOTOEASY(fe, "style", *dataElement.style);
+        }
+
+        fileElement->type = "Surface";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Surface **dataElement) {
+        
+        if(!FIO::hasImport()) 
+            return tf_error(E_FAIL, "No import data available");
+        else if(!TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) 
+            return tf_error(E_FAIL, "No vertex import data available");
+
+        TissueForge::models::vertex::MeshSolver *solver = TissueForge::models::vertex::MeshSolver::get();
+        if(!solver) 
+            return tf_error(E_FAIL, "No vertex solver available");
+
+        IOChildMap::const_iterator feItr;
+
+        TissueForge::models::vertex::Mesh *mesh = NULL;
+        int meshIdOld;
+        unsigned int meshId;
+        TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "meshId", &meshIdOld);
+        if(meshIdOld >= 0) {
+            auto meshId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.find(meshIdOld);
+            if(meshId_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.end() && meshId_itr->second < solver->numMeshes()) {
+                meshId = meshId_itr->second;
+                mesh = solver->getMesh(meshId);
+            }
+        }
+        if(!mesh) {
+            return tf_error(E_FAIL, "Could not identify mesh");
+        }
+
+        int typeIdOld;
+        TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "typeId", &typeIdOld);
+        auto typeId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.find(typeIdOld);
+        if(typeId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.end()) {
+            return tf_error(E_FAIL, "Could not identify type");
+        }
+        TissueForge::models::vertex::SurfaceType *detype = solver->getSurfaceType(typeId_itr->second);
+
+        std::vector<TissueForge::models::vertex::Vertex*> vertices;
+        std::vector<int> verticesIds;
+        TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "vertices", &verticesIds);
+        for(auto &vertexIdOld : verticesIds) {
+            auto vertexId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap[meshId].find(vertexIdOld);
+            if(vertexId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap[meshId].end()) {
+                return tf_error(E_FAIL, "Could not identify vertex");
+            }
+            vertices.push_back(mesh->getVertex(vertexId_itr->second));
+        }
+
+        *dataElement = (*detype)(vertices);
+
+        if(mesh->add(*dataElement) != S_OK) 
+            return tf_error(E_FAIL, "Failed to add to mesh");
+
+        int objIdOld;
+        TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
+        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap[meshId].insert({objIdOld, (*dataElement)->objId});
+
+        feItr = fileElement.children.find("actors");
+        if(feItr != fileElement.children.end()) {
+            TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "actors", &(*dataElement)->actors);
+        }
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::SurfaceType &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_SURFACEIOTOEASY(fe, "id", dataElement.id);
+
+        if(dataElement.actors.size() > 0) {
+            std::vector<TissueForge::models::vertex::MeshObjActor*> actors;
+            for(auto &a : dataElement.actors) 
+                if(a) 
+                    actors.push_back(a);
+            TF_MESH_SURFACEIOTOEASY(fe, "actors", actors);
+        }
+
+        TF_MESH_SURFACEIOTOEASY(fe, "name", dataElement.name);
+        TF_MESH_SURFACEIOTOEASY(fe, "style", *dataElement.style);
+
+        fileElement->type = "SurfaceType";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::SurfaceType **dataElement) {
+        
+        IOChildMap::const_iterator feItr;
+
+        *dataElement = new TissueForge::models::vertex::SurfaceType();
+
+        TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "name", &(*dataElement)->name);
+        if(fileElement.children.find("actors") != fileElement.children.end()) {
+            TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "actors", &(*dataElement)->actors);
+        }
+
+        return S_OK;
+    }
+}
+
+std::string TissueForge::models::vertex::Surface::toString() {
+    return TissueForge::io::toString(*this);
+}
+
+std::string TissueForge::models::vertex::SurfaceType::toString() {
+    return TissueForge::io::toString(*this);
+}
+
+SurfaceType *TissueForge::models::vertex::SurfaceType::fromString(const std::string &str) {
+    return TissueForge::io::fromString<TissueForge::models::vertex::SurfaceType*>(str);
 }

@@ -59,6 +59,12 @@ namespace TissueForge::models::vertex {
 
         ~Mesh();
 
+        /** Get the id of this mesh */
+        const int getId() const;
+
+        /** Get a JSON string representation */
+        std::string toString();
+
         /** Test whether this mesh has a mesh quality instance */
         bool hasQuality() const { return _quality; }
 

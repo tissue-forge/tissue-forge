@@ -22,10 +22,15 @@
 #include "tfMesh.h"
 #include "tfMeshSolver.h"
 #include "tf_mesh_metrics.h"
+#include "tf_mesh_io.h"
+#include "tfVertexSolverFIO.h"
 
+#include <tfError.h>
 #include <tfUniverse.h>
 #include <tf_metrics.h>
 #include <tfTaskScheduler.h>
+#include <io/tfIO.h>
+#include <io/tfFIO.h>
 
 
 using namespace TissueForge;
@@ -688,6 +693,10 @@ HRESULT MeshQuality::doQuality() {
     return S_OK;
 }
 
+const int MeshQuality::getMeshId() const {
+    return mesh ? mesh->getId() : -1;
+}
+
 HRESULT MeshQuality::setVertexMergeDistance(const FloatP_t &_val) {
     if(_val < 0) 
         return E_FAIL;
@@ -714,4 +723,64 @@ HRESULT MeshQuality::setEdgeSplitDist(const FloatP_t &_val) {
         return E_FAIL;
     edgeSplitDist = _val;
     return S_OK;
+}
+
+namespace TissueForge::io {
+
+
+    #define TF_MESH_MESHQUALITYIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_MESH_MESHQUALITYIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::MeshQuality &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "vertexMergeDist", dataElement.getVertexMergeDistance());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "surfaceDemoteArea", dataElement.getSurfaceDemoteArea());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "bodyDemoteVolume", dataElement.getBodyDemoteVolume());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "edgeSplitDist", dataElement.getEdgeSplitDist());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "meshId", dataElement.getMeshId());
+
+        fileElement->type = "MeshQuality";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::MeshQuality *dataElement) {
+        
+        IOChildMap::const_iterator feItr;
+
+        FloatP_t vertexMergeDist;
+        TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "vertexMergeDist", &vertexMergeDist);
+        dataElement->setVertexMergeDistance(vertexMergeDist);
+
+        FloatP_t surfaceDemoteArea;
+        TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "surfaceDemoteArea", &surfaceDemoteArea);
+        dataElement->setSurfaceDemoteArea(surfaceDemoteArea);
+
+        FloatP_t bodyDemoteVolume;
+        TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "bodyDemoteVolume", &bodyDemoteVolume);
+        dataElement->setBodyDemoteVolume(bodyDemoteVolume);
+
+        FloatP_t edgeSplitDist;
+        TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "edgeSplitDist", &edgeSplitDist);
+        dataElement->setEdgeSplitDist(edgeSplitDist);
+
+        return S_OK;
+    }
+}
+
+std::string TissueForge::models::vertex::MeshQuality::toString() {
+    return TissueForge::io::toString(*this);
 }

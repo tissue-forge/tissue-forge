@@ -23,8 +23,13 @@
 #include "tfSurface.h"
 #include "tfStructure.h"
 #include "tfMeshSolver.h"
+#include "tf_mesh_io.h"
+#include "tfVertexSolverFIO.h"
 
+#include <tfError.h>
 #include <tfLogger.h>
+#include <io/tfIO.h>
+#include <io/tfFIO.h>
 
 #include <Magnum/Math/Math.h>
 #include <Magnum/Math/Intersection.h>
@@ -89,7 +94,7 @@ Body::Body(std::vector<Surface*> _surfaces) :
         _updateInternal();
 };
 
-Body::Body(io::ThreeDFMeshData *ioMesh) : 
+Body::Body(TissueForge::io::ThreeDFMeshData *ioMesh) : 
     Body()
 {
     std::vector<Surface*> _surfaces;
@@ -724,7 +729,7 @@ Body *BodyType::operator() (std::vector<Surface*> surfaces) {
     return BodyType_fromSurfaces(this, surfaces);
 }
 
-Body *BodyType::operator() (io::ThreeDFMeshData* ioMesh, SurfaceType *stype) {
+Body *BodyType::operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceType *stype) {
     std::vector<Surface*> surfaces;
     for(auto &f : ioMesh->faces) 
         surfaces.push_back((*stype)(f));
@@ -841,4 +846,179 @@ Body *BodyType::extrude(Surface *base, const FloatP_t &normLen) {
     }
 
     return b;
+}
+
+namespace TissueForge::io {
+
+
+    #define TF_MESH_BODYIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_MESH_BODYIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::Body &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_BODYIOTOEASY(fe, "objId", dataElement.objId);
+        TF_MESH_BODYIOTOEASY(fe, "meshId", dataElement.mesh == NULL ? -1 : dataElement.mesh->getId());
+        TF_MESH_BODYIOTOEASY(fe, "typeId", dataElement.typeId);
+
+        if(dataElement.actors.size() > 0) {
+            std::vector<TissueForge::models::vertex::MeshObjActor*> actors;
+            for(auto &a : dataElement.actors) 
+                if(a) 
+                    actors.push_back(a);
+            TF_MESH_BODYIOTOEASY(fe, "actors", actors);
+        }
+
+        std::vector<int> surfaces;
+        for(auto &s : dataElement.parents()) 
+            surfaces.push_back(s->objId);
+        TF_MESH_BODYIOTOEASY(fe, "surfaces", surfaces);
+
+        std::vector<int> structures;
+        for(auto &s : dataElement.children()) 
+            structures.push_back(s->objId);
+        TF_MESH_BODYIOTOEASY(fe, "structures", structures);
+
+        TF_MESH_BODYIOTOEASY(fe, "centroid", dataElement.getCentroid());
+        TF_MESH_BODYIOTOEASY(fe, "area", dataElement.getArea());
+        TF_MESH_BODYIOTOEASY(fe, "volume", dataElement.getVolume());
+        TF_MESH_BODYIOTOEASY(fe, "density", dataElement.getDensity());
+        TF_MESH_BODYIOTOEASY(fe, "typeId", dataElement.typeId);
+
+        if(dataElement.species) {
+            TF_MESH_BODYIOTOEASY(fe, "species", *dataElement.species);
+        }
+
+        fileElement->type = "Body";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Body **dataElement) {
+        
+        if(!FIO::hasImport()) 
+            return tf_error(E_FAIL, "No import data available");
+        else if(!TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) 
+            return tf_error(E_FAIL, "No vertex import data available");
+
+        TissueForge::models::vertex::MeshSolver *solver = TissueForge::models::vertex::MeshSolver::get();
+        if(!solver) 
+            return tf_error(E_FAIL, "No vertex solver available");
+
+        IOChildMap::const_iterator feItr;
+
+        TissueForge::models::vertex::Mesh *mesh = NULL;
+        int meshIdOld;
+        unsigned int meshId;
+        TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "meshId", &meshIdOld);
+        if(meshIdOld >= 0) {
+            auto meshId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.find(meshIdOld);
+            if(meshId_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.end() && meshId_itr->second < solver->numMeshes()) {
+                meshId = meshId_itr->second;
+                mesh = solver->getMesh(meshId);
+            }
+        }
+        if(!mesh) {
+            return tf_error(E_FAIL, "Could not identify mesh");
+        }
+        
+        int typeIdOld;
+        TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "typeId", &typeIdOld);
+        auto typeId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyTypeIdMap.find(typeIdOld);
+        if(typeId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyTypeIdMap.end()) {
+            return tf_error(E_FAIL, "Could not identify type");
+        }
+        TissueForge::models::vertex::BodyType *detype = solver->getBodyType(typeId_itr->second);
+
+        std::vector<TissueForge::models::vertex::Surface*> surfaces;
+        std::vector<int> surfacesIds;
+        for(auto &surfaceIdOld : surfacesIds) {
+            auto surfaceId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap[meshId].find(surfaceIdOld);
+            if(surfaceId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap[meshId].end()) {
+                return tf_error(E_FAIL, "Could not identify surface");
+            }
+            surfaces.push_back(mesh->getSurface(surfaceId_itr->second));
+        }
+
+        *dataElement = (*detype)(surfaces);
+
+        if(mesh->add(*dataElement) != S_OK) 
+            return tf_error(E_FAIL, "Failed to add to mesh");
+
+        int objIdOld;
+        TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
+        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyIdMap[meshId].insert({objIdOld, (*dataElement)->objId});
+
+        if(fileElement.children.find("actors") != fileElement.children.end()) {
+            TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "actors", &(*dataElement)->actors);
+        }
+
+        if(fileElement.children.find("species") != fileElement.children.end()) {
+            TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "species", &(*dataElement)->species);
+        }
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::BodyType &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_BODYIOTOEASY(fe, "id", dataElement.id);
+
+        if(dataElement.actors.size() > 0) {
+            std::vector<TissueForge::models::vertex::MeshObjActor*> actors;
+            for(auto &a : dataElement.actors) 
+                if(a) 
+                    actors.push_back(a);
+            TF_MESH_BODYIOTOEASY(fe, "actors", actors);
+        }
+
+        TF_MESH_BODYIOTOEASY(fe, "name", dataElement.name);
+        TF_MESH_BODYIOTOEASY(fe, "density", dataElement.density);
+
+        fileElement->type = "BodyType";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::BodyType **dataElement) {
+        
+        IOChildMap::const_iterator feItr;
+
+        *dataElement = new TissueForge::models::vertex::BodyType();
+
+        TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "name", &(*dataElement)->name);
+        if(fileElement.children.find("actors") != fileElement.children.end()) {
+            TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "actors", &(*dataElement)->actors);
+        }
+
+        return S_OK;
+    }
+}
+
+std::string TissueForge::models::vertex::Body::toString() {
+    return TissueForge::io::toString(*this);
+}
+
+std::string TissueForge::models::vertex::BodyType::toString() {
+    return TissueForge::io::toString(*this);
+}
+
+BodyType *TissueForge::models::vertex::BodyType::fromString(const std::string &str) {
+    return TissueForge::io::fromString<TissueForge::models::vertex::BodyType*>(str);
 }

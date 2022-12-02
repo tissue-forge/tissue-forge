@@ -31,7 +31,7 @@ namespace TissueForge::models::vertex {
         FloatP_t lam;
         FloatP_t constr;
 
-        VolumeConstraint(const FloatP_t &_lam, const FloatP_t &_constr) {
+        VolumeConstraint(const FloatP_t &_lam=0, const FloatP_t &_constr=0) {
             lam = _lam;
             constr = _constr;
         }
@@ -45,6 +45,13 @@ namespace TissueForge::models::vertex {
         HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
         HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
+
+        /**
+         * @brief Create from a JSON string representation. 
+         * 
+         * @param str a string, as returned by ``toString``
+         */
+        static VolumeConstraint *fromString(const std::string &str);
 
     };
 

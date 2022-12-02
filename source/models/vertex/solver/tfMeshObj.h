@@ -134,6 +134,9 @@ namespace TissueForge::models::vertex {
             return result;
         }
 
+        /** Get a JSON string representation */
+        virtual std::string toString();
+
         /**
          * @brief Calculate the energy of a source object acting on a target object
          * 
@@ -141,7 +144,7 @@ namespace TissueForge::models::vertex {
          * @param target target object
          * @param e energy 
          */
-        virtual HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) = 0;
+        virtual HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) { return S_OK; }
 
         /**
          * @brief Calculate the force that a source object exerts on a target object
@@ -150,7 +153,7 @@ namespace TissueForge::models::vertex {
          * @param target target object
          * @param f force
          */
-        virtual HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) = 0;
+        virtual HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) { return S_OK; }
 
     };
 

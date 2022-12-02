@@ -23,6 +23,8 @@
 #include <models/vertex/solver/tfSurface.h>
 #include <models/vertex/solver/tfBody.h>
 
+#include <io/tfFIO.h>
+
 
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
@@ -142,4 +144,51 @@ HRESULT SurfaceAreaConstraint::force(const MeshObj *source, const MeshObj *targe
     else if(source->objType() == MeshObj::Type::SURFACE) 
         return SurfaceAreaConstraint_force_Surface((Surface*)source, (Vertex*)target, lam, constr, f);
     return S_OK;
+}
+
+namespace TissueForge::io { 
+
+
+    #define TF_ACTORIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_ACTORIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(SurfaceAreaConstraint *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+
+        IOElement *fe;
+
+        TF_ACTORIOTOEASY(fe, "lam", dataElement->lam);
+        TF_ACTORIOTOEASY(fe, "constr", dataElement->constr);
+
+        fileElement->type = "SurfaceAreaConstraint";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, SurfaceAreaConstraint **dataElement) { 
+
+        IOChildMap::const_iterator feItr;
+
+        FloatP_t lam, constr;
+        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "lam", &lam);
+        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "constr", &constr);
+        *dataElement = new SurfaceAreaConstraint(lam, constr);
+
+        return S_OK;
+    }
+
+};
+
+SurfaceAreaConstraint *SurfaceAreaConstraint::fromString(const std::string &str) {
+    return TissueForge::io::fromString<SurfaceAreaConstraint*>(str);
 }

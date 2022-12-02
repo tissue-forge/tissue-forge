@@ -24,6 +24,7 @@
 #include <models/vertex/solver/tfBody.h>
 
 #include <tfEngine.h>
+#include <io/tfFIO.h>
 
 
 using namespace TissueForge::models::vertex;
@@ -57,4 +58,49 @@ HRESULT NormalStress::force(const MeshObj *source, const MeshObj *target, FloatP
     f[1] += vForce[1];
     f[2] += vForce[2];
     return S_OK;
+}
+
+namespace TissueForge::io { 
+
+
+    #define TF_ACTORIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_ACTORIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(NormalStress *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+
+        IOElement *fe;
+
+        TF_ACTORIOTOEASY(fe, "mag", dataElement->mag);
+
+        fileElement->type = "NormalStress";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, NormalStress **dataElement) { 
+
+        IOChildMap::const_iterator feItr;
+
+        FloatP_t mag;
+        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "mag", &mag);
+        *dataElement = new NormalStress(mag);
+
+        return S_OK;
+    }
+
+};
+
+NormalStress *NormalStress::fromString(const std::string &str) {
+    return TissueForge::io::fromString<NormalStress*>(str);
 }

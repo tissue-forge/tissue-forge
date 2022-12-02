@@ -72,6 +72,9 @@ namespace TissueForge::models::vertex {
         /** Get a summary string */
         std::string str() const override;
 
+        /** Get a JSON string representation */
+        std::string toString();
+
         /**
          * Destroy the structure. 
          * 
@@ -121,6 +124,20 @@ namespace TissueForge::models::vertex {
 
         /** Get a summary string */
         virtual std::string str() const override;
+
+        /**
+         * @brief Get a JSON string representation
+         */
+        std::string toString();
+
+        /**
+         * @brief Create from a JSON string representation. 
+         * 
+         * The returned type is automatically registered with the solver. 
+         * 
+         * @param str a string, as returned by ``toString``
+         */
+        static StructureType *fromString(const std::string &str);
 
         /** Get a registered type by name */
         static StructureType *findFromName(const std::string &_name);

@@ -23,9 +23,14 @@
 #include "tfBody.h"
 #include "tfStructure.h"
 #include "tfMeshSolver.h"
+#include "tf_mesh_io.h"
+#include "tfVertexSolverFIO.h"
 
+#include <tfError.h>
 #include <tfLogger.h>
 #include <tfEngine.h>
+#include <io/tfIO.h>
+#include <io/tfFIO.h>
 
 #include <unordered_set>
 
@@ -165,7 +170,7 @@ Vertex::Vertex(const FVector3 &position) :
     }
 }
 
-Vertex::Vertex(io::ThreeDFVertexData *vdata) :
+Vertex::Vertex(TissueForge::io::ThreeDFVertexData *vdata) :
     Vertex(vdata->position)
 {}
 
@@ -827,4 +832,98 @@ Vertex *Vertex::split(const FVector3 &sep) {
     }
 
     return u;
+}
+
+namespace TissueForge::io {
+
+
+    #define TF_MESH_VERTEXIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_MESH_VERTEXIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::Vertex &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_VERTEXIOTOEASY(fe, "objId", dataElement.objId);
+        TF_MESH_VERTEXIOTOEASY(fe, "meshId", dataElement.mesh == NULL ? -1 : dataElement.mesh->getId());
+
+        ParticleHandle *ph = dataElement.particle();
+        if(ph == NULL) {
+            TF_MESH_VERTEXIOTOEASY(fe, "pid", -1);
+        } 
+        else {
+            TF_MESH_VERTEXIOTOEASY(fe, "pid", ph->getId());
+        }
+
+        std::vector<TissueForge::models::vertex::Surface*> surfaces = dataElement.getSurfaces();
+        std::vector<int> surfaceIds;
+        surfaceIds.reserve(surfaces.size());
+        for(auto &s : surfaces) 
+            surfaceIds.push_back(s->objId);
+        TF_MESH_VERTEXIOTOEASY(fe, "surfaces", surfaceIds);
+
+        fileElement->type = "Vertex";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Vertex **dataElement) {
+        
+        if(!FIO::hasImport()) 
+            return tf_error(E_FAIL, "No import data available");
+        else if(!TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) 
+            return tf_error(E_FAIL, "No vertex import data available");
+
+        TissueForge::models::vertex::MeshSolver *solver = TissueForge::models::vertex::MeshSolver::get();
+        if(!solver) 
+            return tf_error(E_FAIL, "No vertex solver available");
+
+        IOChildMap::const_iterator feItr;
+
+        Mesh *mesh = NULL;
+        int meshIdOld;
+        unsigned int meshId;
+        TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "meshId", &meshIdOld);
+        if(meshIdOld >= 0) {
+            auto meshId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.find(meshIdOld);
+            if(meshId_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.end() && meshId_itr->second < solver->numMeshes()) {
+                meshId = meshId_itr->second;
+                mesh = solver->getMesh(meshId);
+            }
+        }
+
+        int pidOld;
+        TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "pid", &pidOld);
+        auto idItr = FIO::importSummary->particleIdMap.find(pidOld);
+        if(idItr == FIO::importSummary->particleIdMap.end() || idItr->second < 0) 
+            return tf_error(E_FAIL, "Could not locate particle to import");
+
+        *dataElement = new TissueForge::models::vertex::Vertex(idItr->second);
+
+        if(mesh) {
+            if(mesh->add(*dataElement) != S_OK) 
+                return tf_error(E_FAIL, "Failed to add to mesh");
+
+            int objIdOld;
+            TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
+            TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap[meshId].insert({objIdOld, (*dataElement)->objId});
+        }
+
+        return S_OK;
+    }
+}
+
+std::string TissueForge::models::vertex::Vertex::toString() {
+    return TissueForge::io::toString(*this);
 }

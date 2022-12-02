@@ -96,7 +96,7 @@ namespace TissueForge::models::vertex {
         Surface(std::vector<Vertex*> _vertices);
 
         /** Construct a surface from a face */
-        Surface(io::ThreeDFFaceData *face);
+        Surface(TissueForge::io::ThreeDFFaceData *face);
 
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::SURFACE; }
@@ -121,6 +121,9 @@ namespace TissueForge::models::vertex {
 
         /** Get a summary string */
         std::string str() const override;
+
+        /** Get a JSON string representation */
+        std::string toString();
 
         /** Add a vertex */
         HRESULT add(Vertex *v);
@@ -340,6 +343,20 @@ namespace TissueForge::models::vertex {
         /** Get a summary string */
         virtual std::string str() const override;
 
+        /**
+         * @brief Get a JSON string representation
+         */
+        std::string toString();
+
+        /**
+         * @brief Create from a JSON string representation. 
+         * 
+         * The returned type is automatically registered with the solver. 
+         * 
+         * @param str a string, as returned by ``toString``
+         */
+        static SurfaceType *fromString(const std::string &str);
+
         /** Get a registered type by name */
         static SurfaceType *findFromName(const std::string &_name);
 
@@ -383,7 +400,7 @@ namespace TissueForge::models::vertex {
         Surface *operator() (const std::vector<FVector3> &_positions);
 
         /** Construct a surface of this type from a face */
-        Surface *operator() (io::ThreeDFFaceData *face);
+        Surface *operator() (TissueForge::io::ThreeDFFaceData *face);
 
         /** Construct a polygon with n vertices circumscribed on a circle */
         Surface *nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2);

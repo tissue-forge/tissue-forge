@@ -24,6 +24,7 @@
 
 #include <tf_metrics.h>
 #include <tfError.h>
+#include <io/tfFIO.h>
 
 
 using namespace TissueForge;
@@ -156,4 +157,52 @@ HRESULT EdgeTension::energy(const MeshObj *source, const MeshObj *target, FloatP
 
 HRESULT EdgeTension::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
     return forceFcn(source, target, lam, order, f);
+}
+
+namespace TissueForge::io { 
+
+
+    #define TF_ACTORIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_ACTORIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(EdgeTension *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+
+        IOElement *fe;
+
+        TF_ACTORIOTOEASY(fe, "lam", dataElement->lam);
+        TF_ACTORIOTOEASY(fe, "order", dataElement->order);
+
+        fileElement->type = "EdgeTension";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, EdgeTension **dataElement) { 
+
+        IOChildMap::const_iterator feItr;
+
+        FloatP_t lam;
+        unsigned int order;
+        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "lam", &lam);
+        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "order", &order);
+        *dataElement = new EdgeTension(lam, order);
+
+        return S_OK;
+    }
+
+};
+
+EdgeTension *EdgeTension::fromString(const std::string &str) {
+    return TissueForge::io::fromString<EdgeTension*>(str);
 }

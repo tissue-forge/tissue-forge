@@ -32,7 +32,7 @@ namespace TissueForge::models::vertex {
 
         FloatP_t mag;
 
-        NormalStress(const FloatP_t &_mag) {
+        NormalStress(const FloatP_t &_mag=0) {
             mag = _mag;
         }
 
@@ -45,6 +45,13 @@ namespace TissueForge::models::vertex {
         HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
         HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
+
+        /**
+         * @brief Create from a JSON string representation. 
+         * 
+         * @param str a string, as returned by ``toString``
+         */
+        static NormalStress *fromString(const std::string &str);
 
     };
 

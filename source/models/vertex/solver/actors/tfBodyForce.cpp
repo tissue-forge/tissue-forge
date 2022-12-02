@@ -23,6 +23,7 @@
 #include <models/vertex/solver/tfBody.h>
 
 #include <tfEngine.h>
+#include <io/tfFIO.h>
 
 
 using namespace TissueForge::models::vertex;
@@ -48,4 +49,49 @@ HRESULT BodyForce::force(const MeshObj *source, const MeshObj *target, FloatP_t 
     f[1] += fv[1];
     f[2] += fv[2];
     return S_OK;
+}
+
+namespace TissueForge::io { 
+
+
+    #define TF_ACTORIOTOEASY(fe, key, member) \
+        fe = new IOElement(); \
+        if(toFile(member, metaData, fe) != S_OK)  \
+            return E_FAIL; \
+        fe->parent = fileElement; \
+        fileElement->children[key] = fe;
+
+    #define TF_ACTORIOFROMEASY(feItr, children, metaData, key, member_p) \
+        feItr = children.find(key); \
+        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
+            return E_FAIL;
+
+    template <>
+    HRESULT toFile(BodyForce *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+
+        IOElement *fe;
+
+        TF_ACTORIOTOEASY(fe, "comps", dataElement->comps);
+
+        fileElement->type = "BodyForce";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, BodyForce **dataElement) { 
+
+        IOChildMap::const_iterator feItr;
+
+        FVector3 comps;
+        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "comps", &comps);
+        *dataElement = new BodyForce(comps);
+
+        return S_OK;
+    }
+
+};
+
+BodyForce *BodyForce::fromString(const std::string &str) {
+    return TissueForge::io::fromString<BodyForce*>(str);
 }

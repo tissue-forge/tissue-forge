@@ -35,7 +35,7 @@ namespace TissueForge::models::vertex {
         FloatP_t lam;
         unsigned int order;
 
-        EdgeTension(const FloatP_t &lam, const unsigned int &order=1);
+        EdgeTension(const FloatP_t &lam=0, const unsigned int &order=1);
 
         /** Name of the actor */
         virtual std::string name() const override { return "EdgeTension"; }
@@ -46,6 +46,13 @@ namespace TissueForge::models::vertex {
         HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
         HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
+
+        /**
+         * @brief Create from a JSON string representation. 
+         * 
+         * @param str a string, as returned by ``toString``
+         */
+        static EdgeTension *fromString(const std::string &str);
 
     private:
 

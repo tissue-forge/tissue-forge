@@ -23,11 +23,13 @@
 
 #include "tfMeshObj.h"
 #include "tfMeshRenderer.h"
+#include "tfVertexSolverFIO.h"
 
 #include <tfEngine.h>
 #include <tf_util.h>
 #include <tfLogger.h>
 #include <tfTaskScheduler.h>
+#include <io/tfFIO.h>
 
 #include <atomic>
 #include <future>
@@ -47,6 +49,8 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 static MeshSolver *_solver = NULL;
+
+static TissueForge::models::vertex::io::VertexSolverFIOModule *_ioModule = NULL;
 
 
 HRESULT TissueForge::models::vertex::VertexForce(const Vertex *v, FloatP_t *f) {
@@ -109,8 +113,17 @@ HRESULT MeshSolver::init() {
     if(_solver != NULL) 
         return S_OK;
 
+    if(!_ioModule) {
+        _ioModule = new TissueForge::models::vertex::io::VertexSolverFIOModule();
+        _ioModule->registerIOModule();
+    }
+
     _solver = new MeshSolver();
-    _solver->meshes.push_back(new Mesh());
+    if(TissueForge::io::FIO::currentRootElement) 
+        _ioModule->load();
+
+    if(_solver->numMeshes() == 0)
+        _solver->newMesh();
     _solver->_bufferSize = 1;
     _solver->_forces = (FloatP_t*)malloc(3 * sizeof(FloatP_t));
     _solver->timers.reset();

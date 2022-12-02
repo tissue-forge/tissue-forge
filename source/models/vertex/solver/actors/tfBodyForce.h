@@ -32,7 +32,7 @@ namespace TissueForge::models::vertex {
 
         FVector3 comps;
 
-        BodyForce(const FVector3 &_force) {
+        BodyForce(const FVector3 &_force=FVector3(0)) {
             comps = _force;
         }
 
@@ -45,6 +45,13 @@ namespace TissueForge::models::vertex {
         HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
 
         HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
+
+        /**
+         * @brief Create from a JSON string representation. 
+         * 
+         * @param str a string, as returned by ``toString``
+         */
+        static BodyForce *fromString(const std::string &str);
 
     };
 

@@ -85,7 +85,7 @@ namespace TissueForge::models::vertex {
         Body(std::vector<Surface*> _surfaces);
 
         /** Construct a body from a mesh */
-        Body(io::ThreeDFMeshData *ioMesh);
+        Body(TissueForge::io::ThreeDFMeshData *ioMesh);
 
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::BODY; }
@@ -110,6 +110,9 @@ namespace TissueForge::models::vertex {
 
         /** Get a summary string */
         std::string str() const override;
+
+        /** Get a JSON string representation */
+        std::string toString();
 
         /** Add a surface */
         HRESULT add(Surface *s);
@@ -263,6 +266,20 @@ namespace TissueForge::models::vertex {
         /** Get a summary string */
         virtual std::string str() const override;
 
+        /**
+         * @brief Get a JSON string representation
+         */
+        std::string toString();
+
+        /**
+         * @brief Create from a JSON string representation. 
+         * 
+         * The returned type is automatically registered with the solver. 
+         * 
+         * @param str a string, as returned by ``toString``
+         */
+        static BodyType *fromString(const std::string &str);
+
         /** Get a registered type by name */
         static BodyType *findFromName(const std::string &_name);
 
@@ -303,7 +320,7 @@ namespace TissueForge::models::vertex {
         Body *operator() (std::vector<Surface*> surfaces);
 
         /** Construct a body of this type from a mesh */
-        Body *operator() (io::ThreeDFMeshData* ioMesh, SurfaceType *stype);
+        Body *operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceType *stype);
 
         /** Create a body from a surface in the mesh and a position */
         Body *extend(Surface *base, const FVector3 &pos);

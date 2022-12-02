@@ -72,7 +72,7 @@ namespace TissueForge::models::vertex {
         Vertex();
         Vertex(const unsigned int &_pid);
         Vertex(const FVector3 &position);
-        Vertex(io::ThreeDFVertexData *vdata);
+        Vertex(TissueForge::io::ThreeDFVertexData *vdata);
 
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::VERTEX; }
@@ -97,6 +97,9 @@ namespace TissueForge::models::vertex {
 
         /** Get a summary string */
         std::string str() const override;
+
+        /** Get a JSON string representation */
+        std::string toString();
 
         /** Add a surface */
         HRESULT add(Surface *s);
