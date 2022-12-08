@@ -165,6 +165,13 @@ namespace TissueForge::models::vertex {
         */
         HRESULT destroy() override;
 
+        /**
+         * Destroy a surface. 
+         * 
+         * Any resulting vertices without a surface are also destroyed. 
+         */
+        static HRESULT destroy(Surface *target);
+
         /** Validate the surface */
         bool validate() override;
 

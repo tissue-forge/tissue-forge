@@ -139,6 +139,13 @@ namespace TissueForge::models::vertex {
         */
         HRESULT destroy() override;
 
+        /**
+         * Destroy a body. 
+         * 
+         * Any resulting surfaces without a body are also destroyed. 
+         */
+        static HRESULT destroy(Body *target);
+
         /** Validate the body */
         bool validate() override;
 

@@ -224,6 +224,20 @@ HRESULT Body::destroy() {
     return S_OK;
 }
 
+HRESULT Body::destroy(Body *target) {
+    auto surfaces = target->getSurfaces();
+    if(target->destroy() != S_OK) 
+        return E_FAIL;
+
+    for(auto &s : surfaces) 
+        if(s->getBodies().size() == 0) 
+            Surface::destroy(s);
+
+    delete target;
+    target = 0;
+    return S_OK;
+}
+
 bool Body::validate() {
     return surfaces.size() >= 3;
 }

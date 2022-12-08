@@ -308,6 +308,20 @@ HRESULT Surface::destroy() {
     return S_OK;
 }
 
+HRESULT Surface::destroy(Surface *target) {
+    auto vertices = target->getVertices();
+    if(target->destroy() != S_OK) 
+        return E_FAIL;
+
+    for(auto &v : vertices) 
+        if(v->getSurfaces().size() == 0) 
+            v->destroy();
+
+    delete target;
+    target = NULL;
+    return S_OK;
+}
+
 bool Surface::validate() {
     return vertices.size() >= 3;
 }

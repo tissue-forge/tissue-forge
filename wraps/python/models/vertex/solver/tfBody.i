@@ -27,6 +27,7 @@
 
 %rename(_neighborBodies) TissueForge::models::vertex::Body::neighborBodies;
 %rename(_split) TissueForge::models::vertex::Body::split;
+%rename(destroy_c) TissueForge::models::vertex::Body::destroy(Body*);
 %rename(position_changed) TissueForge::models::vertex::Body::positionChanged;
 %rename(find_vertex) TissueForge::models::vertex::Body::findVertex;
 %rename(find_surface) TissueForge::models::vertex::Body::findSurface;

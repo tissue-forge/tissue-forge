@@ -29,6 +29,7 @@
 %rename(_extrude) TissueForge::models::vertex::Surface::extrude(const unsigned int&, const FloatP_t&);
 %rename(_split_vertices) TissueForge::models::vertex::Surface::split(Vertex*, Vertex*);
 %rename(_split_cpvecs) TissueForge::models::vertex::Surface::split(const FVector3&, const FVector3&);
+%rename(destroy_c) TissueForge::models::vertex::Surface::destroy(Surface*);
 %rename(refresh_bodies) TissueForge::models::vertex::Surface::refreshBodies;
 %rename(find_vertex) TissueForge::models::vertex::Surface::findVertex;
 %rename(find_body) TissueForge::models::vertex::Surface::findBody;
