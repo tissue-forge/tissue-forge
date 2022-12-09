@@ -24,6 +24,7 @@
 %}
 
 %rename(_metrics_relative_position) TissueForge::metrics::relativePosition;
+%rename(_metrics_neighborhood_particles) TissueForge::metrics::neighborhoodParticles;
 %rename(_metrics_calculate_virial) TissueForge::metrics::calculateVirial;
 %rename(_metrics_particles_virial) TissueForge::metrics::particlesVirial;
 %rename(_metrics_particles_radius_of_gyration) TissueForge::metrics::particlesRadiusOfGyration;

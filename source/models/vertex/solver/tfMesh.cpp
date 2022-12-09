@@ -31,7 +31,6 @@
 
 #include <algorithm>
 #include <map>
-#include <Magnum/Math/Intersection.h>
 
 
 #define TF_MESH_GETPART(idx, inv) idx >= inv.size() ? NULL : inv[idx]
@@ -165,11 +164,27 @@ HRESULT Mesh::setQuality(MeshQuality *quality) {
 }
 
 HRESULT Mesh::add(Vertex *obj) { 
+    ParticleHandle *ph = obj->particle();
+    if(!ph) 
+        return E_FAIL;
+    int pid = ph->id;
+    if(pid < 0) 
+        return E_FAIL;
+
     isDirty = true;
     if(_solver) 
         _solver->setDirty(true);
 
-    return Mesh_addObj(this, this->vertices, this->vertexIdsAvail, obj, _solver);
+    if(Mesh_addObj(this, this->vertices, this->vertexIdsAvail, obj, _solver) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    while(pid >= verticesByPID.size()) 
+        verticesByPID.push_back(NULL);
+    verticesByPID[pid] = obj;
+
+    return S_OK;
 }
 
 HRESULT Mesh::add(Surface *obj){ 
@@ -252,6 +267,10 @@ HRESULT Mesh::removeObj(MeshObj *obj) {
         TF_MESH_OBJINVCHECK(obj, this->vertices);
         this->vertices[obj->objId] = NULL;
         this->vertexIdsAvail.insert(obj->objId);
+
+        ParticleHandle *ph = ((Vertex*)obj)->particle();
+        if(ph && ph->id >= 0 && ph->id < verticesByPID.size()) 
+            verticesByPID[ph->id] = NULL;
     } 
     else if(TissueForge::models::vertex::check(obj, MeshObj::Type::SURFACE)) {
         TF_MESH_OBJINVCHECK(obj, this->surfaces);
@@ -294,6 +313,14 @@ Vertex *Mesh::findVertex(const FVector3 &pos, const FloatP_t &tol) const {
     for(auto &v : vertices)
         if(v->particle()->relativePosition(pos).length() <= tol) 
             return v;
+
+    return NULL;
+}
+
+Vertex *Mesh::getVertexByPID(const unsigned int &pid) const {
+
+    if(pid < verticesByPID.size()) 
+        return verticesByPID[pid];
 
     return NULL;
 }

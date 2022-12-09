@@ -48,6 +48,7 @@ namespace TissueForge::models::vertex {
         std::vector<Structure*> structures;
 
         std::set<unsigned int> vertexIdsAvail, surfaceIdsAvail, bodyIdsAvail, structureIdsAvail;
+        std::vector<Vertex*> verticesByPID;
         bool isDirty;
         MeshSolver *_solver = NULL;
         MeshQuality *_quality;
@@ -106,6 +107,9 @@ namespace TissueForge::models::vertex {
          * @return a vertex within the distance tolerance of the position, otherwise NULL
          */
         Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001) const;
+
+        /** Get the vertex for a given particle id */
+        Vertex *getVertexByPID(const unsigned int &pid) const;
 
         /** Get the vertex at a location in the list of vertices */
         Vertex *getVertex(const unsigned int &idx) const;

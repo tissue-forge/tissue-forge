@@ -649,17 +649,11 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
     std::vector<Vertex*>::iterator vitr;
 
     // Find the common surface(s)
-    int nidx;
-    Vertex *vn;
     for(auto &s1 : v1->surfaces) {
-        nidx = 0;
         for(vitr = s1->vertices.begin(); vitr != s1->vertices.end(); vitr++) {
-            nidx++;
-            if(nidx >= s1->vertices.size()) 
-                nidx -= s1->vertices.size();
-            vn = s1->vertices[nidx];
-
-            if((*vitr == v1 && vn == v2) || (*vitr == v2 && vn == v1)) {
+            std::vector<Vertex*>::iterator vnitr = vitr + 1 == s1->vertices.end() ? s1->vertices.begin() : vitr + 1;
+            
+            if((*vitr == v1 && *vnitr == v2) || (*vitr == v2 && *vnitr == v1)) {
                 s1->vertices.insert(vitr + 1 == s1->vertices.end() ? s1->vertices.begin() : vitr + 1, this);
                 add(s1);
                 break;

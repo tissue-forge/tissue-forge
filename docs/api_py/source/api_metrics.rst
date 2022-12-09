@@ -5,6 +5,8 @@ Metrics
 
 .. autofunction:: relative_position
 
+.. autofunction:: neighborhood_particles
+
 .. autofunction:: calculate_virial
 
 .. autofunction:: particles_virial

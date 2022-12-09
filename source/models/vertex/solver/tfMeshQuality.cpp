@@ -32,6 +32,8 @@
 #include <io/tfIO.h>
 #include <io/tfFIO.h>
 
+#include <Magnum/Math/Math.h>
+
 
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
@@ -204,10 +206,10 @@ struct VertexMergeOperation : MeshQualityOperation {
 };
 
 
-/** Inserts a vertex between two vertices */
-struct VertexInsertOperation : MeshQualityOperation {
+/** Creates and inserts a vertex between two vertices */
+struct VertexCreateInsertOperation : MeshQualityOperation {
 
-    VertexInsertOperation(Mesh *_mesh, Vertex *_source, Vertex *_target) : MeshQualityOperation(_mesh) {
+    VertexCreateInsertOperation(Mesh *_mesh, Vertex *_source, Vertex *_target) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
         source = _source;
         targets = {_target};
@@ -225,6 +227,39 @@ struct VertexInsertOperation : MeshQualityOperation {
 
         next.clear();
         
+        return res;
+    }
+};
+
+/** Inserts a vertex between two vertices */
+struct VertexInsertOperation : MeshQualityOperation {
+
+    Vertex *va, *vb;
+
+    VertexInsertOperation(Mesh *_mesh, Vertex *_source, Surface *_target, Vertex *_va, Vertex *_vb) : MeshQualityOperation(_mesh) {
+        flags = MeshQualityOperation::Flag::Active;
+        source = _source; 
+        va = _va;
+        vb = _vb;
+
+        std::unordered_set<Surface*> target_surfs = {_target};
+        for(auto &s : _target->connectedSurfaces({va, vb})) 
+            target_surfs.insert(s);
+        targets = std::vector<MeshObj*>(target_surfs.begin(), target_surfs.end());
+    };
+
+    HRESULT implement() override {
+        Vertex *v = (Vertex*)source;
+
+        MeshSolver::engineLock();
+
+        HRESULT res = v->insert(va, vb);
+
+        MeshSolver::engineUnlock();
+
+        if(res == S_OK) 
+            next.clear();
+
         return res;
     }
 };
@@ -536,6 +571,89 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
             }
         }
 
+        // Check for edge penetration
+
+        //  Determine neighborhood search distance
+        FloatP_t nbsSearchDist2 = 0;
+        FVector3 centroid = s->getCentroid();
+        for(auto &v : vertices) {
+            FloatP_t thisVertDist2 = (centroid - v->getPosition()).dot();
+            if(thisVertDist2 > nbsSearchDist2) 
+                nbsSearchDist2 = thisVertDist2;
+        }
+
+        //  Get neighbors
+        ParticleList nbs = metrics::neighborhoodParticles(centroid, FPTYPE_SQRT(nbsSearchDist2));
+
+        //  Test each neighbor
+        for(size_t i = 0; i < nbs.nr_parts; i++) {
+            ParticleHandle *nb = nbs.item(i);
+            Vertex *v_nb = mesh->getVertexByPID(nb->id);
+            if(!v_nb) 
+                continue;
+
+            //  No self-intersecting
+            bool self_intersecting = false;
+            for(auto &s_nb : v_nb->getSurfaces()) {
+                if(s_nb->objId == s->objId) 
+                    self_intersecting = true;
+                if(self_intersecting) 
+                    break;
+            }
+            if(self_intersecting) 
+                continue;
+            
+            const FVector3 nb_pos = nb->getPosition();
+
+            //  Find the nearest vertex
+            Vertex *va = s->findVertex(nb_pos - centroid);
+
+            //  Find the relevant edges
+            Vertex *vb, *vc;
+            std::tie(vb, vc) = s->neighborVertices(va);
+
+            //  Test for penetration
+
+            const FVector3 va_pos = va->getPosition();
+            const FVector3 vb_pos = vb->getPosition();
+
+            const FVector3 va_pos_rel = metrics::relativePosition(va_pos, centroid);
+            const FVector3 nb_pos_rel = metrics::relativePosition(nb_pos, centroid);
+
+            const FVector3 vb_pos_rel = metrics::relativePosition(vb_pos, centroid);
+            const FloatP_t a_va_nb = Magnum::Math::cross(va_pos_rel, nb_pos_rel).length();
+            const FVector3 va_pos_rel_nb = metrics::relativePosition(va_pos, nb_pos);
+
+            FloatP_t area, areaTest;
+            area = Magnum::Math::cross(va_pos_rel, vb_pos_rel).length();
+            areaTest = 
+                a_va_nb + 
+                Magnum::Math::cross(vb_pos_rel, nb_pos_rel).length() + 
+                Magnum::Math::cross(va_pos_rel_nb, metrics::relativePosition(vb_pos, nb_pos)).length()
+            ;
+
+            if(areaTest > 0 && abs(area / areaTest - 1) < 1E-6) {
+                ops[i] = new VertexInsertOperation(mesh, v_nb, s, va, vb);
+                return;
+            }
+            
+            const FVector3 vc_pos = vc->getPosition();
+
+            const FVector3 vc_pos_rel = metrics::relativePosition(vc_pos, centroid);
+
+            area = Magnum::Math::cross(va_pos_rel, vc_pos_rel).length();
+            areaTest = 
+                a_va_nb + 
+                Magnum::Math::cross(vc_pos_rel, nb_pos_rel).length() + 
+                Magnum::Math::cross(va_pos_rel_nb, metrics::relativePosition(vc_pos, nb_pos)).length()
+            ;
+
+            if(areaTest > 0 && abs(area / areaTest - 1) < 1E-6) {
+                ops[i] = new VertexInsertOperation(mesh, v_nb, s, va, vc);
+                return;
+            }
+        }
+
     };
     parallel_for(mesh->sizeSurfaces(), check_surfs);
     
@@ -646,7 +764,8 @@ MeshQuality::MeshQuality(
     const FloatP_t &_edgeSplitDistCf
 ) : 
     mesh{_mesh}, 
-    _working{false}
+    _working{false},
+    collision2D{true}
 {
     FloatP_t uvolu = Universe::dim().product();
     FloatP_t uleng = std::cbrt(uvolu);
@@ -725,6 +844,11 @@ HRESULT MeshQuality::setEdgeSplitDist(const FloatP_t &_val) {
     return S_OK;
 }
 
+HRESULT MeshQuality::setCollision2D(const bool &_collision2D) {
+    collision2D = _collision2D;
+    return S_OK;
+}
+
 namespace TissueForge::io {
 
 
@@ -750,6 +874,7 @@ namespace TissueForge::io {
         TF_MESH_MESHQUALITYIOTOEASY(fe, "bodyDemoteVolume", dataElement.getBodyDemoteVolume());
         TF_MESH_MESHQUALITYIOTOEASY(fe, "edgeSplitDist", dataElement.getEdgeSplitDist());
         TF_MESH_MESHQUALITYIOTOEASY(fe, "meshId", dataElement.getMeshId());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "collision2D", dataElement.getCollision2D());
 
         fileElement->type = "MeshQuality";
 
@@ -776,6 +901,10 @@ namespace TissueForge::io {
         FloatP_t edgeSplitDist;
         TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "edgeSplitDist", &edgeSplitDist);
         dataElement->setEdgeSplitDist(edgeSplitDist);
+
+        bool collision2D;
+        TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "collision2D", &collision2D);
+        dataElement->setCollision2D(collision2D);
 
         return S_OK;
     }

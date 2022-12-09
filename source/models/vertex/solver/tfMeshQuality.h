@@ -184,6 +184,11 @@ namespace TissueForge::models::vertex {
          */
         FloatP_t edgeSplitDist;
 
+        /**
+         * Flag for whether doing 2D collisions
+         */
+        bool collision2D;
+
         /** Borrowed pointer to the owning mesh */
         Mesh *mesh;
 
@@ -235,6 +240,12 @@ namespace TissueForge::models::vertex {
 
         /** Set the distance at which two vertices are seperated when a vertex is split */
         HRESULT setEdgeSplitDist(const FloatP_t &_val);
+
+        /** Get whether 2D collisions are implemented */
+        bool getCollision2D() const { return collision2D; }
+
+        /** Set whether 2D collisions are implemented */
+        HRESULT setCollision2D(const bool &_collision2D);
     };
 }
 

@@ -62,6 +62,140 @@ FVector3 metrics::relativePosition(const FVector3 &pos, const FVector3 &origin, 
     return result;
 }
 
+ParticleList metrics::neighborhoodParticles(const FVector3 &position, const FloatP_t &dist, const bool &comp_bc) {
+    
+    // cell id of target cell
+    int cid, ijk[3];
+    
+    int l[3], ii, jj, kk;
+    
+    FloatP_t lh[3];
+    
+    int id2, sid;
+    
+    space *s = &_Engine.s;
+    
+    /** Number of cells within cutoff in each dimension. */
+    int span[3];
+    
+    std::vector<int32_t> ids;
+
+    FPTYPE pos[] = {position[0], position[1], position[2]};    
+    if((cid = space_get_cellids_for_pos(&_Engine.s, pos, ijk)) < 0) {
+        return E_FAIL;
+    }
+    
+    // the current cell
+    space_cell *c = &s->cells[cid];
+    
+    // origin in the target cell's coordinate system
+    FVector3 local_origin = {
+        position[0] - c->origin[0],
+        position[1] - c->origin[1],
+        position[2] - c->origin[2]
+    };
+    
+    // the other cell.
+    space_cell *cj, *ci;
+    
+    // shift vector between cells.
+    FVector3 shift;
+    
+    /* Get the span of the cells we will search for pairs. */
+    for (int k = 0 ; k < 3 ; k++ ) {
+        span[k] = (int)std::ceil( dist * s->ih[k] );
+    }
+    
+    /* for every neighbouring cell in the x-axis... */
+    for ( l[0] = -span[0] ; l[0] <= span[0] ; l[0]++ ) {
+        
+        /* get coords of neighbour */
+        ii = ijk[0] + l[0];
+        
+        /* wrap or abort if not periodic */
+        if ( ii < 0 ) {
+            if (comp_bc && s->period & space_periodic_x)
+                ii += s->cdim[0];
+            else
+                continue;
+        }
+        else if ( ii >= s->cdim[0] ) {
+            if (comp_bc && s->period & space_periodic_x)
+                ii -= s->cdim[0];
+            else
+                continue;
+        }
+        
+        /* for every neighbouring cell in the y-axis... */
+        for ( l[1] = -span[1] ; l[1] <= span[1] ; l[1]++ ) {
+            
+            /* get coords of neighbour */
+            jj = ijk[1] + l[1];
+            
+            /* wrap or abort if not periodic */
+            if ( jj < 0 ) {
+                if (comp_bc && s->period & space_periodic_y)
+                    jj += s->cdim[1];
+                else
+                    continue;
+            }
+            else if ( jj >= s->cdim[1] ) {
+                if (comp_bc && s->period & space_periodic_y)
+                    jj -= s->cdim[1];
+                else
+                    continue;
+            }
+            
+            /* for every neighbouring cell in the z-axis... */
+            for ( l[2] = -span[2] ; l[2] <= span[2] ; l[2]++ ) {
+                
+                /* get coords of neighbour */
+                kk = ijk[2] + l[2];
+                
+                /* wrap or abort if not periodic */
+                if ( kk < 0 ) {
+                    if (comp_bc && s->period & space_periodic_z)
+                        kk += s->cdim[2];
+                    else
+                        continue;
+                }
+                else if ( kk >= s->cdim[2] ) {
+                    if (comp_bc && s->period & space_periodic_z)
+                        kk -= s->cdim[2];
+                    else
+                        continue;
+                }
+                
+                /* Are these cells within the cutoff of each other? */
+                lh[0] = s->h[0]*fmax( abs(l[0])-1 , 0 );
+                lh[1] = s->h[1]*fmax( abs(l[1])-1 , 0 );
+                lh[2] = s->h[2]*fmax( abs(l[2])-1 , 0 );
+                if (std::sqrt(lh[0]*lh[0] + lh[1]*lh[1] + lh[2]*lh[2]) > dist )
+                    continue;
+                
+                /* get the neighbour's id */
+                id2 = space_cellid(s,ii,jj,kk);
+                
+                /* Get the pair sortID. */
+                ci = &s->cells[cid];
+                cj = &s->cells[id2];
+                sid = space_getsid(s , &ci , &cj , shift.data());
+                
+                // check if flipped,
+                // space_getsid flips cells under certain circumstances.
+                if(cj == c) {
+                    cj = ci;
+                    shift = shift * -1;
+                }
+                
+                HRESULT result = enum_particles (local_origin, dist, cj, NULL, -1, shift, ids);
+            } /* for every neighbouring cell in the z-axis... */
+        } /* for every neighbouring cell in the y-axis... */
+    } /* for every neighbouring cell in the x-axis... */
+    
+    return ParticleList(ids.size(), ids.data());
+}
+
 HRESULT metrics::calculateVirial(FloatP_t *_origin, FloatP_t radius, const std::set<short int> &typeIds, FloatP_t *tensor) {
     FVector3 origin = FVector3::from(_origin);
     

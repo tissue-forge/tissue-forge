@@ -49,6 +49,11 @@ namespace TissueForge::metrics {
     CPPAPI_FUNC(FVector3) relativePosition(const FVector3 &pos, const FVector3 &origin, const bool &comp_bc=true);
 
     /**
+     * find all particles in a neighborhood defined by a point and distance
+     */
+    CPPAPI_FUNC(ParticleList) neighborhoodParticles(const FVector3 &position, const FloatP_t &dist, const bool &comp_bc=true);
+
+    /**
      * @origin [in] origin of the sphere where we will comptute
      * the local virial tensor.
      * @radius [in] include all partices a given radius in calculation. 

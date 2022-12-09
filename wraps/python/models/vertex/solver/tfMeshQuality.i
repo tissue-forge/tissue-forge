@@ -68,5 +68,14 @@
         @edge_split_distance.setter
         def edge_split_distance(self, _val: float):
             self.setEdgeSplitDist(_val)
+
+        @property
+        def collision_2d(self) -> bool:
+            """Whether 2D collisions are implemented"""
+            return self.getCollision2D()
+
+        @collision_2d.setter
+        def collision_2d(self, _collision_2d: bool):
+            self.setCollision2D(_collision_2d)
     %}
 }

@@ -29,6 +29,7 @@
 %rename(_add_body) TissueForge::models::vertex::Mesh::add(Body *obj);
 %rename(_add_structure) TissueForge::models::vertex::Mesh::add(Structure *obj);
 %rename(find_vertex) TissueForge::models::vertex::Mesh::findVertex;
+%rename(get_vertex_by_pid) TissueForge::models::vertex::Mesh::getVertexByPID;
 %rename(get_vertex) TissueForge::models::vertex::Mesh::getVertex;
 %rename(get_surface) TissueForge::models::vertex::Mesh::getSurface;
 %rename(get_body) TissueForge::models::vertex::Mesh::getBody;

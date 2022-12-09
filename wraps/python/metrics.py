@@ -18,6 +18,7 @@
 # ******************************************************************************
 
 from tissue_forge.tissue_forge import _metrics_relative_position as relative_position
+from tissue_forge.tissue_forge import _metrics_neighborhood_particles as neighborhood_particles
 from tissue_forge.tissue_forge import _metrics_calculate_virial as calculate_virial
 from tissue_forge.tissue_forge import _metrics_particles_virial as particles_virial
 from tissue_forge.tissue_forge import _metrics_particles_radius_of_gyration as particles_radius_of_gyration

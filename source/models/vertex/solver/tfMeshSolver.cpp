@@ -669,6 +669,9 @@ HRESULT MeshSolver::postStepStart() {
         for(auto &m : meshes) 
             if(m->hasQuality()) 
                 m->getQuality().doQuality();
+
+        if(positionChanged() != S_OK) 
+            return E_FAIL;
     }
 
     return S_OK;
