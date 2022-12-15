@@ -26,16 +26,6 @@ using namespace TissueForge::models::vertex;
 namespace TissueForge::models::vertex::bind { 
 
 
-    HRESULT structure(MeshObjActor *a, StructureType *s) {
-        s->actors.push_back(a);
-        return S_OK;
-    }
-
-    HRESULT structure(MeshObjActor *a, Structure *s) {
-        s->actors.push_back(a);
-        return S_OK;
-    }
-
     HRESULT body(MeshObjActor *a, BodyType *b) {
         b->actors.push_back(a);
         return S_OK;

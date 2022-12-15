@@ -22,7 +22,6 @@
 #include "tfVertex.h"
 #include "tfSurface.h"
 #include "tfBody.h"
-#include "tfStructure.h"
 #include "tfMeshSolver.h"
 #include "actors/tfConvexPolygonConstraint.h"
 #include "actors/tfFlatSurfaceConstraint.h"
@@ -459,17 +458,6 @@ HRESULT Surface::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
     }
     TF_Log(LOG_ERROR) << "Vertices not found.";
     return E_FAIL;
-}
-
-std::vector<Structure*> Surface::getStructures() const {
-    std::unordered_set<Structure*> result;
-    if(b1) 
-        for(auto &s : b1->getStructures()) 
-            result.insert(s);
-    if(b2) 
-        for(auto &s : b2->getStructures()) 
-            result.insert(s);
-    return std::vector<Structure*>(result.begin(), result.end());
 }
 
 std::vector<Body*> Surface::getBodies() const {

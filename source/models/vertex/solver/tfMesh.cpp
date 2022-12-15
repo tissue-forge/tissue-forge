@@ -211,40 +211,6 @@ HRESULT Mesh::add(Body *obj){
     return S_OK;
 }
 
-HRESULT Mesh::add(Structure *obj){ 
-    isDirty = true;
-
-    for(auto &p : obj->parents()) {
-        if(p->objId >= 0) 
-            continue;
-
-        if(TissueForge::models::vertex::check(p, MeshObj::Type::STRUCTURE)) {
-            if(add((Structure*)p) != S_OK) {
-                TF_Log(LOG_ERROR);
-                return E_FAIL;
-            }
-        } 
-        else if(TissueForge::models::vertex::check(p, MeshObj::Type::BODY)) {
-            if(add((Body*)p) != S_OK) {
-                TF_Log(LOG_ERROR);
-                return E_FAIL;
-            }
-        }
-        else {
-            TF_Log(LOG_ERROR) << "Could not determine type of parent";
-            return E_FAIL;
-        }
-    }
-
-    if(Mesh_addObj(this->structures, this->structureIdsAvail, obj, _solver) != S_OK) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    return S_OK;
-}
-
-
 HRESULT Mesh::removeObj(MeshObj *obj) { 
     isDirty = true;
 
@@ -271,11 +237,6 @@ HRESULT Mesh::removeObj(MeshObj *obj) {
         TF_MESH_OBJINVCHECK(obj, this->bodies);
         this->bodies[obj->objId] = NULL;
         this->bodyIdsAvail.insert(obj->objId);
-    } 
-    else if(TissueForge::models::vertex::check(obj, MeshObj::Type::STRUCTURE)) {
-        TF_MESH_OBJINVCHECK(obj, this->structures);
-        this->structures[obj->objId] = NULL;
-        this->structureIdsAvail.insert(obj->objId);
     } 
     else {
         TF_Log(LOG_ERROR) << "Mesh object type could not be determined.";
@@ -331,10 +292,6 @@ Body *Mesh::getBody(const unsigned int &idx) const {
     return TF_MESH_GETPART(idx, bodies);
 }
 
-Structure *Mesh::getStructure(const unsigned int &idx) const {
-    return TF_MESH_GETPART(idx, structures);
-}
-
 template <typename T> 
 bool Mesh_validateInv(const std::vector<T*> &inv) {
     for(auto &o : inv) 
@@ -349,8 +306,6 @@ bool Mesh::validate() {
     else if(!Mesh_validateInv(this->surfaces)) 
         return false;
     else if(!Mesh_validateInv(this->bodies)) 
-        return false;
-    else if(!Mesh_validateInv(this->structures)) 
         return false;
     return true;
 }
@@ -398,10 +353,6 @@ HRESULT Mesh::remove(Surface *s) {
 
 HRESULT Mesh::remove(Body *b) {
     return removeObj(b);
-}
-
-HRESULT Mesh::remove(Structure *s) {
-    return removeObj(s);
 }
 
 namespace TissueForge::io {
@@ -457,17 +408,6 @@ namespace TissueForge::io {
         }
         TF_MESH_MESHIOTOEASY(fe, "bodies", bodies);
 
-        std::vector<TissueForge::models::vertex::Structure> structures;
-        if(dataElement.numStructures() > 0) {
-            structures.reserve(dataElement.numStructures());
-            for(size_t i = 0; i < dataElement.sizeStructures(); i++) {
-                auto o = dataElement.getStructure(i);
-                if(o) 
-                    structures.push_back(*o);
-            }
-        }
-        TF_MESH_MESHIOTOEASY(fe, "structures", structures);
-
         if(dataElement.hasQuality()) {
             TF_MESH_MESHIOTOEASY(fe, "quality", dataElement.getQuality());
         }
@@ -502,40 +442,6 @@ namespace TissueForge::io {
         IOChildMap::const_iterator feItr_bodies;
         std::vector<TissueForge::models::vertex::Body*> bodies;
         TF_MESH_MESHIOFROMEASY(feItr_bodies, fileElement.children, metaData, "bodies", &bodies);
-        IOChildMap::const_iterator feItr_structures;
-        std::vector<TissueForge::models::vertex::Structure*> structures;
-        TF_MESH_MESHIOFROMEASY(feItr_structures, fileElement.children, metaData, "structures", &structures);
-
-        // Reassemble structure connectivity
-
-        for(size_t i = 0; i < structures.size(); i++) {
-            IOElement *el_s = feItr_structures->second->children[std::to_string(i)];
-            TissueForge::models::vertex::Structure *s = structures[i];
-
-            std::vector<int> structures_parent;
-            TF_MESH_MESHIOFROMEASY(feItr, el_s->children, metaData, "structures_parent", &structures_parent);
-            for(auto structure_parentOldId : structures_parent) {
-                auto structure_parentId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->structureIdMap.find(structure_parentOldId);
-                if(structure_parentId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->structureIdMap.end()) {
-                    return tf_error(E_FAIL, "Could not identify parent structure");
-                }
-                TissueForge::models::vertex::Structure *s_parent = (*dataElement).getStructure(structure_parentId_itr->second);
-                s_parent->addChild(s);
-                s->addParent(s_parent);
-            }
-
-            std::vector<int> bodies;
-            TF_MESH_MESHIOFROMEASY(feItr, el_s->children, metaData, "bodies", &bodies);
-            for(auto body_OldId : bodies) {
-                auto bodyId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyIdMap.find(body_OldId);
-                if(bodyId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyIdMap.end()) {
-                    return tf_error(E_FAIL, "Could not identify body");
-                }
-                TissueForge::models::vertex::Body *body = (*dataElement).getBody(bodyId_itr->second);
-                body->addChild(s);
-                s->addParent(body);
-            }
-        }
 
         // Get quality, if any
 

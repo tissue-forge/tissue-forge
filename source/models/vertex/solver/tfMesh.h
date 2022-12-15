@@ -25,7 +25,6 @@
 #include "tfVertex.h"
 #include "tfSurface.h"
 #include "tfBody.h"
-#include "tfStructure.h"
 #include "tfMeshQuality.h"
 
 #include <mutex>
@@ -45,9 +44,8 @@ namespace TissueForge::models::vertex {
         std::vector<Vertex*> vertices;
         std::vector<Surface*> surfaces;
         std::vector<Body*> bodies;
-        std::vector<Structure*> structures;
 
-        std::set<unsigned int> vertexIdsAvail, surfaceIdsAvail, bodyIdsAvail, structureIdsAvail;
+        std::set<unsigned int> vertexIdsAvail, surfaceIdsAvail, bodyIdsAvail;
         std::vector<Vertex*> verticesByPID;
         bool isDirty;
         MeshSolver *_solver = NULL;
@@ -84,9 +82,6 @@ namespace TissueForge::models::vertex {
         /** Add a body */
         HRESULT add(Body *obj);
 
-        /** Add a structure */
-        HRESULT add(Structure *obj);
-
         /** Remove a mesh object */
         HRESULT removeObj(MeshObj *obj);
 
@@ -120,9 +115,6 @@ namespace TissueForge::models::vertex {
         /** Get a body at a location in the list of bodies */
         Body *getBody(const unsigned int &idx) const;
 
-        /** Get a structure at a location in the list of structures */
-        Structure *getStructure(const unsigned int &idx) const;
-
         /** Get the number of vertices */
         unsigned int numVertices() const { return vertices.size() - vertexIdsAvail.size(); }
 
@@ -132,9 +124,6 @@ namespace TissueForge::models::vertex {
         /** Get the number of bodies */
         unsigned int numBodies() const { return bodies.size() - bodyIdsAvail.size(); }
 
-        /** Get the number of structures */
-        unsigned int numStructures() const { return structures.size() - structureIdsAvail.size(); }
-
         /** Get the size of the list of vertices */
         unsigned int sizeVertices() const { return vertices.size(); }
 
@@ -143,9 +132,6 @@ namespace TissueForge::models::vertex {
 
         /** Get the size of the list of bodies */
         unsigned int sizeBodies() const { return bodies.size(); }
-
-        /** Get the size of the list of structures */
-        unsigned int sizeStructures() const { return structures.size(); }
 
         /** Validate state of the mesh */
         bool validate();
@@ -172,9 +158,6 @@ namespace TissueForge::models::vertex {
 
         /** Remove a body from the mesh */
         HRESULT remove(Body *b);
-
-        /** Remove a structure from the mesh */
-        HRESULT remove(Structure *s);
 
         friend MeshRenderer;
         friend MeshSolver;

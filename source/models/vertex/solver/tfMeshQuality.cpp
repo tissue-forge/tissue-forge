@@ -177,9 +177,6 @@ using SurfaceRemoveOperation = MeshObjectRemoveOperation<Surface>;
 /** Removes a body */
 using BodyRemoveOperation = MeshObjectRemoveOperation<Body>;
 
-/** Removes a structure */
-using StructureRemoveOperation = MeshObjectRemoveOperation<Structure>;
-
 
 /** Merges two vertices */
 struct VertexMergeOperation : MeshQualityOperation {
@@ -631,7 +628,7 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
                 ops[i] = new VertexInsertOperation(mesh, v_nb, s, va, vb);
                 return;
             }
-            
+
             const FVector3 vc_pos = vc->getPosition();
 
             const FVector3 vc_pos_rel = metrics::relativePosition(vc_pos, centroid);

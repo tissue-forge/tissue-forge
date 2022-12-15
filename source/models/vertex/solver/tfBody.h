@@ -34,7 +34,6 @@ namespace TissueForge::models::vertex {
 
     class Vertex;
     class Surface;
-    class Structure;
     class Mesh;
 
     struct BodyType;
@@ -53,9 +52,6 @@ namespace TissueForge::models::vertex {
 
         /** Surfaces that define this body */
         std::vector<Surface*> surfaces;
-
-        /** Structures defined by this body */
-        std::vector<Structure*> structures;
 
         /** current centroid */
         FVector3 centroid;
@@ -94,16 +90,16 @@ namespace TissueForge::models::vertex {
         std::vector<MeshObj*> parents() const override;
 
         /** Get the children of the object */
-        std::vector<MeshObj*> children() const override;
+        std::vector<MeshObj*> children() const override { return std::vector<MeshObj*>(); };
 
         /** Add a child object */
-        HRESULT addChild(MeshObj *obj) override;
+        HRESULT addChild(MeshObj *obj) override { return E_FAIL; };
 
         /** Add a parent object */
         HRESULT addParent(MeshObj *obj) override;
 
         /** Remove a child object */
-        HRESULT removeChild(MeshObj *obj) override;
+        HRESULT removeChild(MeshObj *obj) override { return E_FAIL; };
 
         /** Remove a parent object */
         HRESULT removeParent(MeshObj *obj) override;
@@ -122,15 +118,6 @@ namespace TissueForge::models::vertex {
 
         /** Replace a surface a surface */
         HRESULT replace(Surface *toInsert, Surface *toRemove);
-
-        /** Add a structure */
-        HRESULT add(Structure *s);
-
-        /** Remove a structure */
-        HRESULT remove(Structure *s);
-
-        /** Replace a structure */
-        HRESULT replace(Structure *toInsert, Structure *toRemove);
 
         /**
          * Destroy the body. 
@@ -157,9 +144,6 @@ namespace TissueForge::models::vertex {
 
         /** Become a different type */
         HRESULT become(BodyType *btype);
-
-        /** Get the structures defined by the body */
-        std::vector<Structure*> getStructures() const;
 
         /** Get the surfaces that define the body */
         std::vector<Surface*> getSurfaces() const { return surfaces; }

@@ -163,7 +163,6 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 %include "tfVertex.i"
 %include "tfSurface.i"
 %include "tfBody.i"
-%include "tfStructure.i"
 %include "tfMeshQuality.i"
 %include "tfMesh.i"
 %include "tfMeshSolver.i"

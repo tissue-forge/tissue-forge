@@ -52,10 +52,6 @@ vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Vertex)
 %extend TissueForge::models::vertex::Vertex {
     %pythoncode %{
         @property
-        def structures(self):
-            return self.getStructures()
-
-        @property
         def bodies(self):
             return self.getBodies()
 

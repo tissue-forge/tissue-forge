@@ -35,21 +35,16 @@
 %rename(register_type) TissueForge::models::vertex::MeshSolver::registerType;
 %rename(find_surface_from_name) TissueForge::models::vertex::MeshSolver::findSurfaceFromName;
 %rename(find_body_from_name) TissueForge::models::vertex::MeshSolver::findBodyFromName;
-%rename(find_structure_from_name) TissueForge::models::vertex::MeshSolver::findStructureFromName;
-%rename(get_structure_type) TissueForge::models::vertex::MeshSolver::getStructureType;
 %rename(get_body_type) TissueForge::models::vertex::MeshSolver::getBodyType;
 %rename(get_surface_type) TissueForge::models::vertex::MeshSolver::getSurfaceType;
-%rename(num_structure_types) TissueForge::models::vertex::MeshSolver::numStructureTypes;
 %rename(num_body_types) TissueForge::models::vertex::MeshSolver::numBodyTypes;
 %rename(num_surface_types) TissueForge::models::vertex::MeshSolver::numSurfaceTypes;
 %rename(num_vertices) TissueForge::models::vertex::MeshSolver::numVertices;
 %rename(num_surfaces) TissueForge::models::vertex::MeshSolver::numSurfaces;
 %rename(num_bodies) TissueForge::models::vertex::MeshSolver::numBodies;
-%rename(num_structures) TissueForge::models::vertex::MeshSolver::numStructures;
 %rename(size_vertices) TissueForge::models::vertex::MeshSolver::sizeVertices;
 %rename(size_surfaces) TissueForge::models::vertex::MeshSolver::sizeSurfaces;
 %rename(size_bodies) TissueForge::models::vertex::MeshSolver::sizeBodies;
-%rename(size_structures) TissueForge::models::vertex::MeshSolver::sizeStructures;
 %rename(get_log) TissueForge::models::vertex::MeshSolver::getLog;
 
 %rename(_vertex_solver_MeshSolver) TissueForge::models::vertex::MeshSolver;

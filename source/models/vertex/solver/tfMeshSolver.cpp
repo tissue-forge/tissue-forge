@@ -72,15 +72,6 @@ HRESULT TissueForge::models::vertex::VertexForce(const Vertex *v, FloatP_t *f) {
             a->force(b, v, f);
     }
 
-    // Structures
-    for(auto &st : v->getStructures()) {
-        for(auto &a : st->type()->actors) 
-            a->force(st, v, f);
-
-        for(auto &a : st->actors) 
-            a->force(st, v, f);
-    }
-
     return S_OK;
 }
 
@@ -194,18 +185,6 @@ static bool MeshSolver_assignUniqueNameAsNecessary(T *inst, std::vector<T*> regi
     return true;
 }
 
-HRESULT MeshSolver::_registerTypeInst(StructureType *_type) {
-    if(!_type || _type->id >= 0) 
-        return E_FAIL;
-
-    _type->id = _structureTypes.size();
-    if(MeshSolver_assignUniqueNameAsNecessary(_type, _structureTypes)) 
-        TF_Log(LOG_INFORMATION) << "Type name not unique. Generating name: " << _type->name.c_str();
-    _structureTypes.push_back(_type);
-
-    return S_OK;
-}
-
 HRESULT MeshSolver::_registerTypeInst(BodyType *_type) {
     if(!_type || _type->id >= 0) 
         return E_FAIL;
@@ -216,12 +195,6 @@ HRESULT MeshSolver::_registerTypeInst(BodyType *_type) {
     _bodyTypes.push_back(_type);
 
     return S_OK;
-}
-
-HRESULT MeshSolver::registerType(StructureType *_type) {
-    TF_MESHSOLVER_CHECKINIT
-
-    return _solver->_registerTypeInst(_type);
 }
 
 HRESULT MeshSolver::registerType(BodyType *_type) {
@@ -263,10 +236,6 @@ BodyType *MeshSolver::_findBodyFromNameInst(const std::string &_name) {
     return MeshSolver_findTypeFromName(_name, _bodyTypes);
 }
 
-StructureType *MeshSolver::_findStructureFromNameInst(const std::string &_name) {
-    return MeshSolver_findTypeFromName(_name, _structureTypes);
-}
-
 HRESULT MeshSolver::registerType(SurfaceType *_type) {
     TF_MESHSOLVER_CHECKINIT
 
@@ -283,24 +252,6 @@ BodyType *MeshSolver::findBodyFromName(const std::string &_name) {
     TF_MESHSOLVER_CHECKINIT_RET(NULL)
 
     return _solver->_findBodyFromNameInst(_name);
-}
-
-StructureType *MeshSolver::findStructureFromName(const std::string &_name) {
-    TF_MESHSOLVER_CHECKINIT_RET(NULL)
-
-    return _solver->_findStructureFromNameInst(_name);
-}
-
-StructureType *MeshSolver::_getStructureTypeInst(const unsigned int &typeId) const {
-    if(typeId >= _structureTypes.size()) 
-        return NULL;
-    return _structureTypes[typeId];
-}
-
-StructureType *MeshSolver::getStructureType(const unsigned int &typeId) {
-    TF_MESHSOLVER_CHECKINIT_RET(NULL);
-
-    return _solver->_getStructureTypeInst(typeId);
 }
 
 BodyType *MeshSolver::_getBodyTypeInst(const unsigned int &typeId) const {
@@ -325,12 +276,6 @@ SurfaceType *MeshSolver::getSurfaceType(const unsigned int &typeId) {
     TF_MESHSOLVER_CHECKINIT_RET(NULL);
 
     return _solver->_getSurfaceTypeInst(typeId);
-}
-
-const int MeshSolver::numStructureTypes() {
-    TF_MESHSOLVER_CHECKINIT_RET(-1)
-
-    return _solver->_structureTypes.size();
 }
 
 const int MeshSolver::numBodyTypes() {
@@ -363,12 +308,6 @@ unsigned int MeshSolver::numBodies() {
     return _solver->mesh->numBodies();
 }
 
-unsigned int MeshSolver::numStructures() {
-    TF_MESHSOLVER_CHECKINIT_RET(0)
-
-    return _solver->mesh->numStructures();
-}
-
 unsigned int MeshSolver::sizeVertices() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
@@ -385,12 +324,6 @@ unsigned int MeshSolver::sizeBodies() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
     return _solver->mesh->sizeBodies();
-}
-
-unsigned int MeshSolver::sizeStructures() {
-    TF_MESHSOLVER_CHECKINIT_RET(0)
-
-    return _solver->mesh->sizeStructures();
 }
 
 template <typename T> 

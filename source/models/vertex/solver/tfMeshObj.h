@@ -46,8 +46,7 @@ namespace TissueForge::models::vertex {
             NONE        = 0, 
             VERTEX      = 1, 
             SURFACE     = 2, 
-            BODY        = 3, 
-            STRUCTURE   = 4
+            BODY        = 3
         };
 
         /** Object id; unique by type in a mesh */

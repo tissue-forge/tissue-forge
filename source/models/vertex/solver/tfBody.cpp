@@ -21,7 +21,6 @@
 
 #include "tfVertex.h"
 #include "tfSurface.h"
-#include "tfStructure.h"
 #include "tfMeshSolver.h"
 #include "tf_mesh_io.h"
 #include "tfVertexSolverFIO.h"
@@ -140,24 +139,6 @@ Body::Body(TissueForge::io::ThreeDFMeshData *ioMesh) :
 
 std::vector<MeshObj*> Body::parents() const { return TissueForge::models::vertex::vectorToBase(surfaces); }
 
-std::vector<MeshObj*> Body::children() const { return TissueForge::models::vertex::vectorToBase(structures); }
-
-HRESULT Body::addChild(MeshObj *obj) { 
-    if(!TissueForge::models::vertex::check(obj, MeshObj::Type::STRUCTURE)) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    Structure *s = (Structure*)obj;
-    if(std::find(structures.begin(), structures.end(), s) != structures.end()) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    structures.push_back(s);
-    return S_OK;
-}
-
 HRESULT Body::addParent(MeshObj *obj) {
     if(!TissueForge::models::vertex::check(obj, MeshObj::Type::SURFACE)) {
         TF_Log(LOG_ERROR);
@@ -171,23 +152,6 @@ HRESULT Body::addParent(MeshObj *obj) {
     }
 
     surfaces.push_back(s);
-    return S_OK;
-}
-
-HRESULT Body::removeChild(MeshObj *obj) {
-    if(!TissueForge::models::vertex::check(obj, MeshObj::Type::STRUCTURE)) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    Structure *s = (Structure*)obj;
-    auto itr = std::find(structures.begin(), structures.end(), s);
-    if(itr == structures.end()) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    structures.erase(itr);
     return S_OK;
 }
 
@@ -238,23 +202,7 @@ HRESULT Body::replace(Surface *toInsert, Surface *toRemove) {
     return toInsert->in(this) ? S_OK : E_FAIL;
 }
 
-HRESULT Body::add(Structure *s) {
-    return addChild(s);
-}
-
-HRESULT Body::remove(Structure *s) {
-    return removeChild(s);
-}
-
-HRESULT Body::replace(Structure *toInsert, Structure *toRemove) {
-    std::replace(this->structures.begin(), this->structures.end(), toRemove, toInsert);
-    return toInsert->in(this) ? S_OK : E_FAIL;
-}
-
 HRESULT Body::destroy() {
-    for(auto &s : structures) 
-        if(s->destroy() != S_OK) 
-            return E_FAIL;
     if(this->typeId >= 0 && this->type()->remove(this) != S_OK) 
         return E_FAIL;
     if(this->objId >= 0) 
@@ -309,16 +257,6 @@ HRESULT Body::become(BodyType *btype) {
         return tf_error(E_FAIL, "Failed to become");
     }
     return btype->add(this);
-}
-
-std::vector<Structure*> Body::getStructures() const {
-    std::unordered_set<Structure*> result;
-    for(auto &s : structures) {
-        result.insert(s);
-        for(auto &ss : s->getStructures()) 
-            result.insert(ss);
-    }
-    return std::vector<Structure*>(result.begin(), result.end());
 }
 
 std::vector<Vertex*> Body::getVertices() const {
@@ -971,11 +909,6 @@ namespace TissueForge::io {
         for(auto &s : dataElement.parents()) 
             surfaces.push_back(s->objId);
         TF_MESH_BODYIOTOEASY(fe, "surfaces", surfaces);
-
-        std::vector<int> structures;
-        for(auto &s : dataElement.children()) 
-            structures.push_back(s->objId);
-        TF_MESH_BODYIOTOEASY(fe, "structures", structures);
 
         TF_MESH_BODYIOTOEASY(fe, "centroid", dataElement.getCentroid());
         TF_MESH_BODYIOTOEASY(fe, "area", dataElement.getArea());

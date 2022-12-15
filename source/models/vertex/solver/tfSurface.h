@@ -37,7 +37,6 @@ namespace TissueForge::models::vertex {
 
     class Vertex;
     class Body;
-    class Structure;
     class Mesh;
 
     struct SurfaceType;
@@ -183,9 +182,6 @@ namespace TissueForge::models::vertex {
 
         /** Become a different type */
         HRESULT become(SurfaceType *stype);
-
-        /** Get the structures defined by the surface */
-        std::vector<Structure*> getStructures() const;
 
         /** Get the bodies defined by the surface */
         std::vector<Body*> getBodies() const;

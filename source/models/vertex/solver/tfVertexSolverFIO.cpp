@@ -54,16 +54,6 @@ HRESULT VMod::io::VertexSolverFIOModule::toFile(const TissueForge::io::MetaData 
 
     // Store types
 
-    std::vector<VMod::StructureType> structureTypes;
-    std::vector<int> structureTypeIds;
-    for(size_t i = 0; i < solver->numStructureTypes(); i++) {
-        auto o = solver->getStructureType(i);
-        structureTypes.push_back(*o);
-        structureTypeIds.push_back(o->id);
-    }
-    TF_MESH_IOTOEASY(fe, "structureTypes", structureTypes);
-    TF_MESH_IOTOEASY(fe, "structureTypeIds", structureTypeIds);
-
     std::vector<VMod::BodyType> bodyTypes;
     std::vector<int> bodyTypeIds;
     for(size_t i = 0; i < solver->numBodyTypes(); i++) {
@@ -101,16 +91,6 @@ HRESULT VMod::io::VertexSolverFIOModule::fromFile(const TissueForge::io::MetaDat
     TissueForge::io::IOChildMap::const_iterator feItr;
 
     // Load and register types and store their id maps
-
-    std::vector<VMod::StructureType*> structureTypes;
-    std::vector<int> structureTypeIds;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "structureTypes", &structureTypes);
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "structureTypeIds", &structureTypeIds);
-    for(size_t i = 0; i < structureTypes.size(); i++) {
-        auto t = structureTypes[i];
-        solver->registerType(t);
-        VMod::io::VertexSolverFIOModule::importSummary->structureTypeIdMap.insert({structureTypeIds[i], t->id});
-    }
 
     std::vector<VMod::BodyType*> bodyTypes;
     std::vector<int> bodyTypeIds;

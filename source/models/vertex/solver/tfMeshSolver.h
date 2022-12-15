@@ -145,9 +145,6 @@ namespace TissueForge::models::vertex {
         /** Get the mesh */
         static Mesh *getMesh();
 
-        /** Register a structure type */
-        static HRESULT registerType(StructureType *_type);
-
         /** Register a body type */
         static HRESULT registerType(BodyType *_type);
 
@@ -160,20 +157,11 @@ namespace TissueForge::models::vertex {
         /** Find a registered body type by name */
         static BodyType *findBodyFromName(const std::string &_name);
 
-        /** Find a registered structure type by name */
-        static StructureType *findStructureFromName(const std::string &_name);
-
-        /** Get the structure type by id */
-        static StructureType *getStructureType(const unsigned int &typeId);
-
         /** Get the body type by id */
         static BodyType *getBodyType(const unsigned int &typeId);
 
         /** Get the surface type by id */
         static SurfaceType *getSurfaceType(const unsigned int &typeId);
-
-        /** Get the number of registered structure types */
-        static const int numStructureTypes();
 
         /** Get the number of registered body types */
         static const int numBodyTypes();
@@ -190,9 +178,6 @@ namespace TissueForge::models::vertex {
         /** Get the number of bodies */
         static unsigned int numBodies();
 
-        /** Get the number of structures */
-        static unsigned int numStructures();
-
         /** Get the size of the list of vertices */
         static unsigned int sizeVertices();
 
@@ -201,9 +186,6 @@ namespace TissueForge::models::vertex {
 
         /** Get the size of the list of bodies */
         static unsigned int sizeBodies();
-
-        /** Get the size of the list of structures */
-        static unsigned int sizeStructures();
 
         /** Update internal data due to a change in position */
         static HRESULT positionChanged();
@@ -249,7 +231,6 @@ namespace TissueForge::models::vertex {
         std::mutex _engineLock;
         std::vector<unsigned int> _surfaceVertexIndices;
 
-        std::vector<StructureType*> _structureTypes;
         std::vector<BodyType*> _bodyTypes;
         std::vector<SurfaceType*> _surfaceTypes;
 
@@ -271,9 +252,6 @@ namespace TissueForge::models::vertex {
         /** Unload an existing mesh */
         HRESULT _unloadMeshInst(Mesh *mesh);
 
-        /** Register a structure type */
-        HRESULT _registerTypeInst(StructureType *_type);
-
         /** Register a body type */
         HRESULT _registerTypeInst(BodyType *_type);
 
@@ -285,12 +263,6 @@ namespace TissueForge::models::vertex {
 
         /** Find a registered body type by name */
         BodyType *_findBodyFromNameInst(const std::string &_name);
-
-        /** Find a registered structure type by name */
-        StructureType *_findStructureFromNameInst(const std::string &_name);
-
-        /** Get the structure type by id */
-        StructureType *_getStructureTypeInst(const unsigned int &typeId) const;
 
         /** Get the body type by id */
         BodyType *_getBodyTypeInst(const unsigned int &typeId) const;

@@ -49,17 +49,11 @@ namespace TissueForge::models::vertex::io {
         /** Map of imported body ids to loaded body ids */
         std::unordered_map<unsigned int, unsigned int> bodyIdMap;
 
-        /** Map of imported structure ids to loaded structure ids */
-        std::unordered_map<unsigned int, unsigned int> structureIdMap;
-
         /** Map of imported surface type ids to loaded surface ids */
         std::unordered_map<unsigned int, unsigned int> surfaceTypeIdMap;
 
         /** Map of imported body type ids to loaded body ids */
         std::unordered_map<unsigned int, unsigned int> bodyTypeIdMap;
-
-        /** Map of imported structure type ids to loaded structure ids */
-        std::unordered_map<unsigned int, unsigned int> structureTypeIdMap;
 
     };
 

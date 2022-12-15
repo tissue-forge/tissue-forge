@@ -21,7 +21,6 @@
 
 #include "tfSurface.h"
 #include "tfBody.h"
-#include "tfStructure.h"
 #include "tfMeshSolver.h"
 #include "tf_mesh_io.h"
 #include "tfVertexSolverFIO.h"
@@ -302,14 +301,6 @@ HRESULT Vertex::destroy() {
     }
     this->pid = -1;
     return S_OK;
-}
-
-std::vector<Structure*> Vertex::getStructures() const {
-    std::unordered_set<Structure*> result;
-    for(auto &s : surfaces) 
-        for(auto &ss : s->getStructures()) 
-            result.insert(ss);
-    return std::vector<Structure*>(result.begin(), result.end());
 }
 
 std::vector<Body*> Vertex::getBodies() const {

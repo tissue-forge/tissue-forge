@@ -17,20 +17,11 @@
 # 
 # ******************************************************************************
 
-from tissue_forge.tissue_forge import _vertex_solver_bind_structure_type as _bind_structure_type
-from tissue_forge.tissue_forge import _vertex_solver_bind_structure_inst as _bind_structure_inst
 from tissue_forge.tissue_forge import _vertex_solver_bind_body_type as _bind_body_type
 from tissue_forge.tissue_forge import _vertex_solver_bind_body_inst as _bind_body_inst
 from tissue_forge.tissue_forge import _vertex_solver_bind_surface_type as _bind_surface_type
 from tissue_forge.tissue_forge import _vertex_solver_bind_surface_inst as _bind_surface_inst
 from tissue_forge.tissue_forge import _vertex_solver_bind_types as types
-
-
-def structure(*args):
-    from tissue_forge.tissue_forge import _vertex_solver_Structure
-    if isinstance(args[1], _vertex_solver_Structure):
-        return _bind_structure_inst(*args)
-    return _bind_structure_type(*args)
 
 
 def body(*args):

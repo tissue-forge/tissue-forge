@@ -71,10 +71,6 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
 %extend TissueForge::models::vertex::Surface {
     %pythoncode %{
         @property
-        def structures(self):
-            return self.getStructures()
-
-        @property
         def bodies(self):
             return self.getBodies()
 

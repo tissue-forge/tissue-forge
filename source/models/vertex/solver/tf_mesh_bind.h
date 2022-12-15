@@ -24,7 +24,6 @@
 #include "tfVertex.h"
 #include "tfSurface.h"
 #include "tfBody.h"
-#include "tfStructure.h"
 
 
 namespace TissueForge::models::vertex { 
@@ -32,12 +31,6 @@ namespace TissueForge::models::vertex {
 
     namespace bind { 
 
-
-        /** Bind an actor to a structure type */
-        CPPAPI_FUNC(HRESULT) structure(MeshObjActor *a, StructureType *st);
-
-        /** Bind an actor to a structure */
-        CPPAPI_FUNC(HRESULT) structure(MeshObjActor *a, Structure *s);
 
         /** Bind an actor to a body type */
         CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, BodyType *b);

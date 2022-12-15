@@ -38,7 +38,6 @@ namespace TissueForge::models::vertex {
 
     class Surface;
     class Body;
-    class Structure;
     class Mesh;
 
 
@@ -134,9 +133,6 @@ namespace TissueForge::models::vertex {
 
         /** Get the id of the underlying particle */
         const int getPartId() const { return pid; }
-
-        /** Get the structures defined by the vertex */
-        std::vector<Structure*> getStructures() const;
 
         /** Get the bodies defined by the vertex */
         std::vector<Body*> getBodies() const;
