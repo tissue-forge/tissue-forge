@@ -52,7 +52,6 @@ namespace TissueForge::models::vertex {
         MeshLogEventType type;
         std::vector<int> objIDs;
         std::vector<MeshObj::Type> objTypes;
-        int meshID;
         std::string name;
     };
 
@@ -90,7 +89,7 @@ namespace TissueForge::models::vertex {
 
 inline std::ostream& operator<<(std::ostream& os, const TissueForge::models::vertex::MeshLogEvent &logEvent)
 {
-    os << std::string("{") << logEvent.meshID << ", ";
+    os << "{";
 
     switch (logEvent.type)
     {

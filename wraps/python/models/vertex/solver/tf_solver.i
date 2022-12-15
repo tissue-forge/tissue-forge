@@ -33,10 +33,6 @@ static int _vertex_solver_MeshObj_getObjId(const TissueForge::models::vertex::Me
     return self->objId;
 }
 
-static TissueForge::models::vertex::Mesh *_vertex_solver_MeshObj_getMesh(const TissueForge::models::vertex::MeshObj *self) {
-    return self->mesh;
-}
-
 static bool _vertex_solver_MeshObj_in(const TissueForge::models::vertex::MeshObj *self, const TissueForge::models::vertex::MeshObj *obj) {
     return self->in(obj);
 }
@@ -90,10 +86,6 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
         @property
         def id(self) -> int:
             return _vertex_solver_MeshObj_getObjId(self)
-
-        @property
-        def mesh(self):
-            return _vertex_solver_MeshObj_getMesh(self)
 
         def is_in(self, _obj) -> bool:
             return _vertex_solver_MeshObj_in(self, _obj)

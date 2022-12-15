@@ -116,8 +116,7 @@ namespace TissueForge::models::vertex {
 
         const char *name = "MeshSolver";
 
-        /** Registered meshes */
-        std::vector<Mesh*> meshes;
+        Mesh *mesh;
 
         /** Performance timers */
         MeshSolverTimers timers;
@@ -143,20 +142,8 @@ namespace TissueForge::models::vertex {
         /** Set whether the current mesh state needs updated */
         static HRESULT setDirty(const bool &_isDirty);
 
-        /** Create and load a new mesh */
-        static Mesh *newMesh();
-
-        /** Load an existing mesh */
-        static HRESULT loadMesh(Mesh *mesh);
-
-        /** Unload an existing mesh */
-        static HRESULT unloadMesh(Mesh *mesh);
-
-        /** Number of meshes */
-        static const int numMeshes();
-
-        /** Get a mesh */
-        static Mesh *getMesh(const unsigned int &idx);
+        /** Get the mesh */
+        static Mesh *getMesh();
 
         /** Register a structure type */
         static HRESULT registerType(StructureType *_type);
@@ -248,7 +235,7 @@ namespace TissueForge::models::vertex {
         }
 
         /** Log an event */
-        static HRESULT log(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name="");
+        static HRESULT log(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name="");
 
         friend MeshRenderer;
 
@@ -324,7 +311,7 @@ namespace TissueForge::models::vertex {
         std::vector<unsigned int> _getSurfaceVertexIndicesAsyncJoinInst();
 
         /** Log an event */
-        HRESULT _logInst(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name="");
+        HRESULT _logInst(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name="");
         
     };
 

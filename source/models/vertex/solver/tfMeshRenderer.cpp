@@ -215,16 +215,14 @@ HRESULT MeshRenderer::draw(rendering::ArcBallCamera *camera, const iVector2 &vie
 
     std::vector<unsigned int> surfaceVertexIndices = solver->getSurfaceVertexIndices();
 
-    for(auto &m : solver->meshes) {
-        std::vector<Surface*> &m_surfaces = m->surfaces;
-        auto func_surfaces = [&faceData, &edgeData, &m_surfaces, &surfaceVertexIndices](int i) -> void {
-            Surface *s = m_surfaces[i];
-            if(s) {
-                render_meshFacesEdges(faceData, edgeData, surfaceVertexIndices[i], s);
-            }
-        };
-        parallel_for(m_surfaces.size(), func_surfaces);
-    }
+    std::vector<Surface*> &m_surfaces = solver->mesh->surfaces;
+    auto func_surfaces = [&faceData, &edgeData, &m_surfaces, &surfaceVertexIndices](int i) -> void {
+        Surface *s = m_surfaces[i];
+        if(s) {
+            render_meshFacesEdges(faceData, edgeData, surfaceVertexIndices[i], s);
+        }
+    };
+    parallel_for(m_surfaces.size(), func_surfaces);
     _bufferFaces.unmap();
     _bufferEdges.unmap();
     

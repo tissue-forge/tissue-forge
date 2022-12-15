@@ -44,9 +44,9 @@ namespace TissueForge::models::vertex {
     public:
 
         /** Id of the type*/
-        unsigned int typeId;
+        int typeId;
 
-        Structure() : MeshObj() {};
+        Structure() : MeshObj(), typeId{-1} {};
 
         /** Get the mesh object type */
         MeshObj::Type objType() const override { return MeshObj::Type::STRUCTURE; }
@@ -166,14 +166,24 @@ namespace TissueForge::models::vertex {
          */
         virtual StructureType *get();
 
+        /** Add an instance */
+        HRESULT add(Structure *i);
+
+        /** Remove an instance */
+        HRESULT remove(Structure *i);
+
         /** list of instances that belong to this type */    
         std::vector<Structure*> getInstances();
 
         /** list of instances ids that belong to this type */
-        std::vector<int> getInstanceIds();
+        std::vector<int> getInstanceIds() { return _instanceIds; }
 
         /** number of instances that belong to this type */
         unsigned int getNumInstances();
+
+    private:
+
+        std::vector<int> _instanceIds;
         
     };
 

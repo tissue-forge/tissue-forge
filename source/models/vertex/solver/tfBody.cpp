@@ -38,6 +38,13 @@
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
+#define Body_GETMESH(name, retval)                  \
+    Mesh *name = Mesh::get();                       \
+    if(!name) {                                     \
+        TF_Log(LOG_ERROR) << "Could not get mesh";  \
+        return retval;                              \
+    }
+
 
 void Body::_updateInternal() {
     for(auto &v : getVertices()) 
@@ -64,11 +71,19 @@ void Body::_updateInternal() {
 
 
 static HRESULT Body_loadSurfaces(Body* body, std::vector<Surface*> _surfaces) { 
+    Body_GETMESH(mesh, E_FAIL);
+
     if(_surfaces.size() >= 4) {
         for(auto &s : _surfaces) {
             body->add(s);
             s->add(body);
         }
+
+        if(mesh->add(body) != S_OK) {
+            TF_Log(LOG_ERROR) << "Could not register body";
+            return E_FAIL;
+        }
+
         return S_OK;
     } 
     else {
@@ -84,6 +99,7 @@ Body::Body() :
     area{0.f}, 
     volume{0.f}, 
     density{0.f}, 
+    typeId{-1},
     species{NULL}
 {}
 
@@ -98,11 +114,28 @@ Body::Body(TissueForge::io::ThreeDFMeshData *ioMesh) :
     Body()
 {
     std::vector<Surface*> _surfaces;
-    for(auto f : ioMesh->faces) 
-        _surfaces.push_back(new Surface(f));
+    bool failed = false;
+    for(auto f : ioMesh->faces) {
+        Surface *s = new Surface(f);
+        if(!s || s->objId < 0) {
+            TF_Log(LOG_ERROR) << "Failed to create surface";
+            failed = true;
+            break;
+        }
+        _surfaces.push_back(s);
+    }
 
-    if(Body_loadSurfaces(this, _surfaces) == S_OK) 
+    if(!failed && Body_loadSurfaces(this, _surfaces) == S_OK) 
         _updateInternal();
+    else 
+        failed = true;
+
+    if(failed) {
+        for(auto &s : _surfaces) {
+            s->destroy();
+            delete s;
+        }
+    }
 }
 
 std::vector<MeshObj*> Body::parents() const { return TissueForge::models::vertex::vectorToBase(surfaces); }
@@ -219,8 +252,13 @@ HRESULT Body::replace(Structure *toInsert, Structure *toRemove) {
 }
 
 HRESULT Body::destroy() {
-    if(this->mesh && this->mesh->remove(this) != S_OK) 
+    for(auto &s : structures) 
+        if(s->destroy() != S_OK) 
+            return E_FAIL;
+    if(this->typeId >= 0 && this->type()->remove(this) != S_OK) 
         return E_FAIL;
+    if(this->objId >= 0) 
+        Mesh::get()->remove(this);
     return S_OK;
 }
 
@@ -258,6 +296,8 @@ HRESULT Body::positionChanged() {
 }
 
 BodyType *Body::type() const {
+    if(typeId < 0) 
+        return NULL;
     MeshSolver *solver = MeshSolver::get();
     if(!solver) 
         return NULL;
@@ -265,8 +305,10 @@ BodyType *Body::type() const {
 }
 
 HRESULT Body::become(BodyType *btype) {
-    this->typeId = btype->id;
-    return S_OK;
+    if(this->typeId >= 0 && this->type()->remove(this) != S_OK) {
+        return tf_error(E_FAIL, "Failed to become");
+    }
+    return btype->add(this);
 }
 
 std::vector<Structure*> Body::getStructures() const {
@@ -292,16 +334,16 @@ std::vector<Vertex*> Body::getVertices() const {
 Vertex *Body::findVertex(const FVector3 &dir) const {
     Vertex *result = 0;
 
-    FVector3 pta = centroid;
-    FVector3 ptb = pta + dir;
-    FloatP_t bestDist2 = 0;
+    FloatP_t bestCrit = 0;
 
     for(auto &v : getVertices()) {
-        FVector3 pt = v->getPosition();
-        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
-        if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
+        const FVector3 rel_pt = v->getPosition() - centroid;
+        if(rel_pt.isZero()) 
+            continue;
+        FloatP_t crit = rel_pt.dot(dir) / rel_pt.dot();
+        if(!result || crit > bestCrit) { 
             result = v;
-            bestDist2 = dist2;
+            bestCrit = crit;
         }
     }
 
@@ -311,16 +353,16 @@ Vertex *Body::findVertex(const FVector3 &dir) const {
 Surface *Body::findSurface(const FVector3 &dir) const {
     Surface *result = 0;
 
-    FVector3 pta = centroid;
-    FVector3 ptb = pta + dir;
-    FloatP_t bestDist2 = 0;
+    FloatP_t bestCrit = 0;
 
     for(auto &s : getSurfaces()) {
-        FVector3 pt = s->getCentroid();
-        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
-        if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
+        const FVector3 rel_pt = s->getCentroid() - centroid;
+        if(rel_pt.isZero()) 
+            continue;
+        FloatP_t crit = rel_pt.dot(dir) / rel_pt.dot();
+        if(!result || crit > bestCrit) { 
             result = s;
-            bestDist2 = dist2;
+            bestCrit = crit;
         }
     }
 
@@ -574,10 +616,27 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
         return NULL;
     std::vector<Vertex*> new_vertices;
     std::map<std::pair<int, int>, Vertex*> new_vertices_map;
+    bool failed = false;
     for(auto &edge : vertexPlan) {
         Vertex *v_new = new Vertex(edge.intersect_pt);
-        v_new->insert(edge.v_oldSide, edge.v_newSide);
+        if(v_new->objId < 0) {
+            TF_Log(LOG_ERROR) << "Failed to create a vertex";
+            failed = true;
+            break;
+        }
         new_vertices.push_back(v_new);
+    }
+    if(failed) {
+        for(auto &v : new_vertices) {
+            v->destroy();
+            delete v;
+        }
+        return NULL;
+    }
+    for(size_t i = 0; i < vertexPlan.size(); i++) {
+        auto edge = vertexPlan[i];
+        auto v_new = new_vertices[i];
+        v_new->insert(edge.v_oldSide, edge.v_newSide);
         new_vertices_map.insert({{edge.v_oldSide->objId, edge.v_newSide->objId}, v_new});
     }
 
@@ -598,8 +657,11 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
     if(!stype) 
         stype = new_surfs[0]->type();
     Surface *s_new = (*stype)(new_vertices);
-    if(!s_new || (mesh && mesh->add(s_new) != S_OK)) 
+    if(!s_new || s_new->objId < 0) {
+        if(s_new) 
+            delete s_new;
         return NULL;
+    }
     add(s_new);
     s_new->add(this);
     s_new->positionChanged();
@@ -621,21 +683,16 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
     for(auto &s : new_surfs) 
         new_body_surfs.push_back(s);
     Body *b_new = (*type())(new_body_surfs);
-    if(!b_new) 
+    if(!b_new || b_new->objId < 0) {
+        if(b_new) 
+            delete b_new;
         return NULL;
-
-    if(mesh && mesh->add(b_new) != S_OK) 
-        return NULL;
-
-    if(mesh) {
-        MeshSolver *solver = MeshSolver::get();
-        if(solver) {
-            if(!mesh->qualityWorking()) 
-                solver->positionChanged();
-
-            solver->log(mesh, MeshLogEventType::Create, {objId, b_new->objId}, {objType(), b_new->objType()}, "split");
-        }
     }
+
+    if(!Mesh::get()->qualityWorking()) 
+        MeshSolver::positionChanged();
+
+    MeshSolver::log(MeshLogEventType::Create, {objId, b_new->objId}, {objType(), b_new->objType()}, "split");
 
     return b_new;
 }
@@ -656,7 +713,12 @@ static Body *BodyType_fromSurfaces(BodyType *btype, std::vector<Surface*> surfac
             }
 
     Body *b = new Body(surfaces);
-    b->typeId = btype->id;
+    if(b->objId < 0 || btype->add(b) != S_OK) {
+        TF_Log(LOG_ERROR) << "Failed to create instance";
+        b->destroy();
+        delete b;
+        return NULL;
+    }
     b->setDensity(btype->density);
     return b;
 }
@@ -707,31 +769,47 @@ BodyType *BodyType::get() {
     return findFromName(name);
 }
 
+HRESULT BodyType::add(Body *i) {
+    if(!i) 
+        return tf_error(E_FAIL, "Invalid object");
+    else if(i->objId < 0) 
+        return tf_error(E_FAIL, "Object not registered");
+
+    BodyType *iType = i->type();
+    if(iType) 
+        iType->remove(i);
+
+    i->typeId = this->id;
+    this->_instanceIds.push_back(i->objId);
+    return S_OK;
+}
+
+HRESULT BodyType::remove(Body *i) {
+    if(!i) 
+        return tf_error(E_FAIL, "Invalid object");
+
+    auto itr = std::find(this->_instanceIds.begin(), this->_instanceIds.end(), i->objId);
+    if(itr == this->_instanceIds.end()) 
+        return tf_error(E_FAIL, "Instance not of this type");
+
+    this->_instanceIds.erase(itr);
+    i->typeId = -1;
+    return S_OK;
+}
+
 std::vector<Body*> BodyType::getInstances() {
     std::vector<Body*> result;
 
-    MeshSolver *solver = MeshSolver::get();
-    if(solver) { 
-        result.reserve(solver->numBodies());
-        for(auto &m : solver->meshes) {
-            for(size_t i = 0; i < m->sizeBodies(); i++) {
-                Body *b = m->getBody(i);
-                if(b) 
-                    result.push_back(b);
-            }
+    Mesh *m = Mesh::get();
+    if(m) { 
+        result.reserve(_instanceIds.size());
+        for(size_t i = 0; i < m->sizeBodies(); i++) {
+            Body *b = m->getBody(i);
+            if(b && b->typeId == this->id) 
+                result.push_back(b);
         }
     }
 
-    return result;
-}
-
-std::vector<int> BodyType::getInstanceIds() {
-    auto instances = getInstances();
-    std::vector<int> result;
-    result.reserve(instances.size());
-    for(auto &b : instances) 
-        if(b) 
-            result.push_back(b->objId);
     return result;
 }
 
@@ -772,21 +850,18 @@ Body *BodyType::extend(Surface *base, const FVector3 &pos) {
 
     // Construct a body from the surfaces
     Body *b = (*this)(surfaces);
-    if(!b) 
+    if(!b || b->typeId < 0) {
+        if(b) {
+            b->destroy();
+            delete b;
+        }
         return NULL;
-
-    // Add new parts and return
-    if(base->mesh && base->mesh->add(b) != S_OK) 
-        return NULL;
-
-    MeshSolver *solver = base->mesh ? MeshSolver::get() : NULL;
-
-    if(solver) {
-        if(!base->mesh->qualityWorking()) 
-            solver->positionChanged();
-
-        solver->log(base->mesh, MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extend");
     }
+
+    if(!Mesh::get()->qualityWorking()) 
+        MeshSolver::positionChanged();
+
+    MeshSolver::log(MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extend");
 
     return b;
 }
@@ -845,19 +920,18 @@ Body *BodyType::extrude(Surface *base, const FloatP_t &normLen) {
     newSurfaces.push_back((*stype)(newVertices));
 
     Body *b = (*this)(newSurfaces);
-    if(!b) 
+    if(!b || b->objId < 0) {
+        if(b) {
+            b->destroy();
+            delete b;
+        }
         return NULL;
-    if(base->mesh && base->mesh->add(b) != S_OK) 
-        return NULL;
-
-    MeshSolver *solver = base->mesh ? MeshSolver::get() : NULL;
-
-    if(solver) {
-        if(!base->mesh->qualityWorking()) 
-            solver->positionChanged();
-
-        solver->log(base->mesh, MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extrude");
     }
+
+    if(!Mesh::get()->qualityWorking()) 
+        MeshSolver::positionChanged();
+
+    MeshSolver::log(MeshLogEventType::Create, {base->objId, b->objId}, {base->objType(), b->objType()}, "extrude");
 
     return b;
 }
@@ -883,7 +957,6 @@ namespace TissueForge::io {
         IOElement *fe;
 
         TF_MESH_BODYIOTOEASY(fe, "objId", dataElement.objId);
-        TF_MESH_BODYIOTOEASY(fe, "meshId", dataElement.mesh == NULL ? -1 : dataElement.mesh->getId());
         TF_MESH_BODYIOTOEASY(fe, "typeId", dataElement.typeId);
 
         if(dataElement.actors.size() > 0) {
@@ -930,23 +1003,9 @@ namespace TissueForge::io {
         TissueForge::models::vertex::MeshSolver *solver = TissueForge::models::vertex::MeshSolver::get();
         if(!solver) 
             return tf_error(E_FAIL, "No vertex solver available");
+        Body_GETMESH(mesh, E_FAIL);
 
         IOChildMap::const_iterator feItr;
-
-        TissueForge::models::vertex::Mesh *mesh = NULL;
-        int meshIdOld;
-        unsigned int meshId;
-        TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "meshId", &meshIdOld);
-        if(meshIdOld >= 0) {
-            auto meshId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.find(meshIdOld);
-            if(meshId_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.end() && meshId_itr->second < solver->numMeshes()) {
-                meshId = meshId_itr->second;
-                mesh = solver->getMesh(meshId);
-            }
-        }
-        if(!mesh) {
-            return tf_error(E_FAIL, "Could not identify mesh");
-        }
         
         int typeIdOld;
         TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "typeId", &typeIdOld);
@@ -959,8 +1018,8 @@ namespace TissueForge::io {
         std::vector<TissueForge::models::vertex::Surface*> surfaces;
         std::vector<int> surfacesIds;
         for(auto &surfaceIdOld : surfacesIds) {
-            auto surfaceId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap[meshId].find(surfaceIdOld);
-            if(surfaceId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap[meshId].end()) {
+            auto surfaceId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.find(surfaceIdOld);
+            if(surfaceId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.end()) {
                 return tf_error(E_FAIL, "Could not identify surface");
             }
             surfaces.push_back(mesh->getSurface(surfaceId_itr->second));
@@ -968,12 +1027,17 @@ namespace TissueForge::io {
 
         *dataElement = (*detype)(surfaces);
 
-        if(mesh->add(*dataElement) != S_OK) 
-            return tf_error(E_FAIL, "Failed to add to mesh");
+        if(!(*dataElement) || (*dataElement)->objId < 0) {
+            if((*dataElement)) {
+                (*dataElement)->destroy();
+                delete (*dataElement);
+            }
+            return tf_error(E_FAIL, "Failed to add body");
+        }
 
         int objIdOld;
         TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
-        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyIdMap[meshId].insert({objIdOld, (*dataElement)->objId});
+        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyIdMap.insert({objIdOld, (*dataElement)->objId});
 
         if(fileElement.children.find("actors") != fileElement.children.end()) {
             TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "actors", &(*dataElement)->actors);

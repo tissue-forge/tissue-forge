@@ -752,13 +752,11 @@ static HRESULT MeshQuality_clearOperations(std::vector<MeshQualityOperation*> &o
 }
 
 MeshQuality::MeshQuality(
-    Mesh *_mesh, 
     const FloatP_t &vertexMergeDistCf, 
     const FloatP_t &surfaceDemoteAreaCf, 
     const FloatP_t &bodyDemoteVolumeCf, 
     const FloatP_t &_edgeSplitDistCf
 ) : 
-    mesh{_mesh}, 
     _working{false},
     collision2D{true}
 {
@@ -776,7 +774,7 @@ HRESULT MeshQuality::doQuality() {
 
     _working = true;
 
-    Mesh *_mesh = mesh;
+    Mesh *mesh = Mesh::get();
 
     // Vertex checks
     
@@ -805,10 +803,6 @@ HRESULT MeshQuality::doQuality() {
     _working = false;
     
     return S_OK;
-}
-
-const int MeshQuality::getMeshId() const {
-    return mesh ? mesh->getId() : -1;
 }
 
 HRESULT MeshQuality::setVertexMergeDistance(const FloatP_t &_val) {
@@ -868,7 +862,6 @@ namespace TissueForge::io {
         TF_MESH_MESHQUALITYIOTOEASY(fe, "surfaceDemoteArea", dataElement.getSurfaceDemoteArea());
         TF_MESH_MESHQUALITYIOTOEASY(fe, "bodyDemoteVolume", dataElement.getBodyDemoteVolume());
         TF_MESH_MESHQUALITYIOTOEASY(fe, "edgeSplitDist", dataElement.getEdgeSplitDist());
-        TF_MESH_MESHQUALITYIOTOEASY(fe, "meshId", dataElement.getMeshId());
         TF_MESH_MESHQUALITYIOTOEASY(fe, "collision2D", dataElement.getCollision2D());
 
         fileElement->type = "MeshQuality";

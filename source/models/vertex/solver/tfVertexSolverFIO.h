@@ -41,19 +41,16 @@ namespace TissueForge::models::vertex::io {
     struct CAPI_EXPORT VertexSolverFIOImportSummary {
 
         /** Map of imported vertex ids to loaded vertex ids */
-        std::vector<std::unordered_map<unsigned int, unsigned int> > vertexIdMap;
+        std::unordered_map<unsigned int, unsigned int> vertexIdMap;
 
         /** Map of imported surface ids to loaded surface ids */
-        std::vector<std::unordered_map<unsigned int, unsigned int> > surfaceIdMap;
+        std::unordered_map<unsigned int, unsigned int> surfaceIdMap;
 
         /** Map of imported body ids to loaded body ids */
-        std::vector<std::unordered_map<unsigned int, unsigned int> > bodyIdMap;
+        std::unordered_map<unsigned int, unsigned int> bodyIdMap;
 
         /** Map of imported structure ids to loaded structure ids */
-        std::vector<std::unordered_map<unsigned int, unsigned int> > structureIdMap;
-
-        /** Map of imported mesh ids to loaded mesh ids */
-        std::unordered_map<unsigned int, unsigned int> meshIdMap;
+        std::unordered_map<unsigned int, unsigned int> structureIdMap;
 
         /** Map of imported surface type ids to loaded surface ids */
         std::unordered_map<unsigned int, unsigned int> surfaceTypeIdMap;

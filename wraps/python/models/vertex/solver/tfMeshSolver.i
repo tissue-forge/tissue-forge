@@ -31,10 +31,6 @@
 %rename(engine_unlock) TissueForge::models::vertex::MeshSolver::engineUnlock;
 %rename(is_dirty) TissueForge::models::vertex::MeshSolver::isDirty;
 %rename(set_dirty) TissueForge::models::vertex::MeshSolver::setDirty;
-%rename(new_mesh) TissueForge::models::vertex::MeshSolver::newMesh;
-%rename(load_mesh) TissueForge::models::vertex::MeshSolver::loadMesh;
-%rename(unload_mesh) TissueForge::models::vertex::MeshSolver::unloadMesh;
-%rename(num_meshes) TissueForge::models::vertex::MeshSolver::numMeshes;
 %rename(get_mesh) TissueForge::models::vertex::MeshSolver::getMesh;
 %rename(register_type) TissueForge::models::vertex::MeshSolver::registerType;
 %rename(find_surface_from_name) TissueForge::models::vertex::MeshSolver::findSurfaceFromName;

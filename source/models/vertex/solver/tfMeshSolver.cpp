@@ -119,11 +119,11 @@ HRESULT MeshSolver::init() {
     }
 
     _solver = new MeshSolver();
+    _solver->mesh = new Mesh();
+
     if(TissueForge::io::FIO::currentRootElement) 
         _ioModule->load();
 
-    if(_solver->numMeshes() == 0)
-        _solver->newMesh();
     _solver->_bufferSize = 1;
     _solver->_forces = (FloatP_t*)malloc(3 * sizeof(FloatP_t));
     _solver->timers.reset();
@@ -174,69 +174,10 @@ HRESULT MeshSolver::engineUnlock() {
     return S_OK;
 }
 
-Mesh *MeshSolver::_newMeshInst() {
-    Mesh *mesh = new Mesh();
-    if(loadMesh(mesh) != S_OK) 
-        return NULL;
-    return mesh;
-}
-
-Mesh *MeshSolver::newMesh() {
-    TF_MESHSOLVER_CHECKINIT_RET(NULL);
-
-    return _solver->_newMeshInst();
-}
-
-HRESULT MeshSolver::_loadMeshInst(Mesh *mesh) {
-    for(auto &m : meshes) 
-        if(m == mesh) 
-            return E_FAIL;
-    meshes.push_back(mesh);
-    mesh->_solver = this;
-    mesh->isDirty = true;
-    _isDirty = true;
-    return S_OK;
-}
-
-HRESULT MeshSolver::loadMesh(Mesh *mesh) {
-    TF_MESHSOLVER_CHECKINIT
-
-    return _solver->_loadMeshInst(mesh);
-}
-
-HRESULT MeshSolver::_unloadMeshInst(Mesh *mesh) {
-    for(auto itr = meshes.begin(); itr != meshes.end(); itr++) {
-        if(*itr == mesh) {
-            meshes.erase(itr);
-            _isDirty = true;
-            (*itr)->_solver = NULL;
-            return S_OK;
-        }
-    }
-    return E_FAIL;
-}
-
-HRESULT MeshSolver::unloadMesh(Mesh *mesh) {
-    TF_MESHSOLVER_CHECKINIT
-
-    return _solver->_unloadMeshInst(mesh);
-}
-
-const int MeshSolver::numMeshes() {
-    TF_MESHSOLVER_CHECKINIT_RET(-1)
-
-    return _solver->meshes.size();
-}
-
-Mesh *MeshSolver::getMesh(const unsigned int &idx) {
+Mesh *MeshSolver::getMesh() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    if(idx >= _solver->meshes.size()) {
-        tf_error(E_FAIL, "Requested a mesh that does not exist");
-        return 0;
-    }
-
-    return _solver->meshes[idx];
+    return _solver->mesh;
 }
 
 template <typename T> 
@@ -407,81 +348,49 @@ const int MeshSolver::numSurfaceTypes() {
 unsigned int MeshSolver::numVertices() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->numVertices();
-
-    return result;
+    return _solver->mesh->numVertices();
 }
 
 unsigned int MeshSolver::numSurfaces() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->numSurfaces();
-
-    return result;
+    return _solver->mesh->numSurfaces();
 }
 
 unsigned int MeshSolver::numBodies() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->numBodies();
-
-    return result;
+    return _solver->mesh->numBodies();
 }
 
 unsigned int MeshSolver::numStructures() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->numStructures();
-
-    return result;
+    return _solver->mesh->numStructures();
 }
 
 unsigned int MeshSolver::sizeVertices() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->sizeVertices();
-
-    return result;
+    return _solver->mesh->sizeVertices();
 }
 
 unsigned int MeshSolver::sizeSurfaces() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->sizeSurfaces();
-
-    return result;
+    return _solver->mesh->sizeSurfaces();
 }
 
 unsigned int MeshSolver::sizeBodies() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->sizeBodies();
-
-    return result;
+    return _solver->mesh->sizeBodies();
 }
 
 unsigned int MeshSolver::sizeStructures() {
     TF_MESHSOLVER_CHECKINIT_RET(0)
 
-    unsigned int result = 0;
-    for(auto &m : _solver->meshes) 
-        result += m->sizeStructures();
-
-    return result;
+    return _solver->mesh->sizeStructures();
 }
 
 template <typename T> 
@@ -500,50 +409,47 @@ HRESULT MeshSolver::_positionChangedInst() {
 
     static int stride = ThreadPool::size();
 
-    for(auto &m : meshes) {
+    // Update vertices
 
-        // Update vertices
+    std::vector<Vertex*> &m_vertices = mesh->vertices;
+    auto func_vertices = [&m_vertices](int i) -> void {
+        Vertex *v = m_vertices[i];
+        if(v) 
+            v->positionChanged();
+    };
+    parallel_for(m_vertices.size(), func_vertices);
+    _totalVertices += mesh->numVertices();
 
-        std::vector<Vertex*> &m_vertices = m->vertices;
-        auto func_vertices = [&m_vertices](int i) -> void {
-            Vertex *v = m_vertices[i];
-            if(v) 
-                v->positionChanged();
-        };
-        parallel_for(m_vertices.size(), func_vertices);
-        _totalVertices += m->numVertices();
-
-        // Update surfaces
-        
-        std::vector<Surface*> &m_surfaces = m->surfaces;
-        std::atomic<unsigned int> _surfaceVertices_m = 0;
-        auto func_surfaces = [&m_surfaces, &_surfaceVertices_m](int tid) -> void {
-            unsigned int _surfaceVertices_local = 0;
-            for(int i = tid; i < m_surfaces.size();) { 
-                Surface *s = m_surfaces[i];
-                if(s) {
-                    s->positionChanged();
-                    _surfaceVertices_local += s->parents().size();
-                }
-                i += stride;
+    // Update surfaces
+    
+    std::vector<Surface*> &m_surfaces = mesh->surfaces;
+    std::atomic<unsigned int> _surfaceVertices_m = 0;
+    auto func_surfaces = [&m_surfaces, &_surfaceVertices_m](int tid) -> void {
+        unsigned int _surfaceVertices_local = 0;
+        for(int i = tid; i < m_surfaces.size();) { 
+            Surface *s = m_surfaces[i];
+            if(s) {
+                s->positionChanged();
+                _surfaceVertices_local += s->parents().size();
             }
-            _surfaceVertices_m.fetch_add(_surfaceVertices_local);
-        };
-        parallel_for(stride, func_surfaces);
-        _surfaceVertices += _surfaceVertices_m;
+            i += stride;
+        }
+        _surfaceVertices_m.fetch_add(_surfaceVertices_local);
+    };
+    parallel_for(stride, func_surfaces);
+    _surfaceVertices += _surfaceVertices_m;
 
-        // Update bodies
-        
-        std::vector<Body*> &m_bodies = m->bodies;
-        auto func_bodies = [&m_bodies](int i) -> void {
-            Body *b = m_bodies[i];
-            if(b) 
-                b->positionChanged();
-        };
-        parallel_for(m_bodies.size(), func_bodies);
+    // Update bodies
+    
+    std::vector<Body*> &m_bodies = mesh->bodies;
+    auto func_bodies = [&m_bodies](int i) -> void {
+        Body *b = m_bodies[i];
+        if(b) 
+            b->positionChanged();
+    };
+    parallel_for(m_bodies.size(), func_bodies);
 
-        m->isDirty = false;
-    }
+    mesh->isDirty = false;
 
     _isDirty = false;
 
@@ -569,12 +475,9 @@ HRESULT MeshSolver::preStepStart() {
 
     MeshLogger::clear();
 
-    _totalVertices = 0;
+    _totalVertices = mesh->sizeVertices();
 
     MeshSolverTimerInstance t(MeshSolverTimers::Section::FORCE);
-
-    for(auto &m : meshes) 
-        _totalVertices += m->sizeVertices();
 
     if(_totalVertices > _bufferSize) {
         free(_solver->_forces);
@@ -583,19 +486,14 @@ HRESULT MeshSolver::preStepStart() {
     }
     memset(_solver->_forces, 0.f, 3 * sizeof(FloatP_t) * _bufferSize);
 
-    unsigned int j = 0;
-    for(auto &m : meshes) { 
-        std::vector<Vertex*> &m_vertices = m->vertices;
-        FloatP_t *_forces_j = &_forces[j * 3];
-        auto func = [&m_vertices, &_forces_j](int i) -> void {
-            Vertex *v = m_vertices[i];
-            if(v) 
-                VertexForce(v, &_forces_j[i * 3]);
-        };
-        parallel_for(m_vertices.size(), func);
-        
-        j += m->vertices.size();
-    }
+    std::vector<Vertex*> &m_vertices = mesh->vertices;
+    FloatP_t *v_forces = &_forces[0];
+    auto func = [&m_vertices, &v_forces](int i) -> void {
+        Vertex *v = m_vertices[i];
+        if(v) 
+            VertexForce(v, &v_forces[i * 3]);
+    };
+    parallel_for(m_vertices.size(), func);
 
     return S_OK;
 }
@@ -604,50 +502,36 @@ HRESULT MeshSolver::preStepJoin() {
 
     MeshSolverTimerInstance t(MeshSolverTimers::Section::ADVANCE);
 
-    unsigned int j = 0;
-    for(auto &m : meshes) { 
-        FloatP_t *_forces_j = &_forces[j * 3];
-        std::vector<Vertex*> &m_vertices = m->vertices;
-        auto func = [&m_vertices, &_forces_j](int k) -> void {
-            Vertex *v = m_vertices[k];
-            if(!v) {
-                return;
-            }
+    FloatP_t *v_forces = &_forces[0];
+    std::vector<Vertex*> &m_vertices = mesh->vertices;
+    auto func = [&m_vertices, &v_forces](int k) -> void {
+        Vertex *v = m_vertices[k];
+        if(!v) {
+            return;
+        }
 
-            Particle *p = v->particle()->part();
-            FloatP_t *buff = &_forces_j[k * 3];
-            p->f[0] += buff[0];
-            p->f[1] += buff[1];
-            p->f[2] += buff[2];
-        };
-        parallel_for(m_vertices.size(), func);
-        j += m->vertices.size();
-    }
+        Particle *p = v->particle()->part();
+        FloatP_t *buff = &v_forces[k * 3];
+        p->f[0] += buff[0];
+        p->f[1] += buff[1];
+        p->f[2] += buff[2];
+    };
+    parallel_for(m_vertices.size(), func);
 
     return S_OK;
 }
 
-static std::vector<unsigned int> MeshSolver_surfaceVertexIndices(const std::vector<Mesh*> &meshes) { 
+static std::vector<unsigned int> MeshSolver_surfaceVertexIndices(Mesh *mesh) { 
     unsigned int idx = 0;
 
-    unsigned int numSurfaces = 0;
-    for(auto &m : meshes) 
-        numSurfaces += m->sizeSurfaces();
-
-    std::vector<unsigned int> indices(numSurfaces, 0);
+    std::vector<unsigned int> indices;
+    indices.reserve(mesh->sizeSurfaces());
     
-    unsigned int j = 0;
-    for(auto &m : meshes) {
-        unsigned int *indices_j = &indices.data()[j];
-
-        for(unsigned int i = 0; i < m->sizeSurfaces(); i++) { 
-            indices_j[i] = idx;
-            Surface *s = m->getSurface(i);
-            if(s) 
-                idx += s->parents().size();
-        }
-
-        j += m->sizeSurfaces();
+    for(unsigned int i = 0; i < mesh->sizeSurfaces(); i++) { 
+        indices.push_back(idx);
+        Surface *s = mesh->getSurface(i);
+        if(s) 
+            idx += s->parents().size();
     }
 
     return indices;
@@ -666,9 +550,8 @@ HRESULT MeshSolver::postStepStart() {
     {
         MeshSolverTimerInstance t(MeshSolverTimers::Section::QUALITY);
         
-        for(auto &m : meshes) 
-            if(m->hasQuality()) 
-                m->getQuality().doQuality();
+        if(mesh->hasQuality()) 
+            mesh->getQuality().doQuality();
 
         if(positionChanged() != S_OK) 
             return E_FAIL;
@@ -682,7 +565,9 @@ HRESULT MeshSolver::postStepJoin() {
 }
 
 std::vector<unsigned int> MeshSolver::_getSurfaceVertexIndicesInst() const {
-    return MeshSolver_surfaceVertexIndices(meshes);
+    TF_MESHSOLVER_CHECKINIT_RET({});
+
+    return MeshSolver_surfaceVertexIndices(_solver->mesh);
 }
 
 std::vector<unsigned int> MeshSolver::getSurfaceVertexIndices() {
@@ -692,7 +577,7 @@ std::vector<unsigned int> MeshSolver::getSurfaceVertexIndices() {
 }
 
 HRESULT MeshSolver::_getSurfaceVertexIndicesAsyncStartInst() {
-    fut_surfaceVertexIndices = std::async(MeshSolver_surfaceVertexIndices, meshes);
+    fut_surfaceVertexIndices = std::async(MeshSolver_surfaceVertexIndices, mesh);
     return S_OK;
 }
 
@@ -714,41 +599,25 @@ std::vector<unsigned int> MeshSolver::getSurfaceVertexIndicesAsyncJoin() {
     return _solver->_getSurfaceVertexIndicesAsyncJoinInst();
 }
 
-HRESULT MeshSolver::_logInst(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
-    int meshID = -1;
-    for(int i = 0; i < meshes.size(); i++) 
-        if(meshes[i] == mesh) {
-            meshID = i;
-            break;
-        }
-
-    if(meshID < 0) {
-        TF_Log(LOG_ERROR) << "Mesh not in solved";
-        return E_FAIL;
-    }
-
+HRESULT MeshSolver::_logInst(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
     MeshLogEvent event;
     event.name = name;
-    event.meshID = meshID;
     event.type = type;
     event.objIDs = objIDs;
     event.objTypes = objTypes;
     return MeshLogger::log(event);
 }
 
-HRESULT MeshSolver::log(Mesh *mesh, const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
+HRESULT MeshSolver::log(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
     TF_MESHSOLVER_CHECKINIT
 
-    return _solver->_logInst(mesh, type, objIDs, objTypes, name);
+    return _solver->_logInst(type, objIDs, objTypes, name);
 }
 
 bool MeshSolver::_isDirtyInst() const {
     if(_isDirty) 
         return true;
-    bool result = false;
-    for(auto &m : meshes) 
-        result |= m->isDirty;
-    return result;
+    return mesh->isDirty;
 }
 
 bool MeshSolver::isDirty() {
@@ -759,8 +628,7 @@ bool MeshSolver::isDirty() {
 
 HRESULT MeshSolver::_setDirtyInst(const bool &_dirty) {
     _isDirty = _dirty;
-    for(auto &m : meshes) 
-        m->isDirty = _dirty;
+    mesh->isDirty = _dirty;
     return S_OK;
 }
 

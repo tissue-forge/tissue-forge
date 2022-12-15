@@ -83,18 +83,7 @@ HRESULT VMod::io::VertexSolverFIOModule::toFile(const TissueForge::io::MetaData 
     }
     TF_MESH_IOTOEASY(fe, "surfaceTypes", surfaceTypes);
     TF_MESH_IOTOEASY(fe, "surfaceTypeIds", surfaceTypeIds);
-
-    // Store meshes
-
-    std::vector<VMod::Mesh*> meshes;
-    std::vector<int> meshIds;
-    for(size_t i = 0; i < solver->numMeshes(); i++) {
-        auto o = solver->getMesh(i);
-        meshes.push_back(o);
-        meshIds.push_back(o->getId());
-    }
-    TF_MESH_IOTOEASY(fe, "meshes", meshes);
-    TF_MESH_IOTOEASY(fe, "meshIds", meshIds);
+    TF_MESH_IOTOEASY(fe, "mesh", *solver->mesh);
 
     return S_OK;
 }
@@ -110,18 +99,6 @@ HRESULT VMod::io::VertexSolverFIOModule::fromFile(const TissueForge::io::MetaDat
     VMod::io::VertexSolverFIOModule::importSummary = new VMod::io::VertexSolverFIOImportSummary();
 
     TissueForge::io::IOChildMap::const_iterator feItr;
-
-    // Import mesh data and implement import summary sizing
-
-    std::vector<int> meshIds;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "meshIds", &meshIds);
-    for(size_t i = 0; i < meshIds.size(); i++) {
-        VMod::io::VertexSolverFIOModule::importSummary->vertexIdMap.emplace_back();
-        VMod::io::VertexSolverFIOModule::importSummary->surfaceIdMap.emplace_back();
-        VMod::io::VertexSolverFIOModule::importSummary->bodyIdMap.emplace_back();
-        VMod::io::VertexSolverFIOModule::importSummary->structureIdMap.emplace_back();
-        VMod::io::VertexSolverFIOModule::importSummary->meshIdMap.insert({meshIds[i], solver->numMeshes() + i});
-    }
 
     // Load and register types and store their id maps
 
@@ -157,8 +134,7 @@ HRESULT VMod::io::VertexSolverFIOModule::fromFile(const TissueForge::io::MetaDat
 
     // Load meshes
 
-    std::vector<VMod::Mesh*> meshes;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "meshes", &meshes);
+    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "mesh", solver->mesh);
 
     return S_OK;
 }

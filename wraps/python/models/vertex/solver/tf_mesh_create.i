@@ -22,13 +22,9 @@
 #include <models/vertex/solver/tf_mesh_create.h>
 %}
 
-%rename(_vertex_solver__createQuadMesh_expMesh) TissueForge::models::vertex::createQuadMesh(Mesh*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const char*ax_1, const char*ax_2);
-%rename(_vertex_solver__createQuadMesh_defMesh) TissueForge::models::vertex::createQuadMesh(SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const char*ax_1, const char*ax_2);
-%rename(_vertex_solver__createPLPDMesh_expMesh) TissueForge::models::vertex::createPLPDMesh(Mesh*, BodyType*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const FloatP_t&, const char*, const char*);
-%rename(_vertex_solver__createPLPDMesh_defMesh) TissueForge::models::vertex::createPLPDMesh(BodyType*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const FloatP_t&, const char*, const char*);
-%rename(_vertex_solver__createHex2DMesh_expMesh) TissueForge::models::vertex::createHex2DMesh(Mesh*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const FloatP_t&, const char*, const char*);
-%rename(_vertex_solver__createHex2DMesh_defMesh) TissueForge::models::vertex::createHex2DMesh(SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const FloatP_t&, const char*, const char*);
-%rename(_vertex_solver__createHex3DMesh_expMesh) TissueForge::models::vertex::createHex3DMesh(Mesh*, BodyType*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const char*, const char*);
-%rename(_vertex_solver__createHex3DMesh_defMesh) TissueForge::models::vertex::createHex3DMesh(BodyType*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const char*, const char*);
+%rename(_vertex_solver__createQuadMesh) TissueForge::models::vertex::createQuadMesh(SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const char*ax_1, const char*ax_2);
+%rename(_vertex_solver__createPLPDMesh) TissueForge::models::vertex::createPLPDMesh(BodyType*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const FloatP_t&, const char*, const char*);
+%rename(_vertex_solver__createHex2DMesh) TissueForge::models::vertex::createHex2DMesh(SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const FloatP_t&, const char*, const char*);
+%rename(_vertex_solver__createHex3DMesh) TissueForge::models::vertex::createHex3DMesh(BodyType*, SurfaceType*, const FVector3&, const unsigned int&, const unsigned int&, const unsigned int&, const FloatP_t&, const FloatP_t&, const char*, const char*);
 
 %include <models/vertex/solver/tf_mesh_create.h>

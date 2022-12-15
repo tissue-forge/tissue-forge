@@ -39,7 +39,6 @@ using namespace TissueForge::models::vertex;
 
 
 MeshObj::MeshObj() : 
-    mesh{NULL}, 
     objId{-1}
 {}
 

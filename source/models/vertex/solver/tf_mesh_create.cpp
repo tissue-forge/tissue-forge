@@ -19,8 +19,9 @@
 
 #include "tf_mesh_create.h"
 
-#include "tfMeshSolver.h"
+#include "tfMesh.h"
 
+#include <tfLogger.h>
 #include <tfError.h>
 
 #include <map>
@@ -28,8 +29,6 @@
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
-#define TF_MESH_CREATE_GETSOLVER(name, retval) MeshSolver *name = MeshSolver::get(); if(!solver) { tf_error(E_FAIL, "No solver"); return retval; }
-#define TF_MESH_CREATE_VERIFYDEFAULTMESH(solver) {if(solver->meshes.size() == 0) { solver->meshes.push_back(new Mesh()); } }
 
 static int surfRelCoords[6][2] = {
     {1, 0}, 
@@ -81,7 +80,6 @@ static HRESULT findThirdAxis(const std::string &ax_1, const std::string &ax_2, s
 }
 
 std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
-    Mesh *mesh, 
     SurfaceType *stype,
     const FVector3 &startPos, 
     const unsigned int &num_1, 
@@ -163,12 +161,12 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
             }
 
             Surface *s_new = (*stype)({v0, v1, v2, v3});
-            if(!s_new) {
+            if(!s_new || s_new->objId < 0) {
                 tf_error(E_FAIL, "Surface could not be created");
-                return {};
-            }
-            else if(mesh->add(s_new) != S_OK) {
-                tf_error(E_FAIL, "Surface could not be added to mesh");
+                if(s_new) {
+                    s_new->destroy();
+                    delete s_new;
+                }
                 return {};
             }
             result[i][j] = s_new;
@@ -183,23 +181,7 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
     return result;
 }
 
-std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
-    SurfaceType *stype,
-    const FVector3 &startPos, 
-    const unsigned int &num_1, 
-    const unsigned int &num_2, 
-    const FloatP_t &len_1,
-    const FloatP_t &len_2,
-    const char *ax_1, 
-    const char *ax_2) 
-{
-    TF_MESH_CREATE_GETSOLVER(solver, {});
-    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
-    return createQuadMesh(solver->meshes[0], stype, startPos, num_1, num_2, len_1, len_2, ax_1, ax_2);
-}
-
 std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::createPLPDMesh(
-    Mesh *mesh, 
     BodyType *btype, 
     SurfaceType *stype,
     const FVector3 &startPos, 
@@ -239,7 +221,7 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
         FVector3 startPos_i(startPos);
         startPos_i[ax_3_comp] += i * len_3;
         surfs_12.push_back(
-            createQuadMesh(mesh, stype, startPos_i, num_1, num_2, len_1, len_2, ax_1, ax_2)
+            createQuadMesh(stype, startPos_i, num_1, num_2, len_1, len_2, ax_1, ax_2)
         );
         for(auto &sv : surfs_12.back()) 
             for(auto s : sv) 
@@ -249,7 +231,7 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
         FVector3 startPos_i(startPos);
         startPos_i[ax_2_comp] += i * len_2;
         surfs_13.push_back(
-            createQuadMesh(mesh, stype, startPos_i, num_1, num_3, len_1, len_3, ax_1, str_ax_3.c_str())
+            createQuadMesh(stype, startPos_i, num_1, num_3, len_1, len_3, ax_1, str_ax_3.c_str())
         );
         for(auto &sv : surfs_13.back()) 
             for(auto s : sv) 
@@ -259,7 +241,7 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
         FVector3 startPos_i(startPos);
         startPos_i[ax_1_comp] += i * len_1;
         surfs_23.push_back(
-            createQuadMesh(mesh, stype, startPos_i, num_2, num_3, len_2, len_3, ax_2, str_ax_3.c_str())
+            createQuadMesh(stype, startPos_i, num_2, num_3, len_2, len_3, ax_2, str_ax_3.c_str())
         );
         for(auto &sv : surfs_23.back()) 
             for(auto s : sv) 
@@ -296,12 +278,12 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
                     surfs_12_kn[i][j],
                     surfs_12_kp[i][j]
                 });
-                if(!b_new) {
+                if(!b_new || b_new->objId < 0) {
                     tf_error(E_FAIL, "Body could not be created");
-                    return {};
-                } 
-                else if(mesh->add(b_new) != S_OK) {
-                    tf_error(E_FAIL, "Body could not be added to mesh");
+                    if(b_new) {
+                        b_new->destroy();
+                        delete b_new;
+                    }
                     return {};
                 }
                 result[i][j][k] = b_new;
@@ -313,26 +295,7 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
     return result;
 }
 
-std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::createPLPDMesh(
-    BodyType *btype, 
-    SurfaceType *stype,
-    const FVector3 &startPos, 
-    const unsigned int &num_1, 
-    const unsigned int &num_2, 
-    const unsigned int &num_3, 
-    const FloatP_t &len_1,
-    const FloatP_t &len_2,
-    const FloatP_t &len_3,
-    const char *ax_1, 
-    const char *ax_2) 
-{
-    TF_MESH_CREATE_GETSOLVER(solver, {});
-    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
-    return createPLPDMesh(solver->meshes[0], btype, stype, startPos, num_1, num_2, num_3, len_1, len_2, len_3, ax_1, ax_2);
-}
-
 std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh(
-    Mesh *mesh, 
     SurfaceType *stype, 
     const FVector3 &startPos, 
     const unsigned int &num_1, 
@@ -371,10 +334,10 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
             Surface *s_new = stype->nPolygon(6, center, hexRad, poly_ax1, poly_ax2);
             if(!s_new) {
                 tf_error(E_FAIL, "Surface could not be created");
-                return {};
-            }
-            else if(mesh->add(s_new) != S_OK) {
-                tf_error(E_FAIL, "Surface could not be added to mesh");
+                if(s_new) {
+                    s_new->destroy();
+                    delete s_new;
+                }
                 return {};
             }
             result[i][j] = s_new;
@@ -390,22 +353,7 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
     return result;
 }
 
-std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh(
-    SurfaceType *stype, 
-    const FVector3 &startPos, 
-    const unsigned int &num_1, 
-    const unsigned int &num_2, 
-    const FloatP_t &hexRad,
-    const char *ax_1, 
-    const char *ax_2) 
-{
-    TF_MESH_CREATE_GETSOLVER(solver, {});
-    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
-    return createHex2DMesh(solver->meshes[0], stype, startPos, num_1, num_2, hexRad, ax_1, ax_2);
-}
-
 std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::createHex3DMesh(
-    Mesh *mesh, 
     BodyType *btype, 
     SurfaceType *stype,
     const FVector3 &startPos, 
@@ -433,7 +381,7 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
     for(size_t i = 0; i <= num_3; i++) {
         FVector3 startPos_i(startPos);
         startPos_i[ax_3_comp] += i * hex_height;
-        surfs_3.push_back(createHex2DMesh(mesh, stype, startPos_i, num_1, num_2, hexRad, ax_1, ax_2));
+        surfs_3.push_back(createHex2DMesh(stype, startPos_i, num_1, num_2, hexRad, ax_1, ax_2));
     }
 
     std::vector<std::vector<std::vector<Body*> > > result = 
@@ -511,12 +459,12 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
                         Vertex *v3 = verts_top[surfSharedVerts[n][0][0]];
 
                         nbs_surf = (*stype)({v0, v1, v2, v3});
-                        if(!nbs_surf) {
+                        if(!nbs_surf || nbs_surf->objId < 0) {
                             tf_error(E_FAIL, "Surface could not be created");
-                            return {};
-                        }
-                        else if(mesh->add(nbs_surf) != S_OK) {
-                            tf_error(E_FAIL, "Surface could not be added to mesh");
+                            if(nbs_surf) {
+                                nbs_surf->destroy();
+                                delete nbs_surf;
+                            }
                             return {};
                         }
                     }
@@ -528,10 +476,10 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
                 Body *b_k = (*btype)(surfSides_k);
                 if(!b_k) {
                     tf_error(E_FAIL, "Body could not be created");
-                    return {};
-                }
-                else if(mesh->add(b_k) != S_OK) {
-                    tf_error(E_FAIL, "Body could not be added to mesh");
+                    if(b_k) {
+                        b_k->destroy();
+                        delete b_k;
+                    }
                     return {};
                 }
                 result[i][j][k] = b_k;
@@ -540,21 +488,4 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
     }
 
     return result;
-}
-
-std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::createHex3DMesh(
-    BodyType *btype, 
-    SurfaceType *stype,
-    const FVector3 &startPos, 
-    const unsigned int &num_1, 
-    const unsigned int &num_2, 
-    const unsigned int &num_3, 
-    const FloatP_t &hexRad,
-    const FloatP_t &hex_height,
-    const char *ax_1, 
-    const char *ax_2) 
-{
-    TF_MESH_CREATE_GETSOLVER(solver, {});
-    TF_MESH_CREATE_VERIFYDEFAULTMESH(solver);
-    return createHex3DMesh(solver->meshes[0], btype, stype, startPos, num_1, num_2, num_3, hexRad, hex_height, ax_1, ax_2);
 }

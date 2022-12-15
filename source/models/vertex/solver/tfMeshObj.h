@@ -50,9 +50,6 @@ namespace TissueForge::models::vertex {
             STRUCTURE   = 4
         };
 
-        /** The mesh of this object, if any */
-        Mesh *mesh;
-
         /** Object id; unique by type in a mesh */
         int objId;
 

@@ -26,6 +26,7 @@
 #include <rendering/tfStyle.h>
 
 #include "tfMeshObj.h"
+#include "tfMesh.h"
 
 #include <io/tfThreeDFVertexData.h>
 

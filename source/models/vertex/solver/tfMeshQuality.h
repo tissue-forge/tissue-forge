@@ -189,16 +189,12 @@ namespace TissueForge::models::vertex {
          */
         bool collision2D;
 
-        /** Borrowed pointer to the owning mesh */
-        Mesh *mesh;
-
         /** Flag for whether currently doing work */
         bool _working;
 
     public:
 
         MeshQuality(
-            Mesh *_mesh, 
             const FloatP_t &vertexMergeDistCf=0.0001, 
             const FloatP_t &surfaceDemoteAreaCf=0.0001, 
             const FloatP_t &bodyDemoteVolumeCf=0.0001, 
@@ -213,9 +209,6 @@ namespace TissueForge::models::vertex {
 
         /** Test whether quality operations are being done */
         const bool working() const { return _working; }
-
-        /** Get the id of the parent mesh */
-        const int getMeshId() const;
 
         /** Get the distance below which two vertices are scheduled for merging */
         FloatP_t getVertexMergeDistance() const { return vertexMergeDist; };

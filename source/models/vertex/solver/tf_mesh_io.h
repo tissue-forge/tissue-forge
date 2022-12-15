@@ -89,15 +89,14 @@ namespace TissueForge::io {
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::StructureType **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Mesh *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const TissueForge::models::vertex::Mesh &dataElement, const MetaData &metaData, IOElement *fileElement);
 
     template <>
-    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Mesh **dataElement);
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Mesh *dataElement);
 
     template <>
     HRESULT toFile(const TissueForge::models::vertex::MeshQuality &dataElement, const MetaData &metaData, IOElement *fileElement);
 
-    /** Does not assign to a mesh */
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::MeshQuality *dataElement);
 

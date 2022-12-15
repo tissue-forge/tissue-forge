@@ -74,7 +74,7 @@ namespace TissueForge::models::vertex {
     public:
 
         /** Id of the type*/
-        unsigned int typeId;
+        int typeId;
 
         /** Amount of species in the enclosed volume, if any */
         state::StateVector *species;
@@ -314,11 +314,17 @@ namespace TissueForge::models::vertex {
          */
         virtual BodyType *get();
 
+        /** Add an instance */
+        HRESULT add(Body *i);
+
+        /** Remove an instance */
+        HRESULT remove(Body *i);
+
         /** list of instances that belong to this type */    
         std::vector<Body*> getInstances();
 
         /** list of instances ids that belong to this type */
-        std::vector<int> getInstanceIds();
+        std::vector<int> getInstanceIds() { return _instanceIds; }
 
         /** number of instances that belong to this type */
         unsigned int getNumInstances();
@@ -337,6 +343,10 @@ namespace TissueForge::models::vertex {
          * todo: add support for extruding at an angle
         */
         Body *extrude(Surface *base, const FloatP_t &normLen);
+
+    private:
+
+        std::vector<int> _instanceIds;
 
     };
 

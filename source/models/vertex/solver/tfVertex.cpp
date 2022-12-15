@@ -38,6 +38,13 @@
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
+#define Vertex_GETMESH(name, retval)                \
+    Mesh *name = Mesh::get();                       \
+    if(!name) {                                     \
+        TF_Log(LOG_ERROR) << "Could not get mesh";  \
+        return retval;                              \
+    }
+
 
 MeshParticleType *TissueForge::models::vertex::MeshParticleType_get() {
     TF_Log(LOG_TRACE);
@@ -152,21 +159,33 @@ Vertex::Vertex() :
 Vertex::Vertex(const unsigned int &_pid) : 
     Vertex() 
 {
+    Mesh *mesh = Mesh::get();
     pid = (int)_pid;
+    if(!mesh || mesh->add(this) != S_OK)
+        pid = -1;
 };
 
 Vertex::Vertex(const FVector3 &position) : 
     Vertex()
 {
     MeshParticleType *ptype = MeshParticleType_get();
+    Mesh *mesh = Mesh::get();
+    this->pid = -1;
     if(!ptype) {
         TF_Log(LOG_ERROR) << "Could not instantiate particle type";
-        this->pid = -1;
     } 
+    else if(!mesh) {
+        TF_Log(LOG_ERROR) << "Could not get mesh";
+    }
     else {
         FVector3 _position = position;
         ParticleHandle *ph = (*ptype)(&_position);
         this->pid = ph->id;
+        if(mesh->add(this) != S_OK) {
+            TF_Log(LOG_ERROR) << "Could not add vertex";
+            this->pid = -1;
+            ph->destroy();
+        }
     }
 }
 
@@ -268,10 +287,19 @@ HRESULT Vertex::replace(Surface *toInsert, Surface *toRemove) {
 HRESULT Vertex::destroy() {
     TF_Log(LOG_TRACE) << this->objId << "; " << this->pid;
 
-    if(this->mesh && this->mesh->remove(this) != S_OK) 
+    for(auto &s : surfaces) 
+        if(s->destroy() != S_OK) {
+            TF_Log(LOG_DEBUG) << s->objId;
+            return E_FAIL;
+        }
+    if(this->objId >= 0) 
+        if(Mesh::get()->remove(this) != S_OK) {
+            TF_Log(LOG_DEBUG);
+        }
+    if(this->pid >= 0 && this->particle()->destroy() != S_OK) {
+        TF_Log(LOG_DEBUG);
         return E_FAIL;
-    if(this->pid >= 0 && this->particle()->destroy() != S_OK) 
-        return E_FAIL;
+    }
     this->pid = -1;
     return S_OK;
 }
@@ -450,9 +478,6 @@ HRESULT Vertex::replace(Surface *toReplace) {
     // Remove the replaced surface from the mesh
     // Add the inserted vertex to the mesh
 
-    Mesh *_mesh = toReplace->mesh;
-    MeshSolver *solver = _mesh ? MeshSolver::get() : NULL;
-
     // Prevent nonsensical resultant bodies
     if(toReplace->b1 && toReplace->b1->surfaces.size() < 5) { 
         TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << toReplace->b1->surfaces.size() << ") in first body (" << toReplace->b1->objId << ") for replace";
@@ -472,12 +497,7 @@ HRESULT Vertex::replace(Surface *toReplace) {
         if(Vertex_SurfaceDisconnectReplace(this, toReplace, s, s->vertices, totalToRemove) != S_OK) 
             return E_FAIL;
 
-    // Add the inserted vertex
-    if(_mesh && _mesh->add(this) != S_OK) 
-        return E_FAIL;
-
-    if(solver) 
-        solver->log(_mesh, MeshLogEventType::Create, {objId, toReplace->objId}, {objType(), toReplace->objType()}, "replace");
+    MeshSolver::log(MeshLogEventType::Create, {objId, toReplace->objId}, {objType(), toReplace->objType()}, "replace");
 
     // Remove the replaced surface and its vertices
     while(!toReplace->vertices.empty()) {
@@ -504,9 +524,8 @@ HRESULT Vertex::replace(Surface *toReplace) {
         if(v->destroy() != S_OK) 
             return E_FAIL;
 
-    if(solver) 
-        if(!_mesh->qualityWorking() && solver->positionChanged() != S_OK)
-            return E_FAIL;
+    if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
+        return E_FAIL;
 
     return S_OK;
 }
@@ -522,9 +541,6 @@ Vertex *Vertex::replace(const FVector3 &position, Surface *toReplace) {
 }
 
 HRESULT Vertex::replace(Body *toReplace) {
-
-    Mesh *_mesh = toReplace->mesh;
-    MeshSolver *solver = _mesh ? MeshSolver::get() : NULL;
 
     // Detach surfaces and bodies
     std::set<Vertex*> totalToRemove;
@@ -555,12 +571,7 @@ HRESULT Vertex::replace(Body *toReplace) {
         }
     }
 
-    // Add the vertex
-    if(_mesh && _mesh->add(this) != S_OK) 
-        return E_FAIL;
-
-    if(solver) 
-        solver->log(_mesh, MeshLogEventType::Create, {objId, toReplace->objId}, {objType(), toReplace->objType()}, "replace");
+    MeshSolver::log(MeshLogEventType::Create, {objId, toReplace->objId}, {objType(), toReplace->objType()}, "replace");
 
     while(!toReplace->surfaces.empty()) {
         Surface *s = toReplace->surfaces.front();
@@ -580,9 +591,8 @@ HRESULT Vertex::replace(Body *toReplace) {
         if(v->destroy() != S_OK) 
             return E_FAIL;
 
-    if(solver) 
-        if(!_mesh->qualityWorking() && solver->positionChanged() != S_OK)
-            return E_FAIL;
+    if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
+        return E_FAIL;
 
     return S_OK;
 }
@@ -625,30 +635,18 @@ HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
     if(setPosition(newPos) != S_OK) 
         return E_FAIL;
 
-    MeshSolver *solver = mesh ? MeshSolver::get() : NULL;
-
-    if(solver) 
-        solver->log(mesh, MeshLogEventType::Create, {objId, toRemove->objId}, {objType(), toRemove->objType()}, "merge");
+    MeshSolver::log(MeshLogEventType::Create, {objId, toRemove->objId}, {objType(), toRemove->objType()}, "merge");
     
     if(toRemove->transferBondsTo(this) != S_OK || toRemove->destroy() != S_OK) 
         return E_FAIL;
 
-    if(solver) 
-        if(!mesh->qualityWorking() && solver->positionChanged() != S_OK)
-            return E_FAIL;
+    if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
+        return E_FAIL;
 
     return S_OK;
 }
 
 HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
-
-    Mesh *_mesh = v1->mesh;
-    if(v2->mesh) {
-        if(!_mesh) 
-            _mesh = v2->mesh;
-        else if(v2->mesh != _mesh)
-            return tf_error(E_FAIL, "Vertices are in different meshes");
-    }
 
     std::vector<Vertex*>::iterator vitr;
 
@@ -667,17 +665,10 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
         }
     }
 
-    if(objId < 0 && _mesh && _mesh->add(this) != S_OK) 
+    if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
 
-    MeshSolver *solver = _mesh ? MeshSolver::get() : NULL;
-
-    if(solver) {
-        if(!_mesh->qualityWorking() && solver->positionChanged() != S_OK)
-            return E_FAIL;
-
-        solver->log(_mesh, MeshLogEventType::Create, {objId, v2->objId}, {objType(), v2->objType()}, "insert");
-    }
+    MeshSolver::log(MeshLogEventType::Create, {objId, v2->objId}, {objType(), v2->objType()}, "insert");
 
     return S_OK;
 }
@@ -776,13 +767,13 @@ Vertex *Vertex::splitExecute(const FVector3 &sep, const std::vector<Vertex*> &ve
 
     // Create and insert the new vertex
     Vertex *u = new Vertex(u_pos);
-    setPosition(v_pos1);
-    if(mesh && mesh->add(u) != S_OK) {
+    if(u->objId < 0) {
         tf_error(E_FAIL, "Could not add vertex");
         u->destroy();
         delete u;
         return 0;
     }
+    setPosition(v_pos1);
 
     //  Replace v with u where removing
     for(auto &s : surfs_remove_v) {
@@ -803,15 +794,10 @@ Vertex *Vertex::splitExecute(const FVector3 &sep, const std::vector<Vertex*> &ve
         }
     }
 
-    if(mesh) {
-        MeshSolver *solver = MeshSolver::get();
-        if(solver) {
-            if(!mesh->qualityWorking()) 
-                solver->positionChanged();
+    if(!Mesh::get()->qualityWorking()) 
+        MeshSolver::positionChanged();
 
-            solver->log(mesh, MeshLogEventType::Create, {objId, u->objId}, {objType(), u->objType()}, "split");
-        }
-    }
+    MeshSolver::log(MeshLogEventType::Create, {objId, u->objId}, {objType(), u->objType()}, "split");
 
     return u;
 }
@@ -827,15 +813,10 @@ Vertex *Vertex::split(const FVector3 &sep) {
         return NULL;
     }
 
-    if(mesh) {
-        MeshSolver *solver = MeshSolver::get();
-        if(solver) {
-            if(!mesh->qualityWorking()) 
-                solver->positionChanged();
+    if(!Mesh::get()->qualityWorking()) 
+        MeshSolver::positionChanged();
 
-            solver->log(mesh, MeshLogEventType::Create, {objId, u->objId}, {objType(), u->objType()}, "split");
-        }
-    }
+    MeshSolver::log(MeshLogEventType::Create, {objId, u->objId}, {objType(), u->objType()}, "split");
 
     return u;
 }
@@ -861,7 +842,6 @@ namespace TissueForge::io {
         IOElement *fe;
 
         TF_MESH_VERTEXIOTOEASY(fe, "objId", dataElement.objId);
-        TF_MESH_VERTEXIOTOEASY(fe, "meshId", dataElement.mesh == NULL ? -1 : dataElement.mesh->getId());
 
         ParticleHandle *ph = dataElement.particle();
         if(ph == NULL) {
@@ -891,23 +871,7 @@ namespace TissueForge::io {
         else if(!TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) 
             return tf_error(E_FAIL, "No vertex import data available");
 
-        TissueForge::models::vertex::MeshSolver *solver = TissueForge::models::vertex::MeshSolver::get();
-        if(!solver) 
-            return tf_error(E_FAIL, "No vertex solver available");
-
         IOChildMap::const_iterator feItr;
-
-        Mesh *mesh = NULL;
-        int meshIdOld;
-        unsigned int meshId;
-        TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "meshId", &meshIdOld);
-        if(meshIdOld >= 0) {
-            auto meshId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.find(meshIdOld);
-            if(meshId_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->meshIdMap.end() && meshId_itr->second < solver->numMeshes()) {
-                meshId = meshId_itr->second;
-                mesh = solver->getMesh(meshId);
-            }
-        }
 
         int pidOld;
         TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "pid", &pidOld);
@@ -916,15 +880,14 @@ namespace TissueForge::io {
             return tf_error(E_FAIL, "Could not locate particle to import");
 
         *dataElement = new TissueForge::models::vertex::Vertex(idItr->second);
-
-        if(mesh) {
-            if(mesh->add(*dataElement) != S_OK) 
-                return tf_error(E_FAIL, "Failed to add to mesh");
-
-            int objIdOld;
-            TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
-            TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap[meshId].insert({objIdOld, (*dataElement)->objId});
+        if((*dataElement)->objId < 0) {
+            delete *dataElement;
+            return tf_error(E_FAIL, "Failed to add vertex");
         }
+
+        int objIdOld;
+        TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
+        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap.insert({objIdOld, (*dataElement)->objId});
 
         return S_OK;
     }

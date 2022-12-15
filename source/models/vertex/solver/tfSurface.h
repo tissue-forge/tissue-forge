@@ -79,7 +79,7 @@ namespace TissueForge::models::vertex {
     public:
 
         /** Id of the type*/
-        unsigned int typeId;
+        int typeId;
 
         /** Species on outward-facing side of the surface, if any */
         state::StateVector *species1;
@@ -391,11 +391,17 @@ namespace TissueForge::models::vertex {
          */
         virtual SurfaceType *get();
 
+        /** Add an instance */
+        HRESULT add(Surface *i);
+
+        /** Remove an instance */
+        HRESULT remove(Surface *i);
+
         /** list of instances that belong to this type */    
         std::vector<Surface*> getInstances();
 
         /** list of instances ids that belong to this type */
-        std::vector<int> getInstanceIds();
+        std::vector<int> getInstanceIds() { return _instanceIds; }
 
         /** number of instances that belong to this type */
         unsigned int getNumInstances();
@@ -414,6 +420,10 @@ namespace TissueForge::models::vertex {
 
         /** Replace a vertex with a surface. Vertices are created for the surface along every destroyed edge. */
         Surface *replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs);
+
+    private:
+
+        std::vector<int> _instanceIds;
 
     };
 

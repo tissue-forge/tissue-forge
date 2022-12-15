@@ -60,9 +60,6 @@ namespace TissueForge::models::vertex {
 
         ~Mesh();
 
-        /** Get the id of this mesh */
-        const int getId() const;
-
         /** Get a JSON string representation */
         std::string toString();
 
@@ -92,6 +89,9 @@ namespace TissueForge::models::vertex {
 
         /** Remove a mesh object */
         HRESULT removeObj(MeshObj *obj);
+
+        /** Get the mesh */
+        static Mesh *get();
 
         /** Locks the mesh for thread-safe operations */
         void lock() { this->meshLock.lock(); }
