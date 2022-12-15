@@ -131,6 +131,9 @@ namespace TissueForge::models::vertex {
         /** Validate the vertex */
         bool validate() override { return true; }
 
+        /** Get the id of the underlying particle */
+        const int getPartId() const { return pid; }
+
         /** Get the structures defined by the vertex */
         std::vector<Structure*> getStructures() const;
 

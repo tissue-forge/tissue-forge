@@ -242,6 +242,12 @@ HRESULT Surface::add(Vertex *v) {
 }
 
 HRESULT Surface::insert(Vertex *v, const int &idx) {
+    auto itr = std::find(this->vertices.begin(), this->vertices.end(), v);
+    if(itr != this->vertices.end()) {
+        TF_Log(LOG_DEBUG);
+        return E_FAIL;
+    }
+
     int _idx = idx;
     SURFACE_RND_IDX(this->vertices.size(), _idx);
     this->vertices.insert(this->vertices.begin() + _idx, v);
@@ -250,8 +256,11 @@ HRESULT Surface::insert(Vertex *v, const int &idx) {
 
 HRESULT Surface::insert(Vertex *v, Vertex *before) {
     auto itr = std::find(this->vertices.begin(), this->vertices.end(), before);
-    if(itr == this->vertices.end()) 
+    if(itr == this->vertices.end()) {
+        TF_Log(LOG_DEBUG);
         return E_FAIL;
+    }
+
     this->vertices.insert(itr, v);
     return S_OK;
 }
@@ -303,7 +312,7 @@ HRESULT Surface::replace(Body *toInsert, Body *toRemove) {
 }
 
 HRESULT Surface::destroy() {
-    if(this->mesh && this->mesh->remove(this) != S_OK) 
+    if((b1 && b1->destroy() != S_OK) || (b2 && b2->destroy() != S_OK)) 
         return E_FAIL;
     return S_OK;
 }
@@ -386,6 +395,12 @@ HRESULT Surface::become(SurfaceType *stype) {
 }
 
 HRESULT Surface::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
+    // Validate input
+    if(std::find(vertices.begin(), vertices.end(), toInsert) != vertices.end()) {
+        TF_Log(LOG_DEBUG);
+        return E_FAIL;
+    }
+
     // Handle wrap
     Vertex *ve = *vertices.rbegin();
     if((*vertices.begin() == v1 && *vertices.rbegin() == v2) || (*vertices.begin() == v2 && *vertices.rbegin() == v1)) {
@@ -426,16 +441,16 @@ std::vector<Body*> Surface::getBodies() const {
 Vertex *Surface::findVertex(const FVector3 &dir) const {
     Vertex *result = 0;
 
-    FVector3 pta = centroid;
-    FVector3 ptb = pta + dir;
-    FloatP_t bestDist2 = 0;
+    FloatP_t bestCrit = 0;
 
     for(auto &v : getVertices()) {
-        FVector3 pt = v->getPosition();
-        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
-        if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
+        const FVector3 rel_pt = v->getPosition() - centroid;
+        if(rel_pt.isZero()) 
+            continue;
+        const FloatP_t crit = rel_pt.dot(dir) / rel_pt.dot();
+        if(!result || crit > bestCrit) { 
             result = v;
-            bestDist2 = dist2;
+            bestCrit = crit;
         }
     }
 
@@ -445,16 +460,16 @@ Vertex *Surface::findVertex(const FVector3 &dir) const {
 Body *Surface::findBody(const FVector3 &dir) const {
     Body *result = 0;
 
-    FVector3 pta = centroid;
-    FVector3 ptb = pta + dir;
-    FloatP_t bestDist2 = 0;
+    FloatP_t bestCrit = 0;
 
     for(auto &b : getBodies()) {
-        FVector3 pt = b->getCentroid();
-        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
-        if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
+        const FVector3 rel_pt = b->getCentroid() - centroid;
+        if(rel_pt.isZero()) 
+            continue;
+        FloatP_t crit = rel_pt.dot(dir) / rel_pt.dot();
+        if(!result || crit > bestCrit) { 
             result = b;
-            bestDist2 = dist2;
+            bestCrit = crit;
         }
     }
 

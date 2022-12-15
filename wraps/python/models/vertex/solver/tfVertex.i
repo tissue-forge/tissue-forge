@@ -34,6 +34,7 @@
 %rename(update_properties) TissueForge::models::vertex::Vertex::updateProperties;
 %rename(transfer_bonds_to) TissueForge::models::vertex::Vertex::transferBondsTo;
 
+%rename(_getPartId) TissueForge::models::vertex::Vertex::getPartId;
 %rename(_neighborVertices) TissueForge::models::vertex::Vertex::neighborVertices;
 %rename(_replace_surface) TissueForge::models::vertex::Vertex::replace(const FVector3&, Surface*);
 %rename(_replace_body) TissueForge::models::vertex::Vertex::replace(const FVector3&, Body*);
@@ -61,6 +62,10 @@ vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Vertex)
         @property
         def surfaces(self):
             return self.getSurfaces()
+
+        @property
+        def pid(self) -> int:
+            return self._getPartId()
 
         @property
         def neighbor_vertices(self):

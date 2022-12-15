@@ -401,6 +401,8 @@ static bool MeshQuality_vertexSplitTest(
         (p->flags & PARTICLE_FROZEN_Z) ? 0.0f : 1.0f
     };
     for(int k = 0; k < 3; k++) sep[k] *= mask[k];
+    if(sep.isZero()) 
+        return false;
 
     // Get split plan along direction of force
     v->splitPlan(sep, vert_nbs, new_vert_nbs);
@@ -546,7 +548,7 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
                 FVector3 nvrelPos = metrics::relativePosition(vpos, nvpos);
                 FloatP_t nvdist2 = nvrelPos.dot();
                 if(nvdist2 < vertexMergeDist2) {
-                    TF_Log(LOG_TRACE) << nvrelPos;
+                    TF_Log(LOG_TRACE) << v->objId << ", " << nv->objId << ", " << nvrelPos;
                     
                     ops[i] = new EdgeDemoteOperation(mesh, v, nv);
                     return;
@@ -562,7 +564,7 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
                 FVector3 pvrelPos = metrics::relativePosition(vpos, pvpos);
                 FloatP_t pvdist2 = pvrelPos.dot();
                 if(pvdist2 < vertexMergeDist2) {
-                    TF_Log(LOG_TRACE) << pvrelPos;
+                    TF_Log(LOG_TRACE) << v->objId << ", " << pv->objId << ", " << pvrelPos;
                     
                     ops[i] = new EdgeDemoteOperation(mesh, v, pv);
                     return;
@@ -593,14 +595,7 @@ static std::vector<MeshQualityOperation*> MeshQuality_constructOperationsSurface
                 continue;
 
             //  No self-intersecting
-            bool self_intersecting = false;
-            for(auto &s_nb : v_nb->getSurfaces()) {
-                if(s_nb->objId == s->objId) 
-                    self_intersecting = true;
-                if(self_intersecting) 
-                    break;
-            }
-            if(self_intersecting) 
+            if(v_nb->in(s)) 
                 continue;
             
             const FVector3 nb_pos = nb->getPosition();

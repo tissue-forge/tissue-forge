@@ -295,16 +295,17 @@ std::vector<Body*> Vertex::getBodies() const {
 Surface *Vertex::findSurface(const FVector3 &dir) const {
     Surface *result = 0;
 
-    FVector3 pta = getPosition();
-    FVector3 ptb = pta + dir;
-    FloatP_t bestDist2 = 0;
+    FloatP_t bestCrit = 0;
+    const FVector3 position = getPosition();
 
     for(auto &s : getSurfaces()) {
-        FVector3 pt = s->getCentroid();
-        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
-        if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
+        const FVector3 rel_pt = s->getCentroid() - position;
+        if(rel_pt.isZero()) 
+            continue;
+        const FloatP_t crit = rel_pt.dot(dir) / rel_pt.dot();
+        if(!result || crit > bestCrit) { 
             result = s;
-            bestDist2 = dist2;
+            bestCrit = crit;
         }
     }
 
@@ -314,16 +315,17 @@ Surface *Vertex::findSurface(const FVector3 &dir) const {
 Body *Vertex::findBody(const FVector3 &dir) const {
     Body *result = 0;
 
-    FVector3 pta = getPosition();
-    FVector3 ptb = pta + dir;
-    FloatP_t bestDist2 = 0;
+    FloatP_t bestCrit = 0;
+    const FVector3 position = getPosition();
 
     for(auto &b : getBodies()) {
-        FVector3 pt = b->getCentroid();
-        FloatP_t dist2 = Magnum::Math::Distance::linePointSquared(pta, ptb, pt);
-        if((!result || dist2 <= bestDist2) && dir.dot(pt - pta) >= 0.f) { 
+        const FVector3 rel_pt = b->getCentroid() - position;
+        if(rel_pt.isZero()) 
+            continue;
+        FloatP_t crit = rel_pt.dot(dir) / rel_pt.dot();
+        if(!result || crit > bestCrit) { 
             result = b;
-            bestDist2 = dist2;
+            bestCrit = crit;
         }
     }
 
@@ -512,6 +514,7 @@ HRESULT Vertex::replace(Surface *toReplace) {
 Vertex *Vertex::replace(const FVector3 &position, Surface *toReplace) {
     Vertex *result = new Vertex(position);
     if(result->replace(toReplace) != S_OK) {
+        result->destroy();
         delete result;
         return NULL;
     }
@@ -587,6 +590,7 @@ HRESULT Vertex::replace(Body *toReplace) {
 Vertex *Vertex::replace(const FVector3 &position, Body *toReplace) {
     Vertex *result = new Vertex(position);
     if(result->replace(toReplace) != S_OK) {
+        result->destroy();
         delete result;
         return NULL;
     }
@@ -650,6 +654,8 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
 
     // Find the common surface(s)
     for(auto &s1 : v1->surfaces) {
+        if(in(s1)) 
+            continue;
         for(vitr = s1->vertices.begin(); vitr != s1->vertices.end(); vitr++) {
             std::vector<Vertex*>::iterator vnitr = vitr + 1 == s1->vertices.end() ? s1->vertices.begin() : vitr + 1;
             
@@ -679,6 +685,7 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
 Vertex *Vertex::insert(const FVector3 &position, Vertex *v1, Vertex *v2) {
     Vertex *result = new Vertex(position);
     if(result->insert(v1, v2) != S_OK) {
+        result->destroy();
         delete result;
         return NULL;
     }
@@ -695,6 +702,7 @@ HRESULT Vertex::insert(Vertex *vf, std::vector<Vertex*> nbs) {
 Vertex *Vertex::insert(const FVector3 &position, Vertex *vf, std::vector<Vertex*> nbs) {
     Vertex *result = new Vertex(position);
     if(result->insert(vf, nbs) != S_OK) {
+        result->destroy();
         delete result;
         return NULL;
     }
@@ -814,6 +822,10 @@ Vertex *Vertex::split(const FVector3 &sep) {
     Vertex *u = NULL;
     if(splitPlan(sep, verts_v, new_verts_v))
         u = splitExecute(sep, verts_v, new_verts_v);
+    if(!u) {
+        tf_error(E_FAIL, "Failed to split");
+        return NULL;
+    }
 
     if(mesh) {
         MeshSolver *solver = MeshSolver::get();
