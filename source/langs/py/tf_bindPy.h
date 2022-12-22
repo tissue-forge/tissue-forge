@@ -113,7 +113,7 @@ namespace TissueForge::py {
      * @param flags Bond flags
      * @return std::vector<BondHandle*> 
      */
-    CPPAPI_FUNC(std::vector<BondHandle*>) _bondsPy(
+    CPPAPI_FUNC(std::vector<BondHandle>) _bondsPy(
         Potential* potential,
         ParticleList *particles, 
         const FloatP_t &cutoff, 
@@ -123,7 +123,7 @@ namespace TissueForge::py {
         uint32_t flags=0
     );
 
-    CPPAPI_FUNC(std::vector<BondHandle*>) _spherePy(
+    CPPAPI_FUNC(std::vector<BondHandle>) _spherePy(
         ParticleList *particles,
         Potential *potential, 
         const int &n, 

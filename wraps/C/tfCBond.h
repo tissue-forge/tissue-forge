@@ -104,7 +104,7 @@ CAPI_FUNC(HRESULT) tfBondHandle_getId(struct tfBondHandleHandle *handle, int *id
  * @param numChars number of array characters
  * @return S_OK on success
  */
-CAPI_FUNC(HRESULT) tfBondHandle_getStr(struct tfBondHandleHandle *handle, char **str, unsigned int *numChars);
+CAPI_FUNC(HRESULT) tfBondHandle_str(struct tfBondHandleHandle *handle, char **str, unsigned int *numChars);
 
 /**
  * @brief Check the validity of the handle
@@ -133,6 +133,26 @@ CAPI_FUNC(HRESULT) tfBondHandle_destroy(struct tfBondHandleHandle *handle);
 CAPI_FUNC(HRESULT) tfBondHandle_decays(struct tfBondHandleHandle *handle, bool *flag);
 
 /**
+ * @brief Test whether the bond has an id
+ * 
+ * @param handle populated handle
+ * @param pid id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfBondHandle_hasPartId(struct tfBondHandleHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the bond has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfBondHandle_hasPart(struct tfBondHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result);
+
+/**
  * @brief Get the current energy of the bond
  * 
  * @param handle populated handle
@@ -150,6 +170,15 @@ CAPI_FUNC(HRESULT) tfBondHandle_getEnergy(struct tfBondHandleHandle *handle, tfF
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfBondHandle_getParts(struct tfBondHandleHandle *handle, int *parti, int *partj);
+
+/**
+ * @brief Get a list of the particles of the bond
+ * 
+ * @param handle populated handle
+ * @param plist handle to populate
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfBondHandle_getPartList(struct tfBondHandleHandle *handle, struct tfParticleListHandle *plist);
 
 /**
  * @brief Get the potential of the bond
@@ -266,6 +295,24 @@ CAPI_FUNC(HRESULT) tfBondHandle_toString(struct tfBondHandleHandle *handle, char
  */
 CAPI_FUNC(HRESULT) tfBondHandle_fromString(struct tfBondHandleHandle *handle, const char *str);
 
+/** Test whether lhs < rhs */
+CAPI_FUNC(HRESULT) tfBondHandle_lt(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result);
+
+/** Test whether lhs > rhs */
+CAPI_FUNC(HRESULT) tfBondHandle_gt(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result);
+
+/** Test whether lhs <= rhs */
+CAPI_FUNC(HRESULT) tfBondHandle_le(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result);
+
+/** Test whether lhs >= rhs */
+CAPI_FUNC(HRESULT) tfBondHandle_ge(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result);
+
+/** Test whether lhs == rhs */
+CAPI_FUNC(HRESULT) tfBondHandle_eq(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result);
+
+/** Test whether lhs != rhs */
+CAPI_FUNC(HRESULT) tfBondHandle_ne(struct tfBondHandleHandle *lhs, struct tfBondHandleHandle *rhs, bool *result);
+
 
 /////////////////
 // AngleHandle //
@@ -336,6 +383,26 @@ CAPI_FUNC(HRESULT) tfAngleHandle_destroy(struct tfAngleHandleHandle *handle);
 CAPI_FUNC(HRESULT) tfAngleHandle_decays(struct tfAngleHandleHandle *handle, bool *flag);
 
 /**
+ * @brief Test whether the bond has an id
+ * 
+ * @param handle populated handle
+ * @param pid id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfAngleHandle_hasPartId(struct tfAngleHandleHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the bond has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfAngleHandle_hasPart(struct tfAngleHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result);
+
+/**
  * @brief Get the current energy of the angle
  * 
  * @param handle populated handle
@@ -353,6 +420,15 @@ CAPI_FUNC(HRESULT) tfAngleHandle_getEnergy(struct tfAngleHandleHandle *handle, t
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfAngleHandle_getParts(struct tfAngleHandleHandle *handle, int *parti, int *partj);
+
+/**
+ * @brief Get a list of the particles of the angle
+ * 
+ * @param handle populated handle
+ * @param plist handle to populate
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfAngleHandle_getPartList(struct tfAngleHandleHandle *handle, struct tfParticleListHandle *plist);
 
 /**
  * @brief Get the potential of the angle
@@ -469,6 +545,24 @@ CAPI_FUNC(HRESULT) tfAngleHandle_toString(struct tfAngleHandleHandle *handle, ch
  */
 CAPI_FUNC(HRESULT) tfAngleHandle_fromString(struct tfAngleHandleHandle *handle, const char *str);
 
+/** Test whether lhs < rhs */
+CAPI_FUNC(HRESULT) tfAngleHandle_lt(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs > rhs */
+CAPI_FUNC(HRESULT) tfAngleHandle_gt(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs <= rhs */
+CAPI_FUNC(HRESULT) tfAngleHandle_le(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs >= rhs */
+CAPI_FUNC(HRESULT) tfAngleHandle_ge(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs == rhs */
+CAPI_FUNC(HRESULT) tfAngleHandle_eq(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs != rhs */
+CAPI_FUNC(HRESULT) tfAngleHandle_ne(struct tfAngleHandleHandle *lhs, struct tfAngleHandleHandle *rhs, bool *result);
+
 
 ////////////////////
 // DihedralHandle //
@@ -541,6 +635,26 @@ CAPI_FUNC(HRESULT) tfDihedralHandle_destroy(struct tfDihedralHandleHandle *handl
 CAPI_FUNC(HRESULT) tfDihedralHandle_decays(struct tfDihedralHandleHandle *handle, bool *flag);
 
 /**
+ * @brief Test whether the bond has an id
+ * 
+ * @param handle populated handle
+ * @param pid id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfDihedralHandle_hasPartId(struct tfDihedralHandleHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the bond has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfDihedralHandle_hasPart(struct tfDihedralHandleHandle *handle, struct tfParticleHandleHandle *part, bool *result);
+
+/**
  * @brief Get the current energy of the dihedral
  * 
  * @param handle populated handle
@@ -558,6 +672,15 @@ CAPI_FUNC(HRESULT) tfDihedralHandle_getEnergy(struct tfDihedralHandleHandle *han
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfDihedralHandle_getParts(struct tfDihedralHandleHandle *handle, int *parti, int *partj);
+
+/**
+ * @brief Get a list of the particles of the dihedral
+ * 
+ * @param handle populated handle
+ * @param plist handle to populate
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfDihedralHandle_getPartList(struct tfDihedralHandleHandle *handle, struct tfParticleListHandle *plist);
 
 /**
  * @brief Get the potential of the dihedral
@@ -673,6 +796,24 @@ CAPI_FUNC(HRESULT) tfDihedralHandle_toString(struct tfDihedralHandleHandle *hand
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfDihedralHandle_fromString(struct tfDihedralHandleHandle *handle, const char *str);
+
+/** Test whether lhs < rhs */
+CAPI_FUNC(HRESULT) tfDihedralHandle_lt(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result);
+
+/** Test whether lhs > rhs */
+CAPI_FUNC(HRESULT) tfDihedralHandle_gt(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result);
+
+/** Test whether lhs <= rhs */
+CAPI_FUNC(HRESULT) tfDihedralHandle_le(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result);
+
+/** Test whether lhs >= rhs */
+CAPI_FUNC(HRESULT) tfDihedralHandle_ge(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result);
+
+/** Test whether lhs == rhs */
+CAPI_FUNC(HRESULT) tfDihedralHandle_eq(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result);
+
+/** Test whether lhs != rhs */
+CAPI_FUNC(HRESULT) tfDihedralHandle_ne(struct tfDihedralHandleHandle *lhs, struct tfDihedralHandleHandle *rhs, bool *result);
 
 
 //////////////////////

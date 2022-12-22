@@ -54,43 +54,22 @@
 #include "tf_smoothing_kernel.h"
 #include "tf_dpd_eval.h"
 #include "tf_boundary_eval.h"
+#include <tfError.h>
 
 
 using namespace TissueForge;
 
 
 /* the error macro. */
-#define error(id)				(runner_err = errs_register(id, runner_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
-/* list of error messages. */
-extern const char *runner_err_msg[];
+
 extern unsigned int runner_rcount;
 
 static std::mutex _mutexPrint;
 
 
-
-
-
-
-/**
- * @brief Compute the pairwise interactions for the given pair.
- *
- * @param r The #runner computing the pair.
- * @param cell_i The first cell.
- * @param cell_j The second cell.
- * @param shift A pointer to an array of three floating point values containing
- *      the vector separating the centers of @c cell_i and @c cell_j.
- *
- * @return #runner_err_ok or <0 on error (see #runner_err)
- *
- * Computes the interactions between all the particles in @c cell_i and all
- * the paritcles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
- *
- * @sa #runner_sortedpair.
- */
-
-__attribute__ ((flatten)) int TissueForge::runner_dopair(struct runner *r,
+__attribute__ ((flatten)) HRESULT TissueForge::runner_dopair(struct runner *r,
         struct space_cell *cell_i, struct space_cell *cell_j,
         int sid) {
 
@@ -126,7 +105,7 @@ __attribute__ ((flatten)) int TissueForge::runner_dopair(struct runner *r,
     
     /* break early if one of the cells is empty */
     if(cell_i->count == 0 || cell_j->count == 0)
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     eng = r->e;
@@ -349,10 +328,10 @@ __attribute__ ((flatten)) int TissueForge::runner_dopair(struct runner *r,
         }
         
     /* since nothing bad happened to us... */
-    return runner_err_ok;
+    return S_OK;
 }
 
-static inline int particle_largecell_force(Particle *p, struct space_cell *c, FPTYPE& epot) {
+static inline HRESULT particle_largecell_force(Particle *p, struct space_cell *c, FPTYPE& epot) {
     FPTYPE w, r2, e, f, dx[4], pix[4];
     space_cell *large = &_Engine.s.largeparts;
     Potential *pot;
@@ -442,20 +421,10 @@ static inline int particle_largecell_force(Particle *p, struct space_cell *c, FP
 #endif // VECTORIZE
         
     }
-    return 0;
+    return S_OK;
 }
-    
-    
-/**
- * @brief Compute the self-interactions for the given cell.
- *
- * @param r The #runner computing the pair.
- * @param cell_i The first cell.
- *
- * @return #runner_err_ok or <0 on error (see #runner_err)
- */
 
-__attribute__ ((flatten)) int TissueForge::runner_doself(struct runner *r, struct space_cell *c) {
+__attribute__ ((flatten)) HRESULT TissueForge::runner_doself(struct runner *r, struct space_cell *c) {
 
     struct Particle *part_i, *part_j;
     struct space *s;
@@ -496,7 +465,7 @@ __attribute__ ((flatten)) int TissueForge::runner_doself(struct runner *r, struc
     /* break early if one of the cells is empty */
     count = c->count;
     if(count == 0)
-        return runner_err_ok;
+        return S_OK;
     
     /* get some useful data */
     eng = r->e;
@@ -698,28 +667,10 @@ __attribute__ ((flatten)) int TissueForge::runner_doself(struct runner *r, struc
     c->epot += epot;
         
     /* since nothing bad happened to us... */
-    return runner_err_ok;
+    return S_OK;
 }
 
-
-/**
- * @brief Compute the pairwise interactions for the given pair.
- *
- * @param r The #runner computing the pair.
- * @param cell_i The first cell.
- * @param cell_j The second cell.
- * @param shift A pointer to an array of three floating point values containing
- *      the vector separating the centers of @c cell_i and @c cell_j.
- *
- * @return #runner_err_ok or <0 on error (see #runner_err)
- *
- * Computes the interactions between all the particles in @c cell_i and all
- * the paritcles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
- *
- * @sa #runner_sortedpair.
- */
-
-__attribute__ ((flatten)) int TissueForge::runner_dopair_unsorted(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j) {
+__attribute__ ((flatten)) HRESULT TissueForge::runner_dopair_unsorted(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j) {
 
     int i, j, k, count_i, count_j;
     FPTYPE cutoff2, r2, w, shift[3];
@@ -747,7 +698,7 @@ __attribute__ ((flatten)) int TissueForge::runner_dopair_unsorted(struct runner 
     count_i = cell_i->count;
     count_j = cell_j->count;
     if(count_i == 0 || count_j == 0 || (cell_i == cell_j && count_i < 2))
-        return runner_err_ok;
+        return S_OK;
     
     /* get the space and cutoff */
     eng = r->e;
@@ -1037,6 +988,6 @@ __attribute__ ((flatten)) int TissueForge::runner_dopair_unsorted(struct runner 
         cell_i->epot += epot;
         
     /* all is well that ends ok */
-    return runner_err_ok;
+    return S_OK;
 
-    }
+}

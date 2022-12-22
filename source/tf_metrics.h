@@ -136,9 +136,9 @@ namespace TissueForge::metrics {
     /**
      * Creates an array of ParticleList objects.
      */
-    std::vector<std::vector<std::vector<ParticleList*> > > particleGrid(const iVector3 &shape);
+    std::vector<std::vector<std::vector<ParticleList> > > particleGrid(const iVector3 &shape);
 
-    CAPI_FUNC(HRESULT) particleGrid(const iVector3 &shape, ParticleList **result);
+    CAPI_FUNC(HRESULT) particleGrid(const iVector3 &shape, ParticleList *result);
 
     /**
      * @brief Compute the eigenvalues of a 3x3 matrix

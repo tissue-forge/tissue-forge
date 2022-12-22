@@ -23,52 +23,108 @@
 
 #include <iostream>
 #include <sstream>
+#include <memory>
 #include <tfLogger.h>
+#include <tf_errs.h>
+#include <unordered_map>
 
 
 using namespace TissueForge;
 
+static std::vector<std::shared_ptr<Error> > error_registry;
+static std::unordered_map<unsigned int, ErrorCallback&> cb_registry;
 
-static Error _Error;
-static Error *_ErrorPtr = NULL;
+
+const unsigned int TissueForge::addErrorCallback(ErrorCallback &cb) {
+	unsigned int result = cb_registry.size();
+	for(unsigned int i = 0; i < cb_registry.size(); i++) 
+		if(cb_registry.find(i) == cb_registry.end()) {
+			result = i;
+			break;
+		}
+
+	cb_registry.insert({result, cb});
+	return result;
+}
+
+HRESULT TissueForge::removeErrorCallback(const unsigned int &cb_id) {
+	auto itr = cb_registry.find(cb_id);
+	if(itr == cb_registry.end()) 
+		return E_FAIL;
+
+	cb_registry.erase(itr);
+	return S_OK;
+}
+
+HRESULT TissueForge::clearErrorCallbacks() {
+	cb_registry.clear();
+	return S_OK;
+}
 
 HRESULT TissueForge::errSet(HRESULT code, const char* msg, int line,
 		const char* file, const char* func) {
 
-	_Error.err = code;
-	_Error.fname = file;
-	_Error.func = func;
-	_Error.msg = msg;
+	auto err = std::make_shared<Error>();
+	err->err = code;
+	err->fname = file;
+	err->func = func;
+	err->msg = msg;
     
-    std::string logstr = "Code: ";
-    logstr += std::to_string(code);
-    logstr += ", Msg: ";
-    logstr += msg;
-    logstr += ", File: " + std::string(file);
-    logstr += ", Line: " + std::to_string(line);
-    logstr += ", Function: " + std::string(func);
-    Logger::log(LOG_ERROR, logstr);
+    TF_Log(LOG_ERROR) << *err;
+	error_registry.push_back(err);
+	for(auto &cb_pair : cb_registry) 
+		cb_pair.second(*err);
 
-	_ErrorPtr = &_Error;
 	return code;
 }
 
 HRESULT TissueForge::expSet(const std::exception& e, const char* msg, int line, const char* file, const char* func) {
-    std::cerr << "error: " << e.what() << ", " << msg << ", " << line << ", " << func << std::endl;
-    
-    _Error.err = E_FAIL;
-    _Error.fname = file;
-    _Error.func = func;
-    _Error.msg = msg;
-    
-    _ErrorPtr = &_Error;
-    return E_FAIL;
+    return errSet(E_FAIL, e.what(), line, file, func);
 }
 
-Error* TissueForge::errOccurred() {
-    return _ErrorPtr;
+bool TissueForge::errOccurred() {
+    return !error_registry.empty();
 }
 
 void TissueForge::errClear() {
-    _ErrorPtr = NULL;
+    error_registry.clear();
+}
+
+std::string TissueForge::errStr(const Error &err) {
+	std::stringstream ss;
+	ss << err;
+	return ss.str();
+}
+
+std::vector<Error> TissueForge::errGetAll() {
+	std::vector<Error> result;
+	result.reserve(error_registry.size());
+	for(auto &e : error_registry) 
+		result.push_back(*e);
+	return result;
+}
+
+Error TissueForge::errGetFirst() {
+	Error result;
+	if(!errOccurred()) {
+		tf_error(E_FAIL, "Requested errors, but no errors to report");
+		result = *error_registry.front();
+		error_registry.clear();
+	} 
+	else {
+		result = *error_registry.front();
+	}
+	
+	return result;
+}
+
+void TissueForge::errClearFirst() {
+	if(!error_registry.empty()) 
+		error_registry.erase(error_registry.begin());
+}
+
+Error TissueForge::errPopFirst() {
+	Error result = errGetFirst();
+	errClearFirst();
+	return result;
 }

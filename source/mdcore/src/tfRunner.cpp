@@ -62,42 +62,13 @@ using namespace TissueForge;
 
 
 /* Global variables. */
-/** The ID of the last error. */
-int TissueForge::runner_err = runner_err_ok;
 
 /** Timers. */
 ticks TissueForge::runner_timers[runner_timer_count];
 
 /* the error macro. */
-#define error(id)				(runner_err = errs_register(id, runner_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
-/* list of error messages. */
-const char *runner_err_msg[12] = {
-        "Nothing bad happened.",
-        "An unexpected NULL pointer was encountered.",
-        "A call to malloc failed, probably due to insufficient memory.",
-        "An error occured when calling a space function.",
-        "A call to a pthread routine failed.",
-        "An error occured when calling an engine function.",
-        "An error occured when calling an SPE function.",
-        "An error occured with the memory flow controler.",
-        "The requested functionality is not available.",
-        "An error occured when calling an fifo function.",
-        "Error filling Verlet list: too many neighbours.",
-        "Unknown task type.",
-};
-
-
-
-/**
- * @brief Sort the particles in descending order using QuickSort.
- *
- * @param parts The particle IDs and distances in compact form
- * @param N The number of particles.
- *
- * The particle data is assumed to contain the distance in the lower
- * 16 bits and the particle ID in the upper 16 bits.
- */
 
 void TissueForge::runner_sort_descending(unsigned int *parts, int N) {
 
@@ -163,17 +134,6 @@ void TissueForge::runner_sort_descending(unsigned int *parts, int N) {
         }
     }
 }
-
-
-/**
- * @brief Sort the particles in ascending order using QuickSort.
- *
- * @param parts The particle IDs and distances in compact form
- * @param N The number of particles.
- *
- * The particle data is assumed to contain the distance in the lower
- * 16 bits and the particle ID in the upper 16 bits.
- */
 
 void TissueForge::runner_sort_ascending(unsigned int *parts, int N) {
 
@@ -241,7 +201,7 @@ void TissueForge::runner_sort_ascending(unsigned int *parts, int N) {
 }
 
 
-int TissueForge::runner_run(struct runner *r) {
+HRESULT TissueForge::runner_run(struct runner *r) {
 
     struct engine *e = r->e;
     struct space *s = &e->s;
@@ -261,8 +221,8 @@ int TissueForge::runner_run(struct runner *r) {
 
         /* wait at the engine barrier */
         /* printf("runner_run: runner %i waiting at barrier...\n",r->id); */
-        if(engine_barrier(e) < 0)
-            return error(runner_err_engine);
+        if(engine_barrier(e) != S_OK)
+            return error(MDCERR_engine);
 
         /* Init the list of queues. */
         for(k = 0 ; k < e->nr_queues ; k++)
@@ -311,7 +271,7 @@ int TissueForge::runner_run(struct runner *r) {
 
                 /* Lock the mutex. */
                 if(pthread_mutex_lock(&s->tasks_mutex) != 0)
-                    return error(runner_err_pthread);
+                    return error(MDCERR_pthread);
 
                 /* Try again to get a pair... */
                 if(myq->next == myq->count ||(t = queue_get(myq, r->id, 0)) == NULL) {
@@ -333,11 +293,11 @@ int TissueForge::runner_run(struct runner *r) {
                 /* If no pair, wait... */
                 if(count > 0 && t == NULL)    
                     if(pthread_cond_wait(&s->tasks_avail, &s->tasks_mutex) != 0)
-                        return error(runner_err_pthread);
+                        return error(MDCERR_pthread);
 
                 /* Unlock the mutex. */
                 if(pthread_mutex_unlock(&s->tasks_mutex) != 0)
-                    return error(runner_err_pthread);
+                    return error(MDCERR_pthread);
 
                 /* Skip back to the top of the queue if empty-handed. */
                 if(t == NULL)
@@ -351,34 +311,34 @@ int TissueForge::runner_run(struct runner *r) {
             case task_type_sort:
                 TIMER_TIC_ND
                 if(s->verlet_rebuild && !(e->flags & engine_flag_unsorted))
-                    if(runner_dosort(r, &s->cells[ t->i ], t->flags) < 0)
-                        return error(runner_err);
+                    if(runner_dosort(r, &s->cells[ t->i ], t->flags) != S_OK)
+                        return error(MDCERR_runner);
                 s->cells_taboo[ t->i ] = 0;
                 TIMER_TOC(runner_timer_sort);
                 break;
             case task_type_self:
                 TIMER_TIC_ND
-                if(runner_doself(r, &s->cells[ t->i ]) < 0)
-                    return error(runner_err);
+                if(runner_doself(r, &s->cells[ t->i ]) != S_OK)
+                    return error(MDCERR_runner);
                 s->cells_taboo[ t->i ] = 0;
                 TIMER_TOC(runner_timer_self);
                 break;
             case task_type_pair:
                 TIMER_TIC_ND
                 if(e->flags & engine_flag_unsorted) {
-                    if(runner_dopair_unsorted(r, &s->cells[ t->i ], &s->cells[ t->j ]) < 0)
-                        return error(runner_err);
+                    if(runner_dopair_unsorted(r, &s->cells[ t->i ], &s->cells[ t->j ]) != S_OK)
+                        return error(MDCERR_runner);
                 }
                 else {
-                    if(runner_dopair(r, &s->cells[ t->i ], &s->cells[ t->j ], t->flags) < 0)
-                        return error(runner_err);
+                    if(runner_dopair(r, &s->cells[ t->i ], &s->cells[ t->j ], t->flags) != S_OK)
+                        return error(MDCERR_runner);
                 }
                 s->cells_taboo[ t->i ] = 0;
                 s->cells_taboo[ t->j ] = 0;
                 TIMER_TOC(runner_timer_pair);
                 break;
             default:
-                return error(runner_err_tasktype);
+                return error(MDCERR_tasktype);
             }
 
             /* Unlock any dependent tasks. */
@@ -387,11 +347,11 @@ int TissueForge::runner_run(struct runner *r) {
 
             /* Bing! */
             if(pthread_mutex_lock(&s->tasks_mutex) != 0)
-                return error(runner_err_pthread);
+                return error(MDCERR_pthread);
             if(pthread_cond_broadcast(&s->tasks_avail) != 0)
-                return error(runner_err_pthread);
+                return error(MDCERR_pthread);
             if(pthread_mutex_unlock(&s->tasks_mutex) != 0)
-                return error(runner_err_pthread);
+                return error(MDCERR_pthread);
 
         }
 
@@ -400,32 +360,19 @@ int TissueForge::runner_run(struct runner *r) {
         /* did things go wrong? */
         /* printf("runner_run: runner %i done pairs.\n",r->id); fflush(stdout); */
         if(err < 0)
-            return error(runner_err_space);
+            return error(MDCERR_space);
 
         /* Bing! */
         if(pthread_mutex_lock(&s->tasks_mutex) != 0)
-            return error(runner_err_pthread);
+            return error(MDCERR_pthread);
         if(pthread_cond_broadcast(&s->tasks_avail) != 0)
-            return error(runner_err_pthread);
+            return error(MDCERR_pthread);
         if(pthread_mutex_unlock(&s->tasks_mutex) != 0)
-            return error(runner_err_pthread);
+            return error(MDCERR_pthread);
     }
 }
 
-
-
-
-/**
- * @brief Initialize the runner associated to the given engine.
- * 
- * @param r The #runner to be initialized.
- * @param e The #engine with which it is associated.
- * @param id The ID of this #runner.
- * 
- * @return #runner_err_ok or < 0 on error (see #runner_err).
- */
-
-int TissueForge::runner_init(struct runner *r, struct engine *e, int id) {
+HRESULT TissueForge::runner_init(struct runner *r, struct engine *e, int id) {
 
 #if defined(HAVE_SETAFFINITY)
     cpu_set_t cpuset;
@@ -433,7 +380,7 @@ int TissueForge::runner_init(struct runner *r, struct engine *e, int id) {
 
     /* make sure the inputs are ok */
     if(r == NULL || e == NULL)
-        return error(runner_err_null);
+        return error(MDCERR_null);
 
     /* remember who i'm working for */
     r->e = e;
@@ -441,7 +388,7 @@ int TissueForge::runner_init(struct runner *r, struct engine *e, int id) {
 
     /* init the thread using tasks. */
     if(pthread_create(&r->thread, NULL, (void *(*)(void *))runner_run, r) != 0)
-        return error(runner_err_pthread);
+        return error(MDCERR_pthread);
 
     /* If we can, try to restrict this runner to a single CPU. */
 #if defined(HAVE_SETAFFINITY)
@@ -453,13 +400,13 @@ int TissueForge::runner_init(struct runner *r, struct engine *e, int id) {
 
         /* Apply this mask to the runner's pthread. */
         if(pthread_setaffinity_np(r->thread, sizeof(cpu_set_t), &cpuset) != 0)
-            return error(runner_err_pthread);
+            return error(MDCERR_pthread);
 
     }
 #endif
 
     /* all is well... */
-    return runner_err_ok;
+    return S_OK;
 }
 
 /**
@@ -467,16 +414,13 @@ int TissueForge::runner_init(struct runner *r, struct engine *e, int id) {
  *
  * @param r Pointer to the #runner to run.
  *
- * @return #runner_err_ok or <0 on error (see #runner_err).
- *
  * This is the main routine for the #runner. When called, it enters
  * an infinite loop in which it waits at the #engine @c r->e barrier
  * and, once having passed, checks first if the Verlet list should
  * be re-built and then proceeds to traverse the Verlet list cell-wise
  * and computes its interactions.
  */
-
-int runner_run_verlet(struct runner *r) {
+HRESULT runner_run_verlet(struct runner *r) {
 
     int res, i, ci, j, cj, k, eff_size = 0, acc = 0;
     struct engine *e;
@@ -488,22 +432,22 @@ int runner_run_verlet(struct runner *r) {
 
     /* check the inputs */
     if(r == NULL)
-        return error(runner_err_null);
+        return error(MDCERR_null);
 
     /* get a pointer on the engine. */
     e = r->e;
     s = &(e->s);
 
     /* give a hoot */
-    printf("runner_run: runner %i is up and running (Verlet)...\n",r->id); fflush(stdout);
+    TF_Log(LOG_INFORMATION) << "runner_run: runner" << r->id << "is up and running (Verlet)...";
 
     /* main loop, in which the runner should stay forever... */
     while(1) {
 
         /* wait at the engine barrier */
         /* printf("runner_run: runner %i waiting at barrier...\n",r->id); */
-        if(engine_barrier(e) < 0)
-            return error(runner_err_engine);
+        if(engine_barrier(e) != S_OK)
+            return error(MDCERR_engine);
 
         /* Does the Verlet list need to be reconstructed? */
         if(s->verlet_rebuild) {
@@ -513,7 +457,7 @@ int runner_run_verlet(struct runner *r) {
 
                 /* Get a tuple. */
                 if((res = space_gettuple(s, &t, 1)) < 0)
-                    return r->err = runner_err_space;
+                    return r->err = MDCERR_space;
 
                 /* If there were no tuples left, bail. */
                 if(res < 1)
@@ -552,12 +496,12 @@ int runner_run_verlet(struct runner *r) {
                             }
 
                         /* Rebuild the Verlet entries for this cell pair. */
-                        if(runner_verlet_fill(r, &(s->cells[ci]), &(s->cells[cj]), shift) < 0)
-                            return error(runner_err);
+                        if(runner_verlet_fill(r, &(s->cells[ci]), &(s->cells[cj]), shift) != S_OK)
+                            return error(MDCERR_runner);
 
                         /* release this pair */
-                        if(space_releasepair(s, ci, cj) < 0)
-                            return error(runner_err_space);
+                        if(space_releasepair(s, ci, cj) != S_OK)
+                            return error(MDCERR_space);
 
                         }
 
@@ -567,7 +511,7 @@ int runner_run_verlet(struct runner *r) {
 
             /* did anything go wrong? */
             if(res < 0)
-                return error(runner_err_space);
+                return error(MDCERR_space);
 
             } /* reconstruct the Verlet list. */
 
@@ -584,7 +528,7 @@ int runner_run_verlet(struct runner *r) {
                 /* Allocate new eff. */
                 eff_size = s->nr_parts * 1.1;
                 if((eff = (FPTYPE *)malloc(sizeof(FPTYPE) * eff_size * 4)) == NULL)
-                    return error(runner_err_malloc);
+                    return error(MDCERR_malloc);
 
                 }
 
@@ -604,11 +548,11 @@ int runner_run_verlet(struct runner *r) {
 
             /* did things go wrong? */
             if(count < 0)
-                return error(runner_err_space);
+                return error(MDCERR_space);
 
             /* Send the forces and energy back to the space. */
             if(space_verlet_force(s, eff, r->epot) < 0)
-                return error(runner_err_space);
+                return error(MDCERR_space);
 
             }
 
@@ -617,8 +561,6 @@ int runner_run_verlet(struct runner *r) {
         }
 
     /* end well... */
-    return runner_err_ok;
+    return S_OK;
 
-    }
-
-
+}

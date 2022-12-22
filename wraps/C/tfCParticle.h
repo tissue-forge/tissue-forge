@@ -200,6 +200,16 @@ CAPI_FUNC(HRESULT) tfParticleHandle_destroy(struct tfParticleHandleHandle *handl
 CAPI_FUNC(HRESULT) tfParticleHandle_getType(struct tfParticleHandleHandle *handle, struct tfParticleTypeHandle *typeHandle);
 
 /**
+ * @brief Get a summary string of the particle
+ * 
+ * @param handle populated handle
+ * @param str array to populate
+ * @param numChars number of array characters
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleHandle_str(struct tfParticleHandleHandle *handle, char **str, unsigned int *numChars);
+
+/**
  * @brief Splits a single particle into two. Returns the new particle. 
  * 
  * @param handle populated handle
@@ -585,6 +595,24 @@ CAPI_FUNC(HRESULT) tfParticleHandle_toCluster(struct tfParticleHandleHandle *han
  */
 CAPI_FUNC(HRESULT) tfParticleHandle_toString(struct tfParticleHandleHandle *handle, char **str, unsigned int *numChars);
 
+/** Test whether lhs < rhs */
+CAPI_FUNC(HRESULT) tfParticleHandle_lt(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs > rhs */
+CAPI_FUNC(HRESULT) tfParticleHandle_gt(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs <= rhs */
+CAPI_FUNC(HRESULT) tfParticleHandle_le(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs >= rhs */
+CAPI_FUNC(HRESULT) tfParticleHandle_ge(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs == rhs */
+CAPI_FUNC(HRESULT) tfParticleHandle_eq(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result);
+
+/** Test whether lhs != rhs */
+CAPI_FUNC(HRESULT) tfParticleHandle_ne(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result);
+
 
 //////////////////
 // ParticleType //
@@ -806,7 +834,7 @@ CAPI_FUNC(HRESULT) tfParticleType_setDynamics(struct tfParticleTypeHandle *handl
  * @param numParts number of particles
  * @return S_OK on success
  */
-CAPI_FUNC(HRESULT) tfParticleType_getNumParticles(struct tfParticleTypeHandle *handle, int *numParts);
+CAPI_FUNC(HRESULT) tfParticleType_getNumParts(struct tfParticleTypeHandle *handle, int *numParts);
 
 /**
  * @brief Get the i'th particle that's a member of this type.
@@ -876,9 +904,29 @@ CAPI_FUNC(HRESULT) tfParticleType_factory(struct tfParticleTypeHandle *handle, i
  * @param handle populated handle
  * @param _name name of the new type
  * @param newTypehandle handle to populate with new type
- * @return ParticleType* 
+ * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfParticleType_newType(struct tfParticleTypeHandle *handle, const char *_name, struct tfParticleTypeHandle *newTypehandle);
+
+/**
+ * @brief Test whether the type has an id
+ * 
+ * @param handle populated handle
+ * @param pid particle id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleType_hasPartId(struct tfParticleTypeHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the type has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleType_hasPart(struct tfParticleTypeHandle *handle, struct tfParticleHandleHandle *part, bool *result);
 
 /**
  * @brief Registers a type with the engine.
@@ -893,6 +941,16 @@ CAPI_FUNC(HRESULT) tfParticleType_registerType(struct tfParticleTypeHandle *hand
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleType_isRegistered(struct tfParticleTypeHandle *handle, bool *isRegistered);
+
+/**
+ * @brief Get a summary string of the type
+ * 
+ * @param handle populated handle
+ * @param str array to populate
+ * @param numChars number of array characters
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleType_str(struct tfParticleTypeHandle *handle, char **str, unsigned int *numChars);
 
 /**
  * @brief Test whether this type is frozen
@@ -989,6 +1047,24 @@ CAPI_FUNC(HRESULT) tfParticleType_toString(struct tfParticleTypeHandle *handle, 
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleType_fromString(struct tfParticleTypeHandle *handle, const char *str);
+
+/** Test whether lhs < rhs */
+CAPI_FUNC(HRESULT) tfParticleType_lt(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result);
+
+/** Test whether lhs > rhs */
+CAPI_FUNC(HRESULT) tfParticleType_gt(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result);
+
+/** Test whether lhs <= rhs */
+CAPI_FUNC(HRESULT) tfParticleType_le(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result);
+
+/** Test whether lhs >= rhs */
+CAPI_FUNC(HRESULT) tfParticleType_ge(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result);
+
+/** Test whether lhs == rhs */
+CAPI_FUNC(HRESULT) tfParticleType_eq(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result);
+
+/** Test whether lhs != rhs */
+CAPI_FUNC(HRESULT) tfParticleType_ne(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result);
 
 
 //////////////////
@@ -1104,6 +1180,26 @@ CAPI_FUNC(HRESULT) tfParticleList_remove(struct tfParticleListHandle *handle, in
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleList_extend(struct tfParticleListHandle *handle, struct tfParticleListHandle *other);
+
+/**
+ * @brief Test whether the list has an id
+ * 
+ * @param handle populated handle
+ * @param pid id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleList_hasId(struct tfParticleListHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the list has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleList_hasPart(struct tfParticleListHandle *handle, struct tfParticleHandleHandle *part, bool *result);
 
 /**
  * @brief looks for the item at the given index and returns it if found, otherwise returns NULL
@@ -1345,6 +1441,36 @@ CAPI_FUNC(HRESULT) tfParticleTypeList_remove(struct tfParticleTypeListHandle *ha
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleTypeList_extend(struct tfParticleTypeListHandle *handle, struct tfParticleTypeListHandle *other);
+
+/**
+ * @brief Test whether the list has an id
+ * 
+ * @param handle populated handle
+ * @param pid id to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleTypeList_hasId(struct tfParticleTypeListHandle *handle, int pid, bool *result);
+
+/**
+ * @brief Test whether the list has a particle type
+ * 
+ * @param handle populated handle
+ * @param ptype type to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleTypeList_hasType(struct tfParticleTypeListHandle *handle, struct tfParticleTypeHandle *ptype, bool *result);
+
+/**
+ * @brief Test whether the list has a particle
+ * 
+ * @param handle populated handle
+ * @param part particle to test
+ * @param result result of test
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleTypeList_hasPart(struct tfParticleTypeListHandle *handle, struct tfParticleHandleHandle *part, bool *result);
 
 /**
  * @brief looks for the item at the given index and returns it if found, otherwise returns NULL

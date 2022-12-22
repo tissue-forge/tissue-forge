@@ -40,6 +40,11 @@
 %ignore TissueForge::ParticleType_New;
 %ignore TissueForge::Particles_New;
 %ignore TissueForge::_Particle_init;
+%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE&, const TissueForge::ParticleTypeList&);
+%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE&, const std::vector<ParticleType>&);
+%ignore TissueForge::ParticleHandle::neighbors(const FPTYPE&);
+%ignore TissueForge::ParticleHandle::neighbors(const TissueForge::ParticleTypeList&);
+%ignore TissueForge::ParticleHandle::neighbors(const std::vector<ParticleType>&);
 
 %include "tfParticle.h"
 
@@ -56,6 +61,27 @@
 
 %extend TissueForge::ParticleHandle {
     %pythoncode %{
+        def __str__(self) -> str:
+            return self.str()
+
+        def __lt__(self, rhs) -> bool:
+            return self.id < rhs.id
+
+        def __gt__(self, rhs) -> bool:
+            return rhs < self
+
+        def __le__(self, rhs) -> bool:
+            return not (self > rhs)
+
+        def __ge__(self, rhs) -> bool:
+            return not (self < rhs)
+
+        def __eq__(self, rhs) -> bool:
+            return self.id == rhs.id
+
+        def __ne__(self, rhs) -> bool:
+            return not (self == rhs)
+
         @property
         def charge(self):
             """Particle charge"""
@@ -136,6 +162,11 @@
             self.setRadius(radius)
 
         @property
+        def volume(self):
+            """Particle volume"""
+            return self.getVolume()
+
+        @property
         def name(self):
             """Particle name"""
             return self.getName()
@@ -214,11 +245,63 @@
         def dihedrals(self):
             """Dihedrals attached to particle"""
             return self.getDihedrals()
+
+        def neighbors(self, distance=None, types=None):
+            """
+            Gets a list of nearby particles. 
+
+            :param distance: optional search distance; default is simulation cutoff
+            :param types: optional list of particle types to search by; default is all types
+            :rtype: :py:class:`ParticleList`
+            """
+            args = []
+            if distance is not None:
+                args.append(distance)
+            if types is not None:
+                if isinstance(types, ParticleTypeList):
+                    _types = types
+                else:
+                    _types = ParticleTypeList()
+                    [_types.insert(t) for t in types]
+                args.append(_types)
+            return ParticleList(self.neighborIds(*args))
+
+        @property
+        def bonded_neighbors(self):
+            """All bonded neighbor ids. """
+            return ParticleList(self.getBondedNeighborIds())
     %}
 }
 
 %extend TissueForge::ParticleType {
     %pythoncode %{
+        def __getitem__(self, index: int):
+            return self.parts.__getitem__(index)
+
+        def __contains__(self, item):
+            return self.has(item)
+
+        def __str__(self):
+            return self.str()
+
+        def __lt__(self, rhs) -> bool:
+            return self.id < rhs.id
+
+        def __gt__(self, rhs) -> bool:
+            return rhs < self
+
+        def __le__(self, rhs) -> bool:
+            return not (self > rhs)
+
+        def __ge__(self, rhs) -> bool:
+            return not (self < rhs)
+
+        def __eq__(self, rhs) -> bool:
+            return self.id == rhs.id
+
+        def __ne__(self, rhs) -> bool:
+            return not (self == rhs)
+
         def __call__(self, *args, **kwargs):
             position = kwargs.get('position')
             velocity = kwargs.get('velocity')
@@ -258,6 +341,19 @@
             return self._call(pos, vel, cluster_id)
 
         def factory(self, nr_parts=0, positions=None, velocities=None, cluster_ids=None):
+            """
+            Particle factory constructor, for making lots of particles quickly. 
+
+            At minimum, arguments must specify the number of particles to create, whether 
+            specified explicitly or through one or more vector arguments.
+
+            :param nr_parts: number of particles to create, optional
+            :param positions: initial particle positions, optional
+            :param velocities: initial particle velocities, optional
+            :param clusterIds: parent cluster ids, optional
+            :return: ids of created particles
+            """
+
             _positions = None
             if positions is not None:
                 _positions = vectorFVector3()
@@ -274,6 +370,11 @@
                 [_cluster_ids.push_back(x) for x in cluster_ids]
 
             return self._factory(nr_parts=nr_parts, positions=_positions, velocities=_velocities, clusterIds=_cluster_ids)
+
+        @property
+        def volume(self):
+            """Particle type volume"""
+            return self.getVolume()
 
         @property
         def frozen(self):

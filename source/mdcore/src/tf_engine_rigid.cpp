@@ -56,37 +56,22 @@
 using namespace TissueForge;
 
 
-/* the error macro. */
-#define error(id)				(engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
+#define error(id)				(tf_error(E_FAIL, errs_err_msg[id]))
 
 
-
-/**
- * @brief Add a rigid constraint to the engine.
- *
- * @param e The #engine.
- * @param pid The ID of the first #part.
- * @param pjd The ID of the second #part.
- *
- * @return The index of the rigid constraint or < 0 on error (see #engine_err).
- *
- * Beware that currently all particles have to have been inserted before
- * the rigid constraints are added!
- */
- 
-int TissueForge::engine_rigid_add(struct engine *e, int pid, int pjd, FPTYPE d) {
+HRESULT TissueForge::engine_rigid_add(struct engine *e, int pid, int pjd, FPTYPE d) {
 
     struct rigid *dummy, *r;
     int ind, jnd, rid, rjd, k, j;
 
     /* Check inputs. */
     if(e == NULL)
-        return error(engine_err_null);
+        return error(MDCERR_null);
         
     /* If we don't have a part2rigid array, allocate and init one. */
     if(e->part2rigid == NULL) {
         if((e->part2rigid = (int *)malloc(sizeof(int *) * e->s.nr_parts)) == NULL)
-            return error(engine_err_malloc);
+            return error(MDCERR_malloc);
         for(k = 0 ; k < e->s.nr_parts ; k++)
             e->part2rigid[k] = -1;
     }
@@ -102,7 +87,7 @@ int TissueForge::engine_rigid_add(struct engine *e, int pid, int pjd, FPTYPE d) 
         if(e->nr_rigids == e->rigids_size) {
             e->rigids_size  *= 1.414;
             if((dummy = (struct rigid *)malloc(sizeof(struct rigid) * e->rigids_size)) == NULL)
-                return error(engine_err_malloc);
+                return error(MDCERR_malloc);
             memcpy(dummy, e->rigids, sizeof(struct rigid) * e->nr_rigids);
             free(e->rigids);
             e->rigids = dummy;
@@ -214,20 +199,11 @@ int TissueForge::engine_rigid_add(struct engine *e, int pid, int pjd, FPTYPE d) 
     e->rigids_local = e->rigids_semilocal = e->nr_rigids;
         
     /* It's the end of the world as we know it. */
-    return engine_err_ok;
+    return S_OK;
 
 }
-    
-    
-/**
- * @brief Shuffle the rigid constraints randomly.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
  
-int TissueForge::engine_rigid_unsort(struct engine *e) {
+HRESULT TissueForge::engine_rigid_unsort(struct engine *e) {
 
     int k, j;
     struct rigid temp;
@@ -249,20 +225,11 @@ int TissueForge::engine_rigid_unsort(struct engine *e) {
     }
         
     /* Don't you forget about me... */
-    return engine_err_ok;
+    return S_OK;
 
 }
-    
-    
-/**
- * @brief Split the rigids into local, semilocal and non-local.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
- 
-int TissueForge::engine_rigid_sort(struct engine *e) {
+
+HRESULT TissueForge::engine_rigid_sort(struct engine *e) {
 
     struct space_cell **celllist;
     struct rigid temp;
@@ -271,7 +238,7 @@ int TissueForge::engine_rigid_sort(struct engine *e) {
     /* If not in parallel, then we've got nothing to do. */
     if(e->nr_nodes == 1) {
         e->rigids_semilocal = e->rigids_local = e->nr_rigids;
-        return engine_err_ok;
+        return S_OK;
     }
     
     /* Get a handle on the celllist. */
@@ -333,22 +300,11 @@ int TissueForge::engine_rigid_sort(struct engine *e) {
     e->rigids_semilocal = nr_rigids;
         
     /* I'll be back... */
-    return engine_err_ok;
+    return S_OK;
 
 }
 
-/**
- * @brief Resolve the constraints.
- * 
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- *
- * Note that if in parallel, #engine_rigid_sort should be called before
- * this routine.
- */
- 
-int TissueForge::engine_rigid_eval(struct engine *e) {
+HRESULT TissueForge::engine_rigid_eval(struct engine *e) {
 
     int nr_local = e->rigids_local, nr_rigids = e->rigids_semilocal;
     #ifdef WITH_MPI
@@ -418,7 +374,7 @@ int TissueForge::engine_rigid_eval(struct engine *e) {
             /* Wait for the async data to come in. */
             tic = getticks();
             if(engine_exchange_rigid_wait(e) < 0)
-                return error(engine_err);
+                return error(MDCERR_mpi);
             tic = getticks() - tic;
             e->timers[engine_timer_exchange1] += tic;
             e->timers[engine_timer_rigid] -= tic;
@@ -476,12 +432,12 @@ int TissueForge::engine_rigid_eval(struct engine *e) {
         
             /* Shake local rigids. */
             if(e->flags & engine_flag_shake) {
-                if(rigid_eval_shake(e->rigids, nr_local, e) < 0)
-                    return error(engine_err_rigid);
+                if(rigid_eval_shake(e->rigids, nr_local, e) != S_OK)
+                    return error(MDCERR_rigid);
             }
             else {
-                if(rigid_eval_pshake(e->rigids, nr_local, e, (e->time < engine_pshake_steps)) < 0)
-                    return error(engine_err_rigid);
+                if(rigid_eval_pshake(e->rigids, nr_local, e, (e->time < engine_pshake_steps)) != S_OK)
+                    return error(MDCERR_rigid);
             }
                 
             /* Wait for exchange to come in. */
@@ -489,7 +445,7 @@ int TissueForge::engine_rigid_eval(struct engine *e) {
             //tic = getticks();
             if(e->flags & engine_flag_async)
                 if(engine_exchange_wait(e) < 0)
-                    return error(engine_err);
+                    return error(MDCERR_mpi);
             //tic = getticks() - tic;
             //e->timers[engine_timer_exchange1] += tic;
             //e->timers[engine_timer_verlet] -= tic;
@@ -497,12 +453,12 @@ int TissueForge::engine_rigid_eval(struct engine *e) {
                 
             /* Shake semi-local rigids. */
             if(e->flags & engine_flag_shake) {
-                if(rigid_eval_shake(&(e->rigids[nr_local]), nr_rigids-nr_local, e) < 0)
-                    return error(engine_err_rigid);
+                if(rigid_eval_shake(&(e->rigids[nr_local]), nr_rigids-nr_local, e) != S_OK)
+                    return error(MDCERR_rigid);
             }
             else {
-                if(rigid_eval_pshake(&(e->rigids[nr_local]), nr_rigids-nr_local, e, (e->time < engine_pshake_steps)) < 0)
-                    return error(engine_err_rigid);
+                if(rigid_eval_pshake(&(e->rigids[nr_local]), nr_rigids-nr_local, e, (e->time < engine_pshake_steps)) != S_OK)
+                    return error(MDCERR_rigid);
             }
                 
         #endif
@@ -564,12 +520,12 @@ int TissueForge::engine_rigid_eval(struct engine *e) {
         #else
         
             if(e->flags & engine_flag_shake) {
-                if(rigid_eval_shake(e->rigids, nr_rigids, e) < 0)
-                    return error(engine_err_rigid);
+                if(rigid_eval_shake(e->rigids, nr_rigids, e) != S_OK)
+                    return error(MDCERR_rigid);
             }
             else {
-                if(rigid_eval_pshake(e->rigids, nr_rigids, e, (e->time < engine_pshake_steps)) < 0)
-                    return error(engine_err_rigid);
+                if(rigid_eval_pshake(e->rigids, nr_rigids, e, (e->time < engine_pshake_steps)) != S_OK)
+                    return error(MDCERR_rigid);
             }
                 
         #endif
@@ -577,7 +533,7 @@ int TissueForge::engine_rigid_eval(struct engine *e) {
     }
         
     /* I'll be back... */
-    return engine_err_ok;
+    return S_OK;
 
 }
     

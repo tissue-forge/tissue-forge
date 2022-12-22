@@ -77,11 +77,11 @@ int main(int argc, char const *argv[])
 
     A->factory(nr_parts, &pos);
 
-    ParticleHandle *a = A->items()->item(0);
+    ParticleHandle *a = A->items().item(0);
     FloatP_t n_dist = 5.0;
-    ParticleList *n_list = a->neighbors(&n_dist);
-    for(int i = 0; i < n_list->nr_parts; i++) 
-        n_list->item(i)->become(B);
+    ParticleList n_list = a->neighbors(&n_dist);
+    for(int i = 0; i < n_list.nr_parts; i++) 
+        n_list.item(i)->become(B);
 
     // run the simulator
     TF_TEST_CHECK(step(Universe::getDt() * 100));

@@ -34,10 +34,13 @@ namespace TissueForge::types {
     template<class T>
     class TMatrix3 : public Matrix3Base<T> {
         public:
+            /** Initialize a rotation matrix */
             static TMatrix3<T> rotation(T angle) { return (TMatrix3<T>)Matrix3Base<T>::rotation(Magnum::Math::Rad<T>(angle)); }
 
+            /** Initialize a shearing matrix along the X (first) direction */
             constexpr static TMatrix3<T> shearingX(T amount) { return (TMatrix3<T>)Matrix3Base<T>::shearingX(amount); }
 
+            /** Initialize a shearing matrix along the Y (second) direction */
             constexpr static TMatrix3<T> shearingY(T amount) { return (TMatrix3<T>)Matrix3Base<T>::shearingY(amount); }
 
             constexpr TMatrix3() noexcept: Matrix3Base<T>() {}
@@ -51,11 +54,11 @@ namespace TissueForge::types {
 
             template<std::size_t otherSize> constexpr explicit TMatrix3(const TMatrixS<otherSize, T>& other) noexcept: Matrix3Base<T>{(TMatrixS<otherSize, T>)other} {}
 
+            /** Test whether the matrix is a rigid transformation */
             bool isRigidTransformation() const { return Matrix3Base<T>::isRigidTransformation(); }
 
+            /** Get the inverted rigid transformation. Must be a rigid transformation. */
             TMatrix3<T> invertedRigid() const { return (TMatrix3<T>)Matrix3Base<T>::invertedRigid(); }
-
-            // Implementing this constructor here for now, as the template is too nasty to be useful in a macro
 
             TMatrix3(const std::vector<T> &v1, const std::vector<T> &v2, const std::vector<T> &v3) : 
                 TMatrix3<T>(TVector3<T>(v1), TVector3<T>(v2), TVector3<T>(v3)) {}

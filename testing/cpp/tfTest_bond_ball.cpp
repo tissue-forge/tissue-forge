@@ -63,7 +63,7 @@ struct CType : ParticleType {
 HRESULT update(const event::TimeEvent &e) {
     BType B;
     ParticleType *B_p = B.get();
-    std::cout << e.times_fired << ", " << B_p->items()->getCenterOfMass() << std::endl;
+    std::cout << e.times_fired << ", " << B_p->items().getCenterOfMass() << std::endl;
     return S_OK;
 };
 

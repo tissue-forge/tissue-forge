@@ -300,7 +300,7 @@ HRESULT rendering::GlfwApplication::messageLoop(double et)
           glfwGetWindowAttrib(Magnum::Platform::GlfwApplication::window(), GLFW_VISIBLE)) {
 
         // keep processing messages until window closes.
-        if(engine_err == 0 && Universe_Flag(Universe::Flags::RUNNING)) {
+        if(!errOccurred() && Universe_Flag(Universe::Flags::RUNNING)) {
             if(!SUCCEEDED((hr = Application::simulationStep()))) {
                 TF_Log(LOG_CRITICAL) << "something went wrong.";
                 close();
@@ -313,7 +313,7 @@ HRESULT rendering::GlfwApplication::messageLoop(double et)
 
 HRESULT rendering::GlfwApplication::mainLoopIteration(double timeout) {
     HRESULT hr;
-    if(engine_err == 0 && Universe_Flag(Universe::Flags::RUNNING)) {
+    if(!errOccurred() && Universe_Flag(Universe::Flags::RUNNING)) {
 
         // perform a simulation step if universe is in running state
         if(FAILED((hr = Application::simulationStep()))) {
@@ -329,8 +329,10 @@ HRESULT rendering::GlfwApplication::mainLoopIteration(double timeout) {
         }
     }
     else {
-        Simulator::get()->redraw();
+        glfwPostEmptyEvent();
     }
+
+    Simulator::get()->redraw();
 
     // process messages
     Magnum::Platform::GlfwApplication::mainLoopIteration();
@@ -365,6 +367,7 @@ void rendering::GlfwApplication::keyPressEvent(KeyEvent &event)
         }
         case Magnum::Platform::GlfwApplication::KeyEvent::KeyEvent::Key::S: {
             Universe::step(0, 0);
+            Simulator::redraw();
         }
         default:
             break;

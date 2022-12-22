@@ -28,7 +28,6 @@
 %import <rendering/tfColorMapper.h>
 
 %ignore TissueForge::rendering::ColorMapperFunc;
-%ignore TissueForge::rendering::Style::color;
 %ignore TissueForge::rendering::Style::flags;
 %ignore TissueForge::rendering::Style::mapper;
 %ignore TissueForge::rendering::Style::mapper_func;

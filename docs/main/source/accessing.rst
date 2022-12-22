@@ -39,7 +39,9 @@ list of all of the particles of that type::
     [my_type() for _ in range(10)]
 
     # get all the instances of that type:
-    parts = my_type.items()
+    parts = my_type.parts
+    for p in parts:
+        print(f'{my_type}' has particle {p}')
 
 *All* particles currently in a simulation are also accessible from the
 :ref:`universe <universe>` via the property :py:attr:`particles <Universe.particles>`.
@@ -57,6 +59,9 @@ is a list of particle types to restrict the search to. ::
     # Make a particle and find its nearby A- and B-type neighbors
     p = my_type()
     nbrs = p.neighbors(distance=1, types=[A, B])
+    print(f'Particle has {len(nbrs)} neighbors')
+    # Test if another particle is a neighbor
+    print('Particle 2 is a neighbor:', tf.ParticleHandle(2) in nbrs)
 
 Tissue Forge also provides the ability to organize all the particles into a
 discretized grid, for example, to display some quantity as a function of

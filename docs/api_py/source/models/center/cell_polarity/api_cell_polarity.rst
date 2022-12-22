@@ -55,8 +55,7 @@ For details on the mathematics and modeling concepts, see the
 
 .. autofunction:: createContactPotential
 
-.. autoclass:: ContactPotential
-    :show-inheritance:
+.. autoclass:: ContactPotential(tissue_forge.Potential)
 
     .. autoattribute:: couplingFlat
 
@@ -74,8 +73,7 @@ For details on the mathematics and modeling concepts, see the
 
     .. autoattribute:: bendingCoeff
 
-.. autoclass:: PersistentForce
-    :show-inheritance:
+.. autoclass:: PersistentForce(tissue_forge.Force)
 
     .. autoattribute:: sensAB
 

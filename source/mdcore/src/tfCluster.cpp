@@ -32,11 +32,16 @@
 #include <tfSpace.h>
 #include <tfSpace_cell.h>
 #include <tf_metrics.h>
+#include <tf_errs.h>
 
 #include <rendering/tfStyle.h>
 
 
 using namespace TissueForge;
+
+
+/* the error macro. */
+#define error(id)( tf_error(E_FAIL, errs_err_msg[id]) )
 
 
 /**
@@ -133,10 +138,10 @@ static ParticleHandle* cluster_fission_axis(Particle *cluster, const FVector3 &a
     return cluster_fission_plane(cluster, plane);
 }
 
-int TissueForge::Cluster_ComputeAggregateQuantities(struct Cluster *cluster) {
+HRESULT TissueForge::Cluster_ComputeAggregateQuantities(struct Cluster *cluster) {
     
     if(cluster->nr_parts <= 0) {
-        return 0;
+        return S_OK;
     }
     
     FVector3 pos;
@@ -150,7 +155,7 @@ int TissueForge::Cluster_ComputeAggregateQuantities(struct Cluster *cluster) {
     
     cluster->set_global_position(pos / cluster->nr_parts);
     
-    return 0;
+    return S_OK;
 }
 
 
@@ -180,6 +185,14 @@ TissueForge::ClusterParticleType::ClusterParticleType(const bool &noReg) :
     this->particle_flags |= PARTICLE_CLUSTER;
 }
 
+std::string TissueForge::ClusterParticleType::str() const {
+    std::stringstream ss;
+
+    ss << "ClusterParticleType(id=" << this->id << ", name=" << this->name << ")";
+
+    return ss.str();
+}
+
 bool TissueForge::ClusterParticleType::hasType(const ParticleType *type) {
     for (int tid = 0; tid < types.nr_parts; ++tid) {
         if (type->id == types.item(tid)->id) 
@@ -188,8 +201,30 @@ bool TissueForge::ClusterParticleType::hasType(const ParticleType *type) {
     return false;
 }
 
-// Registers a type with the engine. 
-// Also registers all unregistered constituent types
+bool TissueForge::ClusterParticleType::has(const int32_t &pid) {
+    for(int tid = 0; tid < types.nr_parts; tid++) {
+        if(types.parts[tid] == pid) 
+            return true;
+
+        ParticleType *ptype = types.item(tid);
+        if(ptype->isCluster()) {
+            ClusterParticleType *ctype = (ClusterParticleType*)ptype;
+            if(ctype->has(pid)) 
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool TissueForge::ClusterParticleType::has(ParticleType *ptype) {
+    return ptype ? has(ptype->id) : false;
+}
+
+bool TissueForge::ClusterParticleType::has(ParticleHandle *part) {
+    return part ? parts.has(part) : false;
+}
+
 HRESULT TissueForge::ClusterParticleType::registerType() {
     for (int tid = 0; tid < types.nr_parts; ++tid) {
         auto type = types.item(tid);
@@ -210,9 +245,22 @@ TissueForge::ClusterParticleHandle::ClusterParticleHandle() :
     ParticleHandle() 
 {}
 
-TissueForge::ClusterParticleHandle::ClusterParticleHandle(const int &id, const int &typeId) : 
-    ParticleHandle(id, typeId) 
+TissueForge::ClusterParticleHandle::ClusterParticleHandle(const int &id) : 
+    ParticleHandle(id) 
 {}
+
+std::string TissueForge::ClusterParticleHandle::str() const {
+    std::stringstream  ss;
+    
+    ss << "ClusterParticleHandle(";
+    if(this->id >= 0) {
+        ClusterParticleHandle ph(this->id);
+        ss << "id=" << ph.getId() << ", typeId=" << ph.getTypeId() << ", clusterId=" << ph.getClusterId();
+    }
+    ss << ")";
+    
+    return ss.str();
+}
 
 Cluster *TissueForge::ClusterParticleHandle::cluster() {
     return (Cluster*)this->part();
@@ -223,7 +271,11 @@ ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *par
                                                                FVector3 *velocity) 
 {
     auto p = Cluster_CreateParticle((Cluster*)part(), partType, position, velocity);
-    return new ParticleHandle(p->id, p->typeId);
+    if(!p) {
+        error(MDCERR_null);
+        return NULL;
+    }
+    return new ParticleHandle(p->id);
 }
 
 ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *partType, const std::string &str) {
@@ -231,6 +283,28 @@ ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *par
     ParticleHandle *p = (*this)(partType, &dummy->position, &dummy->velocity);
     delete dummy;
     return p;
+}
+
+bool TissueForge::ClusterParticleHandle::has(const int32_t &pid) {
+    ParticleList plist = this->items();
+
+    for(size_t i = 0; i < plist.nr_parts; i++) {
+        if(plist.parts[i] == pid) 
+            return true;
+
+        ParticleHandle *ph = plist.item(i);
+        if(ph->getClusterId() >= 0) {
+            ClusterParticleHandle *ch = (ClusterParticleHandle*)ph;
+            if(ch->has(pid)) 
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool TissueForge::ClusterParticleHandle::has(ParticleHandle *part) {
+    return part ? has(part->id) : false;
 }
 
 /**
@@ -252,10 +326,6 @@ ParticleHandle *TissueForge::ClusterParticleHandle::operator()(ParticleType *par
  # default version of split uses a random cleavage plane that intersects the
  # cell center
  split()
- 
- # the old style, were randomly picks contained objects, and assigns half of them
- # to the daughter cell
- split(random=True)
 */
 ParticleHandle* TissueForge::ClusterParticleHandle::fission(FVector3 *axis, 
                                                             bool *random, 
@@ -305,7 +375,6 @@ ParticleHandle* TissueForge::ClusterParticleHandle::fission(FVector3 *axis,
     }
     
     return cluster_fission_normal_point(cluster, _normal, _point);
-    // return cluster_fission(this, axis, random, time, normal, point);
 }
 
 ParticleHandle* TissueForge::ClusterParticleHandle::split(FVector3 *axis, 
@@ -315,9 +384,9 @@ ParticleHandle* TissueForge::ClusterParticleHandle::split(FVector3 *axis,
                                                           FVector3 *point) 
 { return fission(axis, random, time, normal, point); }
 
-ParticleList *TissueForge::ClusterParticleHandle::items() {
+ParticleList TissueForge::ClusterParticleHandle::items() {
     Particle *self = this->part();
-    return new ParticleList(self->nr_parts, self->parts);
+    return ParticleList(self->nr_parts, self->parts);
 }
 
 FPTYPE TissueForge::ClusterParticleHandle::getRadiusOfGyration() {
@@ -348,10 +417,24 @@ FMatrix3 TissueForge::ClusterParticleHandle::getMomentOfInertia() {
     return result;
 }
 
+uint16_t TissueForge::ClusterParticleHandle::getNumParts() {
+    Particle *self = this->part();
+    return self->nr_parts;
+}
+
+std::vector<int32_t> TissueForge::ClusterParticleHandle::getPartIds() {
+    Particle *self = this->part();
+    std::vector<int32_t> result;
+    result.reserve(self->nr_parts);
+    for(size_t i = 0; i < self->nr_parts; i++) 
+        result.push_back(self->parts[i]);
+    return result;
+}
+
 /**
  * adds an existing particle to the cluster.
  */
-int TissueForge::Cluster_AddParticle(struct Cluster *cluster, struct Particle *part) {
+HRESULT TissueForge::Cluster_AddParticle(struct Cluster *cluster, struct Particle *part) {
     part->flags |= PARTICLE_BOUND;
     cluster->addpart(part->id);
     return S_OK;
@@ -368,14 +451,23 @@ Particle *TissueForge::Cluster_CreateParticle(Cluster *cluster,
     TF_Log(LOG_TRACE);
     
     auto *type = &_Engine.types[cluster->typeId];
-    if (!type->isCluster()) return NULL;
+    if (!type->isCluster()) {
+        error(MDCERR_notcluster);
+        return NULL;
+    }
     
     auto *clusterType = (ClusterParticleType*)type;
     TF_Log(LOG_TRACE) << type->id << ", " << particleType->id << ", " << clusterType->hasType(particleType);
-    if (!clusterType->hasType(particleType)) return NULL;
+    if (!clusterType->hasType(particleType)) {
+        error(MDCERR_wrongptype);
+        return NULL;
+    }
 
     auto handle = Particle_New(particleType, position, velocity, &cluster->id);
-    if (!handle) return NULL;
+    if (!handle) {
+        error(MDCERR_null);
+        return NULL;
+    }
 
     return handle->part();
 
@@ -391,7 +483,7 @@ HRESULT TissueForge::_Cluster_init() {
     TF_Log(LOG_TRACE);
 
     if(engine::nr_types != 1) {
-        return tf_error(E_FAIL, "engine types already set, or not initialized in correct order");
+        return error(MDCERR_initorder);
     }
 
     auto type = new ClusterParticleType();

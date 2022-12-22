@@ -1,6 +1,8 @@
 Tissue Forge
 ============
 
+![](https://github.com/tissue-forge/tissue-forge/blob/main/docs/main/source/droplets_3d.gif)
+
 Tissue Forge is an interactive, particle-based physics, chemistry and biology
 modeling and simulation environment. Tissue Forge provides the ability to create, 
 simulate and explore models, simulations and virtual experiments of soft condensed 
@@ -17,7 +19,7 @@ Python APIs and additional support for interactive model and simulation specific
 an IPython console and a Jupyter Notebook. 
 Tissue Forge currently supports installations on 64-bit Windows, Linux and MacOS systems. 
 
-To get the latest version of Tissue Forge, [![Anaconda-Server Badge](https://anaconda.org/tissue-forge/tissue-forge/badges/installer/conda.svg)](https://conda.anaconda.org/tissue-forge)
+To get the latest version of Tissue Forge, [![Anaconda-Server Badge](https://anaconda.org/tissue-forge/tissue-forge/badges/version.svg)](https://anaconda.org/tissue-forge/tissue-forge)
 
 ## Build Status ##
 
@@ -51,7 +53,7 @@ Tissue Forge documentation is available online,
 Binary distributions of Tissue Forge are available via conda from the `tissue-forge` channel, 
 
 ```bash
-conda install -c tissue-forge tissue-forge
+conda install -c conda-forge -c tissue-forge tissue-forge
 ```
 
 Pre-built binaries of the latest Tissue Forge developments are also archived at the 

@@ -116,20 +116,19 @@ HRESULT tfBindBonds(
 
     HRESULT result;
     if(out && numOut) {
-        std::vector<BondHandle*> *_outv;
-        result = bind::bonds(_potential, _particles, cutoff, pairs, _half_life, _bond_energy, 0, &_outv);
+        std::vector<BondHandle> _outv;
+        result = bind::bonds(_potential, *_particles, cutoff, pairs, _half_life, _bond_energy, 0, &_outv);
         if(result == S_OK) {
-            *numOut = _outv->size();
+            *numOut = _outv.size();
             tfBondHandleHandle *_out = (tfBondHandleHandle*)malloc(*numOut * sizeof(tfBondHandleHandle));
-            for(unsigned int i = 0; i < _outv->size(); i++) {
-                _out[i].tfObj = (void*)(*_outv)[i];
+            for(unsigned int i = 0; i < _outv.size(); i++) {
+                _out[i].tfObj = (void*)(new BondHandle(_outv[i]));
             }
             *out = _out;
-            delete _outv;
         }
     }
     else {
-        result = bind::bonds(_potential, _particles, cutoff, pairs, _half_life, _bond_energy);
+        result = bind::bonds(_potential, *_particles, cutoff, pairs, _half_life, _bond_energy);
     }
 
     if(pairs) {

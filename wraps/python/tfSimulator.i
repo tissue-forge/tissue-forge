@@ -67,6 +67,14 @@
             return _SimulatorPy._run(args, kwargs)
 
         @staticmethod
+        def irun():
+            """
+            Interactive python version of the run loop. This checks the ipython context and lets
+            ipython process keyboard input, while we also running the simulator and processing window messages.
+            """
+            return _SimulatorPy.irun()
+
+        @staticmethod
         def show():
             """
             Shows any windows that were specified in the config. This works just like
@@ -86,6 +94,15 @@
         @staticmethod
         def redraw():
             return _SimulatorPy.redraw()
+
+        @property
+        def throw_exceptions(self) -> bool:
+            """Whether errors result in exceptions"""
+            return _SimulatorPy._throwingExceptions()
+
+        @throw_exceptions.setter
+        def throw_exceptions(self, _throw: bool):
+            _SimulatorPy._throwExceptions(_throw)
 
     Simulator = SimulatorInterface()
     

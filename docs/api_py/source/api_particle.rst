@@ -35,6 +35,8 @@ Particles and Clusters
 
     .. autoproperty:: radius
 
+    .. autoproperty:: volume
+
     .. autoproperty:: name
 
     .. autoproperty:: position
@@ -61,6 +63,8 @@ Particles and Clusters
 
     .. automethod:: part
 
+    .. automethod:: get
+
     .. automethod:: type
 
     .. automethod:: split
@@ -75,11 +79,25 @@ Particles and Clusters
 
     .. automethod:: neighbors
 
-    .. automethod:: getBondedNeighbors
+    .. automethod:: bonded_neighbors
 
     .. automethod:: distance
 
     .. automethod:: to_cluster
+
+    .. automethod:: __str__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
 
 
 .. autoclass:: ParticleTypeSpec
@@ -135,6 +153,8 @@ Particles and Clusters
 
     .. autoattribute:: radius
 
+    .. autoproperty:: volume
+
     .. autoattribute:: kinetic_energy
 
     .. autoattribute:: potential_energy
@@ -156,6 +176,24 @@ Particles and Clusters
     .. automethod:: particle
 
     .. automethod:: particleTypeIds
+
+    .. automethod:: __str__
+
+    .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
 
     .. automethod:: __call__
 
@@ -203,7 +241,31 @@ Particles and Clusters
 
     .. autoproperty:: moment_of_inertia
 
+    .. autoproperty:: num_parts
+
+    .. autoproperty:: parts
+
     .. autoattribute:: items
+
+    .. automethod:: has
+
+    .. automethod:: __str__
+
+    .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__
 
     .. automethod:: __call__
 
@@ -229,3 +291,23 @@ Particles and Clusters
     .. automethod:: hasType
 
     .. automethod:: get
+
+    .. automethod:: has
+
+    .. automethod:: __str__
+
+    .. automethod:: __getitem__
+
+    .. automethod:: __contains__
+
+    .. automethod:: __lt__
+
+    .. automethod:: __gt__
+
+    .. automethod:: __le__
+
+    .. automethod:: __ge__
+
+    .. automethod:: __eq__
+
+    .. automethod:: __ne__

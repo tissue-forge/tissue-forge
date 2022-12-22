@@ -82,6 +82,48 @@ CAPI_FUNC(HRESULT) tfSystem_contextMakeCurrent();
 CAPI_FUNC(HRESULT) tfSystem_contextRelease();
 
 /**
+ * @brief Test whether the camera is lagging
+ * 
+ * @return value of test
+ */
+CAPI_FUNC(bool) tfSystem_cameraIsLagging();
+
+/**
+ * @brief Enable camera lagging
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraEnableLagging();
+
+/**
+ * @brief Disable camera lagging
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraDisableLagging();
+
+/**
+ * @brief Toggle camera lagging
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraToggleLagging();
+
+/**
+ * @brief Get the camera lagging
+ * 
+ * @return value of lagging
+ */
+CAPI_FUNC(float) tfSystem_cameraGetLagging();
+
+/**
+ * @brief Set the camera lagging. Value must be in [0, 1)
+ * 
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfSystem_cameraSetLagging(float lagging);
+
+/**
 * @brief Set the camera view parameters
 * 
 * @param eye camera eye
@@ -358,6 +400,39 @@ CAPI_FUNC(HRESULT) tfSystem_cameraRotation(float **rotation);
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfSystem_cameraZoom(float *zoom);
+
+/** Get whether bonds are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_getRendering3DBonds(bool *flag);
+
+/** Set whether bonds are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_setRendering3DBonds(bool flag);
+
+/** Toggle whether bonds are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_toggleRendering3DBonds();
+
+/** Get whether angles are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_getRendering3DAngles(bool *flag);
+
+/** Set whether angles are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_setRendering3DAngles(bool flag);
+
+/** Toggle whether angles are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_toggleRendering3DAngles();
+
+/** Get whether dihedrals are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_getRendering3DDihedrals(bool *flag);
+
+/** Set whether dihedrals are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_setRendering3DDihedrals(bool flag);
+
+/** Toggle whether dihedrals are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_toggleRendering3DDihedrals();
+
+/** Set whether bonds, angle and dihedrals are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_setRendering3DAll(bool flag);
+
+/** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
+CAPI_FUNC(HRESULT) tfSystem_toggleRendering3DAll();
 
 /**
  * @brief Get the ambient color

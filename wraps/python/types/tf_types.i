@@ -213,6 +213,7 @@ typedef TissueForge::types::TQuaternion<float> fQuaternion;
 
 %extend name<dataType> {
     dataType _length() { return $self->length(); }
+    dataType _angle(const name<dataType> &other) { return $self->angle(other); }
     name<dataType> _normalized() { return $self->normalized(); }
     name<dataType> _resized(dataType length) { return $self->resized(length); }
     name<dataType> _projected(const name<dataType> &other) { return $self->projected(other); }
@@ -222,6 +223,10 @@ typedef TissueForge::types::TQuaternion<float> fQuaternion;
         def length(self):
             """length of vector"""
             return self._length()
+
+        def angle(self, other):
+            """angle made with another vector"""
+            return self._angle(other)
 
         def normalized(self):
             """vector normalized"""
@@ -402,10 +407,25 @@ vector_template_prep_float(TissueForge::types::TVector4, dataType, wrappedName)
 // Do the vector template implementation
 %define vector_template_init(name, dataType, wrappedName)
 %ignore name<dataType>::length;
+%ignore name<dataType>::angle;
 %ignore name<dataType>::normalized;
 %ignore name<dataType>::resized;
 %ignore name<dataType>::projected;
 %ignore name<dataType>::projectedOntoNormalized;
+
+%copyctor name<dataType>;
+
+%template(wrappedName) name<dataType>;
+%enddef
+
+%define matrix_template_init(name, dataType, wrappedName) 
+%copyctor name<dataType>;
+
+%template(wrappedName) name<dataType>;
+%enddef
+
+%define quaternion_template_init(name, dataType, wrappedName) 
+%copyctor name<dataType>;
 
 %template(wrappedName) name<dataType>;
 %enddef
@@ -454,14 +474,13 @@ vector4_template_init(double, dVector4)
 vector4_template_init(float, fVector4)
 vector4_template_init(int, iVector4)
 
-%template(dMatrix3) TissueForge::types::TMatrix3<double>;
-%template(fMatrix3) TissueForge::types::TMatrix3<float>;
+matrix_template_init(TissueForge::types::TMatrix3, double, dMatrix3)
+matrix_template_init(TissueForge::types::TMatrix3, float,  fMatrix3)
+matrix_template_init(TissueForge::types::TMatrix4, double, dMatrix4)
+matrix_template_init(TissueForge::types::TMatrix4, float,  fMatrix4)
 
-%template(dMatrix4) TissueForge::types::TMatrix4<double>;
-%template(fMatrix4) TissueForge::types::TMatrix4<float>;
-
-%template(dQuaternion) TissueForge::types::TQuaternion<double>;
-%template(fQuaternion) TissueForge::types::TQuaternion<float>;
+quaternion_template_init(TissueForge::types::TQuaternion, double, dQuaternion)
+quaternion_template_init(TissueForge::types::TQuaternion, float, fQuaternion)
 
 %define vector_list_cast_add(name, dataType, vectorName)
 

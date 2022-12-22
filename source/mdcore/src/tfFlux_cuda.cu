@@ -20,6 +20,7 @@
 #include "tfFlux_cuda.h"
 
 #include <tf_errs.h>
+#include <tfError.h>
 #include <tfEngine.h>
 
 #include <cuda.h>
@@ -35,9 +36,9 @@ __constant__ int *cuda_fxind;
 __constant__ struct cuda::Fluxes *cuda_fluxes = NULL;
 __constant__ int cuda_nr_fluxes = 0;
 
-#define error(id)				(engine_err = errs_register(id, engine_err_msg[-(id)], __LINE__, __FUNCTION__, __FILE__))
-#define cuda_error(id)			(engine_err = errs_register(id, cudaGetErrorString(cudaGetLastError()), __LINE__, __FUNCTION__, __FILE__))
-#define cuda_safe_call(f)       { if(f != cudaSuccess) return cuda_error(engine_err_cuda); }
+#define error(id)               (tf_error(E_FAIL, errs_err_msg[id]))
+#define cuda_error()            (tf_error(E_FAIL, cudaGetErrorString(cudaGetLastError())))
+#define cuda_safe_call(f)       { if(f != cudaSuccess) return cuda_error(); }
 
 
 #define TF_FLUXCUDA_CUDAMALLOC(member, type, member_name)                                                       \
@@ -155,15 +156,7 @@ void cuda::Flux_getNrStates(unsigned int *nr_states) {
     *nr_states = cuda_nr_fluxes - 1;
 }
 
-
-/**
- * @brief Load the fluxes onto the CUDA device
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_load_fluxes(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_load_fluxes(struct engine *e) {
 
     int i, j, nr_fluxes;
     int did;
@@ -231,15 +224,15 @@ extern "C" int cuda::engine_cuda_load_fluxes(struct engine *e) {
     int nr_states_current = e->nr_fluxes_cuda - 1;
     int nr_states_next = nr_fluxes - 1;
 
-    if(nr_states_current > 0 && nr_states_next == 0 && engine_cuda_finalize_particle_states(e) < 0) 
-        return error(engine_err_cuda);
+    if(nr_states_current > 0 && nr_states_next == 0 && engine_cuda_finalize_particle_states(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     e->nr_fluxes_cuda = nr_fluxes;
 
-    if(nr_states_next > 0 && nr_states_current == 0 && engine_cuda_allocate_particle_states(e) < 0) 
-        return error(engine_err_cuda);
-    else if(nr_states_current != nr_states_next && engine_cuda_refresh_particle_states(e) < 0) 
-        return error(engine_err_cuda);
+    if(nr_states_next > 0 && nr_states_current == 0 && engine_cuda_allocate_particle_states(e) != S_OK) 
+        return error(MDCERR_cuda);
+    else if(nr_states_current != nr_states_next && engine_cuda_refresh_particle_states(e) != S_OK) 
+        return error(MDCERR_cuda);
 
     // Allocate the flux buffer
     if(nr_states_next > 0) {
@@ -249,7 +242,7 @@ extern "C" int cuda::engine_cuda_load_fluxes(struct engine *e) {
         }
     }
 
-    return engine_err_ok;
+    return S_OK;
 }
 
 
@@ -271,15 +264,7 @@ void engine_cuda_unload_fluxes_device(int nr_fluxes) {
     }
 }
 
-
-/**
- * @brief Unload the fluxes on the CUDA device
- *
- * @param e The #engine.
- *
- * @return #engine_err_ok or < 0 on error (see #engine_err).
- */
-extern "C" int cuda::engine_cuda_unload_fluxes(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_unload_fluxes(struct engine *e) {
 
     int nr_states = e->nr_fluxes_cuda - 1;
 
@@ -303,25 +288,16 @@ extern "C" int cuda::engine_cuda_unload_fluxes(struct engine *e) {
 
     e->nr_fluxes_cuda = 0;
 
-    return engine_err_ok;
+    return S_OK;
 }
 
-/**
- * @brief Refresh the fluxes on the CUDA device. 
- * 
- * Can be safely called while on the CUDA device to reload all flux data from the engine. 
- * 
- * @param e The #engine
- * 
- * @return #engine_err_ok or < 0 on error (see #engine_err)
- */
-extern "C" int cuda::engine_cuda_refresh_fluxes(struct engine *e) {
+extern "C" HRESULT cuda::engine_cuda_refresh_fluxes(struct engine *e) {
     
-    if(engine_cuda_unload_fluxes(e) < 0)
-        return error(engine_err);
+    if(engine_cuda_unload_fluxes(e) != S_OK)
+        return error(MDCERR_cuda);
 
-    if(engine_cuda_load_fluxes(e) < 0)
-        return error(engine_err);
+    if(engine_cuda_load_fluxes(e) != S_OK)
+        return error(MDCERR_cuda);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -331,5 +307,5 @@ extern "C" int cuda::engine_cuda_refresh_fluxes(struct engine *e) {
 
     }
 
-    return engine_err_ok;
+    return S_OK;
 }

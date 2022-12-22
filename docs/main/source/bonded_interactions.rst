@@ -20,6 +20,11 @@ between the group of particles using a :ref:`potential <potentials>`.
 Tissue Forge currently supports :ref:`bond <bonded_interactions:Bonds>`
 and bond-like :ref:`angle <bonded_interactions:Angles>` and
 :ref:`dihedral <bonded_interactions:Dihedrals>`.
+To optimize simulation performance, bonds are visualized with simple lines by default.
+However, three-dimensional visualization of bonded interactions can be enabled using
+the :ref:`rendering interface<rendering_bonds>`.
+
+.. _bonds:
 
 Bonds
 ^^^^^^
@@ -65,6 +70,8 @@ property :py:attr:`bonds <Universe.bonds>`,
 
 A bond is rendered as a line joining the two particles of the bond.
 
+.. _angles:
+
 Angles
 ^^^^^^^
 
@@ -97,6 +104,8 @@ property :py:meth:`angles <Universe.angles>`,
 
 An angle is rendered as a line joining the center particle and each end
 particle, and a line joining the midpoint of those two lines.
+
+.. _dihedrals:
 
 Dihedrals
 ^^^^^^^^^^

@@ -95,6 +95,12 @@ namespace TissueForge {
          */
         void extend(const ParticleList &other);
 
+        /** Test whether the list has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the list has a particle */
+        bool has(ParticleHandle *part);
+
         /**
          * @brief looks for the item at the given index and returns it if found, otherwise returns NULL
          * 
@@ -103,15 +109,18 @@ namespace TissueForge {
          */
         ParticleHandle *item(const int32_t &i);
 
-        // packs a variable number of particle ids into a new list
-        static ParticleList *pack(size_t n, ...);
+        /** get an item at a given index */
+        int32_t operator[](const size_t &i);
+
+        /** returns the list as a vector */
+        std::vector<int32_t> vector();
 
         /**
          * @brief returns an instance populated with all current particles
          * 
          * @return ParticleList* 
          */
-        static ParticleList* all();
+        static ParticleList all();
 
         FMatrix3 getVirial();
         FPTYPE getRadiusOfGyration();
@@ -133,9 +142,11 @@ namespace TissueForge {
         ParticleList();
         ParticleList(uint16_t init_size, uint16_t flags = PARTICLELIST_OWNDATA |PARTICLELIST_MUTABLE | PARTICLELIST_OWNSELF);
         ParticleList(ParticleHandle *part);
+        ParticleList(std::vector<ParticleHandle> particles);
         ParticleList(std::vector<ParticleHandle*> particles);
         ParticleList(uint16_t nr_parts, int32_t *parts);
         ParticleList(const ParticleList &other);
+        ParticleList(const std::vector<int32_t> &pids);
         ~ParticleList();
 
         /**

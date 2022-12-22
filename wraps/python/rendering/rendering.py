@@ -17,11 +17,24 @@
 # 
 # ******************************************************************************
 
-from tissue_forge.tissue_forge import _rendering_ArrowData as ArrowData
-from tissue_forge.tissue_forge import _rendering_ClipPlane as ClipPlane
-from tissue_forge.tissue_forge import _rendering_ClipPlanes as ClipPlanes
-from tissue_forge.tissue_forge import _rendering_Style as Style
+from tissue_forge.tissue_forge import _rendering_ArrowData
+from tissue_forge.tissue_forge import _rendering_ClipPlane
+from tissue_forge.tissue_forge import _rendering_ClipPlanes
+from tissue_forge.tissue_forge import _rendering_Style
 from tissue_forge.tissue_forge import _rendering_pollEvents as pollEvents
 from tissue_forge.tissue_forge import _rendering_waitEvents as waitEvents
 from tissue_forge.tissue_forge import _rendering_postEmptyEvent as postEmptyEvent
 from tissue_forge.tissue_forge import _rendering_initializeGraphics as initializeGraphics
+
+class ArrowData(_rendering_ArrowData):
+    pass
+
+class ClipPlane(_rendering_ClipPlane):
+    pass
+
+class ClipPlanes(_rendering_ClipPlanes):
+    pass
+
+class Style(_rendering_Style):
+    pass
+

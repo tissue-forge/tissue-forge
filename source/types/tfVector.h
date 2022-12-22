@@ -37,10 +37,13 @@ namespace TissueForge::types {
     template<std::size_t size, class T> 
     class TVectorS : public VectorBase<size, T> {
         public:
+            /** Initialize from an array */
             static TVectorS<size, T>& from(T* data) { return *reinterpret_cast<TVectorS<size, T>*>(&VectorBase<size, T>::from(data)); }
 
+            /** Initialize from an array */
             static const TVectorS<size, T>& from(const T* data) { return *reinterpret_cast<const TVectorS<size, T>*>(&VectorBase<size, T>::from(data)); }
 
+            /** Pad the vector with values if the vector size is smaller than the size of another vector */
             template<std::size_t otherSize> constexpr static TVectorS<size, T> pad(const TVectorS<otherSize, T>& a, T value = T()) {
                 return (TVectorS<size, T>)VectorBase<size, T>::pad<otherSize>(a, value);
             }
@@ -51,7 +54,10 @@ namespace TissueForge::types {
 
             template<class ...U, class V = typename std::enable_if<sizeof...(U)+1 == size, T>::type> constexpr TVectorS(T first, U... next) : VectorBase<size, T>(first, next...) {}
 
+            /** Get the underlying array */
             T* data() { return VectorBase<size, T>::data(); }
+
+            /** Get the underlying array */
             constexpr const T* data() const { return VectorBase<size, T>::data(); }
 
             T& operator[](std::size_t pos) { return VectorBase<size, T>::operator[](pos); }
@@ -105,37 +111,51 @@ namespace TissueForge::types {
                 return TVectorS<size, T>(VectorBase<size, T>::operator/(other));
             }
 
+            /** Get the dot product with itself */
             T dot() const { return VectorBase<size, T>::dot(); }
 
+            /** Get the dot product with another vector */
             T dot(const TVectorS<size, T>& other) const { return Magnum::Math::dot(*this, other); }
 
+            /** Get the length */
             T length() const { return VectorBase<size, T>::length(); }
 
+            /** Get the inverted length */
             template<class U = T> typename std::enable_if<std::is_floating_point<U>::value, T>::type
             lengthInverted() const { return VectorBase<size, T>::lengthInverted(); }
 
+            /** Get the normalized vector */
             template<class U = T> typename std::enable_if<std::is_floating_point<U>::value, VectorBase<size, T>>::type
             normalized() const { return VectorBase<size, T>::normalized(); }
 
+            /** Resize the vector */
             template<class U = T> typename std::enable_if<std::is_floating_point<U>::value, VectorBase<size, T>>::type
             resized(T length) const { return VectorBase<size, T>::resized(length); }
 
+            /** Get the vector projected onto another vector */
             template<class U = T> typename std::enable_if<std::is_floating_point<U>::value, VectorBase<size, T>>::type
             projected(const VectorBase<size, T>& line) const { return VectorBase<size, T>::projected(line); }
 
+            /** Get the vector projected onto another normalized vector */
             template<class U = T> typename std::enable_if<std::is_floating_point<U>::value, VectorBase<size, T>>::type
             projectedOntoNormalized(const VectorBase<size, T>& line) const { return VectorBase<size, T>::projectedOntoNormalized(line); }
 
+            /** Get the vector with components in reverse order */
             constexpr TVectorS<size, T> flipped() const { return VectorBase<size, T>::flipped(); }
 
+            /** Get the sum of the elements */
             T sum() const { return VectorBase<size, T>::sum(); }
 
+            /** Get the product of the elements */
             T product() const { return VectorBase<size, T>::product(); }
 
+            /** Get the minimum of the elements */
             T min() const { return VectorBase<size, T>::min(); }
 
+            /** Get the maximum of the elements */
             T max() const { return VectorBase<size, T>::max(); }
 
+            /** Get the minmax of the elements */
             std::pair<T, T> minmax() const { return VectorBase<size, T>::minmax(); }
 
             TVectorS<size, T>(const VectorBase<size, T> &other) : VectorBase<size, T>() {
@@ -154,12 +174,18 @@ namespace TissueForge::types {
     };
 
     #define REVISED_MAGNUM_VECTOR_SUBCLASS_IMPLEMENTATION(size, Type, MagnumImplType)       \
+        /** Initialize from an array */                                                     \
         static Type<T>& from(T* data) {                                                     \
             return *reinterpret_cast<Type<T>*>(data);                                       \
         }                                                                                   \
+                                                                                            \
+        /** Initialize from an array */                                                     \
         static const Type<T>& from(const T* data) {                                         \
             return *reinterpret_cast<const Type<T>*>(data);                                 \
         }                                                                                   \
+                                                                                            \
+        /** Pad the vector with values if the vector size                                   \
+         * is smaller than the size of another vector */                                    \
         template<std::size_t otherSize>                                                     \
         constexpr static Type<T> pad(const Type<T>& a, T value = T()) {                     \
             return MagnumImplType<T>::pad(a, value);                                        \
@@ -213,30 +239,54 @@ namespace TissueForge::types {
             return MagnumImplType<T>::operator/(other);                                     \
         }                                                                                   \
                                                                                             \
+        /** Get the length */                                                               \
         template<class U = T>                                                               \
         typename std::enable_if<std::is_floating_point<U>::value, T>::type                  \
         length() const { return MagnumImplType<T>::length(); }                              \
+                                                                                            \
+        /** Get the normalized vector */                                                    \
         template<class U = T>                                                               \
         typename std::enable_if<std::is_floating_point<U>::value, Type<T>>::type            \
         normalized() const { return MagnumImplType<T>::normalized(); }                      \
+                                                                                            \
+        /** Resize the vector */                                                            \
         template<class U = T>                                                               \
         typename std::enable_if<std::is_floating_point<U>::value, Type<T>>::type            \
         resized(T length) const {                                                           \
             return MagnumImplType<T>::resized(length);                                      \
         }                                                                                   \
+                                                                                            \
+        /** Get the vector projected onto another vector */                                 \
         template<class U = T>                                                               \
         typename std::enable_if<std::is_floating_point<U>::value, Type<T>>::type            \
         projected(const Type<T>& other) const {                                             \
             return MagnumImplType<T>::projected(other);                                     \
         }                                                                                   \
+                                                                                            \
+        /** Get the vector projected onto another normalized vector */                      \
         template<class U = T>                                                               \
         typename std::enable_if<std::is_floating_point<U>::value, Type<T>>::type            \
         projectedOntoNormalized(const Type<T>& other) const {                               \
             return MagnumImplType<T>::projectedOntoNormalized(other);                       \
         }                                                                                   \
+                                                                                            \
+        /** Get the vector with components in reverse order */                              \
         constexpr Type<T> flipped() const { return MagnumImplType<T>::flipped(); }          \
+                                                                                            \
+        /** Get the dot product with itself */                                              \
         T dot() const { return Magnum::Math::dot(*this, *this); }                           \
+                                                                                            \
+        /** Get the dot product with another vector */                                      \
         T dot(const Type<T>& other) const { return Magnum::Math::dot(*this, other); }       \
+                                                                                            \
+        /** Get the angle made with another vector */                                       \
+        template<class U = T>                                                               \
+        typename std::enable_if<std::is_floating_point<U>::value, T>::type                  \
+        angle(const Type<T>& other) const {                                                 \
+            Type<T> a = this->isNormalized() ? *this : this->normalized();                  \
+            Type<T> b = other.isNormalized() ? other : other.normalized();                  \
+            return T(Magnum::Math::angle(a, b));                                            \
+        }                                                                                   \
         T& operator[](std::size_t pos) { return MagnumImplType<T>::operator[](pos); }       \
         constexpr T operator[](std::size_t pos) const {                                     \
             return MagnumImplType<T>::operator[](pos);                                      \
@@ -252,7 +302,11 @@ namespace TissueForge::types {
             this->operator[](i) = val;                                                      \
         }                                                                                   \
         int __len__() { return size; }                                                      \
+                                                                                            \
+        /** Initialize from an array */                                                     \
         static Type<T>& fromData(T* data) { return Type<T>::from(data); }                   \
+                                                                                            \
+        /** Initialize from an array */                                                     \
         static const Type<T>& fromData(const T* data) { return Type<T>::from(data); }       \
         std::vector<T>& asVector() {                                                        \
             std::vector<T> *result = new std::vector<T>(*this);                             \

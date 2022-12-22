@@ -17,18 +17,48 @@
 # 
 # ******************************************************************************
 
-from tissue_forge.tissue_forge import _event_EventBase as EventBase
-from tissue_forge.tissue_forge import _event__Event as _Event
-from tissue_forge.tissue_forge import _event_Event as Event
+from tissue_forge.tissue_forge import _event_EventBase
+from tissue_forge.tissue_forge import _event__Event
+from tissue_forge.tissue_forge import _event_Event
 from tissue_forge.tissue_forge import _event_on_event as on_event
-from tissue_forge.tissue_forge import _event_KeyEvent as KeyEvent
+from tissue_forge.tissue_forge import _event_KeyEvent
 from tissue_forge.tissue_forge import _event_on_keypress as on_keypress
-from tissue_forge.tissue_forge import _event__ParticleEvent as _ParticleEvent
-from tissue_forge.tissue_forge import _event_ParticleEvent as ParticleEvent
+from tissue_forge.tissue_forge import _event__ParticleEvent
+from tissue_forge.tissue_forge import _event_ParticleEvent
 from tissue_forge.tissue_forge import _event_on_particle as on_particle
-from tissue_forge.tissue_forge import _event__ParticleTimeEvent as _ParticleTimeEvent
-from tissue_forge.tissue_forge import _event_ParticleTimeEvent as ParticleTimeEvent
+from tissue_forge.tissue_forge import _event__ParticleTimeEvent
+from tissue_forge.tissue_forge import _event_ParticleTimeEvent
 from tissue_forge.tissue_forge import _event_on_particletime as on_particletime
-from tissue_forge.tissue_forge import _event__TimeEvent as _TimeEvent
-from tissue_forge.tissue_forge import _event_TimeEvent as TimeEvent
+from tissue_forge.tissue_forge import _event__TimeEvent
+from tissue_forge.tissue_forge import _event_TimeEvent
 from tissue_forge.tissue_forge import _event_on_time as on_time
+
+class EventBase(_event_EventBase):
+    pass
+
+class _Event(_event__Event):
+    pass
+
+class Event(_event_Event):
+    pass
+
+class KeyEvent(_event_KeyEvent):
+    pass
+
+class _ParticleEvent(_event__ParticleEvent):
+    pass
+
+class ParticleEvent(_event_ParticleEvent):
+    pass
+
+class _ParticleTimeEvent(_event__ParticleTimeEvent):
+    pass
+
+class ParticleTimeEvent(_event_ParticleTimeEvent):
+    pass
+
+class _TimeEvent(_event__TimeEvent):
+    pass
+
+class TimeEvent(_event_TimeEvent):
+    pass

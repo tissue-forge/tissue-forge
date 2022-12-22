@@ -36,7 +36,6 @@
 
 %include "langs/py/tf_bindPy.h"
 
-%template(pairParticleList_BondHandle) std::pair<TissueForge::ParticleList*, std::vector<TissueForge::BondHandle*>*>;
 %template(pairParticleType_ParticleType) std::pair<TissueForge::ParticleType*, TissueForge::ParticleType*>;
 %template(vectorPairParticleType_ParticleType) std::vector<std::pair<TissueForge::ParticleType*, TissueForge::ParticleType*>*>;
 
@@ -61,5 +60,6 @@
             phi0, phi1 = None, None
         particles = ParticleList()
         bonds = _spherePy(particles, potential, n, center, radius, phi0, phi1, type)
+        particles.thisown = 0
         return particles, bonds
 %}

@@ -17,7 +17,20 @@
 # 
 # ******************************************************************************
 
-from tissue_forge.tissue_forge import _state_Species as Species
-from tissue_forge.tissue_forge import _state_SpeciesList as SpeciesList
-from tissue_forge.tissue_forge import _state_SpeciesValue as SpeciesValue
-from tissue_forge.tissue_forge import _state_StateVector as StateVector
+from tissue_forge.tissue_forge import _state_Species
+from tissue_forge.tissue_forge import _state_SpeciesList
+from tissue_forge.tissue_forge import _state_SpeciesValue
+from tissue_forge.tissue_forge import _state_StateVector
+
+class Species(_state_Species):
+    pass
+
+class SpeciesList(_state_SpeciesList):
+    pass
+
+class SpeciesValue(_state_SpeciesValue):
+    pass
+
+class StateVector(_state_StateVector):
+    pass
+

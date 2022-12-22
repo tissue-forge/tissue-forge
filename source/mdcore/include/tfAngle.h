@@ -29,11 +29,7 @@
 
 #include <mdcore_config.h>
 #include "tfPotential.h"
-
-/* angle error codes */
-#define angle_err_ok                     0
-#define angle_err_null                  -1
-#define angle_err_malloc                -2
+#include <tfParticleList.h>
 
 
 namespace TissueForge {
@@ -42,10 +38,6 @@ namespace TissueForge {
     namespace rendering {
         struct Style;
     }
-
-
-    /** ID of the last error */
-    CAPI_DATA(int) angle_err;
 
 
     typedef enum AngleFlags {
@@ -69,7 +61,7 @@ namespace TissueForge {
 
         uint32_t flags;
 
-        /* ids of particles involved */
+        /* id of particles involved */
         int i, j, k;
         
         uint32_t id;
@@ -94,8 +86,6 @@ namespace TissueForge {
 
         /**
          * @brief Get the default style
-         * 
-         * @return rendering::Style* 
          */
         static rendering::Style *styleDef();
 
@@ -125,8 +115,6 @@ namespace TissueForge {
 
         /**
          * @brief Get a JSON string representation
-         * 
-         * @return std::string 
          */
         std::string toString();
 
@@ -136,7 +124,6 @@ namespace TissueForge {
          * The returned angle is not automatically registered with the engine. 
          * 
          * @param str 
-         * @return Angle* 
          */
         static Angle *fromString(const std::string &str);
 
@@ -153,16 +140,14 @@ namespace TissueForge {
         /**
          * @brief Gets the angle of this handle
          * 
-         * @return Angle* 
+         * @return angle, if available
          */
         Angle *get();
 
         /**
          * @brief Get a summary string of the angle
-         * 
-         * @return std::string 
          */
-        std::string str();
+        std::string str() const;
 
         /**
          * @brief Check the validity of the handle
@@ -176,17 +161,13 @@ namespace TissueForge {
          * @brief Destroy the angle. 
          * 
          * Automatically updates when running on a CUDA device. 
-         * 
-         * @return HRESULT 
          */
         HRESULT destroy();
 
         /**
          * @brief Gets all angles in the universe
-         * 
-         * @return std::vector<AngleHandle*> 
          */
-        static std::vector<AngleHandle*> items();
+        static std::vector<AngleHandle> items();
 
         /**
          * @brief Tests whether this bond decays
@@ -197,17 +178,52 @@ namespace TissueForge {
 
         struct ParticleHandle *operator[](unsigned int index);
 
+        /** Test whether the bond has an id */
+        bool has(const int32_t &pid);
+
+        /** Test whether the bond has a particle */
+        bool has(ParticleHandle *part);
+
+        /** Get the current angle */
+        FloatP_t getAngle();
+
+        /** Get the energy */
         FPTYPE getEnergy();
+
+        /** Get the particle ids */
         std::vector<int32_t> getParts();
+
+        /** Get the particle list */
+        ParticleList getPartList();
+
+        /** Get the potential */
         Potential *getPotential();
+
+        /** Get the id */
         uint32_t getId();
+
+        /** Get the dissociation energy */
         FPTYPE getDissociationEnergy();
+
+        /** Set the dissociation energy */
         void setDissociationEnergy(const FPTYPE &dissociation_energy);
+
+        /** Get the half life */
         FPTYPE getHalfLife();
+
+        /** Set the half life */
         void setHalfLife(const FPTYPE &half_life);
+
+        /** Test whether the underlying angle is active */
         bool getActive();
+
+        /** Get the style */
         rendering::Style *getStyle();
+
+        /** Set the style */
         void setStyle(rendering::Style *style);
+
+        /** Get the age */
         FPTYPE getAge();
 
         AngleHandle() : id(-1) {}
@@ -218,7 +234,6 @@ namespace TissueForge {
      * @brief Destroys an angle
      * 
      * @param a angle to destroy
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Angle_Destroy(Angle *a);
 
@@ -226,21 +241,54 @@ namespace TissueForge {
      * @brief Destroys all angles in the universe. 
      * 
      * Automatically updates when running on a CUDA device. 
-     * 
-     * @return HRESULT 
      */
     CAPI_FUNC(HRESULT) Angle_DestroyAll();
 
     /* associated functions */
-    int angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *epot_out);
-    int angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
+    
+    /**
+     * @brief Evaluate a list of angleed interactions
+     *
+     * @param a Pointer to an array of #angle.
+     * @param N Nr of angles in @c b.
+     * @param e Pointer to the #engine in which these angles are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     */
+    HRESULT angle_eval(struct Angle *a, int N, struct engine *e, FPTYPE *epot_out);
+
+    /**
+     * @brief Evaluate a list of angleed interactions
+     *
+     * @param a Pointer to an array of #angle.
+     * @param N Nr of angles in @c b.
+     * @param e Pointer to the #engine in which these angles are evaluated.
+     * @param epot_out Pointer to a FPTYPE in which to aggregate the potential energy.
+     *
+     * This function differs from #angle_eval in that the forces are added to
+     * the array @c f instead of directly in the particle data.
+     */
+    HRESULT angle_evalf(struct Angle *a, int N, struct engine *e, FPTYPE *f, FPTYPE *epot_out);
 
     /**
      * find all the angles that interact with the given particle id
      */
     std::vector<int32_t> Angle_IdsForParticle(int32_t pid);
 
+    inline bool operator< (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::AngleHandle& lhs, const TissueForge::AngleHandle& rhs) { return !(lhs == rhs); }
+
 
 };
+
+
+inline std::ostream &operator<<(std::ostream& os, const TissueForge::AngleHandle &h)
+{
+    os << h.str().c_str();
+    return os;
+}
 
 #endif // _MDCORE_INCLUDE_TFANGLE_H_

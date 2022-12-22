@@ -166,7 +166,7 @@ HRESULT tfParticleHandle_init(struct tfParticleHandleHandle *handle, unsigned in
     for(unsigned int i = 0; i < _Engine.s.size_parts; i++) {
         Particle *p = _Engine.s.partlist[i];
         if(p && p->id == pid) {
-            ParticleHandle *ph = new ParticleHandle(p->id, p->typeId);
+            ParticleHandle *ph = new ParticleHandle(p->id);
             handle->tfObj = (void*)ph;
             return S_OK;
         }
@@ -186,6 +186,11 @@ HRESULT tfParticleHandle_getType(struct tfParticleHandleHandle *handle, struct t
 
     typeHandle->tfObj = (void*)ptype;
     return S_OK;
+}
+
+HRESULT tfParticleHandle_str(struct tfParticleHandleHandle *handle, char **str, unsigned int *numChars) {
+    TFC_PARTICLEHANDLE_GET(handle);
+    return TissueForge::capi::str2Char(phandle->str(), str, numChars);
 }
 
 HRESULT tfParticleHandle_split(struct tfParticleHandleHandle *handle, struct tfParticleHandleHandle *newParticleHandle) {
@@ -238,16 +243,15 @@ HRESULT tfParticleHandle_become(struct tfParticleHandleHandle *handle, struct tf
     return phandle->become(ptype);
 }
 
-HRESULT package_parts(ParticleList *plist, struct tfParticleHandleHandle **hlist) {
-    TFC_PTRCHECK(plist);
+HRESULT package_parts(ParticleList plist, struct tfParticleHandleHandle **hlist) {
     TFC_PTRCHECK(hlist);
-    tfParticleHandleHandle *_hlist = (tfParticleHandleHandle*)malloc(plist->nr_parts * sizeof(tfParticleHandleHandle));
+    tfParticleHandleHandle *_hlist = (tfParticleHandleHandle*)malloc(plist.nr_parts * sizeof(tfParticleHandleHandle));
     if(!_hlist) 
         return E_OUTOFMEMORY;
-    for(unsigned int i = 0; i < plist->nr_parts; i++) {
-        Particle *p = _Engine.s.partlist[plist->parts[i]];
+    for(unsigned int i = 0; i < plist.nr_parts; i++) {
+        Particle *p = _Engine.s.partlist[plist.parts[i]];
         TFC_PTRCHECK(p);
-        ParticleHandle *ph = new ParticleHandle(p->id, p->typeId);
+        ParticleHandle *ph = new ParticleHandle(p->id);
         _hlist[i].tfObj = (void*)ph;
     }
     *hlist = _hlist;
@@ -258,9 +262,8 @@ HRESULT tfParticleHandle_neighborsD(struct tfParticleHandleHandle *handle, tfFlo
     TFC_PARTICLEHANDLE_GET(handle);
     TFC_PTRCHECK(neighbors);
     TFC_PTRCHECK(numNeighbors);
-    tfFloatP_t _distance = distance;
-    auto nbs = phandle->neighbors(&_distance);
-    *numNeighbors = nbs->nr_parts;
+    auto nbs = phandle->neighbors(distance);
+    *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
 
@@ -281,8 +284,8 @@ HRESULT tfParticleHandle_neighborsT(
         TFC_PTRCHECK(pth.tfObj);
         _ptypes.push_back(*(ParticleType*)pth.tfObj);
     }
-    auto nbs = phandle->neighbors(0, &_ptypes);
-    *numNeighbors = nbs->nr_parts;
+    auto nbs = phandle->neighbors(_ptypes);
+    *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
 
@@ -304,9 +307,8 @@ HRESULT tfParticleHandle_neighborsDT(
         TFC_PTRCHECK(pth.tfObj);
         _ptypes.push_back(*(ParticleType*)pth.tfObj);
     }
-    tfFloatP_t _distance = distance;
-    auto nbs = phandle->neighbors(&_distance, &_ptypes);
-    *numNeighbors = nbs->nr_parts;
+    auto nbs = phandle->neighbors(distance, _ptypes);
+    *numNeighbors = nbs.nr_parts;
     return package_parts(nbs, neighbors);
 }
 
@@ -316,8 +318,8 @@ HRESULT tfParticleHandle_getBondedNeighbors(struct tfParticleHandleHandle *handl
     TFC_PTRCHECK(neighbors);
     TFC_PTRCHECK(numNeighbors);
     auto plist = phandle->getBondedNeighbors();
-    *numNeighbors = plist->nr_parts;
-    if(plist->nr_parts == 0) 
+    *numNeighbors = plist.nr_parts;
+    if(plist.nr_parts == 0) 
         return S_OK;
     return package_parts(plist, neighbors);
 }
@@ -570,6 +572,30 @@ HRESULT tfParticleHandle_toString(struct tfParticleHandleHandle *handle, char **
     return TissueForge::capi::str2Char(p->toString(), str, numChars);
 }
 
+HRESULT tfParticleHandle_lt(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_lt<ParticleHandle, tfParticleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleHandle_gt(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_gt<ParticleHandle, tfParticleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleHandle_le(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_le<ParticleHandle, tfParticleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleHandle_ge(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ge<ParticleHandle, tfParticleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleHandle_eq(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_eq<ParticleHandle, tfParticleHandleHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleHandle_ne(struct tfParticleHandleHandle *lhs, struct tfParticleHandleHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ne<ParticleHandle, tfParticleHandleHandle>(lhs, rhs, result);
+}
+
 
 //////////////////
 // ParticleType //
@@ -777,7 +803,7 @@ HRESULT tfParticleType_setDynamics(struct tfParticleTypeHandle *handle, unsigned
     return S_OK;
 }
 
-HRESULT tfParticleType_getNumParticles(struct tfParticleTypeHandle *handle, int *numParts) {
+HRESULT tfParticleType_getNumParts(struct tfParticleTypeHandle *handle, int *numParts) {
     TFC_PTYPEHANDLE_GET(handle);
     TFC_PTRCHECK(numParts);
     *numParts = ptype->parts.nr_parts;
@@ -790,7 +816,7 @@ HRESULT tfParticleType_getParticle(struct tfParticleTypeHandle *handle, int i, s
     Particle *p = ptype->particle(i);
     TFC_PTRCHECK(p);
     
-    ParticleHandle *ph = new ParticleHandle(p->id, ptype->id);
+    ParticleHandle *ph = new ParticleHandle(p->id);
     phandle->tfObj = (void*)ph;
     return S_OK;
 }
@@ -880,6 +906,21 @@ HRESULT tfParticleType_newType(struct tfParticleTypeHandle *handle, const char *
     return S_OK;
 }
 
+HRESULT tfParticleType_hasPartId(struct tfParticleTypeHandle *handle, int pid, bool *result) {
+    TFC_PTYPEHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = ptype->has(pid);
+    return S_OK;
+}
+
+HRESULT tfParticleType_hasPart(struct tfParticleTypeHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_PTYPEHANDLE_GET(handle);
+    TFC_PARTICLEHANDLE_GET(part);
+    TFC_PTRCHECK(result);
+    *result = ptype->has(phandle);
+    return S_OK;
+}
+
 HRESULT tfParticleType_registerType(struct tfParticleTypeHandle *handle) {
     TFC_PTYPEHANDLE_GET(handle);
     HRESULT result = ptype->registerType();
@@ -895,6 +936,11 @@ HRESULT tfParticleType_isRegistered(struct tfParticleTypeHandle *handle, bool *i
     TFC_PTRCHECK(isRegistered);
     *isRegistered = ptype->isRegistered();
     return S_OK;
+}
+
+HRESULT tfParticleType_str(struct tfParticleTypeHandle *handle, char **str, unsigned int *numChars) {
+    TFC_PTYPEHANDLE_GET(handle);
+    return TissueForge::capi::str2Char(ptype->str(), str, numChars);
 }
 
 HRESULT tfParticleType_getFrozen(struct tfParticleTypeHandle *handle, bool *frozen) {
@@ -981,6 +1027,30 @@ HRESULT tfParticleType_fromString(struct tfParticleTypeHandle *handle, const cha
     TFC_PTRCHECK(ptype);
     handle->tfObj = (void*)ptype;
     return S_OK;
+}
+
+HRESULT tfParticleType_lt(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_lt<ParticleType, tfParticleTypeHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleType_gt(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_gt<ParticleType, tfParticleTypeHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleType_le(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_le<ParticleType, tfParticleTypeHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleType_ge(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ge<ParticleType, tfParticleTypeHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleType_eq(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_eq<ParticleType, tfParticleTypeHandle>(lhs, rhs, result);
+}
+
+HRESULT tfParticleType_ne(struct tfParticleTypeHandle *lhs, struct tfParticleTypeHandle *rhs, bool *result) {
+    return TissueForge::capi::obj_ne<ParticleType, tfParticleTypeHandle>(lhs, rhs, result);
 }
 
 
@@ -1078,6 +1148,21 @@ HRESULT tfParticleList_extend(struct tfParticleListHandle *handle, struct tfPart
     return S_OK;
 }
 
+HRESULT tfParticleList_hasId(struct tfParticleListHandle *handle, int pid, bool *result) {
+    TFC_PARTICLELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = plist->has(pid);
+    return S_OK;
+}
+
+HRESULT tfParticleList_hasPart(struct tfParticleListHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_PARTICLELIST_GET(handle);
+    TFC_PTRCHECK(part);
+    TFC_PTRCHECK(result);
+    *result = plist->has((ParticleHandle*)part->tfObj);
+    return S_OK;
+}
+
 HRESULT tfParticleList_item(struct tfParticleListHandle *handle, unsigned int i, struct tfParticleHandleHandle *item) {
     TFC_PARTICLELIST_GET(handle);
     TFC_PTRCHECK(item);
@@ -1089,7 +1174,7 @@ HRESULT tfParticleList_item(struct tfParticleListHandle *handle, unsigned int i,
 
 HRESULT tfParticleList_getAll(struct tfParticleListHandle *handle) {
     TFC_PTRCHECK(handle);
-    ParticleList *plist = ParticleList::all();
+    ParticleList *plist = new ParticleList(ParticleList::all());
     handle->tfObj = (void*)plist;
     return S_OK;
 }
@@ -1270,6 +1355,29 @@ HRESULT tfParticleTypeList_extend(struct tfParticleTypeListHandle *handle, struc
     return S_OK;
 }
 
+HRESULT tfParticleTypeList_hasId(struct tfParticleTypeListHandle *handle, int pid, bool *result) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = ptlist->has(pid);
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_hasType(struct tfParticleTypeListHandle *handle, struct tfParticleTypeHandle *ptype, bool *result) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    TFC_PTRCHECK(ptype);
+    TFC_PTRCHECK(result);
+    *result = ptlist->has((ParticleType*)ptype->tfObj);
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_hasPart(struct tfParticleTypeListHandle *handle, struct tfParticleHandleHandle *part, bool *result) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    TFC_PTRCHECK(part);
+    TFC_PTRCHECK(result);
+    *result = ptlist->has((ParticleHandle*)part->tfObj);
+    return S_OK;
+}
+
 HRESULT tfParticleTypeList_item(struct tfParticleTypeListHandle *handle, unsigned int i, struct tfParticleTypeHandle *item) {
     TFC_PARTICLETYPELIST_GET(handle);
     TFC_PTRCHECK(item);
@@ -1281,7 +1389,7 @@ HRESULT tfParticleTypeList_item(struct tfParticleTypeListHandle *handle, unsigne
 
 HRESULT tfParticleTypeList_getAll(struct tfParticleTypeListHandle *handle) {
     TFC_PTRCHECK(handle);
-    handle->tfObj = (void*)ParticleTypeList::all();
+    handle->tfObj = (void*)(new ParticleTypeList(ParticleTypeList::all()));
     return S_OK;
 }
 
@@ -1354,7 +1462,7 @@ HRESULT tfParticleTypeList_sphericalPositionsO(struct tfParticleTypeListHandle *
 HRESULT tfParticleTypeList_getParticles(struct tfParticleTypeListHandle *handle, struct tfParticleListHandle *plist) {
     TFC_PARTICLETYPELIST_GET(handle);
     TFC_PTRCHECK(plist);
-    ParticleList *_plist = ptlist->particles();
+    ParticleList *_plist = new ParticleList(ptlist->particles());
     TFC_PTRCHECK(_plist);
     plist->tfObj = (void*)_plist;
     return S_OK;

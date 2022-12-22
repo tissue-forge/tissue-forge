@@ -35,15 +35,6 @@
 #include <utility>
 #include <vector>
 
-/* potential error codes */
-#define potential_err_ok                    0
-#define potential_err_null                  -1
-#define potential_err_malloc                -2
-#define potential_err_bounds                -3
-#define potential_err_nyi                   -4
-#define potential_err_ivalsmax              -5
-
-
 /* some constants */
 #define potential_degree                    5
 #define potential_chunk                     (potential_degree+3)
@@ -130,9 +121,6 @@ namespace TissueForge {
         POTENTIAL_KIND_COMBINATION
     };
 
-
-    /** ID of the last error. */
-    CAPI_DATA(int) potential_err;
 
     /**
      * @brief Potential function on a particle. 
@@ -616,7 +604,7 @@ namespace TissueForge {
          * 
          * @f[
          * 
-         *      k (r-r_0)^{\alpha}
+         *      k \lvert r-r_0 \rvert ^{\alpha}
          * 
          * @f]
          * 
@@ -716,8 +704,36 @@ namespace TissueForge {
 
 
     /* associated functions */
+
+    /**
+     * @brief Free the memory associated with the given potential.
+     * 
+     * @param p Pointer to the #potential to clear.
+     */
     CAPI_FUNC(void) potential_clear(struct Potential *p);
-    CAPI_FUNC(int) potential_init(
+
+    /**
+     * @brief Construct a #potential from the given function.
+     *
+     * @param p A pointer to an empty #potential.
+     * @param f A pointer to the potential function to be interpolated.
+     * @param fp A pointer to the first derivative of @c f.
+     * @param f6p A pointer to the sixth derivative of @c f.
+     * @param a The smallest radius for which the potential will be constructed.
+     * @param b The largest radius for which the potential will be constructed.
+     * @param tol The absolute tolerance to which the interpolation should match
+     *      the exact potential.
+     *
+     * Computes an interpolated potential function from @c f in @c [a,b] to the
+     * locally relative tolerance @c tol.
+     *
+     * The sixth derivative @c f6p is used to compute the optimal node
+     * distribution. If @c f6p is @c NULL, the derivative is approximated
+     * numerically.
+     *
+     * The zeroth interval contains a linear extension of @c f for values < a.
+     */
+    CAPI_FUNC(HRESULT) potential_init(
         struct Potential *p, 
         FPTYPE (*f)(FPTYPE),
         FPTYPE (*fp)(FPTYPE), 
@@ -727,7 +743,7 @@ namespace TissueForge {
         FPTYPE tol
     );
 
-    CAPI_FUNC(int) potential_getcoeffs(
+    CAPI_FUNC(HRESULT) potential_getcoeffs(
         FPTYPE (*f)(FPTYPE), 
         FPTYPE (*fp)(FPTYPE),
         FPTYPE *xi, 
@@ -737,143 +753,6 @@ namespace TissueForge {
     );
 
     CAPI_FUNC(FPTYPE) potential_getalpha(FPTYPE (*f6p)(FPTYPE), FPTYPE a, FPTYPE b);
-
-    CAPI_FUNC(struct Potential *) potential_create_LJ126(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE A, 
-        FPTYPE B, 
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_LJ126_switch(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE A, 
-        FPTYPE B,
-        FPTYPE s, 
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_LJ126_Ewald(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE A, 
-        FPTYPE B,
-        FPTYPE q, 
-        FPTYPE kappa,
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_LJ126_Ewald_switch(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE A, 
-        FPTYPE B,
-        FPTYPE q, 
-        FPTYPE kappa,
-        FPTYPE s, 
-        FPTYPE tol
-    );
-
-    CAPI_FUNC(struct Potential *) potential_create_LJ126_Coulomb(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE A, 
-        FPTYPE B,
-        FPTYPE q, 
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_Ewald(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE q, 
-        FPTYPE kappa,
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_Coulomb(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE q, 
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_harmonic(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE K, 
-        FPTYPE r0,
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_linear(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE k, 
-        FPTYPE tol
-    );
-
-    CAPI_FUNC(struct Potential *) potential_create_harmonic_angle(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE K, 
-        FPTYPE theta0,
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_harmonic_dihedral(
-        FPTYPE a, 
-        FPTYPE b,
-        FPTYPE K, 
-        FPTYPE delta, 
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_cosine_dihedral(
-        FPTYPE K, 
-        int n,
-        FPTYPE delta, 
-        FPTYPE tol
-    );
-    CAPI_FUNC(struct Potential *) potential_create_morse(
-        FPTYPE d, 
-        FPTYPE alpha, 
-        FPTYPE r0,
-        FPTYPE min, 
-        FPTYPE max, 
-        FPTYPE tol, 
-        bool shifted
-    );
-    CAPI_FUNC(struct Potential *) potential_create_glj(
-        FPTYPE e, 
-        FPTYPE m, 
-        FPTYPE n,
-        FPTYPE min, 
-        FPTYPE r0, 
-        FPTYPE k, 
-        FPTYPE max,
-        FPTYPE tol, 
-        bool shifted
-    );
-    /**
-     * Creates a square well potential of the form:
-     *
-     * k/(r0 - r)^n
-     */
-    CAPI_FUNC(struct Potential *) potential_create_well(
-        FPTYPE k, 
-        FPTYPE n, 
-        FPTYPE r0,
-        FPTYPE tol, 
-        FPTYPE min, 
-        FPTYPE max
-    );
-
-    /* helper functions */
-    CAPI_FUNC(FPTYPE) potential_LJ126(FPTYPE r, FPTYPE A, FPTYPE B);
-    CAPI_FUNC(FPTYPE) potential_LJ126_p(FPTYPE r, FPTYPE A, FPTYPE B);
-    CAPI_FUNC(FPTYPE) potential_LJ126_6p(FPTYPE r, FPTYPE A, FPTYPE B);
-    CAPI_FUNC(FPTYPE) potential_Ewald(FPTYPE r, FPTYPE kappa);
-    CAPI_FUNC(FPTYPE) potential_Ewald_p(FPTYPE r, FPTYPE kappa);
-    CAPI_FUNC(FPTYPE) potential_Ewald_6p(FPTYPE r, FPTYPE kappa);
-    CAPI_FUNC(FPTYPE) potential_Coulomb(FPTYPE r);
-    CAPI_FUNC(FPTYPE) potential_Coulomb_p(FPTYPE r);
-    CAPI_FUNC(FPTYPE) potential_Coulomb_6p(FPTYPE r);
-    CAPI_FUNC(FPTYPE) potential_switch(FPTYPE r, FPTYPE A, FPTYPE B);
-    CAPI_FUNC(FPTYPE) potential_switch_p(FPTYPE r, FPTYPE A, FPTYPE B);
 
 };
 

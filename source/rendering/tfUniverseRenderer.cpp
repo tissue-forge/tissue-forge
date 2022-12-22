@@ -71,9 +71,12 @@
 
 #include "tfStyle.h"
 #include "tfAngleRenderer.h"
+#include "tfAngleRenderer3D.h"
 #include "tfArrowRenderer.h"
 #include "tfBondRenderer.h"
+#include "tfBondRenderer3D.h"
 #include "tfDihedralRenderer.h"
+#include "tfDihedralRenderer3D.h"
 #include "tfOrientationRenderer.h"
 
 #include <tf_util.h>
@@ -150,29 +153,18 @@ static inline const bool cameraZoom(rendering::ArcBallCamera *camera, const floa
     return true;
 }
 
-static inline int render_particle(rendering::SphereInstanceData* pData, int i, Particle *p, space_cell *c) {
+static inline int render_largeparticle(rendering::SphereInstanceData* pData, int i, Particle *p) {
 
-    ParticleType *type = &_Engine.types[p->typeId];
-    rendering::Style *style = p->style ? p->style : type->style;
-    
-    if(style->flags & STYLE_VISIBLE) {
-    
-        Magnum::Vector3 position = {
-            (Magnum::Float)(c->origin[0] + p->x[0]),
-            (Magnum::Float)(c->origin[1] + p->x[1]),
-            (Magnum::Float)(c->origin[2] + p->x[2])
-        };
-        
-        float radius = p->flags & PARTICLE_CLUSTER ? 0 : p->radius;
-        pData[i].transformationMatrix =
-            Matrix4::translation(position) * Matrix4::scaling(Vector3{radius});
-        pData[i].normalMatrix =
-            pData[i].transformationMatrix.normalMatrix();
-        pData[i].color = style->map_color(p);
-        return 1;
-    }
-    
-    return 0;
+    rendering::Style *style = p->style ? p->style : (&_Engine.types[p->typeId])->style;
+
+    float radius = style->flags & STYLE_VISIBLE && !(p->flags & PARTICLE_CLUSTER) ? p->radius : 0;
+    pData[i].transformationMatrix =
+        Matrix4::translation(p->position) * Matrix4::scaling(Vector3{radius});
+    pData[i].normalMatrix =
+        pData[i].transformationMatrix.normalMatrix();
+    pData[i].color = style->map_color(p);
+
+    return 1;
 }
 
 static inline int render_cell_particles(rendering::SphereInstanceData* pData, int cid) {
@@ -215,7 +207,8 @@ rendering::UniverseRenderer::UniverseRenderer(const Simulator::Config &conf, ren
     window{win}, 
     _zoomRate(0.05), 
     _spinRate{0.01*M_PI}, 
-    _moveRate{0.01}
+    _moveRate{0.01},
+    _lagging{0.85f}
 {
     TF_Log(LOG_DEBUG) << "Creating UniverseRenderer";
 
@@ -416,7 +409,7 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::draw(T& camera, const 
 
     auto func_render_large_particles = [&pLargeData](int _pid) -> void {
         Particle *p = &_Engine.s.largeparts.parts[_pid];
-        render_particle(pLargeData, _pid, p, &_Engine.s.largeparts);
+        render_largeparticle(pLargeData, _pid, p);
     };
     parallel_for(_Engine.s.largeparts.count, func_render_large_particles);
     largeSphereInstanceBuffer.unmap();
@@ -718,13 +711,7 @@ void rendering::UniverseRenderer::keyPressEvent(Platform::GlfwApplication::KeyEv
                 _arcball->translateToOrigin();
             }
             else {
-                if(_arcball->lagging() > 0.0f) {
-                    Debug{} << "Lagging disabled";
-                    _arcball->setLagging(0.0f);
-                } else {
-                    Debug{} << "Lagging enabled";
-                    _arcball->setLagging(0.85f);
-                }
+                toggleLagging();
             }
 
             }
@@ -993,4 +980,128 @@ const float rendering::UniverseRenderer::getMoveRate() {
 
 void rendering::UniverseRenderer::setMoveRate(const float &moveRate) {
     _moveRate = moveRate;
+}
+
+const bool rendering::UniverseRenderer::isLagging() const {
+    return getLagging() > 0;
+}
+
+void rendering::UniverseRenderer::enableLagging() {
+    TF_Log(LOG_INFORMATION) << "Lagging enabled";
+
+    setLagging(_lagging);
+}
+
+void rendering::UniverseRenderer::disableLagging() {
+    TF_Log(LOG_INFORMATION) << "Lagging disabled";
+
+    setLagging(0.f);
+}
+
+void rendering::UniverseRenderer::toggleLagging() {
+    if(isLagging()) 
+        disableLagging();
+    else 
+        enableLagging();
+}
+
+const float rendering::UniverseRenderer::getLagging() const {
+    return _arcball->lagging();
+}
+
+void rendering::UniverseRenderer::setLagging(const float &lagging) {
+    if(lagging < 0 || lagging >= 1.0) 
+        TF_Log(LOG_ERROR) << "Invalid input: lagging must be in [0, 1)";
+    else 
+        _arcball->setLagging(lagging);
+}
+
+const bool rendering::UniverseRenderer::getRendering3DBonds() const {
+    return _bonds3d_flags[0];
+}
+
+void rendering::UniverseRenderer::setRendering3DBonds(const bool &_flag) {
+    if(_flag == _bonds3d_flags[0]) 
+        return;
+    _bonds3d_flags[0] = _flag;
+
+    std::vector<FVector4> clipPlanes;
+    for(auto &cp : _clipPlanes) 
+        clipPlanes.push_back(cp);
+
+    delete subRenderers[2];
+    SubRenderer *renderer;
+    if(_flag) renderer = new BondRenderer3D();
+    else renderer = new BondRenderer();
+
+    renderer->start(clipPlanes);
+    subRenderers[2] = renderer;
+}
+
+void rendering::UniverseRenderer::toggleRendering3DBonds() {
+    setRendering3DBonds(!getRendering3DBonds());
+}
+
+const bool rendering::UniverseRenderer::getRendering3DAngles() const {
+    return _bonds3d_flags[1];
+}
+
+void rendering::UniverseRenderer::setRendering3DAngles(const bool &_flag) {
+    if(_flag == _bonds3d_flags[1]) 
+        return;
+    _bonds3d_flags[1] = _flag;
+
+    std::vector<FVector4> clipPlanes;
+    for(auto &cp : _clipPlanes) 
+        clipPlanes.push_back(cp);
+
+    delete subRenderers[0];
+    SubRenderer *renderer;
+    if(_flag) renderer = new AngleRenderer3D();
+    else renderer = new AngleRenderer();
+
+    renderer->start(clipPlanes);
+    subRenderers[0] = renderer;
+}
+
+void rendering::UniverseRenderer::toggleRendering3DAngles() {
+    setRendering3DAngles(!getRendering3DAngles());
+}
+
+const bool rendering::UniverseRenderer::getRendering3DDihedrals() const {
+    return _bonds3d_flags[2];
+}
+
+void rendering::UniverseRenderer::setRendering3DDihedrals(const bool &_flag) {
+    if(_flag == _bonds3d_flags[2]) 
+        return;
+    _bonds3d_flags[2] = _flag;
+
+    std::vector<FVector4> clipPlanes;
+    for(auto &cp : _clipPlanes) 
+        clipPlanes.push_back(cp);
+
+    delete subRenderers[3];
+    SubRenderer *renderer;
+    if(_flag) renderer = new DihedralRenderer3D();
+    else renderer = new DihedralRenderer();
+
+    renderer->start(clipPlanes);
+    subRenderers[3] = renderer;
+}
+
+void rendering::UniverseRenderer::toggleRendering3DDihedrals() {
+    setRendering3DDihedrals(!getRendering3DDihedrals());
+}
+
+void rendering::UniverseRenderer::setRendering3DAll(const bool &_flag) {
+    setRendering3DBonds(_flag);
+    setRendering3DAngles(_flag);
+    setRendering3DDihedrals(_flag);
+}
+
+void rendering::UniverseRenderer::toggleRendering3DAll() {
+    toggleRendering3DBonds();
+    toggleRendering3DAngles();
+    toggleRendering3DDihedrals();
 }

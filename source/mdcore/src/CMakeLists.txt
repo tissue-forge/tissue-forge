@@ -73,7 +73,6 @@ set(
   tf_engine_advance.cpp
   tf_engine_bonded.cpp
   tf_engine_rigid.cpp
-  tf_errs.cpp
   tf_runner_dopair.cpp
   tf_runner_dosort.cpp
   tf_runner_verlet.cpp

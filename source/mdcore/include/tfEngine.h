@@ -38,39 +38,6 @@
 #include <set>
 
 
-/* engine error codes */
-#define engine_err_ok                    0
-#define engine_err_null                  -1
-#define engine_err_malloc                -2
-#define engine_err_space                 -3
-#define engine_err_pthread               -4
-#define engine_err_runner                -5
-#define engine_err_range                 -6
-#define engine_err_cell                  -7
-#define engine_err_domain                -8
-#define engine_err_nompi                 -9
-#define engine_err_mpi                   -10
-#define engine_err_bond                  -11
-#define engine_err_angle                 -12
-#define engine_err_reader                -13
-#define engine_err_psf                   -14
-#define engine_err_pdb                   -15
-#define engine_err_cpf                   -16
-#define engine_err_potential             -17
-#define engine_err_exclusion             -18
-#define engine_err_sets                  -19
-#define engine_err_dihedral              -20
-#define engine_err_cuda                  -21
-#define engine_err_nocuda                -22
-#define engine_err_cudasp                -23
-#define engine_err_maxparts              -24
-#define engine_err_queue                 -25
-#define engine_err_rigid                 -26
-#define engine_err_cutoff		 		 -27
-#define engine_err_nometis				 -28
-#define engine_err_toofast               -29
-#define engine_err_subengine 			 -30
-
 #define engine_bonds_chunk               100
 #define engine_angles_chunk              100
 #define engine_rigids_chunk              50
@@ -186,12 +153,6 @@ namespace TissueForge {
 		INTEGRATOR_UPDATE_PERSISTENTFORCE    = 1 << 0
 	};
 
-
-	/** ID of the last error. */
-	CAPI_DATA(int) engine_err;
-
-	/** List of error messages. */
-	CAPI_DATA(const char *) engine_err_msg[];
 
 	struct CustomForce;
 
@@ -480,36 +441,177 @@ namespace TissueForge {
 
 
 	/* associated functions */
-	CAPI_FUNC(int) engine_addpot(struct engine *e, struct Potential *p, int i, int j);
 
-	CAPI_FUNC(int) engine_addfluxes(struct engine *e, struct Fluxes *f, int i, int j);
+	/**
+	 * @brief Add an interaction potential.
+	 *
+	 * @param e The #engine.
+	 * @param p The #potential to add to the #engine.
+	 * @param i ID of particle type for this interaction.
+	 * @param j ID of second particle type for this interaction.
+	 *
+	 * Adds the given potential for pairs of particles of type @c i and @c j,
+	 * where @c i and @c j may be the same type ID.
+	 */
+	CAPI_FUNC(HRESULT) engine_addpot(struct engine *e, struct Potential *p, int i, int j);
+
+	/**
+	 * @brief Add fluxes to a particle of particle types
+	 * 
+	 * @param e The #engine.
+	 * @param f The #flux
+	 * @param i ID of particle type for this interaction.
+	 * @param j ID of second particle type for this interaction.
+	 */
+	CAPI_FUNC(HRESULT) engine_addfluxes(struct engine *e, struct Fluxes *f, int i, int j);
+
+	/**
+	 * @brief Get a fluxes between two particles
+	 * 
+	 * @param e The #engine.
+	 * @param i ID of particle type of the flux.
+	 * @param j ID of second particle type of the flux.
+	 */
 	Fluxes *engine_getfluxes(struct engine *e, int i, int j);
 
 	/**
 	 * Add a single body force to the engine.
 	 */
-	CAPI_FUNC(int) engine_add_singlebody_force(struct engine *e, struct Force *p, int typeId);
+	CAPI_FUNC(HRESULT) engine_add_singlebody_force(struct engine *e, struct Force *p, int typeId);
 
 	/**
 	 * allocates a new angle, returns its id.
 	 */
 	CAPI_FUNC(int) engine_angle_alloc(struct engine *e, Angle **out);
 
-	CAPI_FUNC(int) engine_angle_eval(struct engine *e);
-	CAPI_FUNC(int) engine_barrier(struct engine *e);
-	CAPI_FUNC(int) engine_bond_eval(struct engine *e);
-	CAPI_FUNC(int) engine_bonded_eval(struct engine *e);
-	CAPI_FUNC(int) engine_bonded_eval_sets(struct engine *e);
-	CAPI_FUNC(int) engine_bonded_sets(struct engine *e, int max_sets);
+	/**
+	 * @brief Compute the angled interactions stored in this engine.
+	 * 
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_angle_eval(struct engine *e);
+
+	/**
+	 * @brief Barrier routine to hold the @c runners back.
+	 *
+	 * @param e The #engine to wait on.
+	 *
+	 * After being initialized, and after every timestep, every #runner
+	 * calls this routine which blocks until all the runners have returned
+	 * and the #engine signals the next timestep.
+	 */
+	CAPI_FUNC(HRESULT) engine_barrier(struct engine *e);
+
+	/**
+	 * @brief Compute the bonded interactions stored in this engine.
+	 * 
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_bond_eval(struct engine *e);
+
+	/**
+	 * @brief Compute all bonded interactions stored in this engine.
+	 * 
+	 * @param e The #engine.
+	 *
+	 * Does the same as #engine_bond_eval, #engine_angle_eval and
+	 * #engine_dihedral eval, yet all in one go to avoid excessive
+	 * updates of the particle forces.
+	 */
+	CAPI_FUNC(HRESULT) engine_bonded_eval(struct engine *e);
+
+	/**
+	 * @brief Compute all bonded interactions stored in this engine.
+	 * 
+	 * @param e The #engine.
+	 *
+	 * Does the same as #engine_bond_eval, #engine_angle_eval and
+	 * #engine_dihedral eval, yet all in one go to avoid excessive
+	 * updates of the particle forces.
+	 */
+	CAPI_FUNC(HRESULT) engine_bonded_eval_sets(struct engine *e);
+
+	/**
+	 * @brief Assemble non-conflicting sets of bonded interactions.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_bonded_sets(struct engine *e, int max_sets);
+
+	/**
+	 * allocates a new dihedral, returns its id.
+	 */
 	CAPI_FUNC(int) engine_dihedral_alloc(struct engine *e, Dihedral **out);
-	CAPI_FUNC(int) engine_dihedral_eval(struct engine *e);
-	CAPI_FUNC(int) engine_exclusion_add(struct engine *e, int i, int j);
-	CAPI_FUNC(int) engine_exclusion_eval(struct engine *e);
-	CAPI_FUNC(int) engine_exclusion_shrink(struct engine *e);
-	CAPI_FUNC(int) engine_finalize(struct engine *e);
-	CAPI_FUNC(int) engine_flush_ghosts(struct engine *e);
-	CAPI_FUNC(int) engine_flush(struct engine *e);
+
+	/**
+	 * @brief Compute the dihedral interactions stored in this engine.
+	 * 
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_dihedral_eval(struct engine *e);
+
+	/**
+	 * @brief Add a exclusioned interaction to the engine.
+	 *
+	 * @param e The #engine.
+	 * @param i The ID of the first #part.
+	 * @param j The ID of the second #part.
+	 */
+	CAPI_FUNC(HRESULT) engine_exclusion_add(struct engine *e, int i, int j);
+
+	/**
+	 * @brief Compute the exclusioned interactions stored in this engine.
+	 * 
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_exclusion_eval(struct engine *e);
+
+	/**
+	 * @brief Remove duplicate exclusions.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_exclusion_shrink(struct engine *e);
+
+	/**
+	 * @brief Kill all runners and de-allocate the data of an engine.
+	 *
+	 * @param e the #engine to finalize.
+	 */
+	CAPI_FUNC(HRESULT) engine_finalize(struct engine *e);
+
+	/**
+	 * @brief Clear all particles from this #engine's ghost cells.
+	 *
+	 * @param e The #engine to flush.
+	 */
+	CAPI_FUNC(HRESULT) engine_flush_ghosts(struct engine *e);
+
+	/**
+	 * @brief Clear all particles from this #engine.
+	 *
+	 * @param e The #engine to flush.
+	 */
+	CAPI_FUNC(HRESULT) engine_flush(struct engine *e);
+
+	/**
+	 * @brief Look for a given type by name.
+	 *
+	 * @param e The #engine.
+	 * @param name The type name.
+	 *
+	 * @return The type ID or < 0 on error.
+	 */
 	CAPI_FUNC(int) engine_gettype(struct engine *e, char *name);
+
+	/**
+	 * @brief Look for a given type by its second name.
+	 *
+	 * @param e The #engine.
+	 * @param name2 The type name2.
+	 *
+	 * @return The type ID or < 0 on error.
+	 */
 	CAPI_FUNC(int) engine_gettype2(struct engine *e, char *name2);
 
 	/**
@@ -535,25 +637,29 @@ namespace TissueForge {
 	 *      position.
 	 * @param result pointer to the newly allocated particle.
 	 *
-	 * @returns #space_err_ok or < 0 on error (see #space_err).
-	 *
 	 * Inserts a #part @c p into the #space @c s at the position @c x.
 	 * Note that since particle positions in #part are relative to the cell, that
 	 * data in @c p is overwritten and @c x is used.
 	 *
 	 * This is the single, central function that actually allocates particle space,
 	 * and inserts a new particle into the engine.
-	 *
-	 * Increases the ref count on the particle type.
 	 */
-	CAPI_FUNC(int) engine_addpart(
+	CAPI_FUNC(HRESULT) engine_addpart(
 		struct engine *e, 
 		struct Particle *p,
 		FPTYPE *x, 
 		struct Particle **result
 	);
 
-	CAPI_FUNC(int) engine_addparts(struct engine *e, int nr_parts, struct Particle **parts, FPTYPE **x);
+	/**
+	 * @brief Add parts to space at given coordinates.
+	 * 
+	 * @param e The #engine.
+	 * @param nr_parts Number of parts to add
+	 * @param parts pointers to newly allocated particles
+	 * @param x positions
+	 */
+	CAPI_FUNC(HRESULT) engine_addparts(struct engine *e, int nr_parts, struct Particle **parts, FPTYPE **x);
 
 	/**
 	 * @brief Add a type definition.
@@ -564,7 +670,7 @@ namespace TissueForge {
 	 * @param name Particle name, can be @c NULL.
 	 * @param name2 Particle second name, can be @c NULL.
 	 *
-	 * @return The type ID or < 0 on error (see #engine_err).
+	 * @return The type ID or < 0 on error.
 	 *
 	 * The particle type ID must be an integer greater or equal to 0
 	 * and less than the value @c max_type specified in #engine_init.
@@ -576,7 +682,6 @@ namespace TissueForge {
 		const char *name, 
 		const char *name2
 	);
-
 
 	/**
 	 * @brief Initialize an #engine with the given data.
@@ -593,10 +698,8 @@ namespace TissueForge {
 	 * @param boundaryConditions boundary conditions argument container
 	 * @param max_type The maximum number of particle types that will be used by this engine.
 	 * @param flags Bit-mask containing the flags for this engine.
-	 *
-	 * @return #engine_err_ok or < 0 on error (see #engine_err).
 	 */
-	CAPI_FUNC(int) engine_init(
+	CAPI_FUNC(HRESULT) engine_init(
 		struct engine *e, 
 		const FPTYPE *origin, 
 		const FPTYPE *dim, 
@@ -610,9 +713,25 @@ namespace TissueForge {
 	/**
 	 * clears all the uaer allocated objects, resets to state when created.
 	 */
-	CAPI_FUNC(int) engine_reset(struct engine *e);
+	CAPI_FUNC(HRESULT) engine_reset(struct engine *e);
 
-	CAPI_FUNC(int) engine_load_ghosts(
+	/**
+	 * @brief Load a set of particle data as ghosts
+	 *
+	 * @param e The #engine.
+	 * @param x An @c N times 3 array of the particle positions.
+	 * @param v An @c N times 3 array of the particle velocities.
+	 * @param type A vector of length @c N of the particle type IDs.
+	 * @param pid A vector of length @c N of the particle IDs.
+	 * @param vid A vector of length @c N of the particle virtual IDs.
+	 * @param q A vector of length @c N of the individual particle charges.
+	 * @param flags A vector of length @c N of the particle flags.
+	 * @param N the number of particles to load.
+	 *
+	 * If the parameters @c v, @c flags, @c vid or @c q are @c NULL, then
+	 * these values are set to zero.
+	 */
+	CAPI_FUNC(HRESULT) engine_load_ghosts(
 		struct engine *e, 
 		FPTYPE *x, 
 		FPTYPE *v, 
@@ -622,7 +741,24 @@ namespace TissueForge {
 		unsigned int *flags, 
 		int N
 	);
-	CAPI_FUNC(int) engine_load(
+
+	/**
+	 * @brief Load a set of particle data.
+	 *
+	 * @param e The #engine.
+	 * @param x An @c N times 3 array of the particle positions.
+	 * @param v An @c N times 3 array of the particle velocities.
+	 * @param type A vector of length @c N of the particle type IDs.
+	 * @param pid A vector of length @c N of the particle IDs.
+	 * @param vid A vector of length @c N of the particle virtual IDs.
+	 * @param q A vector of length @c N of the individual particle charges.
+	 * @param flags A vector of length @c N of the particle flags.
+	 * @param N the number of particles to load.
+	 *
+	 * If the parameters @c v, @c flags, @c vid or @c q are @c NULL, then
+	 * these values are set to zero.
+	 */
+	CAPI_FUNC(HRESULT) engine_load(
 		struct engine *e, 
 		FPTYPE *x, 
 		FPTYPE *v, 
@@ -631,18 +767,131 @@ namespace TissueForge {
 		int *vid,
 		FPTYPE *charge, unsigned int *flags, int N
 	);
-	CAPI_FUNC(int) engine_nonbond_eval(struct engine *e);
-	CAPI_FUNC(int) engine_rigid_add(struct engine *e, int pid, int pjd, FPTYPE d);
-	CAPI_FUNC(int) engine_rigid_eval(struct engine *e);
-	CAPI_FUNC(int) engine_rigid_sort(struct engine *e);
-	CAPI_FUNC(int) engine_rigid_unsort(struct engine *e);
-	CAPI_FUNC(int) engine_shuffle(struct engine *e);
-	CAPI_FUNC(int) engine_split_bisect(struct engine *e, int N, int particle_flags);
-	CAPI_FUNC(int) engine_split(struct engine *e);
 
-	CAPI_FUNC(int) engine_start(struct engine *e, int nr_runners, int nr_queues);
-	CAPI_FUNC(int) engine_step(struct engine *e);
-	CAPI_FUNC(int) engine_timers_reset(struct engine *e);
+	/**
+	 * @brief Compute the nonbonded interactions in the current step.
+	 *
+	 * @param e The #engine on which to run.
+	 *
+	 * This routine advances the timestep counter by one, prepares the #space
+	 * for a timestep, releases the #runner's associated with the #engine
+	 * and waits for them to finnish.
+	 */
+	CAPI_FUNC(HRESULT) engine_nonbond_eval(struct engine *e);
+
+	/**
+	 * @brief Add a rigid constraint to the engine.
+	 *
+	 * @param e The #engine.
+	 * @param pid The ID of the first #part.
+	 * @param pjd The ID of the second #part.
+	 *
+	 * Beware that currently all particles have to have been inserted before
+	 * the rigid constraints are added!
+	 */
+	CAPI_FUNC(HRESULT) engine_rigid_add(struct engine *e, int pid, int pjd, FPTYPE d);
+
+	/**
+	 * @brief Resolve the constraints.
+	 * 
+	 * @param e The #engine.
+	 *
+	 * Note that if in parallel, #engine_rigid_sort should be called before
+	 * this routine.
+	 */
+	CAPI_FUNC(HRESULT) engine_rigid_eval(struct engine *e);
+
+	/**
+	 * @brief Split the rigids into local, semilocal and non-local.
+	 * 
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_rigid_sort(struct engine *e);
+
+	/**
+	 * @brief Shuffle the rigid constraints randomly.
+	 * 
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_rigid_unsort(struct engine *e);
+
+	/**
+	 * @brief Re-shuffle the particles in the engine.
+	 *
+	 * @param e The #engine on which to run.
+	 */
+	CAPI_FUNC(HRESULT) engine_shuffle(struct engine *e);
+
+	/**
+	 * @brief Split the computational domain over a number of nodes using
+	 *      bisection.
+	 *
+	 * @param e The #engine to split up.
+	 * @param N The number of computational nodes.
+	 */
+	CAPI_FUNC(HRESULT) engine_split_bisect(struct engine *e, int N, int particle_flags);
+
+	/**
+	 * @brief Set-up the engine for distributed-memory parallel operation.
+	 *
+	 * @param e The #engine to set-up.
+	 *
+	 * This function assumes that #engine_split_bisect or some similar
+	 * function has already been called and that #nodeID, #nr_nodes as
+	 * well as the #cell @c nodeIDs have been set.
+	 */
+	CAPI_FUNC(HRESULT) engine_split(struct engine *e);
+
+	/**
+	 * @brief Start the runners in the given #engine.
+	 *
+	 * @param e The #engine to start.
+	 * @param nr_runners The number of runners start.
+	 *
+	 * Allocates and starts the specified number of #runner. Also initializes
+	 * the Verlet lists.
+	 */
+	CAPI_FUNC(HRESULT) engine_start(struct engine *e, int nr_runners, int nr_queues);
+
+	/**
+	 * @brief Run the engine for a single time step.
+	 *
+	 * @param e The #engine on which to run.
+	 *
+	 * This routine advances the timestep counter by one, prepares the #space
+	 * for a timestep, releases the #runner's associated with the #engine
+	 * and waits for them to finnish.
+	 *
+	 * Once all the #runner's are done, the particle velocities and positions
+	 * are updated and the particles are re-sorted in the #space.
+	 */
+	CAPI_FUNC(HRESULT) engine_step(struct engine *e);
+
+	/**
+	 * @brief Set all the engine timers to 0.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_timers_reset(struct engine *e);
+
+	/**
+	 * @brief Unload a set of particle data from the marked cells of an #engine
+	 *
+	 * @param e The #engine.
+	 * @param x An @c N times 3 array of the particle positions.
+	 * @param v An @c N times 3 array of the particle velocities.
+	 * @param type A vector of length @c N of the particle type IDs.
+	 * @param pid A vector of length @c N of the particle IDs.
+	 * @param vid A vector of length @c N of the particle virtual IDs.
+	 * @param q A vector of length @c N of the individual particle charges.
+	 * @param flags A vector of length @c N of the particle flags.
+	 * @param epot A pointer to a #FPTYPE in which to store the total potential energy.
+	 * @param N the maximum number of particles.
+	 *
+	 * @return The number of particles unloaded or < 0 on error.
+	 *
+	 * The fields @c x, @c v, @c type, @c pid, @c vid, @c q, @c epot and/or @c flags may be NULL.
+	 */
 	CAPI_FUNC(int) engine_unload_marked(
 		struct engine *e, 
 		FPTYPE *x, 
@@ -655,6 +904,25 @@ namespace TissueForge {
 		FPTYPE *epot, 
 		int N
 	);
+
+	/**
+	 * @brief Unload real particles that may have wandered into a ghost cell.
+	 *
+	 * @param e The #engine.
+	 * @param x An @c N times 3 array of the particle positions.
+	 * @param v An @c N times 3 array of the particle velocities.
+	 * @param type A vector of length @c N of the particle type IDs.
+	 * @param pid A vector of length @c N of the particle IDs.
+	 * @param vid A vector of length @c N of the particle virtual IDs.
+	 * @param q A vector of length @c N of the individual particle charges.
+	 * @param flags A vector of length @c N of the particle flags.
+	 * @param epot A pointer to a #FPTYPE in which to store the total potential energy.
+	 * @param N the maximum number of particles.
+	 *
+	 * @return The number of particles unloaded or < 0 on error.
+	 *
+	 * The fields @c x, @c v, @c type, @c vid, @c pid, @c q, @c epot and/or @c flags may be NULL.
+	 */
 	CAPI_FUNC(int) engine_unload_strays(
 		struct engine *e, 
 		FPTYPE *x, 
@@ -667,6 +935,25 @@ namespace TissueForge {
 		FPTYPE *epot, 
 		int N
 	);
+
+	/**
+	 * @brief Unload a set of particle data from the #engine.
+	 *
+	 * @param e The #engine.
+	 * @param x An @c N times 3 array of the particle positions.
+	 * @param v An @c N times 3 array of the particle velocities.
+	 * @param type A vector of length @c N of the particle type IDs.
+	 * @param pid A vector of length @c N of the particle IDs.
+	 * @param vid A vector of length @c N of the particle virtual IDs.
+	 * @param q A vector of length @c N of the individual particle charges.
+	 * @param flags A vector of length @c N of the particle flags.
+	 * @param epot A pointer to a #FPTYPE in which to store the total potential energy.
+	 * @param N the maximum number of particles.
+	 *
+	 * @return The number of particles unloaded or < 0 on error.
+	 *
+	 * The fields @c x, @c v, @c type, @c pid, @c vid, @c q, @c epot and/or @c flags may be NULL.
+	 */
 	CAPI_FUNC(int) engine_unload(
 		struct engine *e, 
 		FPTYPE *x, 
@@ -679,7 +966,13 @@ namespace TissueForge {
 		FPTYPE *epot, 
 		int N
 	);
-	CAPI_FUNC(int) engine_verlet_update(struct engine *e);
+
+	/**
+	 * @brief Check if the Verlet-list needs to be updated.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_verlet_update(struct engine *e);
 
 	/**
 	 * gets the next available particle id to use when creating a new particle.
@@ -689,17 +982,17 @@ namespace TissueForge {
 	/**
 	 * gets the next available particle ids to use when creating a new particle.
 	 */
-	CAPI_FUNC(int) engine_next_partids(struct engine *e, int nr_ids, int *ids);
+	CAPI_FUNC(HRESULT) engine_next_partids(struct engine *e, int nr_ids, int *ids);
 
 	/**
 	 * internal method to clear data before calculating forces on all objects
 	 */
-	int engine_force_prep(struct engine *e);
+	HRESULT engine_force_prep(struct engine *e);
 
 	/**
 	 * internal method to calculate forces on all objects
 	 */
-	int engine_force(struct engine *e);
+	HRESULT engine_force(struct engine *e);
 
 	/**
 	 * Deletes a particle from the engine based on particle id.
@@ -725,7 +1018,25 @@ namespace TissueForge {
 	CAPI_FUNC(FPTYPE) engine_temperature(struct engine *e);
 
 	#ifdef WITH_MPI
-	CAPI_FUNC(int) engine_init_mpi(
+
+	/**
+	 * @brief Initialize an #engine with the given data and MPI enabled.
+	 *
+	 * @param e The #engine to initialize.
+	 * @param origin An array of three FPTYPEs containing the cartesian origin
+	 *      of the space.
+	 * @param dim An array of three FPTYPEs containing the size of the space.
+	 * @param L The minimum cell edge length, should be at least @c cutoff.
+	 * @param cutoff The maximum interaction cutoff to use.
+	 * @param period A bitmask describing the periodicity of the domain
+	 *      (see #space_periodic_full).
+	 * @param max_type The maximum number of particle types that will be used
+	 *      by this engine.
+	 * @param flags Bit-mask containing the flags for this engine.
+	 * @param comm The MPI comm to use.
+	 * @param rank The ID of this node.
+	 */
+	CAPI_FUNC(HRESULT) engine_init_mpi(
 		struct engine *e, 
 		const FPTYPE *origin, 
 		const FPTYPE *dim, 
@@ -737,15 +1048,93 @@ namespace TissueForge {
 		MPI_Comm comm,
 		int rank
 	);
-	CAPI_FUNC(int) engine_exchange(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_async(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_async_run(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_incomming(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_rigid(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_rigid_async(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_rigid_async_run(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_rigid_wait(struct engine *e);
-	CAPI_FUNC(int) engine_exchange_wait(struct engine *e);
+
+	/**
+	 * @brief Exchange data with other nodes.
+	 *
+	 * @param e The #engine to work with.
+	 * @param comm The @c MPI_Comm over which to exchange data.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange(struct engine *e);
+
+	/**
+	 * @brief Exchange data with other nodes asynchronously.
+	 *
+	 * @param e The #engine to work with.
+	 *
+	 * Starts a new thread which handles the particle exchange. At the
+	 * start of the exchange, ghost cells are marked in the taboo-list
+	 * and only freed once their data has been received.
+	 *
+	 * The function #engine_exchange_wait can be used to wait for
+	 * the asynchronous communication to finish.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_async(struct engine *e);
+
+	/**
+	 * @brief Exchange data with other nodes asynchronously.
+	 *
+	 * @param e The #engine to work with.
+	 * @param comm The @c MPI_Comm over which to exchange data.
+	 *
+	 * Starts a new thread which handles the particle exchange. At the
+	 * start of the exchange, ghost cells are marked in the taboo-list
+	 * and only freed once their data has been received.
+	 *
+	 * The function #engine_exchange_wait can be used to wait for
+	 * the asynchronous communication to finish.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_async_run(struct engine *e);
+
+	/**
+	 * @brief Exchange incomming particle data with other nodes.
+	 *
+	 * @param e The #engine to work with.
+	 * @param comm The @c MPI_Comm over which to exchange data.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_incomming(struct engine *e);
+
+	/**
+	 * @brief Exchange only rigid parts which span the node edges.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_rigid(struct engine *e);
+
+	/**
+	 * @brief Exchange data with other nodes asynchronously.
+	 *
+	 * @param e The #engine to work with.
+	 *
+	 * Starts a new thread which handles the particle exchange. At the
+	 * start of the exchange, ghost cells are marked in the taboo-list
+	 * and only freed once their data has been received.
+	 *
+	 * The function #engine_exchange_wait can be used to wait for
+	 * the asynchronous communication to finish.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_rigid_async(struct engine *e);
+
+	/**
+	 * @brief Exchange only rigid parts which span the node edges.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_rigid_async_run(struct engine *e);
+
+	/** 
+	 * @brief Wait for an asynchronous data exchange to finalize.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_rigid_wait(struct engine *e);
+
+	/** 
+	 * @brief Wait for an asynchronous data exchange to finalize.
+	 *
+	 * @param e The #engine.
+	 */
+	CAPI_FUNC(HRESULT) engine_exchange_wait(struct engine *e);
 	#endif
 
 	#if defined(HAVE_CUDA)
@@ -754,33 +1143,198 @@ namespace TissueForge {
 	namespace cuda { 
 
 
-		CAPI_FUNC(int) engine_nonbond_cuda(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_load(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_load_parts(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_unload_parts(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_load_pots(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_unload_pots(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_refresh_particles(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_allocate_particle_states(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_finalize_particle_states(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_refresh_particle_states(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_refresh_pots(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_load_fluxes(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_unload_fluxes(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_refresh_fluxes(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_boundary_conditions_refresh(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_queues_finalize(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_finalize(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_refresh(struct engine *e);
-		CAPI_FUNC(int) engine_cuda_setthreads(struct engine *e, int id, int nr_threads);
-		CAPI_FUNC(int) engine_cuda_setblocks(struct engine *e, int id, int nr_blocks);
-		CAPI_FUNC(int) engine_cuda_setdevice(struct engine *e, int id);
-		CAPI_FUNC(int) engine_cuda_setdevices(struct engine *e, int nr_devices, int *ids);
-		CAPI_FUNC(int) engine_cuda_cleardevices(struct engine *e);
-		CAPI_FUNC(int) engine_split_gpu(struct engine *e, int N, int flags);
+		/**
+		 * @brief Offload and compute the nonbonded interactions on a CUDA device.
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_nonbond_cuda(struct engine *e);
 
-		CAPI_FUNC(int) engine_toCUDA(struct engine *e);
-		CAPI_FUNC(int) engine_fromCUDA(struct engine *e);
+		/**
+		 * @brief Load the potentials and cell pairs onto the CUDA device.
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_load(struct engine *e);
+
+		/**
+		 * @brief Load the cell data onto the CUDA device.
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_load_parts(struct engine *e);
+
+		/**
+		 * @brief Load the cell data from the CUDA device.
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_unload_parts(struct engine *e);
+
+		/**
+		 * @brief Load the potentials onto the CUDA device
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_load_pots(struct engine *e);
+
+		/**
+		 * @brief Unload the potentials on the CUDA device
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_unload_pots(struct engine *e);
+
+		/**
+		 * @brief Refreshes particle buffers. Can be safely used to resize buffers while running on CUDA device. 
+		 * 
+		 * @param e The #engine
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_refresh_particles(struct engine *e);
+
+		/**
+		 * @brief Allocate particle states
+		 * 
+		 * @param e The #engine
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_allocate_particle_states(struct engine *e);
+
+		/**
+		 * @brief Finalize particle states
+		 * 
+		 * @param e The #engine
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_finalize_particle_states(struct engine *e);
+
+		/**
+		 * @brief Refreshes particle states
+		 * 
+		 * @param e The #engine
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_refresh_particle_states(struct engine *e);
+
+		/**
+		 * @brief Refresh the potentials on the CUDA device. 
+		 * 
+		 * Can be safely called while on the CUDA device to reload all potential data from the engine. 
+		 * 
+		 * @param e The #engine
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_refresh_pots(struct engine *e);
+
+		/**
+		 * @brief Load the fluxes onto the CUDA device
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_load_fluxes(struct engine *e);
+
+		/**
+		 * @brief Unload the fluxes on the CUDA device
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_unload_fluxes(struct engine *e);
+
+		/**
+		 * @brief Refresh the fluxes on the CUDA device. 
+		 * 
+		 * Can be safely called while on the CUDA device to reload all flux data from the engine. 
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_refresh_fluxes(struct engine *e);
+
+		/**
+		 * @brief Refresh boundary conditions on device. Can be safely called while on device. 
+		 * 
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_boundary_conditions_refresh(struct engine *e);
+
+		/**
+		 * @brief Close the run configuration on the CUDA device.
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_queues_finalize(struct engine *e);
+
+		/**
+		 * @brief Unload the potentials and cell pairs on the CUDA device.
+		 *
+		 * @param e The #engine.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_finalize(struct engine *e);
+
+		/**
+		 * @brief Refresh the engine image on the CUDA device. 
+		 * 
+		 * Can be safely called while on the CUDA device to reload all data from the engine. 
+		 * 
+		 * @param e The #engine
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_refresh(struct engine *e);
+
+		/**
+		 * @brief Set the number of threads of a CUDA device to use
+		 * 
+		 * @param id The CUDA device id
+		 * @param nr_threads The number of threads to use
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_setthreads(struct engine *e, int id, int nr_threads);
+
+		/**
+		 * @brief Set the number of blocks of a CUDA device to use
+		 * 
+		 * @param id The CUDA device id
+		 * @param nr_blocks The number of blocks to use
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_setblocks(struct engine *e, int id, int nr_blocks);
+
+		/**
+		 * @brief Set the ID of the CUDA device to use
+		 *
+		 * @param id The CUDA device ID.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_setdevice(struct engine *e, int id);
+
+		/**
+		 * @brief Set the number of CUDA devices to use, as well as their IDs.
+		 *
+		 * @param id The CUDA device ID.
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_setdevices(struct engine *e, int nr_devices, int *ids);
+
+		/**
+		 * @brief Clear CUDA devices. Engine must not be in CUDA run mode. 
+		 */
+		CAPI_FUNC(HRESULT) engine_cuda_cleardevices(struct engine *e);
+
+		/**
+		 * @brief Placeholder for multi-GPU support. 
+		 * 
+		 * @param e The #engine to split up
+		 * @param N The number of computational nodes. Must equal 1. 
+		 * @param flags Flag telling whether to split the space for MPI or for GPUs.
+		 */
+		CAPI_FUNC(HRESULT) engine_split_gpu(struct engine *e, int N, int flags);
+
+		/**
+		 * @brief Sends engine data to configured CUDA devices. 
+		 * 
+		 * Assumes that the engine has already been initialized and not running MPI. 
+		 * 
+		 * Initializations occur accordinging to CUDA configuration that 
+		 * has already been set. 
+		 * 
+		 * @param e The #engine to start
+		 */
+		CAPI_FUNC(HRESULT) engine_toCUDA(struct engine *e);
+
+		/**
+		 * @brief Pulls engine data from configured CUDA devices. 
+		 * 
+		 * @param e The #engine to start
+		 */
+		CAPI_FUNC(HRESULT) engine_fromCUDA(struct engine *e);
 
 	}
 	
@@ -835,7 +1389,7 @@ namespace TissueForge {
 	};
 
 	inline ParticleType *ParticleHandle::type() {
-		return &_Engine.types[this->typeId];
+		return &_Engine.types[this->getTypeId()];
 	}
 
 	inline Particle *Particle_FromId(int id) {

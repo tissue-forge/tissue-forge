@@ -36,6 +36,9 @@
                 raise IndexError('Valid indices < ' + str(len(self)))
             return self.item(i)
 
+        def __contains__(self, item):
+            return self.has(item)
+
         @property
         def virial(self):
             """Virial tensor of particles corresponding to all types in list"""

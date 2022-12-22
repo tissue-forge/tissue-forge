@@ -34,13 +34,6 @@
 #include <random>
 
 
-/* cell error codes */
-#define cell_err_ok                     0
-#define cell_err_null                   -1
-#define cell_err_malloc                 -2
-#define cell_err_pthread                -3
-
-
 /* some constants */
 #define cell_default_size               256
 #define cell_incr                       10
@@ -96,9 +89,6 @@ namespace TissueForge {
         CAPI_DATA(const char) cell_sortlistID[27];
         CAPI_DATA(const FPTYPE) cell_shift[13*3];
         CAPI_DATA(const char) cell_flip[27];
-
-        /* the last error */
-        CAPI_DATA(int) cell_err;
 
         /**
          * @brief the space_cell structure
@@ -175,10 +165,8 @@ namespace TissueForge {
          * @param loc Array containing the location of this cell in the space.
          * @param origin The origin of the cell in global coordinates
          * @param dim The cell dimensions.
-         *
-         * @return #cell_err_ok or < 0 on error (see #cell_err).
          */
-        int space_cell_init(struct space_cell *c, int *loc, FPTYPE *origin, FPTYPE *dim);
+        HRESULT space_cell_init(struct space_cell *c, int *loc, FPTYPE *origin, FPTYPE *dim);
 
         /**
          * @brief Add a particle to a cell.
@@ -199,9 +187,8 @@ namespace TissueForge {
          * @param c The #cell from which the particle should be removed.
          * @param p The #particle to remove from the cell.
          * @param partlist Optional #particle array to update.
-         * @return #cell_err_ok or < 0 on error (see #cell_err).
          */
-        int space_cell_remove(struct space_cell *c, struct Particle *p, struct Particle **partlist);
+        HRESULT space_cell_remove(struct space_cell *c, struct Particle *p, struct Particle **partlist);
 
         /**
          * @brief Add a particle to the incomming array of a cell.
@@ -223,7 +210,7 @@ namespace TissueForge {
          * @param c The #cell to which the particle should be added.
          * @param p The #particle to add to the cell
          *
-         * @return The number of incomming parts or < 0 on error (see #cell_err).
+         * @return The number of incomming parts or < 0 on error.
          *
          * This routine assumes the particle position have already been adjusted
          * to the cell @c c.
@@ -235,10 +222,8 @@ namespace TissueForge {
          *
          * @param c The #cell.
          * @param partlist A pointer to the partlist to set the part indices.
-         *
-         * @return #cell_err_ok or < 0 on error (see #cell_err).
          */
-        int space_cell_welcome(struct space_cell *c, struct Particle **partlist);
+        HRESULT space_cell_welcome(struct space_cell *c, struct Particle **partlist);
 
         /**
          * @brief Load a block of particles to the cell.
@@ -248,10 +233,8 @@ namespace TissueForge {
          * @param nr_parts The number of parts to load.
          * @param partlist A pointer to the partlist to set the part indices.
          * @param celllist A pointer to the celllist to set the part indices.
-         *
-         * @return #cell_err_ok or < 0 on error (see #cell_err).
          */
-        int space_cell_load(
+        HRESULT space_cell_load(
                 struct space_cell *c, 
                 struct Particle *parts,
                 int nr_parts, 
@@ -271,10 +254,8 @@ namespace TissueForge {
          * @param c The #cell to flush.
          * @param partlist A pointer to the partlist to set the part indices.
          * @param celllist A pointer to the celllist to set the part indices.
-         *
-         * @return #cell_err_ok or < 0 on error (see #cell_err).
          */
-        int space_cell_flush(struct space_cell *c, struct Particle **partlist, struct space_cell **celllist);
+        HRESULT space_cell_flush(struct space_cell *c, struct Particle **partlist, struct space_cell **celllist);
 
 };
 

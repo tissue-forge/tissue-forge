@@ -31,6 +31,18 @@ HRESULT py::screenshot(const std::string &filePath) { return system::screenshot(
 
 HRESULT py::screenshot(const std::string &filePath, const bool &decorate, const FVector3 &bgcolor) { return system::screenshot(filePath, decorate, bgcolor); }
 
+bool py::camera_is_lagging() { return system::cameraIsLagging(); }
+
+HRESULT py::camera_enable_lagging() { return system::cameraEnableLagging(); }
+
+HRESULT py::camera_disable_lagging() { return system::cameraDisableLagging(); }
+
+HRESULT py::camera_toggle_lagging() { return system::cameraToggleLagging(); }
+
+float py::camera_get_lagging() { return system::cameraGetLagging(); }
+
+HRESULT py::camera_set_lagging(const float &lagging) { return system::cameraSetLagging(lagging); }
+
 bool py::context_has_current() { return system::contextHasCurrent(); }
 
 HRESULT py::context_make_current() { return system::contextMakeCurrent(); }
@@ -108,6 +120,28 @@ FQuaternion py::camera_rotation() { return system::cameraRotation(); }
 float py::camera_zoom() { return system::cameraZoom(); }
 
 struct rendering::UniverseRenderer* py::get_renderer() { return system::getRenderer(); }
+
+const bool py::get_rendering_3d_bonds() { return system::getRendering3DBonds(); }
+
+void py::set_rendering_3d_bonds(const bool &_flag) { return system::setRendering3DBonds(_flag); }
+
+void py::toggle_rendering_3d_bonds() { return system::toggleRendering3DBonds(); }
+
+const bool py::get_rendering_3d_angles() { return system::getRendering3DAngles(); }
+
+void py::set_rendering_3d_angles(const bool &_flag) { return system::setRendering3DAngles(_flag); }
+
+void py::toggle_rendering_3d_angles() { return system::toggleRendering3DAngles(); }
+
+const bool py::get_rendering_3d_dihedrals() { return system::getRendering3DDihedrals(); }
+
+void py::set_rendering_3d_dihedrals(const bool &_flag) { return system::setRendering3DDihedrals(_flag); }
+
+void py::toggle_rendering_3d_dihedrals() { return system::toggleRendering3DDihedrals(); }
+
+void py::set_rendering_3d_all(const bool &_flag) { return system::setRendering3DAll(_flag); }
+
+void py::toggle_rendering_3d_all() { return system::toggleRendering3DAll(); }
 
 FVector3 py::get_ambient_color() { return system::getAmbientColor(); }
 

@@ -27,6 +27,7 @@ Keyboard Controls
      "D",                           "Toggle scene decorations"
      "L",                           "Toggle lagging"
      "R",                           "Reset camera"
+     "S",                           "Do one simulation step"
      "Arrow down",                  "Translate camera down"
      "Arrow left",                  "Translate camera left"
      "Arrow right",                 "Translate camera right"

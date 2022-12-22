@@ -259,6 +259,57 @@ namespace TissueForge {
 
             void setMoveRate(const float &moveRate);
 
+            /** Test whether the camera is lagging */
+            const bool isLagging() const;
+
+            /** Enable camera lagging */
+            void enableLagging();
+
+            /** Disable camera lagging */
+            void disableLagging();
+
+            /** Toggle camera lagging */
+            void toggleLagging();
+
+            /** Get the camera lagging */
+            const float getLagging() const;
+
+            /** Set the camera lagging. Value must be in [0, 1) */
+            void setLagging(const float &lagging);
+
+            /** Get whether bonds are renderered with 3D objects */
+            const bool getRendering3DBonds() const;
+
+            /** Set whether bonds are renderered with 3D objects */
+            void setRendering3DBonds(const bool &_flag);
+
+            /** Toggle whether bonds are renderered with 3D objects */
+            void toggleRendering3DBonds();
+
+            /** Get whether angles are renderered with 3D objects */
+            const bool getRendering3DAngles() const;
+
+            /** Set whether angles are renderered with 3D objects */
+            void setRendering3DAngles(const bool &_flag);
+
+            /** Toggle whether angles are renderered with 3D objects */
+            void toggleRendering3DAngles();
+
+            /** Get whether dihedrals are renderered with 3D objects */
+            const bool getRendering3DDihedrals() const;
+
+            /** Set whether dihedrals are renderered with 3D objects */
+            void setRendering3DDihedrals(const bool &_flag);
+
+            /** Toggle whether dihedrals are renderered with 3D objects */
+            void toggleRendering3DDihedrals();
+
+            /** Set whether bonds, angle and dihedrals are renderered with 3D objects */
+            void setRendering3DAll(const bool &_flag);
+
+            /** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
+            void toggleRendering3DAll();
+
             void viewportEvent(Platform::GlfwApplication::ViewportEvent& event);
 
             void cameraTranslateDown();
@@ -435,6 +486,11 @@ namespace TissueForge {
             void setupCallbacks();
             
             ~UniverseRenderer();
+
+        protected:
+
+            float _lagging;
+            bool _bonds3d_flags[3] = {false, false, false}; // bonds, angles, dihedrals
         };
 
 }};

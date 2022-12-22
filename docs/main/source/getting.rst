@@ -3,6 +3,52 @@
 Getting Tissue Forge
 =====================
 
+Pre-Built Binaries
+-------------------
+
+Binary distributions of Tissue Forge are available via conda from the `tissue-forge` channel,
+
+.. code-block:: bash
+
+    conda install -c conda-forge -c tissue-forge tissue-forge
+
+Pre-built binaries of the latest Tissue Forge developments are also archived at the
+`Tissue Forge Azure project <https://dev.azure.com/Tissue-Forge/tissue-forge>`_.
+Installing pre-built binaries requires `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_.
+Binaries on Linux require the Mesa packages `libgl1-mesa-dev` and `libegl1-mesa-dev`.
+Packages include a convenience script `install_env` that installs the dependencies
+of the Tissue Forge installation on execution. After installing the dependencies
+environment, the Tissue Forge installation can be used after executing the following steps
+from a terminal with the root of the installation as the current directory.
+
+On Windows
+
+.. code-block:: bash
+
+    call etc/vars
+    conda activate %TFENV%
+
+On Linux and MacOS
+
+.. code-block:: bash
+
+    source etc/vars.sh
+    conda activate $TFENV
+
+Launching the provided Python examples are then as simple navigating to the ``tissue_forge``
+Python module and then executing the following,
+
+.. code-block:: bash
+
+    python examples/cell_sorting.py
+
+Likewise, Tissue Forge can be imported in Python scripts and interactive consoles,
+
+.. code-block:: bash
+
+    import tissue_forge as tf
+
+
 Installing From Source
 -----------------------
 

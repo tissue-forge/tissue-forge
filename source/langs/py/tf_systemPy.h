@@ -73,6 +73,24 @@ namespace TissueForge::py {
    */
    CPPAPI_FUNC(HRESULT) screenshot(const std::string &filePath, const bool &decorate, const FVector3 &bgcolor);
 
+    /** Test whether the camera is lagging */
+    CPPAPI_FUNC(bool) camera_is_lagging();
+
+    /** Enable camera lagging */
+    CPPAPI_FUNC(HRESULT) camera_enable_lagging();
+
+    /** Disable camera lagging */
+    CPPAPI_FUNC(HRESULT) camera_disable_lagging();
+
+    /** Toggle camera lagging */
+    CPPAPI_FUNC(HRESULT) camera_toggle_lagging();
+
+    /** Get the camera lagging */
+    CPPAPI_FUNC(float) camera_get_lagging();
+
+    /** Set the camera lagging. Value must be in [0, 1) */
+    CPPAPI_FUNC(HRESULT) camera_set_lagging(const float &lagging);
+
    CPPAPI_FUNC(bool) context_has_current();
    CPPAPI_FUNC(HRESULT) context_make_current();
    CPPAPI_FUNC(HRESULT) context_release();
@@ -336,6 +354,39 @@ namespace TissueForge::py {
    * @return struct rendering::UniverseRenderer* 
    */
    CPPAPI_FUNC(struct rendering::UniverseRenderer*) get_renderer();
+
+   /** Get whether bonds are renderered with 3D objects */
+   CPPAPI_FUNC(const bool) get_rendering_3d_bonds();
+
+   /** Set whether bonds are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_bonds(const bool &_flag);
+
+   /** Toggle whether bonds are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_bonds();
+
+   /** Get whether angles are renderered with 3D objects */
+   CPPAPI_FUNC(const bool) get_rendering_3d_angles();
+
+   /** Set whether angles are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_angles(const bool &_flag);
+
+   /** Toggle whether angles are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_angles();
+
+   /** Get whether dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(const bool) get_rendering_3d_dihedrals();
+
+   /** Set whether dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_dihedrals(const bool &_flag);
+
+   /** Toggle whether dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_dihedrals();
+
+   /** Set whether bonds, angle and dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) set_rendering_3d_all(const bool &_flag);
+
+   /** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
+   CPPAPI_FUNC(void) toggle_rendering_3d_all();
 
    /**
    * @brief Get the ambient color
