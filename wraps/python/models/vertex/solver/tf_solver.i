@@ -25,6 +25,14 @@
 #include <models/vertex/solver/tf_mesh_metrics.h>
 %}
 
+// Mitigate clashes with core
+%ignore TissueForge::models::vertex::operator<;
+%ignore TissueForge::models::vertex::operator>;
+%ignore TissueForge::models::vertex::operator<=;
+%ignore TissueForge::models::vertex::operator>=;
+%ignore TissueForge::models::vertex::operator==;
+%ignore TissueForge::models::vertex::operator!=;
+
 // Helper functions to access object members
 
 %inline %{
