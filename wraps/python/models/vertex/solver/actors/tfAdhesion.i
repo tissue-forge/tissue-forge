@@ -22,9 +22,6 @@
 #include <models/vertex/solver/actors/tfAdhesion.h>
 %}
 
-vertex_solver_MeshObjActor_particularize(Adhesion, Body, Vertex)
-vertex_solver_MeshObjActor_particularize(Adhesion, Surface, Vertex)
-
 %rename(_vertex_solver_Adhesion) TissueForge::models::vertex::Adhesion;
 
 %include <models/vertex/solver/actors/tfAdhesion.h>

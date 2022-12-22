@@ -59,7 +59,10 @@ namespace TissueForge::models::vertex {
      * @brief The mesh vertex is a volume of a mesh centered at a point in a space.
      * 
      */
-    class CAPI_EXPORT Vertex : public MeshObj {
+    class CAPI_EXPORT Vertex {
+
+        /** Object id; unique by type in a mesh */
+        int _objId;
 
         /** Particle id. -1 if not assigned */
         int pid;
@@ -67,36 +70,29 @@ namespace TissueForge::models::vertex {
         /** Connected surfaces */
         std::vector<Surface*> surfaces;
 
+        /** Cached particle data: mass */
+        FloatP_t _particleMass;
+
+        /** Cached particle data: position */
+        FVector3 _particlePosition;
+
+        /** Cached particle data: velocity */
+        FVector3 _particleVelocity;
+
     public:
 
         Vertex();
-        Vertex(const unsigned int &_pid);
-        Vertex(const FVector3 &position);
-        Vertex(TissueForge::io::ThreeDFVertexData *vdata);
+        ~Vertex();
+        static Vertex *create(const unsigned int &_pid);
+        static Vertex *create(const FVector3 &position);
+        static Vertex *create(TissueForge::io::ThreeDFVertexData *vdata);
 
-        /** Get the mesh object type */
-        MeshObj::Type objType() const override { return MeshObj::Type::VERTEX; }
-
-        /** Get the parents of the object */
-        std::vector<MeshObj*> parents() const override { return std::vector<MeshObj*>(); }
-
-        /** Get the children of the object */
-        std::vector<MeshObj*> children() const override;
-
-        /** Add a child object */
-        HRESULT addChild(MeshObj *obj) override;
-
-        /** Add a parent object */
-        HRESULT addParent(MeshObj *obj) override { return E_FAIL; }
-
-        /** Remove a child object */
-        HRESULT removeChild(MeshObj *obj) override;
-
-        /** Remove a parent object */
-        HRESULT removeParent(MeshObj *obj) override { return E_FAIL; }
+        MESHBOJ_DEFINES_DECL(Surface);
+        MESHBOJ_DEFINES_DECL(Body);
+        MESHOBJ_CLASSDEF(MeshObjTypeLabel::VERTEX)
 
         /** Get a summary string */
-        std::string str() const override;
+        std::string str() const;
 
         /** Get a JSON string representation */
         std::string toString();
@@ -118,18 +114,6 @@ namespace TissueForge::models::vertex {
 
         /** Replace a surface with another surface */
         HRESULT replace(Surface *toInsert, Surface *toRemove);
-
-        /**
-         * Destroy the vertex. 
-         * 
-         * If the vertex is in a mesh, then it and any objects it defines are removed from the mesh. 
-         * 
-         * The underlying particle is also destroyed, if any. 
-        */
-        HRESULT destroy() override;
-
-        /** Validate the vertex */
-        bool validate() override { return true; }
 
         /** Get the id of the underlying particle */
         const int getPartId() const { return pid; }
@@ -169,9 +153,6 @@ namespace TissueForge::models::vertex {
         /** Get the current mass */
         FloatP_t getMass() const;
 
-        /** Update internal data due to a change in position */
-        HRESULT positionChanged();
-
         /** Update the properties of the underlying particle */
         HRESULT updateProperties();
 
@@ -179,10 +160,15 @@ namespace TissueForge::models::vertex {
         ParticleHandle *particle() const;
 
         /** Get the current position */
-        FVector3 getPosition() const;
+        FVector3 getPosition() const { return _particlePosition; }
 
         /** Set the current position */
         HRESULT setPosition(const FVector3 &pos);
+
+        /** Get the current velocity */
+        FVector3 getVelocity() const { return _particleVelocity; }
+
+        FloatP_t getCachedParticleMass() const { return _particleMass; }
 
         /** Transfer all bonds to another vertex */
         HRESULT transferBondsTo(Vertex *other);
@@ -237,11 +223,11 @@ namespace TissueForge::models::vertex {
 
     };
 
-    inline bool operator< (const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return lhs.objId < rhs.objId; }
+    inline bool operator< (const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return lhs.objectId() < rhs.objectId(); }
     inline bool operator> (const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return rhs < lhs; }
     inline bool operator<=(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return !(lhs > rhs); }
     inline bool operator>=(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return !(lhs < rhs); }
-    inline bool operator==(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return lhs.objId == rhs.objId; }
+    inline bool operator==(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return lhs.objectId() == rhs.objectId(); }
     inline bool operator!=(const TissueForge::models::vertex::Vertex& lhs, const TissueForge::models::vertex::Vertex& rhs) { return !(lhs == rhs); }
 
 }

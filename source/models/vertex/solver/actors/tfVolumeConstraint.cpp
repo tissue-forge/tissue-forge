@@ -27,47 +27,38 @@
 #include <io/tfFIO.h>
 
 
+using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT VolumeConstraint::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
-    Body *b = (Body*)source;
-    FloatP_t dvol = b->getVolume() - constr;
-    e = lam * dvol * dvol;
-    return S_OK;
+FloatP_t VolumeConstraint::energy(const Body *source, const Vertex *target) {
+    FloatP_t dvol = source->getVolume() - constr;
+    return lam * dvol * dvol;
 }
 
-HRESULT VolumeConstraint::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
-    Body *b = (Body*)source;
-    Vertex *v = (Vertex*)target;
+FVector3 VolumeConstraint::force(const Body *source, const Vertex *target) {
     
-    FVector3 posc = v->getPosition();
+    FVector3 posc = target->getPosition();
     FVector3 ftotal(0.f);
 
     Vertex *vp, *vn;
 
-    for(auto &s : v->getSurfaces()) {
-        if(!s->in(b)) 
+    for(auto &s : target->getSurfaces()) {
+        if(!s->defines(source)) 
             continue;
         
         auto svertices = s->getVertices();
-        std::tie(vp, vn) = s->neighborVertices(v);
+        std::tie(vp, vn) = s->neighborVertices(target);
 
         FVector3 sftotal = Magnum::Math::cross(s->getCentroid(), vp->getPosition() - vn->getPosition());
         for(unsigned int i = 0; i < svertices.size(); i++) {
             sftotal -= s->triangleNormal(i) / svertices.size();
         }
 
-        ftotal += sftotal * s->volumeSense(b);
+        ftotal += sftotal * s->volumeSense(source);
     }
     
-    ftotal *= (lam * (b->getVolume() - constr) / 3.f);
-
-    f[0] += ftotal[0];
-    f[1] += ftotal[1];
-    f[2] += ftotal[2];
-
-    return S_OK;
+    return ftotal * (lam * (source->getVolume() - constr) / 3.f);
 }
 
 namespace TissueForge::io { 

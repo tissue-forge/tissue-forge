@@ -54,23 +54,41 @@ static TissueForge::models::vertex::io::VertexSolverFIOModule *_ioModule = NULL;
 
 
 HRESULT TissueForge::models::vertex::VertexForce(const Vertex *v, FloatP_t *f) {
+    FVector3 force;
+
     // Surfaces
+    int tid = -1;
+    SurfaceType *stype;
     for(auto &s : v->getSurfaces()) {
-        for(auto &a : s->type()->actors) 
-            a->force(s, v, f);
+        if(s->typeId != tid) {
+            tid = s->typeId;
+            stype = s->type();
+        }
+        for(auto &a : stype->actors) 
+            force += a->force(s, v);
         
         for(auto &a : s->actors) 
-            a->force(s, v, f);
+            force += a->force(s, v);
     }
 
     // Bodies
+    tid = -1;
+    BodyType *btype;
     for(auto &b : v->getBodies()) {
-        for(auto &a : b->type()->actors) 
-            a->force(b, v, f);
+        if(b->typeId != tid) {
+            tid = b->typeId;
+            btype = b->type();
+        }
+        for(auto &a : btype->actors) 
+            force += a->force(b, v);
 
         for(auto &a : b->actors) 
-            a->force(b, v, f);
+            force += a->force(b, v);
     }
+
+    f[0] += force[0];
+    f[1] += force[1];
+    f[2] += force[2];
 
     return S_OK;
 }
@@ -190,8 +208,9 @@ HRESULT MeshSolver::_registerTypeInst(BodyType *_type) {
         return E_FAIL;
     
     _type->id = _bodyTypes.size();
-    if(MeshSolver_assignUniqueNameAsNecessary(_type, _bodyTypes)) 
+    if(MeshSolver_assignUniqueNameAsNecessary(_type, _bodyTypes)) {
         TF_Log(LOG_INFORMATION) << "Type name not unique. Generating name: " << _type->name.c_str();
+    }
     _bodyTypes.push_back(_type);
 
     return S_OK;
@@ -213,8 +232,9 @@ HRESULT MeshSolver::_registerTypeInst(SurfaceType *_type) {
         auto c = colors[(_surfaceTypes.size() - 1) % colors.size()];
         _type->style = new rendering::Style(c);
     }
-    if(MeshSolver_assignUniqueNameAsNecessary(_type, _surfaceTypes)) 
+    if(MeshSolver_assignUniqueNameAsNecessary(_type, _surfaceTypes)) {
         TF_Log(LOG_INFORMATION) << "Type name not unique. Generating name: " << _type->name.c_str();
+    }
     _surfaceTypes.push_back(_type);
 
     return S_OK;
@@ -326,61 +346,77 @@ unsigned int MeshSolver::sizeBodies() {
     return _solver->mesh->sizeBodies();
 }
 
-template <typename T> 
-void Mesh_actRecursive(MeshObj *vertex, T *source, FloatP_t *f) {
-    for(auto &a : source->type()->actors) 
-        a->force(source, vertex, f);
-    for(auto &c : source->children()) 
-        Mesh_actRecursive(vertex, (T*)c, f);
-}
-
 HRESULT MeshSolver::_positionChangedInst() {
 
-    unsigned int i;
     _surfaceVertices = 0;
     _totalVertices = 0;
 
-    static int stride = ThreadPool::size();
-
     // Update vertices
 
-    std::vector<Vertex*> &m_vertices = mesh->vertices;
-    auto func_vertices = [&m_vertices](int i) -> void {
-        Vertex *v = m_vertices[i];
-        if(v) 
-            v->positionChanged();
-    };
-    parallel_for(m_vertices.size(), func_vertices);
-    _totalVertices += mesh->numVertices();
+    if(mesh->vertices->size() > 0) {
+
+        Vertex *m_vertices = &(*mesh->vertices)[0];
+        const size_t m_size_vertices = mesh->vertices->size();
+        const int blockSize = std::ceil(float(m_size_vertices) / ThreadPool::size());
+        auto func_vertices = [&m_vertices, m_size_vertices, blockSize](int tid) -> void {
+            int i0 = tid * blockSize;
+            int i1 = std::min<int>(i0 + blockSize, m_size_vertices);
+            for(int i = i0; i < i1; i++) {
+                Vertex &v = m_vertices[i];
+                if(v.objectId() >= 0) 
+                    v.positionChanged();
+            }
+        };
+        parallel_for(ThreadPool::size(), func_vertices);
+        _totalVertices += mesh->numVertices();
+
+    }
 
     // Update surfaces
+
+    if(mesh->surfaces->size() > 0) {
     
-    std::vector<Surface*> &m_surfaces = mesh->surfaces;
-    std::atomic<unsigned int> _surfaceVertices_m = 0;
-    auto func_surfaces = [&m_surfaces, &_surfaceVertices_m](int tid) -> void {
-        unsigned int _surfaceVertices_local = 0;
-        for(int i = tid; i < m_surfaces.size();) { 
-            Surface *s = m_surfaces[i];
-            if(s) {
-                s->positionChanged();
-                _surfaceVertices_local += s->parents().size();
+        Surface *m_surfaces = &(*mesh->surfaces)[0];
+        const size_t m_size_surfaces = mesh->surfaces->size();
+        const int blockSize = std::ceil(float(m_size_surfaces) / ThreadPool::size());
+        std::atomic<unsigned int> _surfaceVertices_m = 0;
+        auto func_surfaces = [&m_surfaces, &m_size_surfaces, blockSize, &_surfaceVertices_m](int tid) -> void {
+            int i0 = tid * blockSize;
+            int i1 = std::min<int>(i0 + blockSize, m_size_surfaces);
+            unsigned int _surfaceVertices_local = 0;
+            for(int i = i0; i < i1; i++) { 
+                Surface &s = m_surfaces[i];
+                if(s.objectId() >= 0) {
+                    s.positionChanged();
+                    _surfaceVertices_local += s.getVertices().size();
+                }
             }
-            i += stride;
-        }
-        _surfaceVertices_m.fetch_add(_surfaceVertices_local);
-    };
-    parallel_for(stride, func_surfaces);
-    _surfaceVertices += _surfaceVertices_m;
+            _surfaceVertices_m.fetch_add(_surfaceVertices_local);
+        };
+        parallel_for(ThreadPool::size(), func_surfaces);
+        _surfaceVertices = _surfaceVertices_m;
+
+    }
 
     // Update bodies
+
+    if(mesh->bodies->size() > 0) {
     
-    std::vector<Body*> &m_bodies = mesh->bodies;
-    auto func_bodies = [&m_bodies](int i) -> void {
-        Body *b = m_bodies[i];
-        if(b) 
-            b->positionChanged();
-    };
-    parallel_for(m_bodies.size(), func_bodies);
+        Body *m_bodies = &(*mesh->bodies)[0];
+        const size_t m_size_bodies = mesh->bodies->size();
+        const int blockSize = std::ceil(float(m_size_bodies) / ThreadPool::size());
+        auto func_bodies = [&m_bodies, &m_size_bodies, blockSize](int tid) -> void {
+            int i0 = tid * blockSize;
+            int i1 = std::min<int>(i0 + blockSize, m_size_bodies);
+            for(int i = i0; i < i1; i++) {
+                Body &b = m_bodies[i];
+                if(b.objectId() >= 0) 
+                    b.positionChanged();
+            }
+        };
+        parallel_for(ThreadPool::size(), func_bodies);
+
+    }
 
     mesh->isDirty = false;
 
@@ -419,14 +455,20 @@ HRESULT MeshSolver::preStepStart() {
     }
     memset(_solver->_forces, 0.f, 3 * sizeof(FloatP_t) * _bufferSize);
 
-    std::vector<Vertex*> &m_vertices = mesh->vertices;
+    Vertex *m_vertices = &(*mesh->vertices)[0];
     FloatP_t *v_forces = &_forces[0];
-    auto func = [&m_vertices, &v_forces](int i) -> void {
-        Vertex *v = m_vertices[i];
-        if(v) 
-            VertexForce(v, &v_forces[i * 3]);
+    const size_t m_size_vertices = mesh->vertices->size();
+    const int blockSize = std::ceil(float(m_size_vertices) / ThreadPool::size());
+    auto func = [&m_vertices, &v_forces, m_size_vertices, blockSize](int tid) -> void {
+        int i0 = tid * blockSize;
+        int i1 = std::min<int>(i0 + blockSize, m_size_vertices);
+        for(int i = i0; i < i1; i++) { 
+            Vertex &v = m_vertices[i];
+            if(v.objectId() >= 0) 
+                VertexForce(&v, &v_forces[i * 3]);
+        }
     };
-    parallel_for(m_vertices.size(), func);
+    parallel_for(ThreadPool::size(), func);
 
     return S_OK;
 }
@@ -436,20 +478,20 @@ HRESULT MeshSolver::preStepJoin() {
     MeshSolverTimerInstance t(MeshSolverTimers::Section::ADVANCE);
 
     FloatP_t *v_forces = &_forces[0];
-    std::vector<Vertex*> &m_vertices = mesh->vertices;
+    Vertex *m_vertices = &(*mesh->vertices)[0];
     auto func = [&m_vertices, &v_forces](int k) -> void {
-        Vertex *v = m_vertices[k];
-        if(!v) {
+        Vertex &v = m_vertices[k];
+        if(v.objectId() < 0) {
             return;
         }
 
-        Particle *p = v->particle()->part();
+        Particle *p = v.particle()->part();
         FloatP_t *buff = &v_forces[k * 3];
         p->f[0] += buff[0];
         p->f[1] += buff[1];
         p->f[2] += buff[2];
     };
-    parallel_for(m_vertices.size(), func);
+    parallel_for(mesh->vertices->size(), func);
 
     return S_OK;
 }
@@ -464,7 +506,7 @@ static std::vector<unsigned int> MeshSolver_surfaceVertexIndices(Mesh *mesh) {
         indices.push_back(idx);
         Surface *s = mesh->getSurface(i);
         if(s) 
-            idx += s->parents().size();
+            idx += s->getVertices().size();
     }
 
     return indices;
@@ -532,7 +574,7 @@ std::vector<unsigned int> MeshSolver::getSurfaceVertexIndicesAsyncJoin() {
     return _solver->_getSurfaceVertexIndicesAsyncJoinInst();
 }
 
-HRESULT MeshSolver::_logInst(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
+HRESULT MeshSolver::_logInst(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObjTypeLabel> &objTypes, const std::string &name) {
     MeshLogEvent event;
     event.name = name;
     event.type = type;
@@ -541,7 +583,7 @@ HRESULT MeshSolver::_logInst(const MeshLogEventType &type, const std::vector<int
     return MeshLogger::log(event);
 }
 
-HRESULT MeshSolver::log(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name) {
+HRESULT MeshSolver::log(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObjTypeLabel> &objTypes, const std::string &name) {
     TF_MESHSOLVER_CHECKINIT
 
     return _solver->_logInst(type, objIDs, objTypes, name);

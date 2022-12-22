@@ -22,8 +22,6 @@
 #include <models/vertex/solver/actors/tfSurfaceTraction.h>
 %}
 
-vertex_solver_MeshObjActor_particularize(SurfaceTraction, Surface, Vertex)
-
 %rename(_vertex_solver_SurfaceTraction) TissueForge::models::vertex::SurfaceTraction;
 
 %include <models/vertex/solver/actors/tfSurfaceTraction.h>

@@ -27,37 +27,29 @@
 #include <io/tfFIO.h>
 
 
+using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT NormalStress::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
-    FVector3 fv;
-    force(source, target, fv.data());
-    e = fv.dot(((Vertex*)target)->particle()->getVelocity()) * _Engine.dt;
-    return S_OK;
+FloatP_t NormalStress::energy(const Surface *source, const Vertex *target) {
+    FVector3 fv = force(source, target);
+    return fv.dot(target->getVelocity()) * _Engine.dt;
 }
 
-HRESULT NormalStress::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
-    Surface *s = (Surface*)source;
-    Vertex *v = (Vertex*)target;
-    
-    auto bodies = s->getBodies();
+FVector3 NormalStress::force(const Surface *source, const Vertex *target) {
+    auto bodies = source->getBodies();
     if(bodies.size() == 2) 
-        return S_OK;
+        return FVector3(0);
     
-    FVector3 snormal = s->getNormal();
+    FVector3 snormal = source->getNormal();
     if(snormal.isZero()) 
-        return S_OK;
+        return FVector3(0);
 
     snormal = snormal.normalized();
     if(bodies.size() == 1) 
-        snormal *= s->volumeSense(bodies[0]);
+        snormal *= source->volumeSense(bodies[0]);
 
-    FVector3 vForce = snormal * mag * s->getVertexArea(v);
-    f[0] += vForce[0];
-    f[1] += vForce[1];
-    f[2] += vForce[2];
-    return S_OK;
+    return snormal * mag * source->getVertexArea(target);
 }
 
 namespace TissueForge::io { 

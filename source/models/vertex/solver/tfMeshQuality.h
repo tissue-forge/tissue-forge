@@ -47,15 +47,12 @@ namespace TissueForge::models::vertex {
 
         unsigned int flags;
 
-        /** Source mesh object */
-        MeshObj *source;
-
         /**
          * @brief Target mesh objects.
          * 
          * Used to identify dependencies between operations
          */
-        std::vector<MeshObj*> targets;
+        std::vector<int> targets;
 
         /** Upstream operations, if any */
         std::set<MeshQualityOperation*> prev;
@@ -90,22 +87,26 @@ namespace TissueForge::models::vertex {
         /** Compute all upstream operations that have no dependencies */
         std::set<MeshQualityOperation*> headOperations() const;
 
-        /** Validate this operation. 
-         * 
-         * - A source object cannot target an object of the same type and with a lesser object ID
-        */
-        HRESULT validate() {
-            for(auto &t : targets) 
-                if(t->objType() == source->objType() && t->objId < source->objId) 
-                    return E_FAIL;
-            return S_OK;
-        }
+        /** Validate this operation. */
+        virtual HRESULT validate() { return S_OK; }
 
         /** Check whether this operation is still valid */
         virtual bool check() { return !(flags & Flag::None); };
 
+        /** Do all prep, checks and planning for this operation */
+        virtual void prep() {}
+
+        /** Returns how many vertices will be created by this operation */
+        virtual size_t numNewVertices() const { return 0; };
+
+        /** Returns how many surfaces will be created by this operation */
+        virtual size_t numNewSurfaces() const { return 0; };
+
+        /** Returns how many bodies will be created by this operation */
+        virtual size_t numNewBodies() const { return 0; };
+
         /** Implement this operation */
-        virtual HRESULT implement() { return S_OK; }
+        virtual void implement() {}
 
     protected:
 
@@ -121,15 +122,18 @@ namespace TissueForge::models::vertex {
     struct CAPI_EXPORT CustomQualityOperation : MeshQualityOperation {
 
         typedef bool (*OperationCheck)();
-        typedef HRESULT (*OperationFunction)(MeshObj*, std::vector<MeshObj*>);
+        typedef void (*OperationPrep)();
+        typedef void (*OperationFunction)(std::vector<int>);
 
         OperationCheck *opCheck;
+        OperationPrep *opPrep;
         OperationFunction *opFunc;
 
-        CustomQualityOperation(Mesh *_mesh, OperationFunction *_opFunc, OperationCheck *_opCheck=NULL) : 
+        CustomQualityOperation(Mesh *_mesh, OperationFunction *_opFunc, OperationCheck *_opCheck=NULL, OperationPrep *_opPrep=NULL) : 
             MeshQualityOperation(_mesh), 
             opFunc{_opFunc}, 
-            opCheck{_opCheck} 
+            opCheck{_opCheck}, 
+            opPrep{_opPrep}
         {
             flags = Flag::Active | Flag::Custom;
         };
@@ -148,7 +152,11 @@ namespace TissueForge::models::vertex {
             return true;
         }
 
-        HRESULT implement() override { return (*opFunc)(source, targets); }
+        void prep() override {
+            if(opPrep) (*opPrep)();
+        }
+
+        void implement() override { (*opFunc)(targets); }
     };
 
 

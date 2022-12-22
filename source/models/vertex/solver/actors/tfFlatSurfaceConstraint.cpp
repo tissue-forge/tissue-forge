@@ -30,29 +30,16 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT FlatSurfaceConstraint::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
-    Surface *s = (Surface*)source;
-    Vertex *v = (Vertex*)target;
-
-    FloatP_t _e = (s->getCentroid() - v->getPosition()).dot(s->getNormal());
+FloatP_t FlatSurfaceConstraint::energy(const Surface *source, const Vertex *target) {
+    FloatP_t _e = (source->getCentroid() - target->getPosition()).dot(source->getNormal());
     
-    e += v->particle()->getMass() / 2.f / _Engine.dt * lam * _e * _e;
-    
-    return S_OK;
+    return target->getCachedParticleMass() / 2.f / _Engine.dt * lam * _e * _e;
 }
 
-HRESULT FlatSurfaceConstraint::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
-    Surface *s = (Surface*)source;
-    Vertex *v = (Vertex*)target;
-
-    FVector3 sn = s->getNormal();
-    FVector3 force = (sn * ((s->getCentroid() - v->getPosition()).dot(sn))) * v->particle()->getMass() / _Engine.dt * lam;
-
-    f[0] += force[0];
-    f[1] += force[1];
-    f[2] += force[2];
+FVector3 FlatSurfaceConstraint::force(const Surface *source, const Vertex *target) {
+    FVector3 sn = source->getNormal();
     
-    return S_OK;
+    return (sn * ((source->getCentroid() - target->getPosition()).dot(sn))) * target->getCachedParticleMass() / _Engine.dt * lam;
 }
 
 namespace TissueForge::io { 

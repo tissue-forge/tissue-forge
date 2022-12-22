@@ -63,7 +63,6 @@ FVector3 triNorm(const FVector3 &p1, const FVector3 &p2, const FVector3 &p3) {
 }
 
 Surface::Surface() : 
-    MeshObj(), 
     b1{NULL}, 
     b2{NULL}, 
     area{0.f}, 
@@ -72,7 +71,13 @@ Surface::Surface() :
     species1{NULL}, 
     species2{NULL}, 
     style{NULL}
-{}
+{
+    MESHOBJ_INITOBJ
+}
+
+Surface::~Surface() {
+    MESHOBJ_DELOBJ
+}
 
 static HRESULT Surface_fromVertices(Surface *s, std::vector<Vertex*> vertices) {
     Surface_GETMESH(mesh, E_FAIL);
@@ -82,9 +87,6 @@ static HRESULT Surface_fromVertices(Surface *s, std::vector<Vertex*> vertices) {
             s->add(v);
             v->add(s);
         }
-        if(mesh->add(s) != S_OK) {
-            return tf_error(E_FAIL, "Failed to add surface to mesh");
-        }
     } 
     else {
         return tf_error(E_FAIL, "Surfaces require at least 3 vertices");
@@ -93,11 +95,19 @@ static HRESULT Surface_fromVertices(Surface *s, std::vector<Vertex*> vertices) {
     return S_OK;
 }
 
-Surface::Surface(std::vector<Vertex*> _vertices) : 
-    Surface()
-{
-
-    Surface_fromVertices(this, _vertices);
+Surface *Surface::create(std::vector<Vertex*> _vertices) {
+    Surface_GETMESH(mesh, NULL);
+    Surface *result;
+    if(mesh->create(&result) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return NULL;
+    }
+    if(Surface_fromVertices(result, _vertices) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return NULL;
+    }
+    result->positionChanged();
+    return result;
 }
 
 static HRESULT Surface_order3DFFaceVertices(TissueForge::io::ThreeDFFaceData *face, std::vector<TissueForge::io::ThreeDFVertexData*> &result) {
@@ -134,132 +144,48 @@ static HRESULT Surface_order3DFFaceVertices(TissueForge::io::ThreeDFFaceData *fa
     return S_OK;
 }
 
-Surface::Surface(TissueForge::io::ThreeDFFaceData *face) : 
-    Surface()
-{
+Surface *Surface::create(TissueForge::io::ThreeDFFaceData *face) {
     std::vector<TissueForge::io::ThreeDFVertexData*> vverts;
-    Mesh *mesh = Mesh::get();
+    Surface_GETMESH(mesh, NULL);
     bool failed = false;
-    if(mesh && Surface_order3DFFaceVertices(face, vverts) == S_OK) {
-        std::vector<Vertex*> _vertices;
-        _vertices.reserve(vverts.size());
-        for(auto &vv : vverts) {
-            Vertex *v = new Vertex(vv);
-            if(v->objId < 0) {
-                failed = true;
-                break;
-            }
-            _vertices.push_back(v);
+    if(Surface_order3DFFaceVertices(face, vverts) != S_OK || mesh->ensureAvailableVertices(vverts.size()) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return NULL;
+    }
+
+    std::vector<Vertex*> _vertices;
+    _vertices.reserve(vverts.size());
+    for(auto &vv : vverts) {
+        Vertex *v = Vertex::create(vv);
+        if(!v) {
+            failed = true;
+            break;
         }
+        _vertices.push_back(v);
+    }
 
-        if(failed || Surface_fromVertices(this, _vertices) != S_OK) {
-            for(size_t i = 0; i < _vertices.size(); i++) {
-                Vertex *v = _vertices[i];
-                v->destroy();
-                delete v;
-            }
+    if(failed) {
+        TF_Log(LOG_ERROR);
+        for(size_t i = 0; i < _vertices.size(); i++) {
+            Vertex *v = _vertices[i];
+            v->destroy();
         }
+        return NULL;
     }
+
+    return create(_vertices);
 }
 
-std::vector<MeshObj*> Surface::children() const {
-    std::vector<MeshObj*> result;
-    if(b1) 
-        result.push_back((MeshObj*)b1);
-    if(b2) 
-        result.push_back((MeshObj*)b2);
-    return result;
-}
+bool Surface::defines(const Body *obj) const { MESHBOJ_DEFINES_DEF(getSurfaces) }
 
-HRESULT Surface::addChild(MeshObj *obj) {
-    if(!TissueForge::models::vertex::check(obj, MeshObj::Type::BODY)) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    Body *b = (Body*)obj;
-    
-    if(b1) {
-        if(b1 == b) {
-            TF_Log(LOG_ERROR);
-            return E_FAIL;
-        }
-
-        if(b2) {
-            if(b2 == b) {
-                TF_Log(LOG_ERROR);
-                return E_FAIL;
-            }
-        }
-        else {
-            b2 = b;
-        }
-    }
-    else 
-        b1 = b;
-
-    return S_OK;
-}
-
-HRESULT Surface::addParent(MeshObj *obj) {
-    if(!TissueForge::models::vertex::check(obj, MeshObj::Type::VERTEX)) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    Vertex *v = (Vertex*)obj;
-    if(std::find(vertices.begin(), vertices.end(), v) != vertices.end()) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    vertices.push_back(v);
-    return S_OK;
-}
-
-HRESULT Surface::removeChild(MeshObj *obj) {
-    if(!TissueForge::models::vertex::check(obj, MeshObj::Type::BODY)) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    Body *b = (Body*)obj;
-
-    if(b1 == b) 
-        b1 = NULL;
-    else if(b2 == b) 
-        b2 = NULL;
-    else {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    return S_OK;
-}
-
-HRESULT Surface::removeParent(MeshObj *obj) {
-    if(!TissueForge::models::vertex::check(obj, MeshObj::Type::VERTEX)) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    Vertex *v = (Vertex*)obj;
-    auto itr = std::find(vertices.begin(), vertices.end(), v);
-    if(itr == vertices.end()) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    vertices.erase(itr);
-    return S_OK;
-}
+bool Surface::definedBy(const Vertex *obj) const { MESHOBJ_DEFINEDBY_DEF }
 
 std::string Surface::str() const {
     std::stringstream ss;
 
     ss << "Surface(";
-    if(this->objId >= 0) {
-        ss << "id=" << this->objId << ", typeId=" << this->typeId;
+    if(this->objectId() >= 0) {
+        ss << "id=" << this->objectId() << ", typeId=" << this->typeId;
     }
     ss << ")";
 
@@ -272,7 +198,13 @@ while(idx >= vec_size) idx -= vec_size;     \
 }
 
 HRESULT Surface::add(Vertex *v) {
-    return addParent(v);
+    if(std::find(vertices.begin(), vertices.end(), v) != vertices.end()) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    vertices.push_back(v);
+    return S_OK;
 }
 
 HRESULT Surface::insert(Vertex *v, const int &idx) {
@@ -300,7 +232,14 @@ HRESULT Surface::insert(Vertex *v, Vertex *before) {
 }
 
 HRESULT Surface::remove(Vertex *v) {
-    return removeParent(v);
+    auto itr = std::find(vertices.begin(), vertices.end(), v);
+    if(itr == vertices.end()) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    vertices.erase(itr);
+    return S_OK;
 }
 
 HRESULT Surface::replace(Vertex *toInsert, const int &idx) {
@@ -312,15 +251,43 @@ HRESULT Surface::replace(Vertex *toInsert, const int &idx) {
 
 HRESULT Surface::replace(Vertex *toInsert, Vertex *toRemove) {
     std::replace(this->vertices.begin(), this->vertices.end(), toRemove, toInsert);
-    return toInsert->in(this) ? S_OK : E_FAIL;
+    return toInsert->defines(this) ? S_OK : E_FAIL;
 }
 
 HRESULT Surface::add(Body *b) {
-    return addChild(b);
+    if(b1) {
+        if(b1->objectId() == b->objectId()) {
+            TF_Log(LOG_ERROR);
+            return E_FAIL;
+        }
+
+        if(b2) {
+            if(b2->objectId() == b->objectId()) {
+                TF_Log(LOG_ERROR);
+                return E_FAIL;
+            }
+        }
+        else {
+            b2 = b;
+        }
+    }
+    else 
+        b1 = b;
+
+    return S_OK;
 }
 
 HRESULT Surface::remove(Body *b) {
-    return removeChild(b);
+    if(b1 && b1->objectId() == b->objectId()) 
+        b1 = NULL;
+    else if(b2 && b2->objectId() == b->objectId()) 
+        b2 = NULL;
+    else {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    return S_OK;
 }
 
 HRESULT Surface::replace(Body *toInsert, const int &idx) {
@@ -334,11 +301,11 @@ HRESULT Surface::replace(Body *toInsert, const int &idx) {
 }
 
 HRESULT Surface::replace(Body *toInsert, Body *toRemove) {
-    if(this->b1 == toRemove) {
+    if(this->b1 && this->b1->objectId() == toRemove->objectId()) {
         this->b1 = toInsert;
         return S_OK;
     } 
-    else if(this->b2 == toRemove) {
+    else if(this->b2 && this->b2->objectId() == toRemove->objectId()) {
         this->b2 = toInsert;
         return S_OK;
     } 
@@ -350,7 +317,7 @@ HRESULT Surface::destroy() {
         return E_FAIL;
     if(this->typeId >= 0 && this->type()->remove(this) != S_OK) 
         return E_FAIL;
-    if(this->objId >= 0) 
+    if(this->_objId >= 0) 
         Mesh::get()->remove(this);
     return S_OK;
 }
@@ -364,8 +331,6 @@ HRESULT Surface::destroy(Surface *target) {
         if(v->getSurfaces().size() == 0) 
             v->destroy();
 
-    delete target;
-    target = NULL;
     return S_OK;
 }
 
@@ -445,13 +410,14 @@ HRESULT Surface::insert(Vertex *toInsert, Vertex *v1, Vertex *v2) {
 
     // Handle wrap
     Vertex *ve = *vertices.rbegin();
-    if((*vertices.begin() == v1 && *vertices.rbegin() == v2) || (*vertices.begin() == v2 && *vertices.rbegin() == v1)) {
+    if(((*vertices.begin())->objectId() == v1->objectId() && (*vertices.rbegin())->objectId() == v2->objectId()) || 
+        ((*vertices.begin())->objectId() == v2->objectId() && (*vertices.rbegin())->objectId() == v1->objectId())) {
         vertices.insert(vertices.begin(), toInsert);
         return S_OK;
     }
 
     for(std::vector<Vertex*>::iterator itr = vertices.begin(); itr != vertices.end(); itr++) {
-        if(*itr == v1 || *itr == v2) {
+        if((*itr)->objectId() == v1->objectId() || (*itr)->objectId() == v2->objectId()) {
             vertices.insert(itr + 1, toInsert);
             return S_OK;
         }
@@ -535,8 +501,8 @@ std::vector<Surface*> Surface::connectedSurfaces(const std::vector<Vertex*> &ver
     std::unordered_set<Surface*> result;
     for(auto &v : verts) 
         for(auto &s : v->surfaces) 
-            if(s != this) 
-                result.insert(s);
+            result.insert(s);
+    result.erase(result.find(const_cast<Surface*>(this)));
     return std::vector<Surface*>(result.begin(), result.end());
 }
 
@@ -547,7 +513,7 @@ std::vector<Surface*> Surface::connectedSurfaces() const {
 std::vector<unsigned int> Surface::contiguousEdgeLabels(const Surface *other) const {
     std::vector<bool> sharedVertices(vertices.size(), false);
     for(unsigned int i = 0; i < sharedVertices.size(); i++) 
-        if(vertices[i]->in(other)) 
+        if(vertices[i]->defines(other)) 
             sharedVertices[i] = true;
 
     bool shared_c, shared_n;
@@ -580,17 +546,17 @@ unsigned int Surface::numSharedContiguousEdges(const Surface *other) const {
 }
 
 FloatP_t Surface::volumeSense(const Body *body) const {
-    if(body == b1) 
+    if(b1 && body->objectId() == b1->objectId()) 
         return 1.f;
-    else if(body == b2) 
+    else if(b2 && body->objectId() == b2->objectId()) 
         return -1.f;
     return 0.f;
 }
 
 FVector3 Surface::getOutwardNormal(const Body *body) const {
-    if(body == b1) 
+    if(b1 && body->objectId() == b1->objectId()) 
         return normal;
-    else if(body == b2) 
+    else if(b2 && body->objectId() == b2->objectId()) 
         return normal * -1;
     return FVector3(0);
 }
@@ -602,7 +568,7 @@ FloatP_t Surface::getVertexArea(const Vertex *v) const {
         Vertex *vc = vertices[i];
         Vertex *vn = vertices[Surface_VERTEXINDEX(vertices, i + 1)];
 
-        if(vc == v || vn == v) {
+        if(vc->objectId() == v->objectId() || vn->objectId() == v->objectId()) {
             FVector3 triNormal = triNorm(vc->getPosition(), centroid, vn->getPosition());
             result += triNormal.length();
         }
@@ -633,15 +599,18 @@ HRESULT Surface::positionChanged() {
     _volumeContr = 0.f;
 
     for(auto &v : vertices) {
-        ParticleHandle *p = v->particle();
-        centroid += p->getPosition();
-        velocity += p->getVelocity();
+        centroid += v->getPosition();
+        velocity += v->getVelocity();
     }
     centroid /= (FloatP_t)vertices.size();
     velocity /= (FloatP_t)vertices.size();
 
     for(unsigned int i = 0; i < vertices.size(); i++) {
-        FVector3 triNormal = triangleNormal(i);
+        FVector3 triNormal = triNorm(
+            vertices[i]->getPosition(), 
+            centroid, 
+            vertices[Surface_VERTEXINDEX(vertices, i + 1)]->getPosition()
+        );
 
         _volumeContr += triNormal.dot(centroid);
         area += triNormal.length();
@@ -658,9 +627,15 @@ HRESULT Surface::positionChanged() {
 }
 
 HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
-    if(s1 == s2) 
+    if(s1->objectId() == s2->objectId()) 
         return S_OK;
 
+    for(auto &v : s1->vertices) 
+        if(v->positionChanged() != S_OK) 
+            return E_FAIL;
+    for(auto &v : s2->vertices) 
+        if(v->positionChanged() != S_OK) 
+            return E_FAIL;
     if(s1->positionChanged() != S_OK || s2->positionChanged() != S_OK) 
         return E_FAIL;
 
@@ -676,7 +651,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     size_t numMatched = 0;
     for(int i = 0; i < s1->vertices.size(); i++) {
         Vertex *vi = s1->vertices[i];
-        if(vi->in(s2)) 
+        if(vi->defines(s2)) 
             continue;
         
         auto posi = vi->getPosition();
@@ -685,7 +660,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
         for(int j = 0; j < s2->vertices.size(); j++) { 
             Vertex *vj = s2->vertices[j];
             auto dist2 = (s2_positions[j] - posi).dot();
-            if(dist2 < minDist2 && !vj->in(s1)) {
+            if(dist2 < minDist2 && !vj->defines(s1)) {
                 minDist2 = dist2;
                 matchedIdx = j;
             }
@@ -708,27 +683,26 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
             Vertex *vj = s2->vertices[j];
             for(auto &s : vj->getSurfaces()) 
                 for(int k = 0; k < s->vertices.size(); k++) 
-                    if(s->vertices[k] == vj) {
+                    if(s->vertices[k]->objectId() == vj->objectId()) {
                         s->vertices[k] = vi;
                         if(vi->add(s) != S_OK)
                             return E_FAIL;
                         break;
                     }
-            if(vj->objId >= 0)
+            if(vj->_objId >= 0)
                 toRemove.push_back(vj);
         }
     }
 
     for(auto &vj : toRemove) {
-        auto children = vj->children();
+        auto children = vj->getSurfaces();
         for(auto &c : children) 
-            vj->removeChild(c);
+            vj->remove(c);
         if(vj->destroy() != S_OK) 
             return E_FAIL;
-        delete vj;
     }
 
-    MeshSolver::log(MeshLogEventType::Create, {s1->objId, s2->objId}, {s1->objType(), s2->objType()}, "sew");
+    MeshSolver::log(MeshLogEventType::Create, {s1->_objId, s2->_objId}, {s1->objType(), s2->objType()}, "sew");
 
     return S_OK;
 }
@@ -751,7 +725,7 @@ HRESULT Surface::merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
     // Find vertices that are not shared
     std::vector<Vertex*> toKeepExcl;
     for(auto &v : vertices) 
-        if(!v->in(toRemove)) 
+        if(!v->defines(toRemove)) 
             toKeepExcl.push_back(v);
 
     // Ensure sufficient length cofficients
@@ -789,7 +763,7 @@ HRESULT Surface::merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
         std::vector<Surface*> rvSurfaces = rv->surfaces;
         for(auto &s : rvSurfaces) 
             if(s != toRemove) {
-                if(!rv->in(s)) {
+                if(!rv->defines(s)) {
                     TF_Log(LOG_ERROR) << "Something went wrong during surface merge";
                     return E_FAIL;
                 }
@@ -800,7 +774,7 @@ HRESULT Surface::merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
 
     // Replace surface in child bodies
     for(auto &b : toRemove->getBodies()) {
-        if(!in(b)) {
+        if(!defines(b)) {
             b->add(this);
             add(b);
         }
@@ -823,7 +797,7 @@ HRESULT Surface::merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
             return E_FAIL;
     }
 
-    MeshSolver::log(MeshLogEventType::Create, {objId, toRemove->objId}, {objType(), toRemove->objType()}, "merge");
+    MeshSolver::log(MeshLogEventType::Create, {_objId, toRemove->_objId}, {objType(), toRemove->objType()}, "merge");
     
     // Remove surface and vertices that are not shared
     if(toRemove->destroy() != S_OK) 
@@ -855,19 +829,16 @@ Surface *Surface::extend(const unsigned int &vertIdxStart, const FVector3 &pos) 
     Vertex *v1 = vertices[vertIdxStart == vertices.size() - 1 ? 0 : vertIdxStart + 1];
 
     // Construct new vertex at specified position
-    Vertex *vert = new Vertex(pos);
-    if(vert->objId < 0) {
+    Vertex *vert = Vertex::create(pos);
+    if(!vert) {
         TF_Log(LOG_ERROR) << "Failed to create vertex";
-        delete vert;
         return NULL;
     }
 
     // Construct new surface, add new parts and return
     Surface *s = (*type())({v0, v1, vert});
-    if(!s || s->objId < 0) {
-        delete vert;
-        if(s) 
-            delete s;
+    if(!s) {
+        vert->destroy();
         tf_error(E_FAIL, "Failed to create surface");
         return NULL;
     }
@@ -875,12 +846,14 @@ Surface *Surface::extend(const unsigned int &vertIdxStart, const FVector3 &pos) 
     if(!Mesh::get()->qualityWorking()) 
         MeshSolver::positionChanged();
 
-    MeshSolver::log(MeshLogEventType::Create, {objId, s->objId}, {objType(), s->objType()}, "extend");
+    MeshSolver::log(MeshLogEventType::Create, {_objId, s->_objId}, {objType(), s->objType()}, "extend");
 
     return s;
 }
 
 Surface *Surface::extrude(const unsigned int &vertIdxStart, const FloatP_t &normLen) {
+    Surface_GETMESH(mesh, NULL);
+
     // Validate indices
     if(vertIdxStart >= vertices.size()) {
         TF_Log(LOG_ERROR) << "Invalid vertex indices (" << vertIdxStart << ", " << vertices.size() << ")";
@@ -891,6 +864,10 @@ Surface *Surface::extrude(const unsigned int &vertIdxStart, const FloatP_t &norm
         TF_Log(LOG_ERROR) << "No type";
         return NULL;
     }
+    if(mesh->ensureAvailableVertices(2) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return NULL;
+    }
 
     // Get base vertices
     Vertex *v0 = vertices[vertIdxStart];
@@ -898,36 +875,33 @@ Surface *Surface::extrude(const unsigned int &vertIdxStart, const FloatP_t &norm
 
     // Construct new vertices
     FVector3 disp = normal * normLen;
-    Vertex *v2 = new Vertex(v0->getPosition() + disp);
-    Vertex *v3 = new Vertex(v1->getPosition() + disp);
-    if(v2->objId < 0 || v3->objId < 0) {
+    Vertex *v2 = Vertex::create(v0->getPosition() + disp);
+    Vertex *v3 = Vertex::create(v1->getPosition() + disp);
+    if(v2->_objId < 0 || v3->_objId < 0) {
         TF_Log(LOG_ERROR) << "Failed to create a vertex";
-        delete v2;
-        delete v3;
         return NULL;
     }
 
     // Construct new surface, add new parts and return
     Surface *s = (*type())({v0, v1, v2, v3});
-    if(!s || s->objId < 0) {
+    if(!s) {
         TF_Log(LOG_ERROR) << "Failed to create surface";
-        delete v2;
-        delete v3;
-        delete s;
+        v2->destroy();
+        v3->destroy();
         return NULL;
     }
 
     if(!Mesh::get()->qualityWorking()) 
         MeshSolver::positionChanged();
 
-    MeshSolver::log(MeshLogEventType::Create, {objId, s->objId}, {objType(), s->objType()}, "extrude");
+    MeshSolver::log(MeshLogEventType::Create, {_objId, s->_objId}, {objType(), s->objType()}, "extrude");
 
     return s;
 }
 
 Surface *Surface::split(Vertex *v1, Vertex *v2) { 
     // Verify that vertices are in surface
-    if(!v1->in(this) || !v2->in(this)) { 
+    if(!v1->defines(this) || !v2->defines(this)) { 
         tf_error(E_FAIL, "Vertices are not part of the splitting surface");
         return NULL;
     }
@@ -953,7 +927,7 @@ Surface *Surface::split(Vertex *v1, Vertex *v2) {
         v_itr++;
         if(v_itr == vertices.end()) 
             v_itr = vertices.begin();
-        if(*v_itr == v2) 
+        if((*v_itr)->objectId() == v2->objectId()) 
             break;
         v_new_surf.push_back(*v_itr);
     }
@@ -965,9 +939,7 @@ Surface *Surface::split(Vertex *v1, Vertex *v2) {
 
     // Build new surface
     Surface *s_new = (*type())(v_new_surf);
-    if(!s_new || s_new->objId < 0) {
-        if(s_new) 
-            delete s_new;
+    if(!s_new) {
         return NULL;
     }
 
@@ -982,7 +954,7 @@ Surface *Surface::split(Vertex *v1, Vertex *v2) {
 
     MeshSolver::log(
         MeshLogEventType::Create, 
-        {objId, s_new->objId, v1->objId, v2->objId}, 
+        {_objId, s_new->_objId, v1->_objId, v2->_objId}, 
         {objType(), s_new->objType(), v1->objType(), v2->objType()}, 
         "split"
     );
@@ -1061,8 +1033,12 @@ static HRESULT Surface_SurfaceCutPlanePointsPairs(
 
     // Determine coordinates of new vertices where cut plane intersects the surface
     auto s_vertices = s->getVertices();
-    *v_old_start = (*v_new_start) == s_vertices.front() ? s_vertices.back()  : *(std::find(s_vertices.begin(), s_vertices.end(), *v_new_start) - 1);
-    *v_old_end   = (*v_new_end) == s_vertices.back()    ? s_vertices.front() : *(std::find(s_vertices.begin(), s_vertices.end(), *v_new_end)   + 1);
+    for(int i = 0; i < s_vertices.size(); i++) {
+        if(s_vertices[i]->objectId() == (*v_new_start)->objectId()) 
+            *v_old_start = i == 0 ? s_vertices.back() : s_vertices[i - 1];
+        if(s_vertices[i]->objectId() == (*v_new_end)->objectId()) 
+            *v_old_end = i + 1 == s_vertices.size() ? s_vertices.front() : s_vertices[i + 1];
+    }
 
     FVector3 pos_old_start = (*v_old_start)->getPosition();
     FVector3 pos_old_end = (*v_old_end)->getPosition();
@@ -1088,8 +1064,14 @@ static HRESULT Surface_SurfaceCutPlanePointsPairs(
 }
 
 Surface *Surface::split(const FVector3 &cp_pos, const FVector3 &cp_norm) {
+    Surface_GETMESH(mesh, NULL);
+
     if(cp_norm.isZero()) {
         tf_error(E_FAIL, "Zero normal");
+        return 0;
+    }
+    if(mesh->ensureAvailableVertices(2) != S_OK) {
+        TF_Log(LOG_ERROR);
         return 0;
     }
 
@@ -1101,13 +1083,11 @@ Surface *Surface::split(const FVector3 &cp_pos, const FVector3 &cp_norm) {
         return NULL;
 
     // Create and insert new vertices
-    Vertex *v_start = new Vertex(pos_start);
-    Vertex *v_end   = new Vertex(pos_end);
-    if(v_start->objId < 0 || v_end->objId < 0 || v_start->insert(v_old_start, v_new_start) != S_OK || v_end->insert(v_old_end, v_new_end) != S_OK) {
+    Vertex *v_start = Vertex::create(pos_start);
+    Vertex *v_end   = Vertex::create(pos_end);
+    if(v_start->_objId < 0 || v_end->_objId < 0 || v_start->insert(v_old_start, v_new_start) != S_OK || v_end->insert(v_old_end, v_new_end) != S_OK) {
         v_start->destroy();
         v_end->destroy();
-        delete v_start;
-        delete v_end;
         return NULL;
     }
 
@@ -1175,7 +1155,7 @@ SurfaceType *SurfaceType::get() {
 HRESULT SurfaceType::add(Surface *i) {
     if(!i) 
         return tf_error(E_FAIL, "Invalid object");
-    else if(i->objId < 0) 
+    else if(i->objectId() < 0) 
         return tf_error(E_FAIL, "Object not registered");
 
     SurfaceType *iType = i->type();
@@ -1183,7 +1163,7 @@ HRESULT SurfaceType::add(Surface *i) {
         iType->remove(i);
 
     i->typeId = this->id;
-    this->_instanceIds.push_back(i->objId);
+    this->_instanceIds.push_back(i->objectId());
     return S_OK;
 }
 
@@ -1191,7 +1171,7 @@ HRESULT SurfaceType::remove(Surface *i) {
     if(!i) 
         return tf_error(E_FAIL, "Invalid object");
 
-    auto itr = std::find(this->_instanceIds.begin(), this->_instanceIds.end(), i->objId);
+    auto itr = std::find(this->_instanceIds.begin(), this->_instanceIds.end(), i->objectId());
     if(itr == this->_instanceIds.end()) 
         return tf_error(E_FAIL, "Instance not of this type");
 
@@ -1221,11 +1201,11 @@ unsigned int SurfaceType::getNumInstances() {
 }
 
 static Surface *SurfaceType_fromVertices(SurfaceType *stype, std::vector<Vertex*> vertices) {
-    Surface *s = new Surface(vertices);
-    if(!s || s->objId < 0 || stype->add(s) != S_OK) {
+    Surface *s = Surface::create(vertices);
+    if(!s || stype->add(s) != S_OK) {
         TF_Log(LOG_ERROR) << "Failed to create instance";
         if(s) 
-            delete s;
+            s->destroy();
         return NULL;
     }
     return s;
@@ -1236,11 +1216,17 @@ Surface *SurfaceType::operator() (std::vector<Vertex*> _vertices) {
 }
 
 Surface *SurfaceType::operator() (const std::vector<FVector3> &_positions) {
+    Surface_GETMESH(mesh, NULL);
+    if(mesh->ensureAvailableVertices(_positions.size()) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return NULL;
+    }
+
     std::vector<Vertex*> _vertices;
     bool failed = false;
     for(auto &p : _positions) {
-        Vertex *v = new Vertex(p);
-        if(v->objId < 0) {
+        Vertex *v = Vertex::create(p);
+        if(!v) {
             TF_Log(LOG_ERROR) << "Failed to create a vertex";
             failed = true;
             break;
@@ -1251,7 +1237,6 @@ Surface *SurfaceType::operator() (const std::vector<FVector3> &_positions) {
     if(failed) {
         for(auto &v : _vertices) {
             v->destroy();
-            delete v;
         }
         return NULL;
     }
@@ -1294,6 +1279,8 @@ Surface *SurfaceType::nPolygon(const unsigned int &n, const FVector3 &center, co
 }
 
 Surface *SurfaceType::replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs) {
+    Surface_GETMESH(mesh, NULL);
+
     std::vector<Vertex*> neighbors = toReplace->neighborVertices();
     if(lenCfs.size() != neighbors.size()) {
         TF_Log(LOG_ERROR) << "Length coefficients are inconsistent with connectivity";
@@ -1305,6 +1292,11 @@ Surface *SurfaceType::replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs) {
             TF_Log(LOG_ERROR) << "Length coefficients must be in (0, 1)";
             return NULL;
         }
+
+    if(mesh->ensureAvailableVertices(neighbors.size()) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return NULL;
+    }
 
     // Insert new vertices
     FVector3 pos0 = toReplace->getPosition();
@@ -1321,7 +1313,7 @@ Surface *SurfaceType::replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs) {
         FVector3 pos = pos0 + (pos1 - pos0) * cf;
         MeshParticleType *ptype = MeshParticleType_get();
         ParticleHandle *ph = (*ptype)(&pos);
-        Vertex *vInserted = new Vertex(ph->id);
+        Vertex *vInserted = Vertex::create(ph->id);
         if(vInserted->insert(toReplace, v) != S_OK) 
             return NULL;
         insertedVertices.push_back(vInserted);
@@ -1336,16 +1328,13 @@ Surface *SurfaceType::replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs) {
 
     // Create new surface; its constructor should handle internal connections
     Surface *inserted = (*this)(insertedVertices);
-    if(!inserted || inserted->objId < 0) {
-        inserted->destroy();
-        if(inserted) 
-            delete inserted;
+    if(!inserted) {
         return NULL;
     }
 
     // Remove replaced vertex from the mesh and add inserted surface to the mesh
 
-    MeshSolver::log(MeshLogEventType::Create, {inserted->objId, toReplace->objId}, {inserted->objType(), toReplace->objType()}, "replace"); 
+    MeshSolver::log(MeshLogEventType::Create, {inserted->objectId(), toReplace->objectId()}, {inserted->objType(), toReplace->objType()}, "replace"); 
     toReplace->destroy();
 
     if(!Mesh::get()->qualityWorking()) 
@@ -1370,46 +1359,46 @@ namespace TissueForge::io {
             return E_FAIL;
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::Surface &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(TissueForge::models::vertex::Surface *dataElement, const MetaData &metaData, IOElement *fileElement) {
 
         IOElement *fe;
 
-        TF_MESH_SURFACEIOTOEASY(fe, "objId", dataElement.objId);
-        TF_MESH_SURFACEIOTOEASY(fe, "typeId", dataElement.typeId);
+        TF_MESH_SURFACEIOTOEASY(fe, "objId", dataElement->objectId());
+        TF_MESH_SURFACEIOTOEASY(fe, "typeId", dataElement->typeId);
 
-        if(dataElement.actors.size() > 0) {
+        if(dataElement->actors.size() > 0) {
             std::vector<TissueForge::models::vertex::MeshObjActor*> actors;
-            for(auto &a : dataElement.actors) 
+            for(auto &a : dataElement->actors) 
                 if(a) 
                     actors.push_back(a);
             TF_MESH_SURFACEIOTOEASY(fe, "actors", actors);
         }
 
         std::vector<int> vertices;
-        for(auto &p : dataElement.parents()) 
-            vertices.push_back(p->objId);
+        for(auto &v : dataElement->getVertices()) 
+            vertices.push_back(v->objectId());
         TF_MESH_SURFACEIOTOEASY(fe, "vertices", vertices);
 
         std::vector<int> bodies;
-        for(auto &c : dataElement.children()) 
-            bodies.push_back(c->objId);
+        for(auto &b : dataElement->getBodies()) 
+            bodies.push_back(b->objectId());
         TF_MESH_SURFACEIOTOEASY(fe, "bodies", bodies);
 
-        TF_MESH_SURFACEIOTOEASY(fe, "normal", dataElement.getNormal());
-        TF_MESH_SURFACEIOTOEASY(fe, "centroid", dataElement.getCentroid());
-        TF_MESH_SURFACEIOTOEASY(fe, "velocity", dataElement.getVelocity());
-        TF_MESH_SURFACEIOTOEASY(fe, "area", dataElement.getArea());
+        TF_MESH_SURFACEIOTOEASY(fe, "normal", dataElement->getNormal());
+        TF_MESH_SURFACEIOTOEASY(fe, "centroid", dataElement->getCentroid());
+        TF_MESH_SURFACEIOTOEASY(fe, "velocity", dataElement->getVelocity());
+        TF_MESH_SURFACEIOTOEASY(fe, "area", dataElement->getArea());
 
-        TF_MESH_SURFACEIOTOEASY(fe, "typeId", dataElement.typeId);
+        TF_MESH_SURFACEIOTOEASY(fe, "typeId", dataElement->typeId);
 
-        if(dataElement.species1) {
-            TF_MESH_SURFACEIOTOEASY(fe, "species_outward", *dataElement.species1);
+        if(dataElement->species1) {
+            TF_MESH_SURFACEIOTOEASY(fe, "species_outward", *dataElement->species1);
         }
-        if(dataElement.species2) {
-            TF_MESH_SURFACEIOTOEASY(fe, "species_inward", *dataElement.species2);
+        if(dataElement->species2) {
+            TF_MESH_SURFACEIOTOEASY(fe, "species_inward", *dataElement->species2);
         }
-        if(dataElement.style) {
-            TF_MESH_SURFACEIOTOEASY(fe, "style", *dataElement.style);
+        if(dataElement->style) {
+            TF_MESH_SURFACEIOTOEASY(fe, "style", *dataElement->style);
         }
 
         fileElement->type = "Surface";
@@ -1453,17 +1442,13 @@ namespace TissueForge::io {
 
         *dataElement = (*detype)(vertices);
 
-        if(!(*dataElement) || (*dataElement)->objId < 0) {
-            if((*dataElement)) {
-                (*dataElement)->destroy();
-                delete (*dataElement);
-            }
+        if(!(*dataElement)) {
             return tf_error(E_FAIL, "Failed to add surface");
         }
 
         int objIdOld;
         TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
-        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.insert({objIdOld, (*dataElement)->objId});
+        TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.insert({objIdOld, (*dataElement)->objectId()});
 
         feItr = fileElement.children.find("actors");
         if(feItr != fileElement.children.end()) {
@@ -1513,7 +1498,13 @@ namespace TissueForge::io {
 }
 
 std::string TissueForge::models::vertex::Surface::toString() {
-    return TissueForge::io::toString(*this);
+    TissueForge::io::IOElement el;
+    std::string result;
+    if(TissueForge::io::toFile(this, TissueForge::io::MetaData(), &el) == S_OK) 
+        result = TissueForge::io::toStr(&el);
+    else 
+        result = "";
+    return result;
 }
 
 std::string TissueForge::models::vertex::SurfaceType::toString() {

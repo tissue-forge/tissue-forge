@@ -22,9 +22,6 @@
 #include <models/vertex/solver/actors/tfSurfaceAreaConstraint.h>
 %}
 
-vertex_solver_MeshObjActor_particularize(SurfaceAreaConstraint, Surface, Vertex)
-vertex_solver_MeshObjActor_particularize(SurfaceAreaConstraint, Body, Vertex)
-
 %rename(_vertex_solver_SurfaceAreaConstraint) TissueForge::models::vertex::SurfaceAreaConstraint;
 
 %include <models/vertex/solver/actors/tfSurfaceAreaConstraint.h>

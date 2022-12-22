@@ -26,29 +26,17 @@
 #include <io/tfFIO.h>
 
 
+using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT BodyForce::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
-    FVector3 fv;
-    force(source, target, fv.data());
-    e = fv.dot(((Vertex*)target)->particle()->getVelocity()) * _Engine.dt;
-    return S_OK;
+FloatP_t BodyForce::energy(const Body *source, const Vertex *target) {
+    return force(source, target).dot(target->getVelocity()) * _Engine.dt;
 }
 
-HRESULT BodyForce::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
-    Body *b = (Body*)source;
-    FloatP_t bArea = b->getArea();
-    if(bArea == 0.f) {
-        return S_OK;
-    }
-    
-    FVector3 fv = comps * b->getVertexArea((Vertex*)target) / bArea;
-
-    f[0] += fv[0];
-    f[1] += fv[1];
-    f[2] += fv[2];
-    return S_OK;
+FVector3 BodyForce::force(const Body *source, const Vertex *target) {
+    FloatP_t bArea = source->getArea();
+    return bArea == 0.f ? FVector3(0) : comps * source->getVertexArea(target) / bArea;
 }
 
 namespace TissueForge::io { 

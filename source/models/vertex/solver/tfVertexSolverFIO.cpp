@@ -73,7 +73,7 @@ HRESULT VMod::io::VertexSolverFIOModule::toFile(const TissueForge::io::MetaData 
     }
     TF_MESH_IOTOEASY(fe, "surfaceTypes", surfaceTypes);
     TF_MESH_IOTOEASY(fe, "surfaceTypeIds", surfaceTypeIds);
-    TF_MESH_IOTOEASY(fe, "mesh", *solver->mesh);
+    TF_MESH_IOTOEASY(fe, "mesh", solver->mesh);
 
     return S_OK;
 }

@@ -24,8 +24,11 @@
 
 %template(vectorMeshVertex) std::vector<TissueForge::models::vertex::Vertex*>;
 
+vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Vertex)
+
 %ignore TissueForge::models::vertex::Vertex::replace;
 %ignore TissueForge::models::vertex::Vertex::insert;
+%ignore TissueForge::models::vertex::Vertex::getCachedParticleMass;
 
 %rename(find_surface) TissueForge::models::vertex::Vertex::findSurface;
 %rename(find_body) TissueForge::models::vertex::Vertex::findBody;
@@ -82,6 +85,10 @@ vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Vertex)
         @position.setter
         def position(self, _position):
             self.setPosition(_position)
+
+        @property
+        def velocity(self):
+            return self.getVelocity()
 
         @staticmethod
         def replace(position, target):

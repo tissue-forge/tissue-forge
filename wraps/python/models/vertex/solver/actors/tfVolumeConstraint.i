@@ -24,8 +24,6 @@
 
 %rename(_vertex_solver_VolumeConstraint) TissueForge::models::vertex::VolumeConstraint;
 
-vertex_solver_MeshObjActor_particularize(VolumeConstraint, Body, Vertex)
-
 %include <models/vertex/solver/actors/tfVolumeConstraint.h>
 
 vertex_solver_MeshObjActor_prep(VolumeConstraint)

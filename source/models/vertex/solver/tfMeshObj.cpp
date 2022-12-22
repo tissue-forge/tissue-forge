@@ -38,25 +38,6 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-MeshObj::MeshObj() : 
-    objId{-1}
-{}
-
-bool MeshObj::in(const MeshObj *obj) const {
-    if(!obj || objType() > obj->objType()) 
-        return false;
-
-    for(auto &p : obj->parents()) 
-        if(p == this || in(p)) 
-            return true;
-
-    return false;
-}
-
-bool MeshObj::has(const MeshObj *obj) const {
-    return obj && obj->in(this);
-}
-
 HRESULT MeshObjTypePairActor::registerPair(MeshObjType *type1, MeshObjType *type2) {
     if(type1->id < 0 || type2->id < 0) {
         tf_error(E_FAIL, "Object type not registered");

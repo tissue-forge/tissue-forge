@@ -54,7 +54,17 @@ namespace TissueForge::models::vertex {
      * attached to the surface. 
      * 
      */
-    class CAPI_EXPORT Surface : public MeshObj {
+    class CAPI_EXPORT Surface {
+
+        /** Object id; unique by type in a mesh */
+        int _objId;
+
+    public:
+
+        /** Id of the type*/
+        int typeId;
+
+    private:
 
         /** Connected body, if any, where the surface normal is outward-facing */
         Body *b1;
@@ -77,8 +87,8 @@ namespace TissueForge::models::vertex {
 
     public:
 
-        /** Id of the type*/
-        int typeId;
+        /** Object actors */
+        std::vector<MeshObjActor*> actors;
 
         /** Species on outward-facing side of the surface, if any */
         state::StateVector *species1;
@@ -90,36 +100,20 @@ namespace TissueForge::models::vertex {
         rendering::Style *style;
 
         Surface();
+        ~Surface();
 
         /** Construct a surface from a set of vertices */
-        Surface(std::vector<Vertex*> _vertices);
+        static Surface *create(std::vector<Vertex*> _vertices);
 
         /** Construct a surface from a face */
-        Surface(TissueForge::io::ThreeDFFaceData *face);
+        static Surface *create(TissueForge::io::ThreeDFFaceData *face);
 
-        /** Get the mesh object type */
-        MeshObj::Type objType() const override { return MeshObj::Type::SURFACE; }
-
-        /** Get the parents of the object */
-        std::vector<MeshObj*> parents() const override { return TissueForge::models::vertex::vectorToBase(vertices); }
-
-        /** Get the children of the object */
-        std::vector<MeshObj*> children() const override;
-
-        /** Add a child object */
-        HRESULT addChild(MeshObj *obj) override;
-
-        /** Add a parent object */
-        HRESULT addParent(MeshObj *obj) override;
-
-        /** Remove a child object */
-        HRESULT removeChild(MeshObj *obj) override;
-
-        /** Remove a parent object */
-        HRESULT removeParent(MeshObj *obj) override;
+        MESHBOJ_DEFINES_DECL(Body);
+        MESHOBJ_DEFINEDBY_DECL(Vertex);
+        MESHOBJ_CLASSDEF(MeshObjTypeLabel::SURFACE)
 
         /** Get a summary string */
-        std::string str() const override;
+        std::string str() const;
 
         /** Get a JSON string representation */
         std::string toString();
@@ -158,21 +152,11 @@ namespace TissueForge::models::vertex {
         HRESULT replace(Body *toInsert, Body *toRemove);
 
         /**
-         * Destroy the surface. 
-         * 
-         * If the surface is in a mesh, then it and any objects it defines are removed from the mesh. 
-        */
-        HRESULT destroy() override;
-
-        /**
          * Destroy a surface. 
          * 
          * Any resulting vertices without a surface are also destroyed. 
          */
         static HRESULT destroy(Surface *target);
-
-        /** Validate the surface */
-        bool validate() override;
 
         /** Refresh internal ordering of defined bodies */
         HRESULT refreshBodies();
@@ -256,9 +240,6 @@ namespace TissueForge::models::vertex {
         /** Test whether a point is on the outer side */
         bool isOutside(const FVector3 &pos) const;
 
-        /** Update internal data due to a change in position */
-        HRESULT positionChanged();
-
         /** Sew two surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
@@ -341,7 +322,7 @@ namespace TissueForge::models::vertex {
         SurfaceType(const bool &noReg=false) : SurfaceType(0.1, 0.1, noReg) {};
 
         /** Get the mesh object type */
-        MeshObj::Type objType() const override { return MeshObj::Type::SURFACE; }
+        MeshObjTypeLabel objType() const override { return MeshObjTypeLabel::SURFACE; }
 
         /** Get a summary string */
         virtual std::string str() const override;
@@ -423,11 +404,11 @@ namespace TissueForge::models::vertex {
 
     };
 
-    inline bool operator< (const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return lhs.objId < rhs.objId; }
+    inline bool operator< (const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return lhs.objectId() < rhs.objectId(); }
     inline bool operator> (const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return rhs < lhs; }
     inline bool operator<=(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return !(lhs > rhs); }
     inline bool operator>=(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return !(lhs < rhs); }
-    inline bool operator==(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return lhs.objId == rhs.objId; }
+    inline bool operator==(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return lhs.objectId() == rhs.objectId(); }
     inline bool operator!=(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return !(lhs == rhs); }
 
     inline bool operator< (const TissueForge::models::vertex::SurfaceType& lhs, const TissueForge::models::vertex::SurfaceType& rhs) { return lhs.id < rhs.id; }

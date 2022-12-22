@@ -22,8 +22,6 @@
 #include <models/vertex/solver/actors/tfEdgeTension.h>
 %}
 
-vertex_solver_MeshObjActor_particularize(EdgeTension, Surface, Vertex)
-
 %rename(_vertex_solver_EdgeTension) TissueForge::models::vertex::EdgeTension;
 
 %include <models/vertex/solver/actors/tfEdgeTension.h>

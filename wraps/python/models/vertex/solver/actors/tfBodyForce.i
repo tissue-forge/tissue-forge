@@ -22,8 +22,6 @@
 #include <models/vertex/solver/actors/tfBodyForce.h>
 %}
 
-vertex_solver_MeshObjActor_particularize(BodyForce, Body, Vertex)
-
 %rename(_vertex_solver_BodyForce) TissueForge::models::vertex::BodyForce;
 
 %include <models/vertex/solver/actors/tfBodyForce.h>

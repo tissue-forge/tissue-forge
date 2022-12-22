@@ -51,7 +51,7 @@ namespace TissueForge::models::vertex {
     struct CAPI_EXPORT MeshLogEvent {
         MeshLogEventType type;
         std::vector<int> objIDs;
-        std::vector<MeshObj::Type> objTypes;
+        std::vector<MeshObjTypeLabel> objTypes;
         std::string name;
     };
 

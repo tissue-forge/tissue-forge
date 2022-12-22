@@ -28,41 +28,22 @@
 #include <tfLogger.h>
 #include <io/tfIO.h>
 #include <io/tfFIO.h>
+#include <tfTaskScheduler.h>
 
 #include <algorithm>
 #include <map>
 
 
-#define TF_MESH_GETPART(idx, inv) idx >= inv.size() ? NULL : inv[idx]
+#define TF_MESH_GETPART(idx, inv) idx >= inv.size() ? NULL : &inv[idx]
 
 
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT Mesh_checkUnstoredObj(MeshObj *obj) {
-    if(!obj || obj->objId >= 0) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-    
-    return S_OK;
-}
-
-
-HRESULT Mesh_checkStoredObj(MeshObj *obj, Mesh *mesh) {
-    if(!obj || obj->objId < 0) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    return S_OK;
-}
-
-
 template <typename T> 
-HRESULT Mesh_checkObjStorage(MeshObj *obj, std::vector<T*> inv) {
-    if(!Mesh_checkStoredObj(obj) || obj->objId >= inv.size()) {
+HRESULT Mesh_checkStoredObj(T *obj) {
+    if(!obj || obj->objectId() < 0) {
         TF_Log(LOG_ERROR);
         return E_FAIL;
     }
@@ -71,63 +52,13 @@ HRESULT Mesh_checkObjStorage(MeshObj *obj, std::vector<T*> inv) {
 }
 
 
-template <typename T> 
-int Mesh_invIdAndAlloc(std::vector<T*> &inv, std::set<unsigned int> &availIds, T *obj=NULL) {
-    if(!availIds.empty()) {
-        std::set<unsigned int>::iterator itr = availIds.begin();
-        unsigned int objId = *itr;
-        if(obj) {
-            inv[objId] = obj;
-            obj->objId = *itr;
-        }
-        availIds.erase(itr);
-        return objId;
-    }
-    
-    int res = inv.size();
-    int new_size = inv.size() + TFMESHINV_INCR;
-    inv.reserve(new_size);
-    for(unsigned int i = res; i < new_size; i++) {
-        inv.push_back(NULL);
-        if(i != res) 
-            availIds.insert(i);
-    }
-    if(obj) {
-        inv[res] = obj;
-        obj->objId = res;
-    }
-    return res;
-}
-
-
-#define TF_MESH_OBJINVCHECK(obj, inv) \
+#define TF_MESH_OBJINVCHECK(obj, sz) \
     { \
-        if(obj->objId >= inv.size()) { \
-            TF_Log(LOG_ERROR) << "Object with id " << obj->objId << " exceeds inventory (" << inv.size() << ")"; \
+        if(obj->_objId >= sz) { \
+            TF_Log(LOG_ERROR) << "Object with id " << obj->_objId << " exceeds inventory (" << sz << ")"; \
             return E_FAIL; \
         } \
     }
-
-
-template <typename T> 
-HRESULT Mesh_addObj(std::vector<T*> &inv, std::set<unsigned int> &availIds, T *obj, MeshSolver *_solver=NULL) {
-    if(Mesh_checkUnstoredObj(obj) != S_OK || !obj->validate()) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    obj->objId = Mesh_invIdAndAlloc(inv, availIds, obj);
-    if(_solver) {
-        std::vector<int> objIds{obj->objId};
-        std::vector<MeshObj::Type> objTypes{obj->objType()};
-        for(auto &p : obj->parents()) {
-            objIds.push_back(p->objId);
-            objTypes.push_back(p->objType());
-        }
-        _solver->log(MeshLogEventType::Create, objIds, objTypes);
-    }
-    return S_OK;
-}
 
 
 //////////
@@ -136,10 +67,28 @@ HRESULT Mesh_addObj(std::vector<T*> &inv, std::set<unsigned int> &availIds, T *o
 
 
 Mesh::Mesh() : 
+    vertices{new std::vector<Vertex>()},
+    surfaces{new std::vector<Surface>()},
+    bodies{new std::vector<Body>()},
+    nr_vertices{0}, 
+    nr_surfaces{0}, 
+    nr_bodies{0}, 
     _quality{new MeshQuality()}
 {}
 
 Mesh::~Mesh() { 
+    if(vertices) 
+        delete vertices;
+    vertices = 0;
+
+    if(surfaces) 
+        delete surfaces;
+    surfaces = 0;
+
+    if(bodies) 
+        delete bodies;
+    bodies = 0;
+
     if(_quality) { 
         delete _quality;
         _quality = 0;
@@ -153,40 +102,218 @@ HRESULT Mesh::setQuality(MeshQuality *quality) {
     return S_OK;
 }
 
-HRESULT Mesh::add(Vertex *obj) { 
-    ParticleHandle *ph = obj->particle();
-    if(!ph) 
-        return E_FAIL;
-    int pid = ph->id;
-    if(pid < 0) 
-        return E_FAIL;
+HRESULT Mesh::incrementVertices(const size_t &numIncr) {
+    int new_size = vertices->size() + numIncr;
+    std::vector<Vertex> *new_vertices = new std::vector<Vertex>();
+    new_vertices->reserve(new_size);
+    for(unsigned int i = 0; i < vertices->size(); i++) 
+        new_vertices->push_back((*vertices)[i]);
+    for(unsigned int i = vertices->size(); i < new_size; i++) {
+        new_vertices->push_back(Vertex());
+        vertexIdsAvail.insert(i);
+    }
 
+    if(surfaces->size() > 0) {
+
+        Surface *m_surfaces = &(*surfaces)[0];
+        auto func_surfs = [&m_surfaces, &new_vertices](int sid) -> void {
+            Surface &s = m_surfaces[sid];
+            if(s._objId < 0) 
+                return;
+            std::vector<Vertex*> &s_vertices = s.vertices;
+            for(unsigned int i = 0; i < s_vertices.size(); i++) {
+                Vertex *v = s_vertices[i];
+                s.vertices[i] = &(*new_vertices)[v->_objId];
+            }
+        };
+        parallel_for(surfaces->size(), func_surfs);
+
+    }
+
+    auto &m_verticesByPID = verticesByPID;
+    auto func_pids = [&m_verticesByPID, &new_vertices](int vid) -> void {
+        Vertex &v = (*new_vertices)[vid];
+        if(v._objId < 0) 
+            return;
+        m_verticesByPID[v.pid]  = &(*new_vertices)[vid];
+    };
+    parallel_for(vertices->size(), func_pids);
+    
+    if(vertices) 
+        delete vertices;
+    vertices = new_vertices;
+    return S_OK;
+}
+
+HRESULT Mesh::incrementSurfaces(const size_t &numIncr) {
+    int new_size = surfaces->size() + numIncr;
+    std::vector<Surface> *new_surfaces = new std::vector<Surface>();
+    new_surfaces->reserve(new_size);
+    for(unsigned int i = 0; i < surfaces->size(); i++) 
+        new_surfaces->push_back((*surfaces)[i]);
+    for(unsigned int i = surfaces->size(); i < new_size; i++) {
+        new_surfaces->push_back(Surface());
+        surfaceIdsAvail.insert(i);
+    }
+
+    if(vertices->size() > 0) {
+
+        Vertex *m_vertices = &(*vertices)[0];
+        auto func_verts = [&m_vertices, &new_surfaces](int vid) -> void {
+            Vertex &v = m_vertices[vid];
+            if(v._objId < 0) 
+                return;
+            std::vector<Surface*> &v_surfaces = v.surfaces;
+            for(unsigned int i = 0; i < v_surfaces.size(); i++) {
+                Surface *s = v_surfaces[i];
+                v.surfaces[i] = &(*new_surfaces)[s->_objId];
+            }
+        };
+        parallel_for(vertices->size(), func_verts);
+
+    }
+
+    if(bodies->size() > 0) {
+
+        Body *m_bodies = &(*bodies)[0];
+        auto func_bodies = [&m_bodies, &new_surfaces](int bid) -> void {
+            Body &b = m_bodies[bid];
+            if(b._objId < 0) 
+                return;
+            std::vector<Surface*> b_surfaces = b.surfaces;
+            for(unsigned int i = 0; i < b_surfaces.size(); i++) {
+                Surface *s = b_surfaces[i];
+                b.surfaces[i] = &(*new_surfaces)[i];
+            }
+        };
+
+    }
+    
+    if(surfaces) 
+        delete surfaces;
+    surfaces = new_surfaces;
+    return S_OK;
+}
+
+HRESULT Mesh::incrementBodies(const size_t &numIncr) {
+    int new_size = bodies->size() + numIncr;
+    std::vector<Body> *new_bodies = new std::vector<Body>();
+    new_bodies->reserve(new_size);
+    for(unsigned int i = 0; i < bodies->size(); i++) 
+        new_bodies->push_back((*bodies)[i]);
+    for(unsigned int i = bodies->size(); i < new_size; i++) {
+        new_bodies->push_back(Body());
+        bodyIdsAvail.insert(i);
+    }
+
+    if(surfaces->size() > 0) {
+
+        Surface *m_surfaces = &(*surfaces)[0];
+        auto func_surfs = [&m_surfaces, &new_bodies](int sid) -> void {
+            Surface &s = m_surfaces[sid];
+            if(s._objId < 0) 
+                return;
+            if(s.b1) {
+                s.b1 = &(*new_bodies)[s.b1->_objId];
+            }
+            if(s.b2) {
+                s.b2 = &(*new_bodies)[s.b2->_objId];
+            }
+        };
+        parallel_for(surfaces->size(), func_surfs);
+
+    }
+    
+    if(bodies) 
+        delete bodies;
+    bodies = new_bodies;
+    return S_OK;
+}
+
+HRESULT Mesh::allocateVertex(Vertex **obj) {
+    // Check for available space; reallocate and reassign throughout if necessary
+    if(vertexIdsAvail.empty() && incrementVertices() != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    std::set<unsigned int>::iterator itr = vertexIdsAvail.begin();
+    int objId = (int)*itr;
+    vertexIdsAvail.erase(itr);
+    *obj = &(*vertices)[objId];
+    (*obj)->_objId = objId;
+    nr_vertices++;
+    return S_OK;
+}
+
+HRESULT Mesh::allocateSurface(Surface **obj) {
+    // Check for available space; reallocate and reassign throughout if necessary
+    if(surfaceIdsAvail.empty() && incrementSurfaces() != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    std::set<unsigned int>::iterator itr = surfaceIdsAvail.begin();
+    int objId = (int)*itr;
+    surfaceIdsAvail.erase(itr);
+    *obj = &(*surfaces)[objId];
+    (*obj)->_objId = objId;
+    nr_surfaces++;
+    return S_OK;
+}
+
+HRESULT Mesh::allocateBody(Body **obj) {
+    // Check for available space; reallocate and reassign throughout if necessary
+    if(bodyIdsAvail.empty() && incrementBodies() != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    std::set<unsigned int>::iterator itr = bodyIdsAvail.begin();
+    int objId = (int)*itr;
+    bodyIdsAvail.erase(itr);
+    *obj = &(*bodies)[objId];
+    (*obj)->_objId = objId;
+    nr_bodies++;
+    return S_OK;
+}
+
+HRESULT Mesh::ensureAvailableVertices(const size_t &numAlloc) {
+    int nr_diff = vertices->size() - nr_vertices - numAlloc;
+    return nr_diff >= 0 ? S_OK : incrementVertices(-nr_diff);
+}
+
+HRESULT Mesh::ensureAvailableSurfaces(const size_t &numAlloc) {
+    int nr_diff = surfaces->size() - nr_surfaces - numAlloc;
+    return nr_diff >= 0 ? S_OK : incrementSurfaces(-nr_diff);
+}
+
+HRESULT Mesh::ensureAvailableBodies(const size_t &numAlloc) {
+    int nr_diff = bodies->size() - nr_bodies - numAlloc;
+    return nr_diff >= 0 ? S_OK : incrementBodies(-nr_diff);
+}
+
+HRESULT Mesh::create(Vertex **obj, const unsigned int &pid) { 
     isDirty = true;
     if(_solver) 
         _solver->setDirty(true);
 
-    if(Mesh_addObj(this->vertices, this->vertexIdsAvail, obj, _solver) != S_OK) {
+    if(allocateVertex(obj) != S_OK) {
         TF_Log(LOG_ERROR);
         return E_FAIL;
     }
 
-    while(pid >= verticesByPID.size()) 
-        verticesByPID.push_back(NULL);
-    verticesByPID[pid] = obj;
+    verticesByPID[pid] = *obj;
 
     return S_OK;
 }
 
-HRESULT Mesh::add(Surface *obj){ 
+HRESULT Mesh::create(Surface **obj){ 
     isDirty = true;
+    if(_solver) 
+        _solver->setDirty(true);
 
-    for(auto &v : obj->vertices) 
-        if(v->objId < 0 && add(v) != S_OK) {
-            TF_Log(LOG_ERROR);
-            return E_FAIL;
-        }
-
-    if(Mesh_addObj(this->surfaces, this->surfaceIdsAvail, obj, _solver) != S_OK) {
+    if(allocateSurface(obj) != S_OK) {
         TF_Log(LOG_ERROR);
         return E_FAIL;
     }
@@ -194,66 +321,15 @@ HRESULT Mesh::add(Surface *obj){
     return S_OK;
 }
 
-HRESULT Mesh::add(Body *obj){ 
+HRESULT Mesh::create(Body **obj){ 
     isDirty = true;
+    if(_solver) 
+        _solver->setDirty(true);
 
-    for(auto &s : obj->surfaces) 
-        if(s->objId < 0 && add((Surface*)s) != S_OK) {
-            TF_Log(LOG_ERROR);
-            return E_FAIL;
-        }
-
-    if(Mesh_addObj(this->bodies, this->bodyIdsAvail, obj, _solver) != S_OK) {
+    if(allocateBody(obj) != S_OK) {
         TF_Log(LOG_ERROR);
         return E_FAIL;
     }
-
-    return S_OK;
-}
-
-HRESULT Mesh::removeObj(MeshObj *obj) { 
-    isDirty = true;
-
-    if(Mesh_checkStoredObj(obj, this) != S_OK) {
-        TF_Log(LOG_ERROR) << "Invalid mesh object passed for remove.";
-        return E_FAIL;
-    } 
-
-    if(TissueForge::models::vertex::check(obj, MeshObj::Type::VERTEX)) {
-        TF_MESH_OBJINVCHECK(obj, this->vertices);
-        this->vertices[obj->objId] = NULL;
-        this->vertexIdsAvail.insert(obj->objId);
-
-        ParticleHandle *ph = ((Vertex*)obj)->particle();
-        if(ph && ph->id >= 0 && ph->id < verticesByPID.size()) 
-            verticesByPID[ph->id] = NULL;
-    } 
-    else if(TissueForge::models::vertex::check(obj, MeshObj::Type::SURFACE)) {
-        TF_MESH_OBJINVCHECK(obj, this->surfaces);
-        this->surfaces[obj->objId] = NULL;
-        this->surfaceIdsAvail.insert(obj->objId);
-    } 
-    else if(TissueForge::models::vertex::check(obj, MeshObj::Type::BODY)) {
-        TF_MESH_OBJINVCHECK(obj, this->bodies);
-        this->bodies[obj->objId] = NULL;
-        this->bodyIdsAvail.insert(obj->objId);
-    } 
-    else {
-        TF_Log(LOG_ERROR) << "Mesh object type could not be determined.";
-        return E_FAIL;
-    }
-
-    if(_solver)
-        _solver->log(MeshLogEventType::Destroy, {obj->objId}, {obj->objType()});
-    obj->objId = -1;
-
-    for(auto &p : std::vector<MeshObj*>(obj->parents())) 
-        p->removeChild(obj);
-    for(auto &c : obj->children()) 
-        if(removeObj(c) != S_OK) {
-            TF_Log(LOG_ERROR);
-            return E_FAIL;
-        }
 
     return S_OK;
 }
@@ -263,49 +339,54 @@ Mesh *Mesh::get() {
     return solver ? solver->getMesh() : NULL;
 }
 
-Vertex *Mesh::findVertex(const FVector3 &pos, const FloatP_t &tol) const {
+Vertex *Mesh::findVertex(const FVector3 &pos, const FloatP_t &tol) {
 
-    for(auto &v : vertices)
-        if(v->particle()->relativePosition(pos).length() <= tol) 
-            return v;
+    for(size_t i = 0; i < vertices->size(); i++) {
+        Vertex &v = (*vertices)[i];
+        if(v._objId >= 0 && v.particle()->relativePosition(pos).length() <= tol) 
+            return &v;
+    }
 
     return NULL;
 }
 
 Vertex *Mesh::getVertexByPID(const unsigned int &pid) const {
 
-    if(pid < verticesByPID.size()) 
-        return verticesByPID[pid];
-
-    return NULL;
+    auto itr = verticesByPID.find(pid);
+    return itr == verticesByPID.end() ? NULL : itr->second;
 }
 
-Vertex *Mesh::getVertex(const unsigned int &idx) const {
-    return TF_MESH_GETPART(idx, vertices);
+Vertex *Mesh::getVertex(const unsigned int &idx) {
+    auto o = TF_MESH_GETPART(idx, (*vertices));
+    return o && o->objectId() >= 0 ? o : NULL;
 }
 
-Surface *Mesh::getSurface(const unsigned int &idx) const {
-    return TF_MESH_GETPART(idx, surfaces);
+Surface *Mesh::getSurface(const unsigned int &idx) {
+    auto o = TF_MESH_GETPART(idx, (*surfaces));
+    return o && o->objectId() >= 0 ? o : NULL;
 }
 
-Body *Mesh::getBody(const unsigned int &idx) const {
-    return TF_MESH_GETPART(idx, bodies);
+Body *Mesh::getBody(const unsigned int &idx) {
+    auto o = TF_MESH_GETPART(idx, (*bodies));
+    return o && o->objectId() >= 0 ? o : NULL;
 }
 
 template <typename T> 
-bool Mesh_validateInv(const std::vector<T*> &inv) {
-    for(auto &o : inv) 
-        if(!o->validate()) 
+bool Mesh_validateInv(std::vector<T> &inv) {
+    for(size_t i = 0; i < inv.size(); i++) {
+        T &o = inv[i];
+        if(o.objectId() < 0 && !o.validate()) 
             return false;
+    }
     return true;
 }
 
 bool Mesh::validate() {
-    if(!Mesh_validateInv(this->vertices)) 
+    if(!Mesh_validateInv(*this->vertices)) 
         return false;
-    else if(!Mesh_validateInv(this->surfaces)) 
+    else if(!Mesh_validateInv(*this->surfaces)) 
         return false;
-    else if(!Mesh_validateInv(this->bodies)) 
+    else if(!Mesh_validateInv(*this->bodies)) 
         return false;
     return true;
 }
@@ -321,22 +402,23 @@ HRESULT Mesh::makeDirty() {
 bool Mesh::connected(const Vertex *v1, const Vertex *v2) const {
     for(auto &s1 : v1->surfaces) 
         for(auto vitr = s1->vertices.begin() + 1; vitr != s1->vertices.end(); vitr++) 
-            if((*vitr == v1 && *(vitr - 1) == v2) || (*vitr == v2 && *(vitr - 1) == v1)) 
+            if(((*vitr)->objectId() == v1->objectId() && (*(vitr - 1))->objectId() == v2->objectId()) || 
+                ((*vitr)->objectId() == v2->objectId() && (*(vitr - 1))->objectId() == v1->objectId())) 
                 return true;
 
     return false;
 }
 
 bool Mesh::connected(const Surface *s1, const Surface *s2) const {
-    for(auto &v : s1->parents()) 
-        if(v->in(s2)) 
+    for(auto &v : s1->vertices) 
+        if(v->defines(s2)) 
             return true;
     return false;
 }
 
 bool Mesh::connected(const Body *b1, const Body *b2) const {
-    for(auto &s : b1->parents()) 
-        if(s->in(b2)) 
+    for(auto &s : b1->surfaces) 
+        if(s->defines(b2)) 
             return true;
     return false;
 }
@@ -344,15 +426,83 @@ bool Mesh::connected(const Body *b1, const Body *b2) const {
 // Mesh editing
 
 HRESULT Mesh::remove(Vertex *v) {
-    return removeObj(v);
+    isDirty = true;
+
+    if(Mesh_checkStoredObj(v) != S_OK) {
+        TF_Log(LOG_ERROR) << "Invalid mesh object passed for remove.";
+        return E_FAIL;
+    } 
+
+    TF_MESH_OBJINVCHECK(v, vertices->size());
+    std::vector<Surface*> children = v->getSurfaces();
+    this->vertexIdsAvail.insert(v->_objId);
+    if(v->pid >= 0) {
+        auto itr = verticesByPID.find(v->pid);
+        if(itr != verticesByPID.end()) 
+            verticesByPID.erase(itr);
+    }
+    (*this->vertices)[v->_objId] = Vertex();
+    nr_vertices--;
+
+    if(_solver)
+        _solver->log(MeshLogEventType::Destroy, {v->_objId}, {v->objType()});
+
+    for(auto &c : children) 
+        if(remove(c) != S_OK) {
+            TF_Log(LOG_ERROR);
+            return E_FAIL;
+        }
+
+    return S_OK;
 }
 
 HRESULT Mesh::remove(Surface *s) {
-    return removeObj(s);
+    isDirty = true;
+
+    if(Mesh_checkStoredObj(s) != S_OK) {
+        TF_Log(LOG_ERROR) << "Invalid mesh object passed for remove.";
+        return E_FAIL;
+    } 
+
+    TF_MESH_OBJINVCHECK(s, surfaces->size());
+    std::vector<Body*> children = s->getBodies();
+    for(auto &v : s->getVertices()) 
+        v->remove(s);
+    this->surfaceIdsAvail.insert(s->_objId);
+    (*this->surfaces)[s->_objId] = Surface();
+    nr_surfaces--;
+
+    if(_solver)
+        _solver->log(MeshLogEventType::Destroy, {s->_objId}, {s->objType()});
+
+    for(auto &c : children) 
+        if(remove(c) != S_OK) {
+            TF_Log(LOG_ERROR);
+            return E_FAIL;
+        }
+
+    return S_OK;
 }
 
 HRESULT Mesh::remove(Body *b) {
-    return removeObj(b);
+    isDirty = true;
+
+    if(Mesh_checkStoredObj(b) != S_OK) {
+        TF_Log(LOG_ERROR) << "Invalid mesh object passed for remove.";
+        return E_FAIL;
+    } 
+
+    TF_MESH_OBJINVCHECK(b, bodies->size());
+    for(auto &s : b->getSurfaces()) 
+        s->remove(b);
+    this->bodyIdsAvail.insert(b->_objId);
+    (*this->bodies)[b->_objId] = Body();
+    nr_bodies--;
+
+    if(_solver)
+        _solver->log(MeshLogEventType::Destroy, {b->_objId}, {b->objType()});
+
+    return S_OK;
 }
 
 namespace TissueForge::io {
@@ -371,45 +521,45 @@ namespace TissueForge::io {
             return E_FAIL;
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::Mesh &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(TissueForge::models::vertex::Mesh *dataElement, const MetaData &metaData, IOElement *fileElement) {
 
         IOElement *fe;
 
-        std::vector<TissueForge::models::vertex::Vertex> vertices;
-        if(dataElement.numVertices() > 0) {
-            vertices.reserve(dataElement.numVertices());
-            for(size_t i = 0; i < dataElement.sizeVertices(); i++) {
-                auto o = dataElement.getVertex(i);
+        std::vector<TissueForge::models::vertex::Vertex*> vertices;
+        if(dataElement->numVertices() > 0) {
+            vertices.reserve(dataElement->numVertices());
+            for(size_t i = 0; i < dataElement->sizeVertices(); i++) {
+                auto o = dataElement->getVertex(i);
                 if(o) 
-                    vertices.push_back(*o);
+                    vertices.push_back(o);
             }
         }
         TF_MESH_MESHIOTOEASY(fe, "vertices", vertices);
 
-        std::vector<TissueForge::models::vertex::Surface> surfaces;
-        if(dataElement.numSurfaces() > 0) {
-            surfaces.reserve(dataElement.numSurfaces());
-            for(size_t i = 0; i < dataElement.sizeSurfaces(); i++) {
-                auto o = dataElement.getSurface(i);
+        std::vector<TissueForge::models::vertex::Surface*> surfaces;
+        if(dataElement->numSurfaces() > 0) {
+            surfaces.reserve(dataElement->numSurfaces());
+            for(size_t i = 0; i < dataElement->sizeSurfaces(); i++) {
+                auto o = dataElement->getSurface(i);
                 if(o) 
-                    surfaces.push_back(*o);
+                    surfaces.push_back(o);
             }
         }
         TF_MESH_MESHIOTOEASY(fe, "surfaces", surfaces);
 
-        std::vector<TissueForge::models::vertex::Body> bodies;
-        if(dataElement.numBodies() > 0) {
-            bodies.reserve(dataElement.numBodies());
-            for(size_t i = 0; i < dataElement.sizeBodies(); i++) {
-                auto o = dataElement.getBody(i);
+        std::vector<TissueForge::models::vertex::Body*> bodies;
+        if(dataElement->numBodies() > 0) {
+            bodies.reserve(dataElement->numBodies());
+            for(size_t i = 0; i < dataElement->sizeBodies(); i++) {
+                auto o = dataElement->getBody(i);
                 if(o) 
-                    bodies.push_back(*o);
+                    bodies.push_back(o);
             }
         }
         TF_MESH_MESHIOTOEASY(fe, "bodies", bodies);
 
-        if(dataElement.hasQuality()) {
-            TF_MESH_MESHIOTOEASY(fe, "quality", dataElement.getQuality());
+        if(dataElement->hasQuality()) {
+            TF_MESH_MESHIOTOEASY(fe, "quality", dataElement->getQuality());
         }
 
         fileElement->type = "Mesh";
@@ -458,7 +608,7 @@ namespace TissueForge::io {
 std::string TissueForge::models::vertex::Mesh::toString() {
     TissueForge::io::IOElement *el = new TissueForge::io::IOElement();
     std::string result;
-    if(TissueForge::io::toFile(*this, TissueForge::io::MetaData(), el) != S_OK) result = "";
+    if(TissueForge::io::toFile(this, TissueForge::io::MetaData(), el) != S_OK) result = "";
     else result = TissueForge::io::toStr(el);
     delete el;
     return result;

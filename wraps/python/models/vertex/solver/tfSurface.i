@@ -25,6 +25,8 @@
 %template(vectorMeshSurface) std::vector<TissueForge::models::vertex::Surface*>;
 %template(vectorvectorMeshSurface) std::vector<std::vector<TissueForge::models::vertex::Surface*> >;
 
+vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
+
 %rename(_extend) TissueForge::models::vertex::Surface::extend(const unsigned int&, const FVector3&);
 %rename(_extrude) TissueForge::models::vertex::Surface::extrude(const unsigned int&, const FloatP_t&);
 %rename(_split_vertices) TissueForge::models::vertex::Surface::split(Vertex*, Vertex*);
@@ -34,7 +36,6 @@
 %rename(find_vertex) TissueForge::models::vertex::Surface::findVertex;
 %rename(find_body) TissueForge::models::vertex::Surface::findBody;
 %rename(neighbor_vertices) TissueForge::models::vertex::Surface::neighborVertices;
-%rename(neighbor_surfaces) TissueForge::models::vertex::Surface::neighborSurfaces;
 %rename(connected_surfaces) TissueForge::models::vertex::Surface::connectedSurfaces;
 %rename(contiguous_edge_labels) TissueForge::models::vertex::Surface::contiguousEdgeLabels;
 %rename(num_shared_contiguous_edges) TissueForge::models::vertex::Surface::numSharedContiguousEdges;
@@ -47,6 +48,7 @@
 %rename(is_outside) TissueForge::models::vertex::Surface::isOutside;
 %rename(position_changed) TissueForge::models::vertex::Surface::positionChanged;
 
+%rename(_neighborSurfaces) TissueForge::models::vertex::Surface::neighborSurfaces;
 %rename(_isRegistered) TissueForge::models::vertex::SurfaceType::isRegistered;
 %rename(_getInstances) TissueForge::models::vertex::SurfaceType::getInstances;
 %rename(_getInstanceIds) TissueForge::models::vertex::SurfaceType::getInstanceIds;
@@ -80,7 +82,7 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
 
         @property
         def neighbor_surfaces(self):
-            return self.neighborSurfaces()
+            return self._neighborSurfaces()
 
         @property
         def normal(self):

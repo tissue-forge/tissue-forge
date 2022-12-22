@@ -24,9 +24,9 @@
 
 %template(vectorMesh) std::vector<TissueForge::models::vertex::Mesh*>;
 
-%rename(_add_vertex) TissueForge::models::vertex::Mesh::add(Vertex *obj);
-%rename(_add_surface) TissueForge::models::vertex::Mesh::add(Surface *obj);
-%rename(_add_body) TissueForge::models::vertex::Mesh::add(Body *obj);
+%rename(ensure_available_vertices) TissueForge::models::vertex::Mesh::ensureAvailableVertices;
+%rename(ensure_available_surfaces) TissueForge::models::vertex::Mesh::ensureAvailableSurfaces;
+%rename(ensure_available_bodies) TissueForge::models::vertex::Mesh::ensureAvailableBodies;
 %rename(find_vertex) TissueForge::models::vertex::Mesh::findVertex;
 %rename(get_vertex_by_pid) TissueForge::models::vertex::Mesh::getVertexByPID;
 %rename(get_vertex) TissueForge::models::vertex::Mesh::getVertex;
@@ -88,18 +88,5 @@
         def size_bodies(self) -> int:
             """Size of the list of bodies"""
             return self.sizeBodies()
-
-        def add(self, obj) -> int:
-            """Add an object to the mesh"""
-            result = 1
-            if isinstance(obj, _vertex_solver_Vertex):
-                result = self._add_vertex(obj)
-            elif isinstance(obj, _vertex_solver_Surface):
-                result = self._add_surface(obj)
-            elif isinstance(obj, _vertex_solver_Body):
-                result = self._add_body(obj)
-            if result == 0:
-                obj.thisown = 0
-            return result
     %}
 }

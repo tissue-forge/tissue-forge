@@ -79,7 +79,7 @@ static inline HRESULT render_meshFacesEdges(MeshFaceInstanceData *faceData,
     int shiftij[3], shiftkj[3];
     fVector3 pixij, pixkj;
 
-    std::vector<Vertex*> vertices = TissueForge::models::vertex::vectorToDerived<Vertex>(s->parents());
+    std::vector<Vertex*> vertices = s->getVertices();
 
     for(unsigned int j = 0; j < vertices.size(); j++) {
         Vertex *vi = vertices[j];
@@ -215,14 +215,14 @@ HRESULT MeshRenderer::draw(rendering::ArcBallCamera *camera, const iVector2 &vie
 
     std::vector<unsigned int> surfaceVertexIndices = solver->getSurfaceVertexIndices();
 
-    std::vector<Surface*> &m_surfaces = solver->mesh->surfaces;
+    Surface *m_surfaces = &(*solver->mesh->surfaces)[0];
     auto func_surfaces = [&faceData, &edgeData, &m_surfaces, &surfaceVertexIndices](int i) -> void {
-        Surface *s = m_surfaces[i];
-        if(s) {
-            render_meshFacesEdges(faceData, edgeData, surfaceVertexIndices[i], s);
+        Surface &s = m_surfaces[i];
+        if(s.objectId() >= 0) {
+            render_meshFacesEdges(faceData, edgeData, surfaceVertexIndices[i], &s);
         }
     };
-    parallel_for(m_surfaces.size(), func_surfaces);
+    parallel_for(solver->mesh->surfaces->size(), func_surfaces);
     _bufferFaces.unmap();
     _bufferEdges.unmap();
     

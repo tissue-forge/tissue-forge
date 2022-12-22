@@ -217,7 +217,7 @@ namespace TissueForge::models::vertex {
         }
 
         /** Log an event */
-        static HRESULT log(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name="");
+        static HRESULT log(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObjTypeLabel> &objTypes, const std::string &name="");
 
         friend MeshRenderer;
 
@@ -283,7 +283,7 @@ namespace TissueForge::models::vertex {
         std::vector<unsigned int> _getSurfaceVertexIndicesAsyncJoinInst();
 
         /** Log an event */
-        HRESULT _logInst(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObj::Type> &objTypes, const std::string &name="");
+        HRESULT _logInst(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObjTypeLabel> &objTypes, const std::string &name="");
         
     };
 

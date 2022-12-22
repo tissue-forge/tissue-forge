@@ -25,6 +25,8 @@
 %template(vectorMeshBody) std::vector<TissueForge::models::vertex::Body*>;
 %template(vectorvectorvectorMeshBody) std::vector<std::vector<std::vector<TissueForge::models::vertex::Body*> > >;
 
+vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
+
 %rename(_neighborBodies) TissueForge::models::vertex::Body::neighborBodies;
 %rename(_split) TissueForge::models::vertex::Body::split;
 %rename(destroy_c) TissueForge::models::vertex::Body::destroy(Body*);

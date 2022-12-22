@@ -30,6 +30,7 @@
 #include <mutex>
 #include <set>
 #include <vector>
+#include <unordered_map>
 
 
 namespace TissueForge::models::vertex {
@@ -41,16 +42,26 @@ namespace TissueForge::models::vertex {
 
     class CAPI_EXPORT Mesh { 
 
-        std::vector<Vertex*> vertices;
-        std::vector<Surface*> surfaces;
-        std::vector<Body*> bodies;
+        std::vector<Vertex> *vertices;
+        size_t nr_vertices;
+        std::vector<Surface> *surfaces;
+        size_t nr_surfaces;
+        std::vector<Body> *bodies;
+        size_t nr_bodies;
 
         std::set<unsigned int> vertexIdsAvail, surfaceIdsAvail, bodyIdsAvail;
-        std::vector<Vertex*> verticesByPID;
+        std::unordered_map<int, Vertex*> verticesByPID;
         bool isDirty;
         MeshSolver *_solver = NULL;
         MeshQuality *_quality;
         std::mutex meshLock;
+
+        HRESULT incrementVertices(const size_t &numIncr=TFMESHINV_INCR);
+        HRESULT incrementSurfaces(const size_t &numIncr=TFMESHINV_INCR);
+        HRESULT incrementBodies(const size_t &numIncr=TFMESHINV_INCR);
+        HRESULT allocateVertex(Vertex **obj);
+        HRESULT allocateSurface(Surface **obj);
+        HRESULT allocateBody(Body **obj);
 
     public:
 
@@ -73,17 +84,23 @@ namespace TissueForge::models::vertex {
         /** Test whether a mesh quality instance is working on the mesh */
         bool qualityWorking() const { return hasQuality() && getQuality().working(); }
 
-        /** Add a vertex */
-        HRESULT add(Vertex *obj);
+        /** Ensure that there are a given number of allocated vertices */
+        HRESULT ensureAvailableVertices(const size_t &numAlloc);
 
-        /** Add a surface */
-        HRESULT add(Surface *obj);
+        /** Ensure that there are a given number of allocated surfaces */
+        HRESULT ensureAvailableSurfaces(const size_t &numAlloc);
 
-        /** Add a body */
-        HRESULT add(Body *obj);
+        /** Ensure that there are a given number of allocated bodies */
+        HRESULT ensureAvailableBodies(const size_t &numAlloc);
 
-        /** Remove a mesh object */
-        HRESULT removeObj(MeshObj *obj);
+        /** Create a vertex */
+        HRESULT create(Vertex **obj, const unsigned int &pid);
+
+        /** Create a surface */
+        HRESULT create(Surface **obj);
+
+        /** Create a body */
+        HRESULT create(Body **obj);
 
         /** Get the mesh */
         static Mesh *get();
@@ -101,37 +118,37 @@ namespace TissueForge::models::vertex {
          * @param tol distance tolerance
          * @return a vertex within the distance tolerance of the position, otherwise NULL
          */
-        Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001) const;
+        Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001);
 
         /** Get the vertex for a given particle id */
         Vertex *getVertexByPID(const unsigned int &pid) const;
 
         /** Get the vertex at a location in the list of vertices */
-        Vertex *getVertex(const unsigned int &idx) const;
+        Vertex *getVertex(const unsigned int &idx);
 
         /** Get a surface at a location in the list of surfaces */
-        Surface *getSurface(const unsigned int &idx) const;
+        Surface *getSurface(const unsigned int &idx);
 
         /** Get a body at a location in the list of bodies */
-        Body *getBody(const unsigned int &idx) const;
+        Body *getBody(const unsigned int &idx);
 
         /** Get the number of vertices */
-        unsigned int numVertices() const { return vertices.size() - vertexIdsAvail.size(); }
+        unsigned int numVertices() const { return nr_vertices; }
 
         /** Get the number of surfaces */
-        unsigned int numSurfaces() const { return surfaces.size() - surfaceIdsAvail.size(); }
+        unsigned int numSurfaces() const { return nr_surfaces; }
 
         /** Get the number of bodies */
-        unsigned int numBodies() const { return bodies.size() - bodyIdsAvail.size(); }
+        unsigned int numBodies() const { return nr_bodies; }
 
         /** Get the size of the list of vertices */
-        unsigned int sizeVertices() const { return vertices.size(); }
+        unsigned int sizeVertices() const { return vertices->size(); }
 
         /** Get the size of the list of surfaces */
-        unsigned int sizeSurfaces() const { return surfaces.size(); }
+        unsigned int sizeSurfaces() const { return surfaces->size(); }
 
         /** Get the size of the list of bodies */
-        unsigned int sizeBodies() const { return bodies.size(); }
+        unsigned int sizeBodies() const { return bodies->size(); }
 
         /** Validate state of the mesh */
         bool validate();

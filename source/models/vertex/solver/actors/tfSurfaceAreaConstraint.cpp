@@ -30,17 +30,16 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-static HRESULT SurfaceAreaConstraint_energy_Body(Body *b, const FloatP_t &lam, const FloatP_t &constr, FloatP_t &e) {
-    FloatP_t darea = b->getArea() - constr;
-    e = lam * darea * darea;
-    return S_OK;
+FloatP_t SurfaceAreaConstraint::energy(const Body *source, const Vertex *target) {
+    FloatP_t darea = source->getArea() - constr;
+    return lam * darea * darea;
 }
 
-static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const FloatP_t &lam, const FloatP_t &constr, FloatP_t *f) {
+FVector3 SurfaceAreaConstraint::force(const Body *source, const Vertex *target) {
     FVector3 ftotal;
 
-    for(auto &s : v->getSurfaces()) {
-        if(!s->in(b)) 
+    for(auto &s : target->getSurfaces()) {
+        if(!s->defines(source)) 
             continue;
         
         auto svertices = s->getVertices();
@@ -48,7 +47,7 @@ static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const FloatP
         FVector3 sftotal, triNorm;
         
         for(idx = 0; idx < svertices.size(); idx++) {
-            if(svertices[idx] == v) 
+            if(svertices[idx] == target) 
                 idxc = idx;
             triNorm = s->triangleNormal(idx);
             if(!triNorm.isZero()) 
@@ -73,32 +72,25 @@ static HRESULT SurfaceAreaConstraint_force_Body(Body *b, Vertex *v, const FloatP
         ftotal += sftotal;
     }
 
-    ftotal *= (lam * (constr - b->getArea()));
-
-    f[0] += ftotal[0];
-    f[1] += ftotal[1];
-    f[2] += ftotal[2];
-
-    return S_OK;
+    return ftotal * (lam * (constr - source->getArea()));
 }
 
-static HRESULT SurfaceAreaConstraint_energy_Surface(Surface *s, const FloatP_t &lam, const FloatP_t &constr, FloatP_t &e) {
-    FloatP_t darea = s->getArea() - constr;
-    e = lam * darea * darea;
-    return S_OK;
+FloatP_t SurfaceAreaConstraint::energy(const Surface *source, const Vertex *target) {
+    FloatP_t darea = source->getArea() - constr;
+    return lam * darea * darea;
 }
 
-static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const FloatP_t &lam, const FloatP_t &constr, FloatP_t *f) {
+FVector3 SurfaceAreaConstraint::force(const Surface *source, const Vertex *target) {
     FVector3 ftotal;
 
-    auto svertices = s->getVertices();
+    auto svertices = source->getVertices();
     unsigned int idx, idxc, idxp, idxn;
     FVector3 sftotal, triNorm;
     
     for(idx = 0; idx < svertices.size(); idx++) {
-        if(svertices[idx] == v) 
+        if(svertices[idx] == target) 
             idxc = idx;
-        triNorm = s->triangleNormal(idx);
+        triNorm = source->triangleNormal(idx);
         if(!triNorm.isZero())
             sftotal += Magnum::Math::cross(
                 triNorm.normalized(), 
@@ -110,40 +102,19 @@ static HRESULT SurfaceAreaConstraint_force_Surface(Surface *s, Vertex *v, const 
     idxp = idxc == 0 ? svertices.size() - 1 : idxc - 1;
     idxn = idxc == svertices.size() - 1 ? 0 : idxc + 1;
 
-    const FVector3 scentroid = s->getCentroid();
+    const FVector3 scentroid = source->getCentroid();
 
-    triNorm = s->triangleNormal(idxc);
+    triNorm = source->triangleNormal(idxc);
     if(!triNorm.isZero()) 
         sftotal += Magnum::Math::cross(triNorm.normalized(), scentroid - svertices[idxn]->getPosition());
-    triNorm = s->triangleNormal(idxp);
+    triNorm = source->triangleNormal(idxp);
     if(!triNorm.isZero()) 
         sftotal -= Magnum::Math::cross(triNorm.normalized(), scentroid - svertices[idxp]->getPosition());
     ftotal += sftotal;
 
-    ftotal *= (lam * (constr - s->getArea()));
+    ftotal *= (lam * (constr - source->getArea()));
 
-    f[0] += ftotal[0];
-    f[1] += ftotal[1];
-    f[2] += ftotal[2];
-
-    return S_OK;
-}
-
-
-HRESULT SurfaceAreaConstraint::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
-    if(source->objType() == MeshObj::Type::BODY) 
-        return SurfaceAreaConstraint_energy_Body((Body*)source, lam, constr, e);
-    else if(source->objType() == MeshObj::Type::SURFACE) 
-        return SurfaceAreaConstraint_energy_Surface((Surface*)source, lam, constr, e);
-    return S_OK;
-}
-
-HRESULT SurfaceAreaConstraint::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
-    if(source->objType() == MeshObj::Type::BODY) 
-        return SurfaceAreaConstraint_force_Body((Body*)source, (Vertex*)target, lam, constr, f);
-    else if(source->objType() == MeshObj::Type::SURFACE) 
-        return SurfaceAreaConstraint_force_Surface((Surface*)source, (Vertex*)target, lam, constr, f);
-    return S_OK;
+    return ftotal;
 }
 
 namespace TissueForge::io { 

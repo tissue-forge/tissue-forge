@@ -100,6 +100,10 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
     unsigned int ax_3_comp = axesMap[str_ax_3];
     FloatP_t z_cm = startPos[ax_3_comp];
 
+    Mesh *mesh = Mesh::get();
+    mesh->ensureAvailableSurfaces(num_1 * num_2);
+    mesh->ensureAvailableVertices(4 * num_1 * num_2);
+
     std::vector<std::vector<Surface*> > result = std::vector<std::vector<Surface*> >(num_1, std::vector<Surface*>(num_2, NULL));
 
     FVector3 vertRelCoords[4];
@@ -136,32 +140,32 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
                 vpos[ax_1_comp] = x_start;
                 vpos[ax_2_comp] = y_start;
                 vpos[ax_3_comp] = z_cm;
-                v0 = new Vertex(vpos);
+                v0 = Vertex::create(vpos);
             }
             if(!v1) {
                 FVector3 vpos;
                 vpos[ax_1_comp] = x_start + len_1;
                 vpos[ax_2_comp] = y_start;
                 vpos[ax_3_comp] = z_cm;
-                v1 = new Vertex(vpos);
+                v1 = Vertex::create(vpos);
             }
             if(!v2) {
                 FVector3 vpos;
                 vpos[ax_1_comp] = x_start + len_1;
                 vpos[ax_2_comp] = y_start + len_2;
                 vpos[ax_3_comp] = z_cm;
-                v2 = new Vertex(vpos);
+                v2 = Vertex::create(vpos);
             }
             if(!v3) {
                 FVector3 vpos;
                 vpos[ax_1_comp] = x_start;
                 vpos[ax_2_comp] = y_start + len_2;
                 vpos[ax_3_comp] = z_cm;
-                v3 = new Vertex(vpos);
+                v3 = Vertex::create(vpos);
             }
 
             Surface *s_new = (*stype)({v0, v1, v2, v3});
-            if(!s_new || s_new->objId < 0) {
+            if(!s_new || s_new->objectId() < 0) {
                 tf_error(E_FAIL, "Surface could not be created");
                 if(s_new) {
                     s_new->destroy();
@@ -204,6 +208,11 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
     unsigned int ax_2_comp = axesMap[str_ax_2];
     unsigned int ax_3_comp = axesMap[str_ax_3];
     FloatP_t z_cm = startPos[ax_3_comp];
+
+    Mesh *mesh = Mesh::get();
+    mesh->ensureAvailableBodies(num_1 * num_2 * num_3);
+    mesh->ensureAvailableSurfaces(6 * num_1 * num_2 * num_3);
+    mesh->ensureAvailableVertices(8 * num_1 * num_2 * num_3);
 
     FVector3 vertRelCoords[4];
     vertRelCoords[1][ax_1_comp] = len_1;
@@ -278,7 +287,7 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
                     surfs_12_kn[i][j],
                     surfs_12_kp[i][j]
                 });
-                if(!b_new || b_new->objId < 0) {
+                if(!b_new || b_new->objectId() < 0) {
                     tf_error(E_FAIL, "Body could not be created");
                     if(b_new) {
                         b_new->destroy();
@@ -314,6 +323,10 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
     unsigned int ax_2_comp = axesMap[str_ax_2];
     unsigned int ax_3_comp = axesMap[str_ax_3];
     FloatP_t z_cm = startPos[ax_3_comp];
+
+    Mesh *mesh = Mesh::get();
+    mesh->ensureAvailableSurfaces(num_1 * num_2);
+    mesh->ensureAvailableVertices(6 * num_1 * num_2);
 
     FloatP_t hexRadMinor = std::sqrt(3) * 0.5 * hexRad;
 
@@ -375,6 +388,11 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
     unsigned int ax_2_comp = axesMap[str_ax_2];
     unsigned int ax_3_comp = axesMap[str_ax_3];
     FloatP_t z_cm = startPos[ax_3_comp];
+
+    Mesh *mesh = Mesh::get();
+    mesh->ensureAvailableBodies(num_1 * num_2 * num_3);
+    mesh->ensureAvailableSurfaces(8 * num_1 * num_2 * num_3);
+    mesh->ensureAvailableVertices(12 * num_1 * num_2 * num_3);
 
     std::vector<std::vector<std::vector<Surface*> > > surfs_3;
     surfs_3.reserve(num_3 + 1);
@@ -459,7 +477,7 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
                         Vertex *v3 = verts_top[surfSharedVerts[n][0][0]];
 
                         nbs_surf = (*stype)({v0, v1, v2, v3});
-                        if(!nbs_surf || nbs_surf->objId < 0) {
+                        if(!nbs_surf || nbs_surf->objectId() < 0) {
                             tf_error(E_FAIL, "Surface could not be created");
                             if(nbs_surf) {
                                 nbs_surf->destroy();

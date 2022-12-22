@@ -26,8 +26,8 @@
 namespace TissueForge::models::vertex { 
 
 
-    typedef HRESULT (*EdgeTensionEnergyFcn)(const MeshObj*, const MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t&);
-    typedef HRESULT (*EdgeTensionForceFcn)(const MeshObj*, const MeshObj*, const FloatP_t&, const unsigned int&, FloatP_t*);
+    typedef FloatP_t (*EdgeTensionEnergyFcn)(const Surface*, const Vertex*, const FloatP_t&, const unsigned int&);
+    typedef FVector3 (*EdgeTensionForceFcn)(const Surface*, const Vertex*, const FloatP_t&, const unsigned int&);
 
 
     struct EdgeTension : MeshObjActor {
@@ -43,9 +43,9 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "EdgeTension"; }
 
-        HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
+        FloatP_t energy(const Surface *source, const Vertex *target) override;
 
-        HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
+        FVector3 force(const Surface *source, const Vertex *target) override;
 
         /**
          * @brief Create from a JSON string representation. 

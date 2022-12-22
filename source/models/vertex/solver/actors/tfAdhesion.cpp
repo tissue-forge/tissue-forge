@@ -37,10 +37,10 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-static HRESULT Adhesion_energy_Body(Body *b, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t &e) {
-    FloatP_t _e = 0.0;
+static FloatP_t Adhesion_energy_Body(const Body *b, const Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes) {
+    FloatP_t e = 0.0;
 
-    fVector3 posv = v->getPosition();
+    FVector3 posv = v->getPosition();
 
     for(auto &s : v->getSurfaces()) {
         std::vector<Body*> bodies = s->getBodies();
@@ -57,18 +57,16 @@ static HRESULT Adhesion_energy_Body(Body *b, Vertex *v, const FloatP_t &lam, con
 
         Vertex *vp = std::get<0>(s->neighborVertices(v));
 
-        _e += lam * metrics::relativePosition(vp->getPosition(), posv).length();
+        e += metrics::relativePosition(vp->getPosition(), posv).length();
     }
 
-    e += 0.5 * _e;
-
-    return S_OK;
+    return 0.5 * lam * e;
 }
 
-static HRESULT Adhesion_force_Body(Body *b, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t *f) {
-    fVector3 _f(0.0);
+static FVector3 Adhesion_force_Body(const Body *b, const Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes) {
+    FVector3 f(0.0);
 
-    fVector3 posv = v->getPosition();
+    FVector3 posv = v->getPosition();
 
     Vertex *vp, *vn;
 
@@ -85,98 +83,106 @@ static HRESULT Adhesion_force_Body(Body *b, Vertex *v, const FloatP_t &lam, cons
         if(!bo || targetTypes.find(bo->typeId) == targetTypes.end()) 
             continue;
 
-        fVector3 scent = s->getCentroid();
+        FVector3 scent = s->getCentroid();
         std::tie(vp, vn) = s->neighborVertices(v);
-        fVector3 posvp = vp->getPosition();
-        fVector3 posvn = vn->getPosition();
-        fVector3 posv_rel = posv - scent;
+        FVector3 posvp = vp->getPosition();
+        FVector3 posvn = vn->getPosition();
+        FVector3 posv_rel = posv - scent;
 
-        fVector3 normvp = Magnum::Math::cross(posv_rel, posvp - scent);
-        fVector3 normvn = Magnum::Math::cross(posvn - scent, posv_rel);
+        FVector3 normvp = Magnum::Math::cross(posv_rel, posvp - scent);
+        FVector3 normvn = Magnum::Math::cross(posvn - scent, posv_rel);
 
         if(!normvp.isZero() && !normvn.isZero()) 
-            _f += (1.0 / s->getVertices().size() - 1.0) * (Magnum::Math::cross(normvp.normalized(), posv - posvp) + 
+            f += (1.0 / s->getVertices().size() - 1.0) * (Magnum::Math::cross(normvp.normalized(), posv - posvp) + 
                 Magnum::Math::cross(normvn.normalized(), posvn - posv));
     }
 
-    FloatP_t fact = 0.5 * lam;
-    f[0] += fact * _f[0];
-    f[1] += fact * _f[1];
-    f[2] += fact * _f[2];
-
-    return S_OK;
+    return 0.5 * lam * f;
 }
 
-static HRESULT Adhesion_energy_Surface(Surface *s, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t &e) {
-    FloatP_t _e = 0.0;
-    fVector3 posv = v->getPosition();
-
+static inline void countNeighborSurfaces(
+    const Surface *s, 
+    const Vertex *v, 
+    const Vertex *vp, 
+    const Vertex *vn, 
+    const std::unordered_set<int> &targetTypes, 
+    size_t &count_vp, 
+    size_t &count_vn) 
+{
     for(auto &sv : v->getSurfaces()) 
-        if(sv != s && targetTypes.find(sv->typeId) != targetTypes.end()) 
-            _e += metrics::relativePosition(std::get<0>(sv->neighborVertices(v))->getPosition(), posv).length();
-
-    e += lam * _e;
-    return S_OK;
-}
-
-static HRESULT Adhesion_force_Surface(Surface *s, Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes, FloatP_t *f) {
-    fVector3 _f(0.0);
-    fVector3 posv = v->getPosition();
-
-    Vertex *vp, *vn;
-
-    for(auto &sv : v->getSurfaces()) 
-        if(sv != s && targetTypes.find(sv->typeId) != targetTypes.end()) {
-            std::tie(vp, vn) = s->neighborVertices(v);
-            fVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), posv);
-            fVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), posv);
-            if(!posvp_rel.isZero() && !posvn_rel.isZero())
-                _f += posvp_rel.normalized() + posvn_rel.normalized();
+        if(sv->objectId() > s->objectId() && targetTypes.find(sv->typeId) != targetTypes.end()) {
+            if(vp->defines(sv)) 
+                ++count_vp;
+            if(vn->defines(sv)) 
+                ++count_vn;
         }
-
-    FloatP_t fact = 0.5 * lam;
-    f[0] += fact * _f[0];
-    f[1] += fact * _f[1];
-    f[2] += fact * _f[2];
-
-    return S_OK;
 }
 
+static FloatP_t Adhesion_energy_Surface(const Surface *s, const Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes) {
+    Vertex *vp, *vn;
+    std::tie(vp, vn) = s->neighborVertices(v);
 
-HRESULT Adhesion::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
-    if(source->objType() == MeshObj::Type::BODY) { 
-        Body *b = (Body*)source;
-        auto itr = typePairs.find(b->typeId);
-        if(itr == typePairs.end()) 
-            return S_OK;
-        return Adhesion_energy_Body(b, (Vertex*)target, lam, itr->second, e);
-    }
-    else if(source->objType() == MeshObj::Type::SURFACE) {
-        Surface *s = (Surface*)source;
-        auto itr = typePairs.find(s->typeId);
-        if(itr == typePairs.end()) 
-            return S_OK;
-        return Adhesion_energy_Surface(s, (Vertex*)target, lam, itr->second, e);
-    }
-    return S_OK;
+    size_t count_vp = 0, count_vn = 0;
+    countNeighborSurfaces(s, v, vp, vn, targetTypes, count_vp, count_vn);
+    if(count_vp + count_vn == 0) 
+        return 0;
+
+    const FVector3 posv = v->getPosition();
+    FVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), posv);
+    FVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), posv);
+
+    return lam * 2.f * (posvp_rel.length() * count_vp + posvn_rel.length() * count_vn);
 }
 
-HRESULT Adhesion::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
-    if(source->objType() == MeshObj::Type::BODY) { 
-        Body *b = (Body*)source;
-        auto itr = typePairs.find(b->typeId);
-        if(itr == typePairs.end()) 
-            return S_OK;
-        return Adhesion_force_Body(b, (Vertex*)target, lam, itr->second, f);
-    }
-    else if(source->objType() == MeshObj::Type::SURFACE) {
-        Surface *s = (Surface*)source;
-        auto itr = typePairs.find(s->typeId);
-        if(itr == typePairs.end()) 
-            return S_OK;
-        return Adhesion_force_Surface(s, (Vertex*)target, lam, itr->second, f);
-    }
-    return S_OK;
+static FVector3 Adhesion_force_Surface(const Surface *s, const Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes) {
+    Vertex *vp, *vn;
+    std::tie(vp, vn) = s->neighborVertices(v);
+
+    size_t count_vp = 0, count_vn = 0;
+    countNeighborSurfaces(s, v, vp, vn, targetTypes, count_vp, count_vn);
+    if(count_vp + count_vn == 0) 
+        return FVector3(0);
+
+    const FVector3 posv = v->getPosition();
+    FVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), posv);
+    FVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), posv);
+
+    FVector3 force(0);
+
+    if(!posvp_rel.isZero()) 
+        force += posvp_rel.normalized() * count_vp;
+    if(!posvn_rel.isZero()) 
+        force += posvn_rel.normalized() * count_vn;
+
+    return lam * force;
+}
+
+FloatP_t Adhesion::energy(const Surface *source, const Vertex *target) {
+    auto itr = typePairs.find(source->typeId);
+    if(itr == typePairs.end()) 
+        return 0;
+    return Adhesion_energy_Surface(source, target, lam, itr->second);
+}
+
+FVector3 Adhesion::force(const Surface *source, const Vertex *target) {
+    auto itr = typePairs.find(source->typeId);
+    if(itr == typePairs.end()) 
+        return FVector3(0);
+    return Adhesion_force_Surface(source, target, lam, itr->second);
+}
+
+FloatP_t Adhesion::energy(const Body *source, const Vertex *target) {
+    auto itr = typePairs.find(source->typeId);
+    if(itr == typePairs.end()) 
+        return 0;
+    return Adhesion_energy_Body(source, target, lam, itr->second);
+}
+
+FVector3 Adhesion::force(const Body *source, const Vertex *target) {
+    auto itr = typePairs.find(source->typeId);
+    if(itr == typePairs.end()) 
+        return FVector3(0);
+    return Adhesion_force_Body(source, target, lam, itr->second);
 }
 
 namespace TissueForge::io { 

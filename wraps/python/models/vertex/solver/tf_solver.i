@@ -29,18 +29,6 @@
 
 %inline %{
 
-static int _vertex_solver_MeshObj_getObjId(const TissueForge::models::vertex::MeshObj *self) {
-    return self->objId;
-}
-
-static bool _vertex_solver_MeshObj_in(const TissueForge::models::vertex::MeshObj *self, const TissueForge::models::vertex::MeshObj *obj) {
-    return self->in(obj);
-}
-
-static bool _vertex_solver_MeshObj_has(const TissueForge::models::vertex::MeshObj *self, const TissueForge::models::vertex::MeshObj *obj) {
-    return self->has(obj);
-}
-
 static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::MeshObjType *self) {
     return self->id;
 }
@@ -48,15 +36,17 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 %}
 
 
-// todo: correct so that this isn't necessary
-%ignore TissueForge::models::vertex::MeshObjActor::energy(const MeshObj *, const MeshObj *, FloatP_t &);
-%ignore TissueForge::models::vertex::MeshObjActor::force(const MeshObj *, const MeshObj *, FloatP_t *);
-
 %rename(_vertex_solver_edgeStrain) TissueForge::models::vertex::edgeStrain;
 %rename(_vertex_solver_vertexStrain) TissueForge::models::vertex::vertexStrain;
 
 
 %import <models/vertex/solver/tfMeshObj.h>
+
+%define vertex_solver_MeshObj_prep_py(name) 
+
+%rename(_objectId) name::objectId;
+
+%enddef
 
 %define vertex_solver_MeshObj_extend_py(name) 
 
@@ -85,13 +75,7 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 
         @property
         def id(self) -> int:
-            return _vertex_solver_MeshObj_getObjId(self)
-
-        def is_in(self, _obj) -> bool:
-            return _vertex_solver_MeshObj_in(self, _obj)
-
-        def has(self, _obj) -> bool:
-            return _vertex_solver_MeshObj_has(self, _obj)
+            return self._objectId()
     %}
 }
 

@@ -42,9 +42,9 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "NormalStress"; }
 
-        HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) override;
+        FloatP_t energy(const Surface *source, const Vertex *target) override;
 
-        HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) override;
+        FVector3 force(const Surface *source, const Vertex *target) override;
 
         /**
          * @brief Create from a JSON string representation. 

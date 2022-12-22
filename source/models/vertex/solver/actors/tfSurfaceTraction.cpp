@@ -26,24 +26,16 @@
 #include <io/tfFIO.h>
 
 
+using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT SurfaceTraction::energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) {
-    FVector3 fv;
-    force(source, target, fv.data());
-    e = fv.dot(((Vertex*)target)->particle()->getVelocity()) * _Engine.dt;
-    return S_OK;
+FloatP_t SurfaceTraction::energy(const Surface *source, const Vertex *target) {
+    return force(source, target).dot(target->getVelocity()) * _Engine.dt;
 }
 
-HRESULT SurfaceTraction::force(const MeshObj *source, const MeshObj *target, FloatP_t *f) {
-    Surface *s = (Surface*)source;
-    Vertex *v = (Vertex*)target;
-    FVector3 vForce = comps * s->getVertexArea(v);
-    f[0] += vForce[0];
-    f[1] += vForce[1];
-    f[2] += vForce[2];
-    return S_OK;
+FVector3 SurfaceTraction::force(const Surface *source, const Vertex *target) {
+    return comps * source->getVertexArea(target);
 }
 
 namespace TissueForge::io { 

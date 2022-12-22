@@ -22,8 +22,6 @@
 #include <models/vertex/solver/actors/tfNormalStress.h>
 %}
 
-vertex_solver_MeshObjActor_particularize(NormalStress, Surface, Vertex)
-
 %rename(_vertex_solver_NormalStress) TissueForge::models::vertex::NormalStress;
 
 %include <models/vertex/solver/actors/tfNormalStress.h>

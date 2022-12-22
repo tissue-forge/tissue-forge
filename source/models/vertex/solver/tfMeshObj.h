@@ -21,6 +21,7 @@
 #define _MODELS_VERTEX_SOLVER_TFMESHOBJ_H_
 
 #include <tf_platform.h>
+#include <types/tf_types.h>
 
 #include <iostream>
 #include <unordered_set>
@@ -32,69 +33,55 @@ namespace TissueForge::models::vertex {
 
 
     class Mesh;
+    class Vertex;
+    class Surface;
+    class Body;
 
-
-    /**
-     * @brief Base mesh object definition. 
-     * 
-     * All objects that can go into a mesh should derive from this class.
-     */
-    struct MeshObj { 
-
-        /** Mesh object type enum */
-        enum Type : unsigned int {
-            NONE        = 0, 
-            VERTEX      = 1, 
-            SURFACE     = 2, 
-            BODY        = 3
-        };
-
-        /** Object id; unique by type in a mesh */
-        int objId;
-
-        /** Object actors */
-        std::vector<struct MeshObjActor*> actors;
-
-        MeshObj();
-        virtual ~MeshObj() {};
-
-        /** Get the mesh object type */
-        virtual MeshObj::Type objType() const = 0;
-
-        /** Current parent objects. */
-        virtual std::vector<MeshObj*> parents() const = 0;
-
-        /** Current child objects. Child objects require this object as part of their definition. */
-        virtual std::vector<MeshObj*> children() const = 0;
-
-        /** Add a child object */
-        virtual HRESULT addChild(MeshObj *obj) = 0;
-
-        /** Add a parent object */
-        virtual HRESULT addParent(MeshObj *obj) = 0;
-
-        /** Remove a child object */
-        virtual HRESULT removeChild(MeshObj *obj) = 0;
-
-        /** Remove a parent object */
-        virtual HRESULT removeParent(MeshObj *obj) = 0;
-
-        /** Get a summary string */
-        virtual std::string str() const = 0;
-
-        /** Destroy the object */
-        virtual HRESULT destroy() = 0;
-
-        /** Validate state of object for deployment in a mesh */
-        virtual bool validate() = 0;
-
-        /** Test whether this object is in another object */
-        bool in(const MeshObj *obj) const;
-
-        /** Test whether this object has another object */
-        bool has(const MeshObj *obj) const;
-
+    /** Mesh object type enum */
+    enum MeshObjTypeLabel : unsigned int {
+        NONE        = 0, 
+        VERTEX      = 1, 
+        SURFACE     = 2, 
+        BODY        = 3
     };
+
+    #define MESHOBJ_CLASSDEF(oType)                                 \
+                                                                    \
+        const int objectId() const { return _objId; }               \
+                                                                    \
+        /** Get the mesh object type */                             \
+        MeshObjTypeLabel objType() const { return oType; }          \
+                                                                    \
+        /** Destroy the body. */                                    \
+        HRESULT destroy();                                          \
+                                                                    \
+        /** Validate the body */                                    \
+        bool validate();                                            \
+                                                                    \
+        /** Update internal data due to a change in position */     \
+        HRESULT positionChanged();
+
+    #define MESHOBJ_INITOBJ                         \
+        _objId = -1;
+
+    #define MESHOBJ_DELOBJ
+
+    #define MESHBOJ_DEFINES_DECL(childType)         \
+        bool defines(const childType *obj) const;   \
+
+    #define MESHBOJ_DEFINES_DEF(parentAccessor)     \
+        if(!obj)                                    \
+            return false;                           \
+        for(auto &p : obj->parentAccessor())        \
+            if(p->objectId() == this->objectId())   \
+                return true;                        \
+        return false;
+
+    #define MESHOBJ_DEFINEDBY_DECL(parentType)          \
+        bool definedBy(const parentType *obj) const;
+
+    #define MESHOBJ_DEFINEDBY_DEF                       \
+        return obj && obj->defines(this);
 
 
     /**
@@ -108,8 +95,8 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "MeshObjActor"; }
 
-        template <typename T> 
-        static std::vector<T*> get(MeshObj *obj) {
+        template <typename T, typename O> 
+        static std::vector<T*> get(O *obj) {
             std::vector<T*> result;
             if(!obj) 
                 return result;
@@ -140,7 +127,7 @@ namespace TissueForge::models::vertex {
          * @param target target object
          * @param e energy 
          */
-        virtual HRESULT energy(const MeshObj *source, const MeshObj *target, FloatP_t &e) { return S_OK; }
+        virtual FloatP_t energy(const Surface *source, const Vertex *target) { return 0; }
 
         /**
          * @brief Calculate the force that a source object exerts on a target object
@@ -149,7 +136,25 @@ namespace TissueForge::models::vertex {
          * @param target target object
          * @param f force
          */
-        virtual HRESULT force(const MeshObj *source, const MeshObj *target, FloatP_t *f) { return S_OK; }
+        virtual FVector3 force(const Surface *source, const Vertex *target) { return FVector3(0); }
+
+        /**
+         * @brief Calculate the energy of a source object acting on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param e energy 
+         */
+        virtual FloatP_t energy(const Body *source, const Vertex *target) { return 0; }
+
+        /**
+         * @brief Calculate the force that a source object exerts on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param f force
+         */
+        virtual FVector3 force(const Body *source, const Vertex *target) { return FVector3(0); }
 
     };
 
@@ -168,7 +173,7 @@ namespace TissueForge::models::vertex {
         std::vector<MeshObjActor*> actors;
 
         /** Get the mesh object type */
-        virtual MeshObj::Type objType() const = 0;
+        virtual MeshObjTypeLabel objType() const = 0;
 
         /** Get a summary string */
         virtual std::string str() const = 0;
@@ -200,19 +205,6 @@ namespace TissueForge::models::vertex {
 
     };
 
-}
-
-
-inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::vertex::MeshObj &o)
-{
-    os << o.str().c_str();
-    return os;
-}
-
-inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::vertex::MeshObjType &o)
-{
-    os << o.str().c_str();
-    return os;
 }
 
 #endif // _MODELS_VERTEX_SOLVER_TFMESHOBJ_H_
