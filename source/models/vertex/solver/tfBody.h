@@ -33,9 +33,12 @@ namespace TissueForge::models::vertex {
 
 
     class Vertex;
+    struct VertexHandle;
     class Surface;
+    struct SurfaceHandle;
     class Mesh;
 
+    struct BodyHandle;
     struct BodyType;
     struct SurfaceType;
 
@@ -75,8 +78,6 @@ namespace TissueForge::models::vertex {
         /** mass density */
         FloatP_t density;
 
-        void _updateInternal();
-
     public:
 
         /** Object actors */
@@ -89,10 +90,10 @@ namespace TissueForge::models::vertex {
         ~Body();
 
         /** Construct a body from a set of surfaces */
-        static Body *create(std::vector<Surface*> _surfaces);
+        static BodyHandle create(const std::vector<SurfaceHandle> &_surfaces);
 
         /** Construct a body from a mesh */
-        static Body *create(TissueForge::io::ThreeDFMeshData *ioMesh);
+        static BodyHandle create(TissueForge::io::ThreeDFMeshData *ioMesh);
 
         MESHOBJ_DEFINEDBY_DECL(Vertex);
         MESHOBJ_DEFINEDBY_DECL(Surface);
@@ -103,6 +104,9 @@ namespace TissueForge::models::vertex {
 
         /** Get a JSON string representation */
         std::string toString();
+
+        /** Update all internal data and parents */
+        void updateInternals();
 
         /** Add a surface */
         HRESULT add(Surface *s);
@@ -119,6 +123,13 @@ namespace TissueForge::models::vertex {
          * Any resulting surfaces without a body are also destroyed. 
          */
         static HRESULT destroy(Body *target);
+
+        /**
+         * Destroy a body. 
+         * 
+         * Any resulting surfaces without a body are also destroyed. 
+         */
+        static HRESULT destroy(BodyHandle &target);
 
         /** Get the body type */
         BodyType *type() const;
@@ -208,11 +219,153 @@ namespace TissueForge::models::vertex {
          */
         Body *split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype=NULL);
 
-        
+
+        friend BodyHandle;
         friend Vertex;
         friend Mesh;
         friend BodyType;
 
+    };
+
+
+    struct CAPI_EXPORT BodyHandle {
+
+        int id;
+
+        BodyHandle(const int &_id=-1);
+
+        /** Get the underlying object, if any */
+        Body *body() const;
+
+        bool definedBy(const VertexHandle &v) const;
+
+        bool definedBy(const SurfaceHandle &s) const;
+
+        /** Get the mesh object type */
+        MeshObjTypeLabel objType() const { return MeshObjTypeLabel::BODY; }
+
+        /** Destroy the body. */
+        HRESULT destroy();
+
+        /** Validate the body */
+        bool validate();
+
+        /** Update internal data due to a change in position */
+        HRESULT positionChanged();
+
+        /** Get a summary string */
+        std::string str() const;
+
+        /** Get a JSON string representation */
+        std::string toString();
+
+        /** Create an instance from a JSON string representation */
+        static BodyHandle fromString(const std::string &s);
+
+        /** Add a surface */
+        HRESULT add(const SurfaceHandle &s);
+
+        /** Remove a surface */
+        HRESULT remove(const SurfaceHandle &s);
+
+        /** Replace a surface a surface */
+        HRESULT replace(const SurfaceHandle &toInsert, const SurfaceHandle &toRemove);
+
+        /** Get the body type */
+        BodyType *type() const;
+
+        /** Become a different type */
+        HRESULT become(BodyType *btype);
+
+        /** Get the surfaces that define the body */
+        std::vector<SurfaceHandle> getSurfaces() const;
+
+        /** Get the vertices that define the body */
+        std::vector<VertexHandle> getVertices() const;
+
+        /**
+         * @brief Find a vertex that defines this body
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
+        VertexHandle findVertex(const FVector3 &dir) const;
+
+        /**
+         * @brief Find a surface that defines this body
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
+        SurfaceHandle findSurface(const FVector3 &dir) const;
+
+        /**
+         * Get the neighboring bodies. 
+         * 
+         * A body is a neighbor if it shares a surface.
+         */
+        std::vector<BodyHandle> neighborBodies() const;
+
+        /**
+         * Get the neighboring surfaces of a surface on this body.
+         * 
+         * Two surfaces are a neighbor on this body if they define the body and share a vertex
+         */
+        std::vector<SurfaceHandle> neighborSurfaces(const SurfaceHandle &s) const;
+
+        /** Get the mass density */
+        FloatP_t getDensity() const;
+
+        /** Set the mass density */
+        void setDensity(const FloatP_t &_density);
+
+        /** Get the centroid */
+        FVector3 getCentroid() const;
+
+        /** Get the velocity, calculated as the velocity of the centroid */
+        FVector3 getVelocity() const;
+
+        /** Get the surface area */
+        FloatP_t getArea() const;
+
+        /** Get the volume */
+        FloatP_t getVolume() const;
+
+        /** Get the mass */
+        FloatP_t getMass() const;
+
+        /** Get the surface area contribution of a vertex to this body */
+        FloatP_t getVertexArea(const VertexHandle &v) const;
+
+        /** Get the volume contribution of a vertex to this body */
+        FloatP_t getVertexVolume(const VertexHandle &v) const;
+
+        /** Get the mass contribution of a vertex to this body */
+        FloatP_t getVertexMass(const VertexHandle &v) const;
+
+        /** Get the amount of species in the enclosed volume, if any */
+        state::StateVector *getSpecies() const;
+
+        /** Set the amount of species in the enclosed volume */
+        HRESULT setSpecies(state::StateVector *s) const;
+
+        /** Get the surfaces that define the interface between this body and another body */
+        std::vector<SurfaceHandle> findInterface(const BodyHandle &b) const;
+
+        /** Get the contacting surface area of this body with another body */
+        FloatP_t contactArea(const BodyHandle &other) const;
+
+        /** Test whether a point is outside. Test is performed using the nearest surface */
+        bool isOutside(const FVector3 &pos) const;
+
+        /**
+         * @brief Split into two bodies. The split is defined by a cut plane
+         * 
+         * @param cp_pos position on the cut plane
+         * @param cp_norm cut plane normal
+         * @param stype type of newly created surface. taken from connected surfaces if not specified
+         */
+        BodyHandle split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype=NULL);
+
+        operator bool() const { return id >= 0; }
     };
 
 
@@ -280,13 +433,13 @@ namespace TissueForge::models::vertex {
         virtual BodyType *get();
 
         /** Add an instance */
-        HRESULT add(Body *i);
+        HRESULT add(const BodyHandle &i);
 
         /** Remove an instance */
-        HRESULT remove(Body *i);
+        HRESULT remove(const BodyHandle &i);
 
         /** list of instances that belong to this type */    
-        std::vector<Body*> getInstances();
+        std::vector<BodyHandle> getInstances();
 
         /** list of instances ids that belong to this type */
         std::vector<int> getInstanceIds() { return _instanceIds; }
@@ -295,19 +448,19 @@ namespace TissueForge::models::vertex {
         unsigned int getNumInstances();
 
         /** Construct a body of this type from a set of surfaces */
-        Body *operator() (std::vector<Surface*> surfaces);
+        BodyHandle operator() (const std::vector<SurfaceHandle> &surfaces);
 
         /** Construct a body of this type from a mesh */
-        Body *operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceType *stype);
+        BodyHandle operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceType *stype);
 
         /** Create a body from a surface in the mesh and a position */
-        Body *extend(Surface *base, const FVector3 &pos);
+        BodyHandle extend(const SurfaceHandle &base, const FVector3 &pos);
 
         /** Create a body from a surface in a mesh by extruding along the outward-facing normal of the surface
          * 
          * todo: add support for extruding at an angle
         */
-        Body *extrude(Surface *base, const FloatP_t &normLen);
+        BodyHandle extrude(const SurfaceHandle &base, const FloatP_t &normLen);
 
     private:
 
@@ -321,6 +474,13 @@ namespace TissueForge::models::vertex {
     inline bool operator>=(const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return !(lhs < rhs); }
     inline bool operator==(const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return lhs.objectId() == rhs.objectId(); }
     inline bool operator!=(const TissueForge::models::vertex::Body& lhs, const TissueForge::models::vertex::Body& rhs) { return !(lhs == rhs); }
+
+    inline bool operator< (const TissueForge::models::vertex::BodyHandle& lhs, const TissueForge::models::vertex::BodyHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::models::vertex::BodyHandle& lhs, const TissueForge::models::vertex::BodyHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::models::vertex::BodyHandle& lhs, const TissueForge::models::vertex::BodyHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::models::vertex::BodyHandle& lhs, const TissueForge::models::vertex::BodyHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::models::vertex::BodyHandle& lhs, const TissueForge::models::vertex::BodyHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::models::vertex::BodyHandle& lhs, const TissueForge::models::vertex::BodyHandle& rhs) { return !(lhs == rhs); }
 
     inline bool operator< (const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return lhs.id < rhs.id; }
     inline bool operator> (const TissueForge::models::vertex::BodyType& lhs, const TissueForge::models::vertex::BodyType& rhs) { return rhs < lhs; }

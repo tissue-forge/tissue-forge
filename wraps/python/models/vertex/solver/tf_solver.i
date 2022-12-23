@@ -56,7 +56,7 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 
 %enddef
 
-%define vertex_solver_MeshObj_extend_py(name) 
+%define vertex_solver_MeshObj_comparisons_py(name) 
 
 %extend name {
     %pythoncode %{
@@ -77,7 +77,17 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 
         def __ne__(self, rhs) -> bool:
             return not (self == rhs)
+    %}
+}
 
+%enddef
+
+%define vertex_solver_MeshObj_extend_py(name) 
+
+vertex_solver_MeshObj_comparisons_py(name);
+
+%extend name {
+    %pythoncode %{
         def __str__(self) -> str:
             return self.str()
 
@@ -89,7 +99,22 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 
 %enddef
 
+%define vertex_solver_MeshObjHandle_extend_py(name) 
+
+vertex_solver_MeshObj_comparisons_py(name);
+
+%extend name {
+    %pythoncode %{
+        def __str__(self) -> str:
+            return self.str()
+    %}
+}
+
+%enddef
+
 %define vertex_solver_MeshObjType_extend_py(name) 
+
+vertex_solver_MeshObj_comparisons_py(name)
 
 %extend name {
     %pythoncode %{
@@ -122,24 +147,6 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
         def __contains__(self, item):
             return item in self.instances
 
-        def __lt__(self, rhs) -> bool:
-            return self.id < rhs.id
-
-        def __gt__(self, rhs) -> bool:
-            return rhs < self
-
-        def __le__(self, rhs) -> bool:
-            return not (self > rhs)
-
-        def __ge__(self, rhs) -> bool:
-            return not (self < rhs)
-
-        def __eq__(self, rhs) -> bool:
-            return self.id == rhs.id
-
-        def __ne__(self, rhs) -> bool:
-            return not (self == rhs)
-
         def __str__(self) -> str:
             return self.str()
 
@@ -150,6 +157,28 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 }
 
 %enddef
+
+// Specify basic templates now for consistency throughout
+
+%{
+
+#include <models/vertex/solver/tfBody.h>
+#include <models/vertex/solver/tfSurface.h>
+#include <models/vertex/solver/tfVertex.h>
+%}
+
+%template(vectorMeshVertex) std::vector<TissueForge::models::vertex::Vertex*>;
+%template(vectorMeshVertexHandle) std::vector<TissueForge::models::vertex::VertexHandle>;
+
+%template(vectorMeshSurface) std::vector<TissueForge::models::vertex::Surface*>;
+%template(vectorvectorMeshSurface) std::vector<std::vector<TissueForge::models::vertex::Surface*> >;
+%template(vectorMeshSurfaceHandle) std::vector<TissueForge::models::vertex::SurfaceHandle>;
+%template(vectorvectorMeshSurfaceHandle) std::vector<std::vector<TissueForge::models::vertex::SurfaceHandle> >;
+
+%template(vectorMeshBody) std::vector<TissueForge::models::vertex::Body*>;
+%template(vectorvectorvectorMeshBody) std::vector<std::vector<std::vector<TissueForge::models::vertex::Body*> > >;
+%template(vectorMeshBodyHandle) std::vector<TissueForge::models::vertex::BodyHandle>;
+%template(vectorvectorvectorMeshBodyHandle) std::vector<std::vector<std::vector<TissueForge::models::vertex::BodyHandle> > >;
 
 %include "tfMeshLogger.i"
 %include "tfVertex.i"

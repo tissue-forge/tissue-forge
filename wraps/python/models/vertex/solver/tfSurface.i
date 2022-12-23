@@ -22,16 +22,12 @@
 #include <models/vertex/solver/tfSurface.h>
 %}
 
-%template(vectorMeshSurface) std::vector<TissueForge::models::vertex::Surface*>;
-%template(vectorvectorMeshSurface) std::vector<std::vector<TissueForge::models::vertex::Surface*> >;
-
 vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 
-%rename(_extend) TissueForge::models::vertex::Surface::extend(const unsigned int&, const FVector3&);
-%rename(_extrude) TissueForge::models::vertex::Surface::extrude(const unsigned int&, const FloatP_t&);
-%rename(_split_vertices) TissueForge::models::vertex::Surface::split(Vertex*, Vertex*);
-%rename(_split_cpvecs) TissueForge::models::vertex::Surface::split(const FVector3&, const FVector3&);
-%rename(destroy_c) TissueForge::models::vertex::Surface::destroy(Surface*);
+/////////////
+// Surface //
+/////////////
+
 %rename(refresh_bodies) TissueForge::models::vertex::Surface::refreshBodies;
 %rename(find_vertex) TissueForge::models::vertex::Surface::findVertex;
 %rename(find_body) TissueForge::models::vertex::Surface::findBody;
@@ -49,11 +45,45 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(position_changed) TissueForge::models::vertex::Surface::positionChanged;
 
 %rename(_neighborSurfaces) TissueForge::models::vertex::Surface::neighborSurfaces;
+%rename(_destroy_o) TissueForge::models::vertex::Surface::destroy(Surface*);
+%rename(_destroy_h) TissueForge::models::vertex::Surface::destroy(SurfaceHandle&);
+%rename(_sew_o1) TissueForge::models::vertex::Surface::sew(Surface*, Surface*, const FloatP_t&);
+%rename(_sew_o2) TissueForge::models::vertex::Surface::sew(std::vector<Surface*>, const FloatP_t&);
+%rename(_sew_h1) TissueForge::models::vertex::Surface::sew(const SurfaceHandle&, const SurfaceHandle&, const FloatP_t&);
+%rename(_sew_h2) TissueForge::models::vertex::Surface::sew(std::vector<SurfaceHandle>, const FloatP_t&);
+
+///////////////////
+// SurfaceHandle //
+///////////////////
+
+%rename(_surface) TissueForge::models::vertex::SurfaceHandle::surface;
+%rename(refresh_bodies) TissueForge::models::vertex::SurfaceHandle::refreshBodies;
+%rename(find_vertex) TissueForge::models::vertex::SurfaceHandle::findVertex;
+%rename(find_body) TissueForge::models::vertex::SurfaceHandle::findBody;
+%rename(neighbor_vertices) TissueForge::models::vertex::SurfaceHandle::neighborVertices;
+%rename(connected_surfaces) TissueForge::models::vertex::SurfaceHandle::connectedSurfaces;
+%rename(contiguous_edge_labels) TissueForge::models::vertex::SurfaceHandle::contiguousEdgeLabels;
+%rename(num_shared_contiguous_edges) TissueForge::models::vertex::SurfaceHandle::numSharedContiguousEdges;
+%rename(volume_sense) TissueForge::models::vertex::SurfaceHandle::volumeSense;
+%rename(get_volume_contr) TissueForge::models::vertex::SurfaceHandle::getVolumeContr;
+%rename(get_outward_normal) TissueForge::models::vertex::SurfaceHandle::getOutwardNormal;
+%rename(get_vertex_area) TissueForge::models::vertex::SurfaceHandle::getVertexArea;
+%rename(triangle_normal) TissueForge::models::vertex::SurfaceHandle::triangleNormal;
+%rename(normal_distance) TissueForge::models::vertex::SurfaceHandle::normalDistance;
+%rename(is_outside) TissueForge::models::vertex::SurfaceHandle::isOutside;
+%rename(position_changed) TissueForge::models::vertex::SurfaceHandle::positionChanged;
+
+%rename(_neighborSurfaces) TissueForge::models::vertex::SurfaceHandle::neighborSurfaces;
+
+/////////////////
+// SurfaceType //
+/////////////////
+
 %rename(_isRegistered) TissueForge::models::vertex::SurfaceType::isRegistered;
 %rename(_getInstances) TissueForge::models::vertex::SurfaceType::getInstances;
 %rename(_getInstanceIds) TissueForge::models::vertex::SurfaceType::getInstanceIds;
 %rename(_getNumInstances) TissueForge::models::vertex::SurfaceType::getNumInstances;
-%rename(_operator_vertices) TissueForge::models::vertex::SurfaceType::operator() (std::vector<Vertex*>);
+%rename(_operator_vertices) TissueForge::models::vertex::SurfaceType::operator() (const std::vector<VertexHandle>&);
 %rename(_operator_positions) TissueForge::models::vertex::SurfaceType::operator() (const std::vector<FVector3>&);
 %rename(_operator_iofacedata) TissueForge::models::vertex::SurfaceType::operator() (io::ThreeDFFaceData*);
 %rename(_n_polygon) TissueForge::models::vertex::SurfaceType::nPolygon;
@@ -63,11 +93,13 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(register_type) TissueForge::models::vertex::SurfaceType::registerType;
 
 %rename(_vertex_solver_Surface) TissueForge::models::vertex::Surface;
+%rename(_vertex_solver_SurfaceHandle) TissueForge::models::vertex::SurfaceHandle;
 %rename(_vertex_solver_SurfaceType) TissueForge::models::vertex::SurfaceType;
 
 %include <models/vertex/solver/tfSurface.h>
 
 vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Surface)
+vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::SurfaceHandle)
 vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
 
 %extend TissueForge::models::vertex::Surface {
@@ -120,56 +152,152 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
         def adhesions(self):
             return _vertex_solver_MeshObjActor_getAdhesion(self)
 
-        def extend(self, vert_idx_start: int, position):
+        @classmethod
+        def destroy_c(cls, s):
             """
-            Create a surface from two vertices and a position
+            Destroy a surface. 
+            
+            Any resulting vertices without a surface are also destroyed. 
 
-            :param vert_idx_start: index of first vertex; the next vertex is the second vertex
-            :param position: position of third vertex
+            :param s: surface to destroy or its handle
             """
-            if not isinstance(position, FVector3):
-                position = FVector3(*position)
-            result = self._extend(vert_idx_start, position)
-            if result is not None:
-                result.thisown = 0
-            return result
 
-        def extrude(self, norm_len: float):
+            if isinstance(s, _vertex_solver_Surface):
+                return cls._destroy_o(s)
+            elif isinstance(s, _vertex_solver_SurfaceHandle):
+                return cls._destroy_h(s)
+            else:
+                raise TypeError
+
+        @classmethod
+        def sew(cls, s1=None, s2=None, surfs=None, dist_cf: float = None):
             """
-            Create a surface from two vertices of a surface in a mesh by extruding along the normal of the surface
+            Sew either two surfaces or a set of surfaces. 
+        
+            All vertices are merged that are a distance apart less than a distance criterion. 
+            
+            The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
 
-            :param norm_len: length along the normal to extrude
+            :param s1: the surface or its handle
+            :param s2: another surface or its handle
+            :param surfs: a set of surfaces or their handles
+            :param dist_cf: distance criterion coefficient
             """
-            result = self._extrude(norm_len)
-            if result is not None:
-                result.thisown = 0
-            return result
+            func = None
+            args = []
 
-        def split(self, v1=None, v2=None, cp_pos=None, cp_norm=None):
-            """
-            Split into two surfaces using either two vertices of the surface or a cut plane. 
+            if (s1 is not None and s2 is None) or (s1 is None and s2 is not None) or (s1 is None and surfs is None):
+                raise ValueError
+            elif s1 is not None and type(s1) != type(s2):
+                raise TypeError
 
-            Either both vertices or the cut plane position and normal must be specified.
+            if s1 is not None:
+                args.extend([s1, s2])
 
-            :param v1: first vertex of the split
-            :param v2: second vertex of the split
-            :param cp_pos: point on the cut plane
-            :param cp_norm: normal of the cut plane
-            """
-            result = None
+                if isinstance(s1, _vertex_solver_Surface):
+                    func = cls._sew_o1
+                if isinstance(s1, _vertex_solver_SurfaceHandle):
+                    func = cls._sew_h1
+                else:
+                    raise TypeError
+            else:
+                args.append(surfs)
+                if isinstance(surfs[0], _vertex_solver_Surface):
+                    func = cls._sew_o2
+                elif isinstance(surfs[0], _vertex_solver_SurfaceHandle):
+                    func = cls._sew_h2
+                else:
+                    raise TypeError
 
-            if v1 is not None and v2 is not None:
-                result = self._split_vertices(v1, v2)
-            elif cp_pos is not None and cp_norm is not None:
-                if not isinstance(cp_pos, FVector3):
-                    cp_pos = FVector3(*cp_pos)
-                if not isinstance(cp_norm, FVector3):
-                    cp_norm = FVector3(*cp_norm)
-                result = self._split_cpvecs(cp_pos, cp_norm)
+            if dist_cf is not None:
+                args.append(dist_cf)
 
-            if result is not None:
-                result.thisown = 0
-            return result
+            return func(*args)
+    %}
+}
+
+%extend TissueForge::models::vertex::SurfaceHandle {
+    %pythoncode %{
+        @property
+        def surface(self):
+            return self._surface()
+
+        @property
+        def bodies(self):
+            return self.getBodies()
+
+        @property
+        def vertices(self):
+            return self.getVertices()
+
+        @property
+        def neighbor_surfaces(self):
+            return self._neighborSurfaces()
+
+        @property
+        def normal(self):
+            return self.getNormal()
+
+        @property
+        def centroid(self):
+            return self.getCentroid()
+
+        @property
+        def velocity(self):
+            return self.getVelocity()
+
+        @property
+        def area(self):
+            return self.getArea()
+
+        @property
+        def species_outward(self):
+            return self.getSpeciesOutward()
+
+        @species_outward.setter
+        def species_outward(self, _s):
+            self.setSpeciesOutward(_s)
+
+        @property
+        def species_inward(self):
+            return self.getSpeciesInward()
+
+        @species_inward.setter
+        def species_inward(self, _s):
+            self.setSpeciesInward(_s)
+
+        @property
+        def style(self):
+            return self.getStyle()
+
+        @style.setter
+        def style(self, _s):
+            self.setStyle(_s)
+
+        @property
+        def normal_stresses(self):
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getNormalStress(o) if o is not None else None
+
+        @property
+        def surface_area_constraints(self):
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(o) if o is not None else None
+
+        @property
+        def surface_tractions(self):
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getSurfaceTraction(o) if o is not None else None
+
+        @property
+        def edge_tensions(self):
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getEdgeTension(o) if o is not None else None
+
+        @property
+        def adhesions(self):
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getAdhesion(o) if o is not None else None
     %}
 }
 

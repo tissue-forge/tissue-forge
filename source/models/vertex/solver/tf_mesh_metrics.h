@@ -31,14 +31,14 @@ namespace TissueForge::models::vertex {
 
 
 /** Calculate the strain in a edge defined by two vertices*/
-FMatrix3 edgeStrain(Vertex *v1, Vertex *v2);
+FMatrix3 edgeStrain(const VertexHandle &v1, const VertexHandle &v2);
 
 /**
  * Calculate the strain in a vertex. 
  * 
  * Uses a weighted average of edge strains, with a preference for closer measurements. 
  */
-FMatrix3 vertexStrain(Vertex *v);
+FMatrix3 vertexStrain(const VertexHandle &v);
 
 
 };

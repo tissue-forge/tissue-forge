@@ -36,9 +36,12 @@ namespace TissueForge::models::vertex {
 
 
     class Vertex;
+    struct VertexHandle;
     class Body;
+    struct BodyHandle;
     class Mesh;
 
+    struct SurfaceHandle;
     struct SurfaceType;
     struct BodyType;
 
@@ -103,10 +106,10 @@ namespace TissueForge::models::vertex {
         ~Surface();
 
         /** Construct a surface from a set of vertices */
-        static Surface *create(std::vector<Vertex*> _vertices);
+        static SurfaceHandle create(const std::vector<VertexHandle> &_vertices);
 
         /** Construct a surface from a face */
-        static Surface *create(TissueForge::io::ThreeDFFaceData *face);
+        static SurfaceHandle create(TissueForge::io::ThreeDFFaceData *face);
 
         MESHBOJ_DEFINES_DECL(Body);
         MESHOBJ_DEFINEDBY_DECL(Vertex);
@@ -157,6 +160,13 @@ namespace TissueForge::models::vertex {
          * Any resulting vertices without a surface are also destroyed. 
          */
         static HRESULT destroy(Surface *target);
+
+        /**
+         * Destroy a surface. 
+         * 
+         * Any resulting vertices without a surface are also destroyed. 
+         */
+        static HRESULT destroy(SurfaceHandle &target);
 
         /** Refresh internal ordering of defined bodies */
         HRESULT refreshBodies();
@@ -248,6 +258,14 @@ namespace TissueForge::models::vertex {
         */
         static HRESULT sew(Surface *s1, Surface *s2, const FloatP_t &distCf=0.01);
 
+        /** Sew two surfaces 
+         * 
+         * All vertices are merged that are a distance apart less than a distance criterion. 
+         * 
+         * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
+        */
+        static HRESULT sew(const SurfaceHandle &s1, const SurfaceHandle &s2, const FloatP_t &distCf=0.01);
+
         /** Sew a set of surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
@@ -255,6 +273,14 @@ namespace TissueForge::models::vertex {
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
         */
         static HRESULT sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf=0.01);
+
+        /** Sew a set of surfaces 
+         * 
+         * All vertices are merged that are a distance apart less than a distance criterion. 
+         * 
+         * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
+        */
+        static HRESULT sew(std::vector<SurfaceHandle> _surfaces, const FloatP_t &distCf=0.01);
 
         /** Merge with a surface. The passed surface is destroyed. 
          * 
@@ -288,11 +314,214 @@ namespace TissueForge::models::vertex {
         Surface *split(const FVector3 &cp_pos, const FVector3 &cp_norm);
 
 
+        friend SurfaceHandle;
         friend Vertex;
         friend Body;
         friend BodyType;
         friend Mesh;
 
+    };
+
+
+    struct CAPI_EXPORT SurfaceHandle {
+
+        int id;
+
+        SurfaceHandle(const int &_id=-1);
+
+        /** Get the underlying object, if any */
+        Surface *surface() const;
+
+        bool defines(const BodyHandle &b) const;
+
+        bool definedBy(const VertexHandle &v) const;
+
+        /** Get the mesh object type */
+        MeshObjTypeLabel objType() const { return MeshObjTypeLabel::SURFACE; }
+
+        /** Destroy the body. */
+        HRESULT destroy();
+
+        /** Validate the body */
+        bool validate();
+
+        /** Update internal data due to a change in position */
+        HRESULT positionChanged();
+
+        /** Get a summary string */
+        std::string str() const;
+
+        /** Get a JSON string representation */
+        std::string toString();
+
+        /** Create an instance from a JSON string representation */
+        static SurfaceHandle fromString(const std::string &s);
+
+        /** Add a vertex */
+        HRESULT add(const VertexHandle &v);
+
+        /** Insert a vertex at a location in the list of vertices */
+        HRESULT insert(const VertexHandle &v, const int &idx);
+
+        /** Insert a vertex before another vertex */
+        HRESULT insert(const VertexHandle &v, const VertexHandle &before);
+
+        /** Insert a vertex between two vertices */
+        HRESULT insert(const VertexHandle &toInsert, const VertexHandle &v1, const VertexHandle &v2);
+
+        /** Remove a vertex */
+        HRESULT remove(const VertexHandle &v);
+
+        /** Replace a vertex at a location in the list of vertices */
+        HRESULT replace(const VertexHandle &toInsert, const int &idx);
+
+        /** Replace a vertex with another vertex */
+        HRESULT replace(const VertexHandle &toInsert, const VertexHandle &toRemove);
+
+        /** Add a body */
+        HRESULT add(const BodyHandle &b);
+
+        /** Remove a body */
+        HRESULT remove(const BodyHandle &b);
+
+        /** Replace a body at a location in the list of bodies */
+        HRESULT replace(const BodyHandle &toInsert, const int &idx);
+
+        /** Replace a body with another body */
+        HRESULT replace(const BodyHandle &toInsert, const BodyHandle &toRemove);
+
+        /** Refresh internal ordering of defined bodies */
+        HRESULT refreshBodies();
+
+        /** Get the surface type */
+        SurfaceType *type() const;
+
+        /** Become a different type */
+        HRESULT become(SurfaceType *stype);
+
+        /** Get the bodies defined by the surface */
+        std::vector<BodyHandle> getBodies() const;
+
+        /** Get the vertices that define the surface */
+        std::vector<VertexHandle> getVertices() const;
+
+        /**
+         * @brief Find a vertex that defines this surface
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
+        VertexHandle findVertex(const FVector3 &dir) const;
+
+        /**
+         * @brief Find a body that this surface defines
+         * 
+         * @param dir direction to look with respect to the centroid
+         */
+        BodyHandle findBody(const FVector3 &dir) const;
+
+        /** Connected vertices on the same surface. */
+        std::tuple<VertexHandle, VertexHandle> neighborVertices(const VertexHandle &v) const;
+
+        /** Connected surfaces on the same body. */
+        std::vector<SurfaceHandle> neighborSurfaces() const;
+
+        /** Surfaces that share at least one vertex in a set of vertices. */
+        std::vector<SurfaceHandle> connectedSurfaces(const std::vector<VertexHandle> &verts) const;
+
+        /** Surfaces that share at least one vertex. */
+        std::vector<SurfaceHandle> connectedSurfaces() const;
+
+        /** Get the integer labels of the contiguous edges that this surface shares with another surface */
+        std::vector<unsigned int> contiguousEdgeLabels(const SurfaceHandle &other) const;
+
+        /** Get the number of contiguous edges that this surface shares with another surface */
+        unsigned int numSharedContiguousEdges(const SurfaceHandle &other) const;
+
+        /** Get the surface normal */
+        FVector3 getNormal() const;
+
+        /** Get the centroid */
+        FVector3 getCentroid() const;
+
+        /**
+         * Get the velocity, calculated as the velocity of the centroid
+        */
+        FVector3 getVelocity() const;
+
+        /** Get the area */
+        FloatP_t getArea() const;
+
+        /** Get the sign of the volume contribution to a body that this surface contributes */
+        FloatP_t volumeSense(const BodyHandle &body) const;
+
+        /** Get the volume that this surface contributes to a body */
+        FloatP_t getVolumeContr(const BodyHandle &body) const;
+
+        /** Get the outward facing normal w.r.t. a body */
+        FVector3 getOutwardNormal(const BodyHandle &body) const;
+
+        /** Get the area that a vertex contributes to this surface */
+        FloatP_t getVertexArea(const VertexHandle &v) const;
+
+        /** Get the species on outward-facing side of the surface, if any */
+        state::StateVector *getSpeciesOutward() const;
+
+        /** Set the species on outward-facing side of the surface */
+        HRESULT setSpeciesOutward(state::StateVector *s) const;
+
+        /** Get the species on inward-facing side of the surface, if any */
+        state::StateVector *getSpeciesInward() const;
+
+        /** Set the species on inward-facing side of the surface */
+        HRESULT setSpeciesInward(state::StateVector *s) const;
+
+        /** Get the surface style, if any */
+        rendering::Style *getStyle() const;
+
+        /** Set the surface style */
+        HRESULT setStyle(rendering::Style *s) const;
+
+        /** Get the normal of a triangle */
+        FVector3 triangleNormal(const unsigned int &idx) const;
+
+        /** Get the normal distance to a point; negative distance means that the point is on the inner side */
+        FloatP_t normalDistance(const FVector3 &pos) const;
+
+        /** Test whether a point is on the outer side */
+        bool isOutside(const FVector3 &pos) const;
+
+        /** Merge with a surface. The passed surface is destroyed. 
+         * 
+         * Surfaces must have the same number of vertices. Vertices are paired by nearest distance.
+        */
+        HRESULT merge(SurfaceHandle &toRemove, const std::vector<FloatP_t> &lenCfs);
+
+        /** Create a surface from two vertices and a position */
+        SurfaceHandle extend(const unsigned int &vertIdxStart, const FVector3 &pos);
+
+        /** Create a surface from two vertices of a surface in a mesh by extruding along the normal of the surface
+         * 
+         * todo: add support for extruding at an angle w.r.t. the center of the edge and centroid of the base surface
+        */
+        SurfaceHandle extrude(const unsigned int &vertIdxStart, const FloatP_t &normLen);
+
+        /** Split into two surfaces
+         * 
+         * Both vertices must already be in the surface and not adjacent
+         * 
+         * Vertices in the winding from from vertex to second go to newly created surface
+         * 
+         * Requires updated surface members (e.g., centroid)
+        */
+        SurfaceHandle split(const VertexHandle &v1, const VertexHandle &v2);
+
+        /** Split into two surfaces
+         * 
+         * Requires updated surface members (e.g., centroid)
+        */
+        SurfaceHandle split(const FVector3 &cp_pos, const FVector3 &cp_norm);
+
+        operator bool() const { return id >= 0; }
     };
 
 
@@ -369,13 +598,13 @@ namespace TissueForge::models::vertex {
         virtual SurfaceType *get();
 
         /** Add an instance */
-        HRESULT add(Surface *i);
+        HRESULT add(const SurfaceHandle &i);
 
         /** Remove an instance */
-        HRESULT remove(Surface *i);
+        HRESULT remove(const SurfaceHandle &i);
 
         /** list of instances that belong to this type */    
-        std::vector<Surface*> getInstances();
+        std::vector<SurfaceHandle> getInstances();
 
         /** list of instances ids that belong to this type */
         std::vector<int> getInstanceIds() { return _instanceIds; }
@@ -384,19 +613,19 @@ namespace TissueForge::models::vertex {
         unsigned int getNumInstances();
 
         /** Construct a surface of this type from a set of vertices */
-        Surface *operator() (std::vector<Vertex*> _vertices);
+        SurfaceHandle operator() (const std::vector<VertexHandle> &_vertices);
 
         /** Construct a surface of this type from a set of positions */
-        Surface *operator() (const std::vector<FVector3> &_positions);
+        SurfaceHandle operator() (const std::vector<FVector3> &_positions);
 
         /** Construct a surface of this type from a face */
-        Surface *operator() (TissueForge::io::ThreeDFFaceData *face);
+        SurfaceHandle operator() (TissueForge::io::ThreeDFFaceData *face);
 
         /** Construct a polygon with n vertices circumscribed on a circle */
-        Surface *nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2);
+        SurfaceHandle nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2);
 
         /** Replace a vertex with a surface. Vertices are created for the surface along every destroyed edge. */
-        Surface *replace(Vertex *toReplace, std::vector<FloatP_t> lenCfs);
+        SurfaceHandle replace(VertexHandle &toReplace, std::vector<FloatP_t> lenCfs);
 
     private:
 
@@ -410,6 +639,13 @@ namespace TissueForge::models::vertex {
     inline bool operator>=(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return !(lhs < rhs); }
     inline bool operator==(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return lhs.objectId() == rhs.objectId(); }
     inline bool operator!=(const TissueForge::models::vertex::Surface& lhs, const TissueForge::models::vertex::Surface& rhs) { return !(lhs == rhs); }
+
+    inline bool operator< (const TissueForge::models::vertex::SurfaceHandle& lhs, const TissueForge::models::vertex::SurfaceHandle& rhs) { return lhs.id < rhs.id; }
+    inline bool operator> (const TissueForge::models::vertex::SurfaceHandle& lhs, const TissueForge::models::vertex::SurfaceHandle& rhs) { return rhs < lhs; }
+    inline bool operator<=(const TissueForge::models::vertex::SurfaceHandle& lhs, const TissueForge::models::vertex::SurfaceHandle& rhs) { return !(lhs > rhs); }
+    inline bool operator>=(const TissueForge::models::vertex::SurfaceHandle& lhs, const TissueForge::models::vertex::SurfaceHandle& rhs) { return !(lhs < rhs); }
+    inline bool operator==(const TissueForge::models::vertex::SurfaceHandle& lhs, const TissueForge::models::vertex::SurfaceHandle& rhs) { return lhs.id == rhs.id; }
+    inline bool operator!=(const TissueForge::models::vertex::SurfaceHandle& lhs, const TissueForge::models::vertex::SurfaceHandle& rhs) { return !(lhs == rhs); }
 
     inline bool operator< (const TissueForge::models::vertex::SurfaceType& lhs, const TissueForge::models::vertex::SurfaceType& rhs) { return lhs.id < rhs.id; }
     inline bool operator> (const TissueForge::models::vertex::SurfaceType& lhs, const TissueForge::models::vertex::SurfaceType& rhs) { return rhs < lhs; }

@@ -25,14 +25,38 @@ from tissue_forge.tissue_forge import _vertex_solver_bind_types as types
 
 
 def body(*args):
-    from tissue_forge.tissue_forge import _vertex_solver_Body
-    if isinstance(args[1], _vertex_solver_Body):
-        return _bind_body_inst(*args)
-    return _bind_body_type(*args)
+    from tissue_forge.tissue_forge import _vertex_solver_Body, _vertex_solver_BodyHandle
+
+    actor = args[0]
+    _target = args[1]
+    func = None
+    if isinstance(_target, _vertex_solver_Body):
+        target = _vertex_solver_BodyHandle(_target.id)
+        func = _bind_body_inst
+    elif isinstance(_target, _vertex_solver_BodyHandle):
+        target = _target
+        func = _bind_body_inst
+    else:
+        target = _target
+        func = _bind_body_type
+    
+    return func(actor, target)
 
 
 def surface(*args):
-    from tissue_forge.tissue_forge import _vertex_solver_Surface
-    if isinstance(args[1], _vertex_solver_Surface):
-        return _bind_surface_inst(*args)
-    return _bind_surface_type(*args)
+    from tissue_forge.tissue_forge import _vertex_solver_Surface, _vertex_solver_SurfaceHandle
+    
+    actor = args[0]
+    _target = args[1]
+    func = None
+    if isinstance(_target, _vertex_solver_Surface):
+        target = _vertex_solver_SurfaceHandle(_target.id)
+        func = _bind_surface_inst
+    elif isinstance(_target, _vertex_solver_SurfaceHandle):
+        target = _target
+        func = _bind_surface_inst
+    else:
+        target = _target
+        func = _bind_surface_type
+
+    return func(actor, target)

@@ -21,12 +21,15 @@ from . import bind
 from .mesh_types import BodyTypeSpec, SurfaceTypeSpec
 
 from tissue_forge.tissue_forge import _vertex_solver_Body as Body
+from tissue_forge.tissue_forge import _vertex_solver_BodyHandle as BodyHandle
 from tissue_forge.tissue_forge import _vertex_solver_BodyType as BodyType
 from tissue_forge.tissue_forge import _vertex_solver_Mesh as Mesh
 from tissue_forge.tissue_forge import _vertex_solver_MeshSolver as MeshSolver
 from tissue_forge.tissue_forge import _vertex_solver_Surface as Surface
+from tissue_forge.tissue_forge import _vertex_solver_SurfaceHandle as SurfaceHandle
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceType as SurfaceType
 from tissue_forge.tissue_forge import _vertex_solver_Vertex as Vertex
+from tissue_forge.tissue_forge import _vertex_solver_VertexHandle as VertexHandle
 from tissue_forge.tissue_forge import _vertex_solver_Logger as Logger
 from tissue_forge.tissue_forge import _vertex_solver_Quality as Quality
 from tissue_forge.tissue_forge import _vertex_solver_BodyForce as BodyForce

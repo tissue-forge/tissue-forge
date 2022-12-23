@@ -36,13 +36,13 @@ namespace TissueForge::models::vertex {
         CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, BodyType *b);
 
         /** Bind an actor to a body */
-        CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, Body *b);
+        CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, const BodyHandle &h);
 
         /** Bind an actor to a surface type */
         CPPAPI_FUNC(HRESULT) surface(MeshObjActor *a, SurfaceType *s);
 
         /** Bind an actor to a surface */
-        CPPAPI_FUNC(HRESULT) surface(MeshObjActor *a, Surface *s);
+        CPPAPI_FUNC(HRESULT) surface(MeshObjActor *a, const SurfaceHandle &h);
 
         /** Bind an actor to a pair of object types */
         CPPAPI_FUNC(HRESULT) types(MeshObjTypePairActor *a, MeshObjType *type1, MeshObjType *type2);

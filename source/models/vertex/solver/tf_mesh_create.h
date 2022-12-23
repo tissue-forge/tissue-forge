@@ -41,7 +41,7 @@ namespace TissueForge::models::vertex {
      * @param ax_2 axis name of the second direction
      * @return constructed surfaces
      */
-    CPPAPI_FUNC(std::vector<std::vector<Surface*> >) createQuadMesh(
+    CPPAPI_FUNC(std::vector<std::vector<SurfaceHandle> >) createQuadMesh(
         SurfaceType *stype,
         const FVector3 &startPos, 
         const unsigned int &num_1, 
@@ -70,7 +70,7 @@ namespace TissueForge::models::vertex {
      * @param ax_2 axis name of the second direction
      * @return constructed bodies
      */
-    CPPAPI_FUNC(std::vector<std::vector<std::vector<Body*> > >) createPLPDMesh(
+    CPPAPI_FUNC(std::vector<std::vector<std::vector<BodyHandle> > >) createPLPDMesh(
         BodyType *btype, 
         SurfaceType *stype,
         const FVector3 &startPos, 
@@ -98,7 +98,7 @@ namespace TissueForge::models::vertex {
      * @param ax_2 axis name of the second direction
      * @return constructed surfaces
      */
-    CPPAPI_FUNC(std::vector<std::vector<Surface*> >) createHex2DMesh(
+    CPPAPI_FUNC(std::vector<std::vector<SurfaceHandle> >) createHex2DMesh(
         SurfaceType *stype, 
         const FVector3 &startPos, 
         const unsigned int &num_1, 
@@ -128,7 +128,7 @@ namespace TissueForge::models::vertex {
      * @param ax_2 axis name of the second direction
      * @return constructed bodies
      */
-    CPPAPI_FUNC(std::vector<std::vector<std::vector<Body*> > >) createHex3DMesh(
+    CPPAPI_FUNC(std::vector<std::vector<std::vector<BodyHandle> > >) createHex3DMesh(
         BodyType *btype, 
         SurfaceType *stype,
         const FVector3 &startPos, 

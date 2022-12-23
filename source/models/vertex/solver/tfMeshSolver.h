@@ -51,6 +51,17 @@ namespace TissueForge::models::vertex {
      */
     static HRESULT VertexForce(const Vertex *v, FVector3 &f) { return VertexForce(v, f.data()); }
 
+    /**
+     * @brief Calculate the force on a vertex
+     * 
+     * @param v vertex
+     */
+    static FVector3 VertexForce(const Vertex *v) {
+        FVector3 f;
+        VertexForce(v, f.data());
+        return f;
+    }
+
 
     /** Mesh solver performance timers */
     struct CAPI_EXPORT MeshSolverTimers {

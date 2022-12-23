@@ -37,6 +37,7 @@
 using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
+
 #define Body_GETMESH(name, retval)                  \
     Mesh *name = Mesh::get();                       \
     if(!name) {                                     \
@@ -44,29 +45,17 @@ using namespace TissueForge::models::vertex;
         return retval;                              \
     }
 
+#define BodyHandle_INVALIDHANDLERR { tf_error(E_FAIL, "Invalid handle"); }
 
-void Body::_updateInternal() {
-    for(auto &v : getVertices()) 
-        v->positionChanged();
-    for(auto &s : getSurfaces()) 
-        s->positionChanged();
+#define BodyHandle_GETOBJ(name, retval)                             \
+    Body *name;                                                     \
+    if(this->id < 0 || !(name = Mesh::get()->getBody(this->id))) {  \
+        BodyHandle_INVALIDHANDLERR; return retval; }
 
-    centroid = FVector3(0.f);
-    area = 0.f;
-    volume = 0.f;
 
-    for(auto &s : surfaces) {
-        centroid += s->getCentroid() * s->getArea();
-        area += s->getArea();
-    }
-    centroid /= area;
-
-    for(auto &s : surfaces) {
-        s->refreshBodies();
-        volume += s->getVolumeContr(this);
-    }
-
-}
+//////////
+// Body //
+//////////
 
 
 static HRESULT Body_loadSurfaces(Body* body, std::vector<Surface*> _surfaces) { 
@@ -86,6 +75,20 @@ static HRESULT Body_loadSurfaces(Body* body, std::vector<Surface*> _surfaces) {
     }
 };
 
+static HRESULT Body_loadSurfaces(Body* body, const std::vector<SurfaceHandle> &_surfaces) { 
+    std::vector<Surface*> surfaces;
+    surfaces.reserve(_surfaces.size());
+    for(auto &_s : _surfaces) {
+        Surface *s = _s.surface();
+        if(!s) {
+            TF_Log(LOG_ERROR);
+            return E_FAIL;
+        }
+        surfaces.push_back(s);
+    }
+    return Body_loadSurfaces(body, surfaces);
+};
+
 
 Body::Body() : 
     centroid{0.f}, 
@@ -102,28 +105,37 @@ Body::~Body() {
     MESHOBJ_DELOBJ
 }
 
-Body *Body::create(std::vector<Surface*> _surfaces) {
+static Body *Body_create(const std::vector<SurfaceHandle> &_surfaces) {
     Body_GETMESH(mesh, NULL);
     Body *result;
     if(mesh->create(&result) != S_OK || Body_loadSurfaces(result, _surfaces) != S_OK) {
         TF_Log(LOG_ERROR);
         return NULL;
     }
-    result->_updateInternal();
+    result->updateInternals();
     return result;
 };
 
-Body *Body::create(TissueForge::io::ThreeDFMeshData *ioMesh) {
+BodyHandle Body::create(const std::vector<SurfaceHandle> &_surfaces) {
+    Body *b = Body_create(_surfaces);
+    if(!b) {
+        TF_Log(LOG_ERROR);
+        return BodyHandle();
+    }
+    return BodyHandle(b->objectId());
+};
+
+BodyHandle Body::create(TissueForge::io::ThreeDFMeshData *ioMesh) {
     Body_GETMESH(mesh, NULL);
     if(mesh->ensureAvailableSurfaces(ioMesh->faces.size()) != S_OK) {
         TF_Log(LOG_ERROR);
         return NULL;
     }
 
-    std::vector<Surface*> _surfaces;
+    std::vector<SurfaceHandle> _surfaces;
     bool failed = false;
     for(auto f : ioMesh->faces) {
-        Surface *s = Surface::create(f);
+        SurfaceHandle s = Surface::create(f);
         if(!s) {
             TF_Log(LOG_ERROR) << "Failed to create surface";
             failed = true;
@@ -135,7 +147,7 @@ Body *Body::create(TissueForge::io::ThreeDFMeshData *ioMesh) {
     if(failed) {
         TF_Log(LOG_ERROR);
         for(auto &s : _surfaces) {
-            s->destroy();
+            s.destroy();
         }
         return NULL;
     }
@@ -157,6 +169,29 @@ std::string Body::str() const {
     ss << ")";
 
     return ss.str();
+}
+
+void Body::updateInternals() {
+    for(auto &v : getVertices()) 
+        v->positionChanged();
+    for(auto &s : getSurfaces()) 
+        s->positionChanged();
+
+    centroid = FVector3(0.f);
+    area = 0.f;
+    volume = 0.f;
+
+    for(auto &s : surfaces) {
+        centroid += s->getCentroid() * s->getArea();
+        area += s->getArea();
+    }
+    centroid /= area;
+
+    for(auto &s : surfaces) {
+        s->refreshBodies();
+        volume += s->getVolumeContr(this);
+    }
+
 }
 
 #define BODY_RND_IDX(vec_size, idx) {       \
@@ -191,7 +226,7 @@ HRESULT Body::replace(Surface *toInsert, Surface *toRemove) {
 }
 
 HRESULT Body::destroy() {
-    if(this->typeId >= 0 && this->type()->remove(this) != S_OK) 
+    if(this->typeId >= 0 && this->type()->remove(BodyHandle(this->_objId)) != S_OK) 
         return E_FAIL;
     if(this->_objId >= 0) 
         Mesh::get()->remove(this);
@@ -210,8 +245,27 @@ HRESULT Body::destroy(Body *target) {
     return S_OK;
 }
 
+HRESULT Body::destroy(BodyHandle &target) {
+    Body *_target = target.body();
+    if(!_target) {
+        BodyHandle_INVALIDHANDLERR;
+        return E_FAIL;
+    }
+    HRESULT res = Body::destroy(_target);
+    if(res == S_OK) 
+        target.id = -1;
+    return res;
+}
+
 bool Body::validate() {
-    return surfaces.size() >= 3;
+    if(surfaces.size() < 3) 
+        return false;
+
+    for(auto &s : surfaces) 
+        if(!s->defines(this) || !this->definedBy(s)) 
+            return false;
+
+    return true;
 }
 
 HRESULT Body::positionChanged() { 
@@ -239,10 +293,10 @@ BodyType *Body::type() const {
 }
 
 HRESULT Body::become(BodyType *btype) {
-    if(this->typeId >= 0 && this->type()->remove(this) != S_OK) {
+    if(this->typeId >= 0 && this->type()->remove(BodyHandle(this->_objId)) != S_OK) {
         return tf_error(E_FAIL, "Failed to become");
     }
-    return btype->add(this);
+    return btype->add(BodyHandle(this->_objId));
 }
 
 std::vector<Vertex*> Body::getVertices() const {
@@ -359,10 +413,10 @@ bool Body::isOutside(const FVector3 &pos) const {
 }
 
 struct Body_BodySplitEdge {
-    Vertex *v_oldSide;  // Old side
-    Vertex *v_newSide;  // New side
+    VertexHandle v_oldSide;  // Old side
+    VertexHandle v_newSide;  // New side
     FVector3 intersect_pt;
-    std::vector<Surface*> surfaces;
+    std::vector<SurfaceHandle> surfaces;
 
     bool operator==(Body_BodySplitEdge o) const {
         return v_oldSide == o.v_oldSide && v_newSide == o.v_newSide;
@@ -382,35 +436,40 @@ struct Body_BodySplitEdge {
         return true;
     }
 
-    static std::vector<Surface*> extractSurfaces(Vertex *v1, Vertex *v2, Body *b) {
-        std::vector<Surface*> surfaces;
+    static std::vector<SurfaceHandle> extractSurfaces(Vertex *v1, Vertex *v2, Body *b) {
+        std::vector<SurfaceHandle> surfaces;
         for(auto &s : b->getSurfaces()) 
             if(v1->defines(s) && v2->defines(s)) 
-                surfaces.push_back(s);
+                surfaces.emplace_back(s->objectId());
         return surfaces;
     }
 
     static std::vector<Body_BodySplitEdge> construct(Body *b, const FVector4 &planeEq) {
         std::map<std::pair<int, int>, Body_BodySplitEdge> edgeMap;
         for(auto &s : b->getSurfaces()) {
-            for(auto &v : s->getVertices()) {
-                Vertex *va, *vb;
-                Vertex *v_lower, *v_upper;
-                std::tie(va, vb) = s->neighborVertices(v);
+            for(auto &_v : s->getVertices()) {
+                Vertex *_va, *_vb;
+                VertexHandle v_lower, v_upper;
+                std::tie(_va, _vb) = s->neighborVertices(_v);
+                VertexHandle v(_v->objectId());
+                VertexHandle va(_va->objectId());
+                VertexHandle vb(_vb->objectId());
 
-                std::vector<std::pair<Vertex*, Vertex*> > edge_cases;
-                if(v->objectId() < va->objectId()) 
+                std::vector<std::pair<VertexHandle, VertexHandle> > edge_cases;
+                if(v < va) 
                     edge_cases.push_back({v, va});
-                if(v->objectId() < vb->objectId()) 
+                if(v < vb) 
                     edge_cases.push_back({v, vb});
 
                 for(auto &ec : edge_cases) {
                     std::tie(v_lower, v_upper) = ec;
+                    Vertex *_v_lower = v_lower.vertex();
+                    Vertex *_v_upper = v_upper.vertex();
 
                     FVector3 intersect_pt;
-                    if(intersects(v_lower, v_upper, planeEq, intersect_pt)) {
+                    if(intersects(_v_lower, _v_upper, planeEq, intersect_pt)) {
                         Body_BodySplitEdge edge;
-                        if(planeEq.distance(v_lower->getPosition()) > 0) {
+                        if(planeEq.distance(_v_lower->getPosition()) > 0) {
                             edge.v_oldSide = v_upper;
                             edge.v_newSide = v_lower;
                         } 
@@ -419,14 +478,14 @@ struct Body_BodySplitEdge {
                             edge.v_newSide = v_upper;
                         }
                         edge.intersect_pt = intersect_pt;
-                        edge.surfaces = extractSurfaces(v_lower, v_upper, b);
+                        edge.surfaces = extractSurfaces(_v_lower, _v_upper, b);
 
                         if(edge.surfaces.size() != 2) {
                             tf_error(E_FAIL, "Incorrect number of extracted surfaces");
                             return {};
                         }
 
-                        edgeMap.insert({{v_lower->objectId(), v_upper->objectId()}, edge});
+                        edgeMap.insert({{v_lower.id, v_upper.id}, edge});
                     }
                 }
             }
@@ -441,17 +500,17 @@ struct Body_BodySplitEdge {
         result_sorted.reserve(result.size());
         result_sorted.push_back(result.back());
         result.pop_back();
-        Surface *s_target = result_sorted[0].surfaces[1];
+        SurfaceHandle s_target = result_sorted[0].surfaces[1];
         while(!result.empty()) {
             std::vector<Body_BodySplitEdge>::iterator itr = result.begin();
             while(itr != result.end()) { 
-                if(itr->surfaces[0]->objectId() == s_target->objectId()) { 
+                if(itr->surfaces[0].id == s_target.id) { 
                     s_target = itr->surfaces[1];
                     result_sorted.push_back(*itr);
                     result.erase(itr);
                     break;
                 } 
-                else if(itr->surfaces[1]->objectId() == s_target->objectId()) {
+                else if(itr->surfaces[1].id == s_target.id) {
                     s_target = itr->surfaces[0];
                     result_sorted.push_back(*itr);
                     result.erase(itr);
@@ -464,7 +523,7 @@ struct Body_BodySplitEdge {
         return result_sorted;
     }
 
-    typedef std::pair<Surface*, std::pair<Body_BodySplitEdge, Body_BodySplitEdge> > surfaceSplitPlanEl_t;
+    typedef std::pair<SurfaceHandle, std::pair<Body_BodySplitEdge, Body_BodySplitEdge> > surfaceSplitPlanEl_t;
 
     static HRESULT surfaceSplitPlan(const std::vector<Body_BodySplitEdge> &edges, std::vector<surfaceSplitPlanEl_t> &result) {
         std::vector<Body_BodySplitEdge> edges_copy(edges);
@@ -472,7 +531,7 @@ struct Body_BodySplitEdge {
         for(size_t i = 0; i < edges.size(); i++) {
             Body_BodySplitEdge edge_i = edges_copy[i];
             Body_BodySplitEdge edge_j = edges_copy[i + 1];
-            Surface *s = NULL;
+            SurfaceHandle s;
             for(auto &si : edge_i.surfaces) {
                 auto itr = std::find(edge_j.surfaces.begin(), edge_j.surfaces.end(), si);
                 if(itr != edge_j.surfaces.end()) {
@@ -483,14 +542,13 @@ struct Body_BodySplitEdge {
             if(!s) 
                 return E_FAIL;
             
-            Vertex *v_old = edge_i.v_oldSide;
-            Vertex *v_new = edge_i.v_newSide;
-            Vertex *v_old_na, *v_old_nb;
-            std::tie(v_old_na, v_old_nb) = s->neighborVertices(v_old);
-            if(v_old_na->objectId() == v_new->objectId()) 
-                result.push_back({s, {edge_i, edge_j}});
+            VertexHandle v_old = edge_i.v_oldSide;
+            VertexHandle v_new = edge_i.v_newSide;
+            VertexHandle v_old_na = std::get<0>(s.neighborVertices(v_old));
+            if(v_old_na.id == v_new.id) 
+                result.push_back({SurfaceHandle(s.id), {edge_i, edge_j}});
             else 
-                result.push_back({s, {edge_j, edge_i}});
+                result.push_back({SurfaceHandle(s.id), {edge_j, edge_i}});
         }
         return S_OK;
     }
@@ -520,14 +578,14 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
     FVector4 planeEq = FVector4::planeEquation(cp_norm.normalized(), cp_pos);
 
     // Determine which surfaces are moved to new body
-    std::vector<Surface*> surfs_moved;
+    std::vector<SurfaceHandle> surfs_moved;
     for(auto &s : surfaces) {
         size_t num_newSide = 0;
         for(auto &v : s->vertices) 
             if(planeEq.distance(v->getPosition()) > 0) 
                 num_newSide++;
         if(num_newSide == s->vertices.size()) 
-            surfs_moved.push_back(s);
+            surfs_moved.emplace_back(s->objectId());
     }
 
     // Build edge list
@@ -544,12 +602,12 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
         TF_Log(LOG_ERROR);
         return NULL;
     }
-    std::vector<Vertex*> new_vertices;
-    std::map<std::pair<int, int>, Vertex*> new_vertices_map;
+    std::vector<VertexHandle> new_vertices;
+    std::map<std::pair<int, int>, VertexHandle> new_vertices_map;
     bool failed = false;
     for(auto &edge : vertexPlan) {
-        Vertex *v_new = Vertex::create(edge.intersect_pt);
-        if(v_new->_objId < 0) {
+        VertexHandle v_new = Vertex::create(edge.intersect_pt);
+        if(!v_new) {
             TF_Log(LOG_ERROR) << "Failed to create a vertex";
             failed = true;
             break;
@@ -558,25 +616,25 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
     }
     if(failed) {
         for(auto &v : new_vertices) {
-            v->destroy();
+            v.destroy();
         }
         return NULL;
     }
     for(size_t i = 0; i < vertexPlan.size(); i++) {
         auto edge = vertexPlan[i];
         auto v_new = new_vertices[i];
-        v_new->insert(edge.v_oldSide, edge.v_newSide);
-        new_vertices_map.insert({{edge.v_oldSide->_objId, edge.v_newSide->_objId}, v_new});
+        v_new.insert(edge.v_oldSide, edge.v_newSide);
+        new_vertices_map.insert({{edge.v_oldSide.id, edge.v_newSide.id}, v_new});
     }
 
     // Split surfaces
-    std::vector<Surface*> new_surfs;
+    std::vector<SurfaceHandle> new_surfs;
     new_surfs.reserve(sSplitPlan.size());
     for(size_t i = 0; i < sSplitPlan.size(); i++) {
-        Surface *s = sSplitPlan[i].first;
-        Vertex *v1 = new_vertices_map[{sSplitPlan[i].second.first.v_oldSide->_objId,  sSplitPlan[i].second.first.v_newSide->_objId}];
-        Vertex *v2 = new_vertices_map[{sSplitPlan[i].second.second.v_oldSide->_objId, sSplitPlan[i].second.second.v_newSide->_objId}];
-        Surface *s_new = s->split(v1, v2);
+        SurfaceHandle s = sSplitPlan[i].first;
+        VertexHandle v1 = new_vertices_map[{sSplitPlan[i].second.first.v_oldSide.id,  sSplitPlan[i].second.first.v_newSide.id}];
+        VertexHandle v2 = new_vertices_map[{sSplitPlan[i].second.second.v_oldSide.id, sSplitPlan[i].second.second.v_newSide.id}];
+        SurfaceHandle s_new = s.split(v1, v2);
         if(!s_new) 
             return NULL;
         new_surfs.push_back(s_new);
@@ -584,49 +642,340 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
 
     // Construct interface surface
     if(!stype) 
-        stype = new_surfs[0]->type();
-    Surface *s_new = (*stype)(new_vertices);
-    if(!s_new || s_new->typeId < 0) {
-        if(s_new) 
-            s_new->destroy();
+        stype = new_surfs[0].type();
+    SurfaceHandle s_new = (*stype)(new_vertices);
+    if(!s_new) {
         return NULL;
     }
-    add(s_new);
-    s_new->add(this);
-    s_new->positionChanged();
+    Surface *_s_new = s_new.surface();
+    add(_s_new);
+    _s_new->add(this);
+    _s_new->positionChanged();
 
     // Transfer moved and new split surfaces to new body
     for(auto &s : surfs_moved) {
-        s->remove(this);
-        remove(s);
+        Surface *_s = s.surface();
+        _s->remove(this);
+        remove(_s);
     }
     for(auto &s : new_surfs) {
-        s->remove(this);
-        remove(s);
+        Surface *_s = s.surface();
+        _s->remove(this);
+        remove(_s);
     }
     positionChanged();
 
     // Construct new body
-    std::vector<Surface*> new_body_surfs(surfs_moved);
+    std::vector<SurfaceHandle> new_body_surfs(surfs_moved);
     new_body_surfs.push_back(s_new);
     for(auto &s : new_surfs) 
         new_body_surfs.push_back(s);
-    Body *b_new = (*type())(new_body_surfs);
-    if(!b_new || b_new->typeId < 0) {
-        if(b_new) 
-            b_new->destroy();
+    BodyHandle b_new = (*type())(new_body_surfs);
+    if(!b_new) {
         return NULL;
     }
 
     if(!Mesh::get()->qualityWorking()) 
         MeshSolver::positionChanged();
 
-    MeshSolver::log(MeshLogEventType::Create, {objectId(), b_new->objectId()}, {objType(), b_new->objType()}, "split");
+    MeshSolver::log(MeshLogEventType::Create, {objectId(), b_new.id}, {objType(), b_new.objType()}, "split");
 
-    return b_new;
+    return b_new.body();
 }
 
-static Body *BodyType_fromSurfaces(BodyType *btype, std::vector<Surface*> surfaces) {
+
+////////////////
+// BodyHandle //
+////////////////
+
+
+BodyHandle::BodyHandle(const int &_id) : id{_id} {}
+
+Body *BodyHandle::body() const {
+    BodyHandle_GETOBJ(o, NULL);
+    return o;
+}
+
+bool BodyHandle::definedBy(const VertexHandle &v) const {
+    BodyHandle_GETOBJ(o, false);
+    Vertex *_v = v.vertex();
+    if(!_v) {
+        BodyHandle_INVALIDHANDLERR;
+        return false;
+    }
+    return o->definedBy(_v);
+}
+
+bool BodyHandle::definedBy(const SurfaceHandle &s) const {
+    BodyHandle_GETOBJ(o, false);
+    Surface *_s = s.surface();
+    if(!_s) {
+        BodyHandle_INVALIDHANDLERR;
+        return false;
+    }
+    return o->definedBy(_s);
+}
+
+HRESULT BodyHandle::destroy() {
+    BodyHandle_GETOBJ(o, E_FAIL);
+    HRESULT res = o->destroy();
+    if(res == S_OK) 
+        this->id = -1;
+    return res;
+}
+
+bool BodyHandle::validate() {
+    BodyHandle_GETOBJ(o, false);
+    return o->validate();
+}
+
+HRESULT BodyHandle::positionChanged() {
+    BodyHandle_GETOBJ(o, E_FAIL);
+    return o->positionChanged();
+}
+
+std::string BodyHandle::str() const {
+    std::stringstream ss;
+
+    ss << "BodyHandle(";
+    Body *_b = this->body();
+    if(_b) {
+        ss << "id=" << this->id << ", typeId=" << _b->typeId;
+    }
+    ss << ")";
+
+    return ss.str();
+}
+
+std::string BodyHandle::toString() {
+    return TissueForge::io::toString(*this);
+}
+
+BodyHandle BodyHandle::fromString(const std::string &s) {
+    return TissueForge::io::fromString<BodyHandle>(s);
+}
+
+HRESULT BodyHandle::add(const SurfaceHandle &s) {
+    BodyHandle_GETOBJ(o, E_FAIL);
+    Surface *_s = s.surface();
+    if(!_s) {
+        BodyHandle_INVALIDHANDLERR;
+        return E_FAIL;
+    }
+    return o->add(_s);
+}
+
+HRESULT BodyHandle::remove(const SurfaceHandle &s) {
+    BodyHandle_GETOBJ(o, E_FAIL);
+    Surface *_s = s.surface();
+    if(!_s) {
+        BodyHandle_INVALIDHANDLERR;
+        return E_FAIL;
+    }
+    return o->remove(_s);
+}
+
+HRESULT BodyHandle::replace(const SurfaceHandle &toInsert, const SurfaceHandle &toRemove) {
+    BodyHandle_GETOBJ(o, E_FAIL);
+    Surface *_toInsert = toInsert.surface();
+    Surface *_toRemove = toRemove.surface();
+    if(!_toInsert || !_toRemove) {
+        BodyHandle_INVALIDHANDLERR;
+        return E_FAIL;
+    }
+    return o->replace(_toInsert, _toRemove);
+}
+
+BodyType *BodyHandle::type() const {
+    BodyHandle_GETOBJ(o, NULL);
+    return o->type();
+}
+
+HRESULT BodyHandle::become(BodyType *btype) {
+    BodyHandle_GETOBJ(o, E_FAIL);
+    return o->become(btype);
+}
+
+std::vector<SurfaceHandle> BodyHandle::getSurfaces() const {
+    BodyHandle_GETOBJ(o, {});
+    std::vector<Surface*> _result = o->getSurfaces();
+    std::vector<SurfaceHandle> result;
+    result.reserve(_result.size());
+    for(auto &_s : _result) 
+        result.push_back(_s ? SurfaceHandle(_s->objectId()) : SurfaceHandle());
+    return result;
+}
+
+std::vector<VertexHandle> BodyHandle::getVertices() const {
+    BodyHandle_GETOBJ(o, {});
+    std::vector<Vertex*> _result = o->getVertices();
+    std::vector<VertexHandle> result;
+    result.reserve(_result.size());
+    for(auto &_v : _result) 
+        result.push_back(_v ? VertexHandle(_v->objectId()) : VertexHandle());
+    return result;
+}
+
+VertexHandle BodyHandle::findVertex(const FVector3 &dir) const {
+    BodyHandle_GETOBJ(o, VertexHandle());
+    Vertex *v = o->findVertex(dir);
+    return v ? VertexHandle(v->objectId()) : VertexHandle();
+}
+
+SurfaceHandle BodyHandle::findSurface(const FVector3 &dir) const {
+    BodyHandle_GETOBJ(o, SurfaceHandle());
+    Surface *s = o->findSurface(dir);
+    return s ? SurfaceHandle(s->objectId()) : SurfaceHandle();
+}
+
+std::vector<BodyHandle> BodyHandle::neighborBodies() const {
+    BodyHandle_GETOBJ(o, {});
+    std::vector<Body*> _result = o->neighborBodies();
+    std::vector<BodyHandle> result;
+    result.reserve(_result.size());
+    for(auto &_b : _result) 
+        result.push_back(_b ? BodyHandle(_b->_objId) : BodyHandle());
+    return result;
+}
+
+std::vector<SurfaceHandle> BodyHandle::neighborSurfaces(const SurfaceHandle &s) const {
+    BodyHandle_GETOBJ(o, {});
+    Surface *_s = s.surface();
+    if(!_s) {
+        BodyHandle_INVALIDHANDLERR;
+        return {};
+    }
+    std::vector<Surface*> _result = o->neighborSurfaces(_s);
+    std::vector<SurfaceHandle> result;
+    for(auto &_s : _result) 
+        result.push_back(_s ? SurfaceHandle(_s->objectId()) : SurfaceHandle());
+    return result;
+}
+
+FloatP_t BodyHandle::getDensity() const {
+    BodyHandle_GETOBJ(o, 0);
+    return o->getDensity();
+}
+
+void BodyHandle::setDensity(const FloatP_t &_density) {
+    BodyHandle_GETOBJ(o, );
+    o->setDensity(_density);
+}
+
+FVector3 BodyHandle::getCentroid() const {
+    BodyHandle_GETOBJ(o, FVector3());
+    return o->getCentroid();
+}
+
+FVector3 BodyHandle::getVelocity() const {
+    BodyHandle_GETOBJ(o, FVector3());
+    return o->getVelocity();
+}
+
+FloatP_t BodyHandle::getArea() const {
+    BodyHandle_GETOBJ(o, 0);
+    return o->getArea();
+}
+
+FloatP_t BodyHandle::getVolume() const {
+    BodyHandle_GETOBJ(o, 0);
+    return o->getVolume();
+}
+
+FloatP_t BodyHandle::getMass() const {
+    BodyHandle_GETOBJ(o, 0);
+    return o->getMass();
+}
+
+FloatP_t BodyHandle::getVertexArea(const VertexHandle &v) const {
+    BodyHandle_GETOBJ(o, 0);
+    Vertex *_v = v.vertex();
+    if(!_v) {
+        BodyHandle_INVALIDHANDLERR;
+        return 0;
+    }
+    return o->getVertexArea(_v);
+}
+
+FloatP_t BodyHandle::getVertexVolume(const VertexHandle &v) const {
+    BodyHandle_GETOBJ(o, 0);
+    Vertex *_v = v.vertex();
+    if(!_v) {
+        BodyHandle_INVALIDHANDLERR;
+        return 0;
+    }
+    return o->getVertexVolume(_v);
+}
+
+FloatP_t BodyHandle::getVertexMass(const VertexHandle &v) const {
+    BodyHandle_GETOBJ(o, 0);
+    Vertex *_v = v.vertex();
+    if(!_v) {
+        BodyHandle_INVALIDHANDLERR;
+        return 0;
+    }
+    return o->getVertexMass(_v);
+}
+
+HRESULT BodyHandle::setSpecies(state::StateVector *s) const {
+    BodyHandle_GETOBJ(o, E_FAIL);
+    o->species = s;
+    return S_OK;
+}
+
+state::StateVector *BodyHandle::getSpecies() const {
+    BodyHandle_GETOBJ(o, {});
+    return o->species;
+}
+
+std::vector<SurfaceHandle> BodyHandle::findInterface(const BodyHandle &b) const {
+    BodyHandle_GETOBJ(o, {});
+    Body *_b = b.body();
+    if(!_b) {
+        BodyHandle_INVALIDHANDLERR;
+        return {};
+    }
+    std::vector<Surface*> _result = o->findInterface(_b);
+    std::vector<SurfaceHandle> result;
+    result.reserve(_result.size());
+    for(auto &_s : _result) 
+        result.push_back(_s ? SurfaceHandle(_s->objectId()) : SurfaceHandle());
+    return result;
+}
+
+FloatP_t BodyHandle::contactArea(const BodyHandle &other) const {
+    BodyHandle_GETOBJ(o, 0);
+    Body *_other = other.body();
+    if(!_other) {
+        BodyHandle_INVALIDHANDLERR;
+        return 0;
+    }
+    return o->contactArea(_other);
+}
+
+bool BodyHandle::isOutside(const FVector3 &pos) const {
+    BodyHandle_GETOBJ(o, false);
+    return o->isOutside(pos);
+}
+
+BodyHandle BodyHandle::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *stype) {
+    Body_GETMESH(mesh, BodyHandle());
+    if(mesh->ensureAvailableBodies(1) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return BodyHandle();
+    }
+    BodyHandle_GETOBJ(o, BodyHandle());
+    Body *_result = o->split(cp_pos, cp_norm, stype);
+    return _result ? BodyHandle(_result->objectId()) : BodyHandle();
+}
+
+
+//////////////
+// BodyType //
+//////////////
+
+
+static BodyHandle BodyType_fromSurfaces(BodyType *btype, const std::vector<SurfaceHandle> &surfaces) {
     // Verify that at least 4 surfaces are given
     if(surfaces.size() < 4) {
         TF_Log(LOG_ERROR) << "A body requires at least 4 surfaces";
@@ -635,20 +984,20 @@ static Body *BodyType_fromSurfaces(BodyType *btype, std::vector<Surface*> surfac
     // Verify that every parent vertex is in at least two surfaces
     // todo: current vertex condition is necessary for body construction, but is it sufficient?
     for(auto &s : surfaces) 
-        for(auto &v : s->getVertices()) 
-            if(v->getSurfaces().size() < 2) {
+        for(auto &v : s.getVertices()) 
+            if(v.getSurfaces().size() < 2) {
                 TF_Log(LOG_ERROR) << "Detected insufficient connectivity";
                 return NULL;
             }
 
-    Body *b = Body::create(surfaces);
+    BodyHandle b = Body::create(surfaces);
     if(!b || btype->add(b) != S_OK) {
         TF_Log(LOG_ERROR) << "Failed to create instance";
         if(b) 
-            b->destroy();
+            b.destroy();
         return NULL;
     }
-    b->setDensity(btype->density);
+    b.setDensity(btype->density);
     return b;
 }
 
@@ -698,36 +1047,40 @@ BodyType *BodyType::get() {
     return findFromName(name);
 }
 
-HRESULT BodyType::add(Body *i) {
+HRESULT BodyType::add(const BodyHandle &i) {
     if(!i) 
         return tf_error(E_FAIL, "Invalid object");
-    else if(i->objectId() < 0) 
+    Body *_i = i.body();
+    if(!_i) 
         return tf_error(E_FAIL, "Object not registered");
 
-    BodyType *iType = i->type();
+    BodyType *iType = _i->type();
     if(iType) 
         iType->remove(i);
 
-    i->typeId = this->id;
-    this->_instanceIds.push_back(i->objectId());
+    _i->typeId = this->id;
+    this->_instanceIds.push_back(i.id);
     return S_OK;
 }
 
-HRESULT BodyType::remove(Body *i) {
+HRESULT BodyType::remove(const BodyHandle &i) {
     if(!i) 
         return tf_error(E_FAIL, "Invalid object");
+    Body *_i = i.body();
+    if(!_i) 
+        return tf_error(E_FAIL, "Object not registered");
 
-    auto itr = std::find(this->_instanceIds.begin(), this->_instanceIds.end(), i->objectId());
+    auto itr = std::find(this->_instanceIds.begin(), this->_instanceIds.end(), i.id);
     if(itr == this->_instanceIds.end()) 
         return tf_error(E_FAIL, "Instance not of this type");
 
     this->_instanceIds.erase(itr);
-    i->typeId = -1;
+    _i->typeId = -1;
     return S_OK;
 }
 
-std::vector<Body*> BodyType::getInstances() {
-    std::vector<Body*> result;
+std::vector<BodyHandle> BodyType::getInstances() {
+    std::vector<BodyHandle> result;
 
     Mesh *m = Mesh::get();
     if(m) { 
@@ -735,7 +1088,7 @@ std::vector<Body*> BodyType::getInstances() {
         for(size_t i = 0; i < m->sizeBodies(); i++) {
             Body *b = m->getBody(i);
             if(b && b->typeId == this->id) 
-                result.push_back(b);
+                result.emplace_back(i);
         }
     }
 
@@ -746,12 +1099,13 @@ unsigned int BodyType::getNumInstances() {
     return getInstances().size();
 }
 
-Body *BodyType::operator() (std::vector<Surface*> surfaces) {
+BodyHandle BodyType::operator() (const std::vector<SurfaceHandle> &surfaces) {
     return BodyType_fromSurfaces(this, surfaces);
 }
 
-Body *BodyType::operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceType *stype) {
-    std::vector<Surface*> surfaces;
+BodyHandle BodyType::operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceType *stype) {
+    std::vector<SurfaceHandle> surfaces;
+    surfaces.reserve(ioMesh->faces.size());
     for(auto &f : ioMesh->faces) 
         surfaces.push_back((*stype)(f));
     for(auto &si : surfaces) 
@@ -761,30 +1115,31 @@ Body *BodyType::operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceTyp
     return BodyType_fromSurfaces(this, surfaces);
 }
 
-Body *BodyType::extend(Surface *base, const FVector3 &pos) {
+BodyHandle BodyType::extend(const SurfaceHandle &base, const FVector3 &pos) {
     Body_GETMESH(mesh, NULL);
-    if(mesh->ensureAvailableSurfaces(base->vertices.size()) != S_OK) {
+    std::vector<VertexHandle> base_vertices = base.getVertices();
+    if(mesh->ensureAvailableSurfaces(base_vertices.size()) != S_OK) {
         TF_Log(LOG_ERROR);
         return NULL;
     }
 
     // For every pair of vertices, construct a surface with a new vertex at the given position
-    Vertex *vNew = Vertex::create(pos);
-    SurfaceType *stype = base->type();
-    std::vector<Surface*> surfaces(1, base);
-    for(unsigned int i = 0; i < base->vertices.size(); i++) {
-        // Get base vertices
-        Vertex *v0 = base->vertices[i];
-        Vertex *v1 = base->vertices[i == base->vertices.size() - 1 ? 0 : i + 1];
-
-        Surface *s = (*stype)({v0, v1, vNew});
+    VertexHandle vNew = Vertex::create(pos);
+    SurfaceType *stype = base.type();
+    std::vector<SurfaceHandle> surfaces(1, base);
+    for(unsigned int i = 0; i < base_vertices.size(); i++) {
+        SurfaceHandle s = (*stype)({
+            base_vertices[i], 
+            base_vertices[i == base_vertices.size() - 1 ? 0 : i + 1], 
+            vNew
+        });
         if(!s) 
             return NULL;
         surfaces.push_back(s);
     }
 
     // Construct a body from the surfaces
-    Body *b = (*this)(surfaces);
+    BodyHandle b = (*this)(surfaces);
     if(!b) {
         return NULL;
     }
@@ -792,7 +1147,7 @@ Body *BodyType::extend(Surface *base, const FVector3 &pos) {
     if(!Mesh::get()->qualityWorking()) 
         MeshSolver::positionChanged();
 
-    MeshSolver::log(MeshLogEventType::Create, {base->objectId(), b->objectId()}, {base->objType(), b->objType()}, "extend");
+    MeshSolver::log(MeshLogEventType::Create, {base.id, b.id}, {base.objType(), b.objType()}, "extend");
 
     return b;
 }
@@ -814,9 +1169,12 @@ HRESULT Body_surfaceOutwardNormal(Surface *s, Body *b1, Body *b2, FVector3 &onor
     return S_OK;
 }
 
-Body *BodyType::extrude(Surface *base, const FloatP_t &normLen) {
+BodyHandle BodyType::extrude(const SurfaceHandle &base, const FloatP_t &normLen) {
     Body_GETMESH(mesh, NULL);
-    if(mesh->ensureAvailableVertices(base->vertices.size()) != S_OK || mesh->ensureAvailableSurfaces(base->vertices.size()) != S_OK) {
+    std::vector<VertexHandle> base_vertices = base.getVertices();
+    if(mesh->ensureAvailableVertices(base_vertices.size()) != S_OK || 
+        mesh->ensureAvailableSurfaces(base_vertices.size() + 1) != S_OK || 
+        mesh->ensureAvailableBodies(1) != S_OK) {
         TF_Log(LOG_ERROR);
         return NULL;
     }
@@ -825,27 +1183,25 @@ Body *BodyType::extrude(Surface *base, const FloatP_t &normLen) {
     FVector3 normal;
 
     // Only permit if the surface has an available slot
-    base->refreshBodies();
-    if(Body_surfaceOutwardNormal(base, base->b1, base->b2, normal) != S_OK) 
+    Surface *_base = base.surface();
+    _base->refreshBodies();
+    if(Body_surfaceOutwardNormal(_base, _base->b1, _base->b2, normal) != S_OK) 
         return NULL;
 
-    std::vector<Vertex*> newVertices(base->vertices.size(), 0);
-    SurfaceType *stype = base->type();
-    MeshParticleType *ptype = MeshParticleType_get();
+    std::vector<VertexHandle> newVertices;
+    newVertices.reserve(base_vertices.size());
+    SurfaceType *stype = _base->type();
     FVector3 disp = normal * normLen;
 
-    for(i = 0; i < base->vertices.size(); i++) {
-        FVector3 pos = base->vertices[i]->getPosition() + disp;
-        ParticleHandle *ph = (*ptype)(&pos);
-        newVertices[i] = Vertex::create(ph->id);
-    }
+    for(i = 0; i < base_vertices.size(); i++) 
+        newVertices.push_back(Vertex::create(base_vertices[i].getPosition() + disp));
 
-    std::vector<Surface*> newSurfaces;
-    for(i = 0; i < base->vertices.size(); i++) {
-        j = i + 1 >= base->vertices.size() ? i + 1 - base->vertices.size() : i + 1;
-        Surface *s = (*stype)({
-            base->vertices[i], 
-            base->vertices[j], 
+    std::vector<SurfaceHandle> newSurfaces;
+    for(i = 0; i < base_vertices.size(); i++) {
+        j = i + 1 >= base_vertices.size() ? i + 1 - base_vertices.size() : i + 1;
+        SurfaceHandle s = (*stype)({
+            base_vertices[i], 
+            base_vertices[j], 
             newVertices[j], 
             newVertices[i]
         });
@@ -856,7 +1212,7 @@ Body *BodyType::extrude(Surface *base, const FloatP_t &normLen) {
     newSurfaces.push_back(base);
     newSurfaces.push_back((*stype)(newVertices));
 
-    Body *b = (*this)(newSurfaces);
+    BodyHandle b = (*this)(newSurfaces);
     if(!b) {
         return NULL;
     }
@@ -864,10 +1220,16 @@ Body *BodyType::extrude(Surface *base, const FloatP_t &normLen) {
     if(!Mesh::get()->qualityWorking()) 
         MeshSolver::positionChanged();
 
-    MeshSolver::log(MeshLogEventType::Create, {base->objectId(), b->objectId()}, {base->objType(), b->objType()}, "extrude");
+    MeshSolver::log(MeshLogEventType::Create, {base.id, b.id}, {base.objType(), b.objType()}, "extrude");
 
     return b;
 }
+
+
+////////
+// io //
+////////
+
 
 namespace TissueForge::io {
 
@@ -943,17 +1305,17 @@ namespace TissueForge::io {
         }
         TissueForge::models::vertex::BodyType *detype = solver->getBodyType(typeId_itr->second);
 
-        std::vector<TissueForge::models::vertex::Surface*> surfaces;
+        std::vector<TissueForge::models::vertex::SurfaceHandle> surfaces;
         std::vector<int> surfacesIds;
         for(auto &surfaceIdOld : surfacesIds) {
             auto surfaceId_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.find(surfaceIdOld);
             if(surfaceId_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.end()) {
                 return tf_error(E_FAIL, "Could not identify surface");
             }
-            surfaces.push_back(mesh->getSurface(surfaceId_itr->second));
+            surfaces.emplace_back(surfaceId_itr->second);
         }
 
-        *dataElement = (*detype)(surfaces);
+        *dataElement = (*detype)(surfaces).body();
 
         if(!(*dataElement) || (*dataElement)->typeId < 0) {
             if((*dataElement)) {
@@ -973,6 +1335,30 @@ namespace TissueForge::io {
         if(fileElement.children.find("species") != fileElement.children.end()) {
             TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "species", &(*dataElement)->species);
         }
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::BodyHandle &dataElement, const MetaData &metaData, IOElement *fileElement) {
+
+        IOElement *fe;
+
+        TF_MESH_BODYIOTOEASY(fe, "id", dataElement.id);
+
+        fileElement->type = "BodyHandle";
+
+        return S_OK;
+    }
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::BodyHandle *dataElement) {
+        
+        IOChildMap::const_iterator feItr;
+
+        int id;
+        TF_MESH_BODYIOFROMEASY(feItr, fileElement.children, metaData, "id", &id);
+        *dataElement = TissueForge::models::vertex::BodyHandle(id);
 
         return S_OK;
     }

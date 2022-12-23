@@ -49,11 +49,23 @@ namespace TissueForge::io {
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Vertex **dataElement);
 
     template <>
+    HRESULT toFile(const TissueForge::models::vertex::VertexHandle &dataElement, const MetaData &metaData, IOElement *fileElement);
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::VertexHandle *dataElement);
+
+    template <>
     HRESULT toFile(TissueForge::models::vertex::Surface *dataElement, const MetaData &metaData, IOElement *fileElement);
 
     /** Does not assemble mesh child connectivity */
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Surface **dataElement);
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::SurfaceHandle &dataElement, const MetaData &metaData, IOElement *fileElement);
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::SurfaceHandle *dataElement);
 
     template <>
     HRESULT toFile(const TissueForge::models::vertex::SurfaceType &dataElement, const MetaData &metaData, IOElement *fileElement);
@@ -67,6 +79,12 @@ namespace TissueForge::io {
     /** Does not assemble mesh child connectivity */
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Body **dataElement);
+
+    template <>
+    HRESULT toFile(const TissueForge::models::vertex::BodyHandle &dataElement, const MetaData &metaData, IOElement *fileElement);
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::BodyHandle *dataElement);
 
     template <>
     HRESULT toFile(const TissueForge::models::vertex::BodyType &dataElement, const MetaData &metaData, IOElement *fileElement);

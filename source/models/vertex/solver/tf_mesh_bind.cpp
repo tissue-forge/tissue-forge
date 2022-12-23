@@ -19,8 +19,41 @@
 
 #include "tf_mesh_bind.h"
 
+#include <tfError.h>
 
+
+using namespace TissueForge;
 using namespace TissueForge::models::vertex;
+
+
+#define VertexBind_INVALIDHANDLERR { tf_error(E_FAIL, "Invalid handle"); }
+
+static HRESULT VertexBind_getObj(const VertexHandle &h, Vertex **o) {
+    *o = h.vertex();
+    if(!o) {
+        VertexBind_INVALIDHANDLERR;
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+static HRESULT VertexBind_getObj(const SurfaceHandle &h, Surface **o) {
+    *o = h.surface();
+    if(!o) {
+        VertexBind_INVALIDHANDLERR;
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+static HRESULT VertexBind_getObj(const BodyHandle &h, Body **o) {
+    *o = h.body();
+    if(!o) {
+        VertexBind_INVALIDHANDLERR;
+        return E_FAIL;
+    }
+    return S_OK;
+}
 
 
 namespace TissueForge::models::vertex::bind { 
@@ -31,7 +64,10 @@ namespace TissueForge::models::vertex::bind {
         return S_OK;
     }
 
-    HRESULT body(MeshObjActor *a, Body *b) {
+    HRESULT body(MeshObjActor *a, const BodyHandle &h) {
+        Body *b;
+        if(VertexBind_getObj(h, &b) != S_OK) 
+            return E_FAIL;
         b->actors.push_back(a);
         return S_OK;
     }
@@ -41,7 +77,10 @@ namespace TissueForge::models::vertex::bind {
         return S_OK;
     }
 
-    HRESULT surface(MeshObjActor *a, Surface *s) { 
+    HRESULT surface(MeshObjActor *a, const SurfaceHandle &h) { 
+        Surface *s;
+        if(VertexBind_getObj(h, &s) != S_OK) 
+            return E_FAIL;
         s->actors.push_back(a);
         return S_OK;
     }

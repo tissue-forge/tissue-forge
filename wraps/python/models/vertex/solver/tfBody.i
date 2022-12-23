@@ -22,14 +22,14 @@
 #include <models/vertex/solver/tfBody.h>
 %}
 
-%template(vectorMeshBody) std::vector<TissueForge::models::vertex::Body*>;
-%template(vectorvectorvectorMeshBody) std::vector<std::vector<std::vector<TissueForge::models::vertex::Body*> > >;
-
 vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 
+//////////
+// Body //
+//////////
+
 %rename(_neighborBodies) TissueForge::models::vertex::Body::neighborBodies;
-%rename(_split) TissueForge::models::vertex::Body::split;
-%rename(destroy_c) TissueForge::models::vertex::Body::destroy(Body*);
+%rename(update_internals) TissueForge::models::vertex::Body::updateInternals;
 %rename(position_changed) TissueForge::models::vertex::Body::positionChanged;
 %rename(find_vertex) TissueForge::models::vertex::Body::findVertex;
 %rename(find_surface) TissueForge::models::vertex::Body::findSurface;
@@ -41,6 +41,31 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 %rename(contact_area) TissueForge::models::vertex::Body::contactArea;
 %rename(is_outside) TissueForge::models::vertex::Body::isOutside;
 
+%rename(_destroy_o) TissueForge::models::vertex::Body::destroy(Body*);
+%rename(_destroy_h) TissueForge::models::vertex::Body::destroy(BodyHandle&);
+
+////////////////
+// BodyHandle //
+////////////////
+
+%rename(_body) TissueForge::models::vertex::BodyHandle::body;
+%rename(_neighborBodies) TissueForge::models::vertex::BodyHandle::neighborBodies;
+%rename(update_internals) TissueForge::models::vertex::BodyHandle::updateInternals;
+%rename(position_changed) TissueForge::models::vertex::BodyHandle::positionChanged;
+%rename(find_vertex) TissueForge::models::vertex::BodyHandle::findVertex;
+%rename(find_surface) TissueForge::models::vertex::BodyHandle::findSurface;
+%rename(neighbor_surfaces) TissueForge::models::vertex::BodyHandle::neighborSurfaces;
+%rename(get_vertex_area) TissueForge::models::vertex::BodyHandle::getVertexArea;
+%rename(get_vertex_volume) TissueForge::models::vertex::BodyHandle::getVertexVolume;
+%rename(get_vertex_mass) TissueForge::models::vertex::BodyHandle::getVertexMass;
+%rename(find_interface) TissueForge::models::vertex::BodyHandle::findInterface;
+%rename(contact_area) TissueForge::models::vertex::BodyHandle::contactArea;
+%rename(is_outside) TissueForge::models::vertex::BodyHandle::isOutside;
+
+//////////////
+// BodyType //
+//////////////
+
 %rename(_isRegistered) TissueForge::models::vertex::BodyType::isRegistered;
 %rename(_getInstances) TissueForge::models::vertex::BodyType::getInstances;
 %rename(_getInstanceIds) TissueForge::models::vertex::BodyType::getInstanceIds;
@@ -49,11 +74,13 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 %rename(register_type) TissueForge::models::vertex::BodyType::registerType;
 
 %rename(_vertex_solver_Body) TissueForge::models::vertex::Body;
+%rename(_vertex_solver_BodyHandle) TissueForge::models::vertex::BodyHandle;
 %rename(_vertex_solver_BodyType) TissueForge::models::vertex::BodyType;
 
 %include <models/vertex/solver/tfBody.h>
 
 vertex_solver_MeshObj_extend_py(TissueForge::models::vertex::Body)
+vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::BodyHandle)
 vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
 
 %extend TissueForge::models::vertex::Body {
@@ -110,23 +137,92 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
         def volume_constraints(self):
             return _vertex_solver_MeshObjActor_getVolumeConstraint(self)
 
-        def split(self, cp_pos, cp_norm, stype=None):
+        @classmethod
+        def destroy_c(cls, b):
             """
-            Split into two bodies. The split is defined by a cut plane
+            Destroy a body. 
+            
+            Any resulting surfaces without a body are also destroyed. 
 
-            :param cp_pos: position on the cut plane
-            :param cp_norm: cut plane normal
-            :param stype: type of newly created surface. taken from connected surfaces if not specified
+            :param b: body to destroy or its handle
             """
-            if not isinstance(cp_pos, FVector3):
-                cp_pos = FVector3(*cp_pos)
-            if not isinstance(cp_norm, FVector3):
-                cp_norm = FVector3(*cp_norm)
+            if isinstance(b, _vertex_solver_Body):
+                return cls._destroy_o(b)
+            elif isinstance(b, _vertex_solver_BodyHandle):
+                return cls._destroy_h(b)
+            else:
+                raise TypeError
+    %}
+}
 
-            result = self._split(cp_pos, cp_norm, stype)
-            if result is not None:
-                result.thisown = 0
-            return result
+%extend TissueForge::models::vertex::BodyHandle {
+    %pythoncode %{
+        @property
+        def body(self):
+            return self._body()
+
+        @property
+        def surfaces(self):
+            return self.getSurfaces()
+
+        @property
+        def vertices(self):
+            return self.getVertices()
+
+        @property
+        def neighbor_bodies(self):
+            return self._neighborBodies()
+
+        @property
+        def density(self):
+            return self.getDensity()
+
+        @density.setter
+        def density(self, _density):
+            self.setDensity(_density)
+
+        @property
+        def centroid(self):
+            return self.getCentroid()
+
+        @property
+        def velocity(self):
+            return self.getVelocity()
+
+        @property
+        def area(self):
+            return self.getArea()
+
+        @property
+        def volume(self):
+            return self.getVolume()
+
+        @property
+        def mass(self):
+            return self.getMass()
+
+        @property
+        def species(self):
+            return self.getSpecies()
+
+        @species.setter
+        def species(self, _s):
+            self.setSpecies(_s)
+
+        @property
+        def body_forces(self):
+            o = self.body
+            return _vertex_solver_MeshObjActor_getBodyForce(o) if o is not None else None
+
+        @property
+        def surface_area_constraints(self):
+            o = self.body
+            return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(o) if o is not None else None
+
+        @property
+        def volume_constraints(self):
+            o = self.body
+            return _vertex_solver_MeshObjActor_getVolumeConstraint(o) if o is not None else None
     %}
 }
 

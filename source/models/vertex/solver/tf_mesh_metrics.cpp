@@ -27,6 +27,9 @@
 using namespace TissueForge;
 
 
+#define MeshMetrics_INVALIDHANDLERR { tf_error(E_FAIL, "Invalid handle"); }
+
+
 static FMatrix3 calculateEdgeStrain(const FVector3 &pos_rel, const FVector3 &vel_rel) {
     FMatrix3 result;
     
@@ -49,7 +52,7 @@ static FMatrix3 calculateEdgeStrain(const FVector3 &pos_rel, const FVector3 &vel
 namespace TissueForge::models::vertex {
 
 
-FMatrix3 edgeStrain(Vertex *v1, Vertex *v2) {
+static FMatrix3 MeshMetrics_edgeStrain(Vertex *v1, Vertex *v2) {
     ParticleHandle *p1 = v1->particle();
     ParticleHandle *p2 = v2->particle();
 
@@ -58,17 +61,34 @@ FMatrix3 edgeStrain(Vertex *v1, Vertex *v2) {
     return calculateEdgeStrain(pos_rel, vel_rel);
 }
 
-FMatrix3 vertexStrain(Vertex *v) {
+FMatrix3 edgeStrain(const VertexHandle &v1, const VertexHandle &v2) {
+    Vertex *_v1 = v1.vertex();
+    Vertex *_v2 = v2.vertex();
+    if(!_v1 || !_v2) {
+        MeshMetrics_INVALIDHANDLERR;
+        return FMatrix3();
+    }
+
+    return MeshMetrics_edgeStrain(_v1, _v2);
+}
+
+FMatrix3 vertexStrain(const VertexHandle &v) {
     
     FMatrix3 result(0);
 
-    std::vector<Vertex*> nbs_v = v->neighborVertices();
+    Vertex *_v = v.vertex();
+    if(!_v) {
+        MeshMetrics_INVALIDHANDLERR;
+        return result;
+    }
+
+    std::vector<Vertex*> nbs_v = _v->neighborVertices();
     if(nbs_v.size() == 0) {
         tf_error(E_FAIL, "Vertex is insufficiently connected");
         return result;
     }
 
-    const FVector3 v_pos = v->getPosition();
+    const FVector3 v_pos = _v->getPosition();
 
     FloatP_t totLen2 = 0;
     std::vector<FloatP_t> weights;
@@ -83,7 +103,7 @@ FMatrix3 vertexStrain(Vertex *v) {
     const FloatP_t fact = 2.0 / nbs_v.size();
     for(int i = 0; i < nbs_v.size(); i++) {
         const FloatP_t wi = fact - weights[i] / totLen2;
-        result += edgeStrain(v, nbs_v[i]) * wi;
+        result += MeshMetrics_edgeStrain(_v, nbs_v[i]) * wi;
     }
 
     return result;

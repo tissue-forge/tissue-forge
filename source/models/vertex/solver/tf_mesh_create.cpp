@@ -79,7 +79,7 @@ static HRESULT findThirdAxis(const std::string &ax_1, const std::string &ax_2, s
     return S_OK;
 }
 
-std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
+std::vector<std::vector<SurfaceHandle> > TissueForge::models::vertex::createQuadMesh(
     SurfaceType *stype,
     const FVector3 &startPos, 
     const unsigned int &num_1, 
@@ -104,14 +104,14 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
     mesh->ensureAvailableSurfaces(num_1 * num_2);
     mesh->ensureAvailableVertices(4 * num_1 * num_2);
 
-    std::vector<std::vector<Surface*> > result = std::vector<std::vector<Surface*> >(num_1, std::vector<Surface*>(num_2, NULL));
+    std::vector<std::vector<SurfaceHandle> > result = std::vector<std::vector<SurfaceHandle> >(num_1, std::vector<SurfaceHandle>(num_2, SurfaceHandle()));
 
     FVector3 vertRelCoords[4];
     vertRelCoords[1][ax_1_comp] = len_1;
     vertRelCoords[2][ax_1_comp] = len_1;
     vertRelCoords[2][ax_2_comp] = len_2;
     vertRelCoords[3][ax_2_comp] = len_2;
-    std::vector<Surface*> surfs_new;
+    std::vector<SurfaceHandle> surfs_new;
 
     for(size_t i = 0; i < num_1; i++) {
 
@@ -121,18 +121,20 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
 
             FloatP_t y_start = startPos[ax_2_comp] + j * len_2;
 
-            Surface *sq_left = i == 0 ? NULL : result[i-1][j];
-            Surface *sq_down = j == 0 ? NULL : result[i][j-1];
+            SurfaceHandle sq_left = i == 0 ? SurfaceHandle() : result[i-1][j];
+            SurfaceHandle sq_down = j == 0 ? SurfaceHandle() : result[i][j-1];
 
-            Vertex *v0 = NULL, *v1 = NULL, *v2 = NULL, *v3 = NULL;
+            VertexHandle v0, v1, v2, v3;
             if(sq_left) {
-                v0 = sq_left->getVertices()[1];
-                v3 = sq_left->getVertices()[2];
+                auto sq_left_vertices = sq_left.getVertices();
+                v0 = sq_left_vertices[1];
+                v3 = sq_left_vertices[2];
             } 
             if(sq_down) {
+                auto sq_down_vertices = sq_down.getVertices();
                 if(!v0) 
-                    v0 = sq_down->getVertices()[3];
-                v1 = sq_down->getVertices()[2];
+                    v0 = sq_down_vertices[3];
+                v1 = sq_down_vertices[2];
             }
 
             if(!v0) {
@@ -164,13 +166,9 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
                 v3 = Vertex::create(vpos);
             }
 
-            Surface *s_new = (*stype)({v0, v1, v2, v3});
-            if(!s_new || s_new->objectId() < 0) {
+            SurfaceHandle s_new = (*stype)({v0, v1, v2, v3});
+            if(!s_new) {
                 tf_error(E_FAIL, "Surface could not be created");
-                if(s_new) {
-                    s_new->destroy();
-                    delete s_new;
-                }
                 return {};
             }
             result[i][j] = s_new;
@@ -185,7 +183,7 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createQuadMesh(
     return result;
 }
 
-std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::createPLPDMesh(
+std::vector<std::vector<std::vector<BodyHandle> > > TissueForge::models::vertex::createPLPDMesh(
     BodyType *btype, 
     SurfaceType *stype,
     const FVector3 &startPos, 
@@ -220,11 +218,11 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
     vertRelCoords[2][ax_2_comp] = len_2;
     vertRelCoords[3][ax_2_comp] = len_2;
 
-    std::vector<std::vector<std::vector<Surface*> > > surfs_12, surfs_13, surfs_23;
+    std::vector<std::vector<std::vector<SurfaceHandle> > > surfs_12, surfs_13, surfs_23;
     surfs_12.reserve(num_3 + 1);
     surfs_13.reserve(num_2 + 1);
     surfs_23.reserve(num_1 + 1);
-    std::vector<Surface*> surfs_new;
+    std::vector<SurfaceHandle> surfs_new;
     surfs_new.reserve((num_1 + 1) * (num_2 + 1) * (num_3 + 1));
     for(size_t i = 0; i <= num_3; i++) {
         FVector3 startPos_i(startPos);
@@ -262,24 +260,24 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
         return {};
     }
 
-    std::vector<std::vector<std::vector<Body*> > > result = 
-        std::vector<std::vector<std::vector<Body*>>>(
-            num_1, std::vector<std::vector<Body*>>(
-                num_2, std::vector<Body*>(
-                    num_3, NULL
+    std::vector<std::vector<std::vector<BodyHandle> > > result = 
+        std::vector<std::vector<std::vector<BodyHandle> > >(
+            num_1, std::vector<std::vector<BodyHandle> >(
+                num_2, std::vector<BodyHandle>(
+                    num_3, BodyHandle()
     )));
 
     for(size_t i = 0; i < num_1; i++) {
-        std::vector<std::vector<Surface*> > surfs_23_in = surfs_23[i];
-        std::vector<std::vector<Surface*> > surfs_23_ip = surfs_23[i+1];
+        std::vector<std::vector<SurfaceHandle> > surfs_23_in = surfs_23[i];
+        std::vector<std::vector<SurfaceHandle> > surfs_23_ip = surfs_23[i+1];
         for(size_t j = 0; j < num_2; j++) {
-            std::vector<std::vector<Surface*> > surfs_13_jn = surfs_13[j];
-            std::vector<std::vector<Surface*> > surfs_13_jp = surfs_13[j+1];
+            std::vector<std::vector<SurfaceHandle> > surfs_13_jn = surfs_13[j];
+            std::vector<std::vector<SurfaceHandle> > surfs_13_jp = surfs_13[j+1];
             for(size_t k = 0; k < num_3; k++) {
-                std::vector<std::vector<Surface*> > surfs_12_kn = surfs_12[k];
-                std::vector<std::vector<Surface*> > surfs_12_kp = surfs_12[k+1];
+                std::vector<std::vector<SurfaceHandle> > surfs_12_kn = surfs_12[k];
+                std::vector<std::vector<SurfaceHandle> > surfs_12_kp = surfs_12[k+1];
 
-                Body *b_new = (*btype)({
+                BodyHandle b_new = (*btype)({
                     surfs_23_in[j][k],
                     surfs_23_ip[j][k],
                     surfs_13_jn[i][k],
@@ -287,12 +285,8 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
                     surfs_12_kn[i][j],
                     surfs_12_kp[i][j]
                 });
-                if(!b_new || b_new->objectId() < 0) {
+                if(!b_new) {
                     tf_error(E_FAIL, "Body could not be created");
-                    if(b_new) {
-                        b_new->destroy();
-                        delete b_new;
-                    }
                     return {};
                 }
                 result[i][j][k] = b_new;
@@ -304,7 +298,7 @@ std::vector<std::vector<std::vector<Body*> > > TissueForge::models::vertex::crea
     return result;
 }
 
-std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh(
+std::vector<std::vector<SurfaceHandle> > TissueForge::models::vertex::createHex2DMesh(
     SurfaceType *stype, 
     const FVector3 &startPos, 
     const unsigned int &num_1, 
@@ -334,8 +328,8 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
     poly_ax1[ax_1_comp] = 1.f;
     poly_ax2[ax_2_comp] = 1.f;
 
-    std::vector<std::vector<Surface*> > result(num_1, std::vector<Surface*>(num_2, NULL));
-    std::vector<Surface*> surfs_new;
+    std::vector<std::vector<SurfaceHandle> > result(num_1, std::vector<SurfaceHandle>(num_2, SurfaceHandle()));
+    std::vector<SurfaceHandle> surfs_new;
     size_t offset = 0;
 
     for(size_t i = 0; i < num_1; i++) {
@@ -344,13 +338,9 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
             off[ax_1_comp] = (2 * i - (FloatP_t)offset / 2) * hexRad;
             off[ax_2_comp] = (2 * j + (FloatP_t)(offset % 2 != 0)) * hexRadMinor;
             FVector3 center = startPos + off;
-            Surface *s_new = stype->nPolygon(6, center, hexRad, poly_ax1, poly_ax2);
+            SurfaceHandle s_new = stype->nPolygon(6, center, hexRad, poly_ax1, poly_ax2);
             if(!s_new) {
                 tf_error(E_FAIL, "Surface could not be created");
-                if(s_new) {
-                    s_new->destroy();
-                    delete s_new;
-                }
                 return {};
             }
             result[i][j] = s_new;
@@ -366,7 +356,7 @@ std::vector<std::vector<Surface*> > TissueForge::models::vertex::createHex2DMesh
     return result;
 }
 
-std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::createHex3DMesh(
+std::vector<std::vector<std::vector<BodyHandle> > > TissueForge::models::vertex::createHex3DMesh(
     BodyType *btype, 
     SurfaceType *stype,
     const FVector3 &startPos, 
@@ -394,7 +384,7 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
     mesh->ensureAvailableSurfaces(8 * num_1 * num_2 * num_3);
     mesh->ensureAvailableVertices(12 * num_1 * num_2 * num_3);
 
-    std::vector<std::vector<std::vector<Surface*> > > surfs_3;
+    std::vector<std::vector<std::vector<SurfaceHandle> > > surfs_3;
     surfs_3.reserve(num_3 + 1);
     for(size_t i = 0; i <= num_3; i++) {
         FVector3 startPos_i(startPos);
@@ -402,18 +392,18 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
         surfs_3.push_back(createHex2DMesh(stype, startPos_i, num_1, num_2, hexRad, ax_1, ax_2));
     }
 
-    std::vector<std::vector<std::vector<Body*> > > result = 
-        std::vector<std::vector<std::vector<Body*>>>(
-            num_1, std::vector<std::vector<Body*>>(
-                num_2, std::vector<Body*>(
-                    num_3, NULL
+    std::vector<std::vector<std::vector<BodyHandle> > > result = 
+        std::vector<std::vector<std::vector<BodyHandle> > >(
+            num_1, std::vector<std::vector<BodyHandle> >(
+                num_2, std::vector<BodyHandle>(
+                    num_3, BodyHandle()
     )));
 
-    std::vector<std::vector<std::vector<std::vector<Surface*> > > > surfSides = 
-        std::vector<std::vector<std::vector<std::vector<Surface*> > > >(num_1, 
-            std::vector<std::vector<std::vector<Surface*> > >(num_2, 
-                std::vector<std::vector<Surface*> >(num_3, 
-                    std::vector<Surface*>(6, NULL
+    std::vector<std::vector<std::vector<std::vector<SurfaceHandle> > > > surfSides = 
+        std::vector<std::vector<std::vector<std::vector<SurfaceHandle> > > >(num_1, 
+            std::vector<std::vector<std::vector<SurfaceHandle> > >(num_2, 
+                std::vector<std::vector<SurfaceHandle> >(num_3, 
+                    std::vector<SurfaceHandle>(6, SurfaceHandle()
     ))));
 
     for(size_t i = 0; i < num_1; i++) {
@@ -452,10 +442,10 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
             }
 
             for(size_t k = 0; k < num_3; k++) {
-                Surface *s_bot = surfs_3[k][i][j];
-                Surface *s_top = surfs_3[k+1][i][j];
-                std::vector<Surface*> surfSides_k;
-                surfSides_k.reserve(6);
+                SurfaceHandle s_bot = surfs_3[k][i][j];
+                SurfaceHandle s_top = surfs_3[k+1][i][j];
+                std::vector<SurfaceHandle> surfSides_k;
+                surfSides_k.reserve(8);
                 surfSides_k.push_back(s_bot);
                 surfSides_k.push_back(s_top);
 
@@ -463,26 +453,22 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
                     int nbs_reli = surfRelCoords_j[n][0];
                     int nbs_relj = surfRelCoords_j[n][1];
 
-                    Surface *nbs_surf = NULL;
+                    SurfaceHandle nbs_surf;
                     if(i + nbs_reli >= 0 && i + nbs_reli < surfSides.size()) 
                         if(j + nbs_relj >= 0 && j + nbs_relj < surfSides[i + nbs_reli].size()) 
                             nbs_surf = surfSides[i + nbs_reli][j + nbs_relj][k][surfSharedVerts[n][1][1]];
                     if(!nbs_surf) {
-                        std::vector<Vertex*> verts_bot, verts_top;
-                        verts_bot = s_bot->getVertices();
-                        verts_top = s_top->getVertices();
-                        Vertex *v0 = verts_bot[surfSharedVerts[n][0][0]];
-                        Vertex *v1 = verts_bot[surfSharedVerts[n][1][0]];
-                        Vertex *v2 = verts_top[surfSharedVerts[n][1][0]];
-                        Vertex *v3 = verts_top[surfSharedVerts[n][0][0]];
+                        std::vector<VertexHandle> verts_bot, verts_top;
+                        verts_bot = s_bot.getVertices();
+                        verts_top = s_top.getVertices();
+                        VertexHandle v0 = verts_bot[surfSharedVerts[n][0][0]];
+                        VertexHandle v1 = verts_bot[surfSharedVerts[n][1][0]];
+                        VertexHandle v2 = verts_top[surfSharedVerts[n][1][0]];
+                        VertexHandle v3 = verts_top[surfSharedVerts[n][0][0]];
 
                         nbs_surf = (*stype)({v0, v1, v2, v3});
-                        if(!nbs_surf || nbs_surf->objectId() < 0) {
+                        if(!nbs_surf) {
                             tf_error(E_FAIL, "Surface could not be created");
-                            if(nbs_surf) {
-                                nbs_surf->destroy();
-                                delete nbs_surf;
-                            }
                             return {};
                         }
                     }
@@ -491,13 +477,9 @@ std::vector<std::vector<std::vector<Body*>> > TissueForge::models::vertex::creat
                     surfSides_k.push_back(nbs_surf);
                 }
 
-                Body *b_k = (*btype)(surfSides_k);
+                BodyHandle b_k = (*btype)(surfSides_k);
                 if(!b_k) {
                     tf_error(E_FAIL, "Body could not be created");
-                    if(b_k) {
-                        b_k->destroy();
-                        delete b_k;
-                    }
                     return {};
                 }
                 result[i][j][k] = b_k;
