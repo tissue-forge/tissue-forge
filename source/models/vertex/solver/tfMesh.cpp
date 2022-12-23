@@ -180,12 +180,13 @@ HRESULT Mesh::incrementSurfaces(const size_t &numIncr) {
             Body &b = m_bodies[bid];
             if(b._objId < 0) 
                 return;
-            std::vector<Surface*> b_surfaces = b.surfaces;
+            std::vector<Surface*> &b_surfaces = b.surfaces;
             for(unsigned int i = 0; i < b_surfaces.size(); i++) {
                 Surface *s = b_surfaces[i];
-                b.surfaces[i] = &(*new_surfaces)[i];
+                b.surfaces[i] = &(*new_surfaces)[s->_objId];
             }
         };
+        parallel_for(bodies->size(), func_bodies);
 
     }
     
