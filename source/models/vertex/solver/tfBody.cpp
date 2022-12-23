@@ -112,7 +112,6 @@ static Body *Body_create(const std::vector<SurfaceHandle> &_surfaces) {
         TF_Log(LOG_ERROR);
         return NULL;
     }
-    result->updateInternals();
     return result;
 };
 
@@ -991,13 +990,13 @@ static BodyHandle BodyType_fromSurfaces(BodyType *btype, const std::vector<Surfa
             }
 
     BodyHandle b = Body::create(surfaces);
-    if(!b || btype->add(b) != S_OK) {
+    Body *_b = b.body();
+    if(!_b || btype->add(b) != S_OK) {
         TF_Log(LOG_ERROR) << "Failed to create instance";
-        if(b) 
-            b.destroy();
         return NULL;
     }
-    b.setDensity(btype->density);
+    _b->setDensity(btype->density);
+    _b->updateInternals();
     return b;
 }
 

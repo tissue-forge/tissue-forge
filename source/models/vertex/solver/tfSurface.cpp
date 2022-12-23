@@ -421,16 +421,18 @@ HRESULT Surface::refreshBodies() {
         if(n.dot(normal) > 0) {
             if(bo) {
                 TF_Log(LOG_ERROR) << "Two bodies registered on the same side (outside)";
-                return E_FAIL;
+                bi = b2;
             }
-            bo = b2;
+            else 
+                bo = b2;
         }
         else {
             if(bi) {
                 TF_Log(LOG_ERROR) << "Two bodies registered on the same side (inside)";
-                return E_FAIL;
+                bo = b2;
             }
-            bi = b2;
+            else 
+                bi = b2;
         }
     }
 
@@ -674,9 +676,22 @@ HRESULT Surface::positionChanged() {
 
     area /= 2.f;
     _volumeContr /= 6.f;
-    if(normal.isZero()) 
-        return tf_error(E_FAIL, "Zero normal");
-    normal = normal.normalized();
+
+    // Handle small surfaces
+    // If the normal cannot be determined, 
+    // then choose an arbitrary normal and hope for the best
+    FVector3 _normal = normal.normalized();
+    if(Magnum::Math::isNan(_normal)) {
+        FloatP_t normLen = normal.length();
+        if(normLen != 0) 
+            normal /= normLen;
+        else {
+            TF_Log(LOG_DEBUG) << "Zero normal";
+            normal = {1.0, 0.0, 0.0};
+        }
+    } 
+    else 
+        normal = _normal;
 
     return S_OK;
 }
