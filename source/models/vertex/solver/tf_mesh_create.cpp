@@ -176,9 +176,29 @@ std::vector<std::vector<SurfaceHandle> > TissueForge::models::vertex::createQuad
         }
     }
 
-    if(Surface::sew(surfs_new) != S_OK) {
-        tf_error(E_FAIL, "Sewing failed");
-        return {};
+    std::tuple<int, int> offsets[] = {
+        {0, -1}, {0, 1}, 
+        {-1, 0}, {-1, -1}, {-1, 1}, 
+        {1, 0}, {1, -1}, {1, 1}
+    };
+
+    for(int i = 0; i < num_1; i++) {
+        for(int j = 0; j < num_2; j++) {
+            std::vector<SurfaceHandle> sew_targets;
+            sew_targets.push_back(result[i][j]);
+            for(int noffset = 0; noffset < 8; noffset++) {
+                int ni, nj;
+                std::tie(ni, nj) = offsets[noffset];
+                ni += i;
+                nj += j;
+                if(ni >= 0 && ni < num_1 && nj >= 0 && nj < num_2) 
+                    sew_targets.push_back(result[ni][nj]);
+            }
+            if(Surface::sew(sew_targets) != S_OK) {
+                tf_error(E_FAIL, "Sewing failed");
+                return {};
+            }
+        }
     }
     return result;
 }
@@ -255,10 +275,22 @@ std::vector<std::vector<std::vector<BodyHandle> > > TissueForge::models::vertex:
                 surfs_new.push_back(s);
     }
 
-    if(Surface::sew(surfs_new) != S_OK) {
-        tf_error(E_FAIL, "Sewing failed");
-        return {};
-    }
+    for(int i = 0; i < num_1; i++) 
+        for(int j = 0; j < num_2; j++) 
+            for(int k = 0; k < num_3; k++) {
+                std::vector<SurfaceHandle> sew_targets = {
+                    surfs_12[k][i][j],
+                    surfs_12[k+1][i][j],
+                    surfs_13[j][i][k],
+                    surfs_13[j+1][i][k],
+                    surfs_23[i][j][k],
+                    surfs_23[i+1][j][k]
+                };
+                if(Surface::sew(sew_targets) != S_OK) {
+                    tf_error(E_FAIL, "Sewing failed");
+                    return {};
+                }
+            }
 
     std::vector<std::vector<std::vector<BodyHandle> > > result = 
         std::vector<std::vector<std::vector<BodyHandle> > >(
@@ -349,9 +381,32 @@ std::vector<std::vector<SurfaceHandle> > TissueForge::models::vertex::createHex2
         offset++;
     }
 
-    if(Surface::sew(surfs_new) != S_OK) {
-        tf_error(E_FAIL, "Sewing failed");
-        return {};
+    std::tuple<int, int> offsets[] = {
+        {0, -1}, {0, 1}, 
+        {-1, -1}, {-1, 0}, 
+        {1, -1}, {1, 0}
+    };
+
+    for(int i = 0; i < num_1; i++) {
+        int offset = i % 2 != 0;
+        for(int j = 0; j < num_2; j++) {
+            std::vector<SurfaceHandle> sew_targets;
+            sew_targets.push_back(result[i][j]);
+            for(int noffset = 0; noffset < 8; noffset++) {
+                int ni, nj;
+                std::tie(ni, nj) = offsets[noffset];
+                if(ni != 0) 
+                    nj += offset;
+                ni += i;
+                nj += j;
+                if(ni >= 0 && ni < num_1 && nj >= 0 && nj < num_2) 
+                    sew_targets.push_back(result[ni][nj]);
+            }
+            if(Surface::sew(sew_targets) != S_OK) {
+                tf_error(E_FAIL, "Sewing failed");
+                return {};
+            }
+        }
     }
     return result;
 }
