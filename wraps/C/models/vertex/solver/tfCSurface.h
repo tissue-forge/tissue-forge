@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCSurface.h
+ * 
+ */
+
 #ifndef _WRAPS_C_VERTEX_SOLVER_TFCSURFACE_H_
 #define _WRAPS_C_VERTEX_SOLVER_TFCSURFACE_H_
 

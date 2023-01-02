@@ -45,8 +45,10 @@
 %rename(size_vertices) TissueForge::models::vertex::MeshSolver::sizeVertices;
 %rename(size_surfaces) TissueForge::models::vertex::MeshSolver::sizeSurfaces;
 %rename(size_bodies) TissueForge::models::vertex::MeshSolver::sizeBodies;
+%rename(position_changed) TissueForge::models::vertex::MeshSolver::positionChanged;
 %rename(get_log) TissueForge::models::vertex::MeshSolver::getLog;
 
 %rename(_vertex_solver_MeshSolver) TissueForge::models::vertex::MeshSolver;
+%rename(_vertex_solver_MeshSolverTimers) TissueForge::models::vertex::MeshSolverTimers;
 
 %include <models/vertex/solver/tfMeshSolver.h>

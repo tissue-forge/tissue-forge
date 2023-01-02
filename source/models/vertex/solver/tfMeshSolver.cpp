@@ -17,8 +17,6 @@
  * 
  ******************************************************************************/
 
-// todo: parallelize execution
-
 #include "tfMeshSolver.h"
 
 #include "tfMeshObj.h"

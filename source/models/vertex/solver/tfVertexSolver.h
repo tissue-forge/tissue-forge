@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfVertexSolver.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFVERTEXSOLVER_H_
 #define _MODELS_VERTEX_SOLVER_TFVERTEXSOLVER_H_
 

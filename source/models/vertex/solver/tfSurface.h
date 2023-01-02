@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfSurface.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFSURFACE_H_
 #define _MODELS_VERTEX_SOLVER_TFSURFACE_H_
 
@@ -75,14 +80,19 @@ namespace TissueForge::models::vertex {
         /** Connected body, if any, where the surface normal is inward-facing */
         Body *b2;
 
+        /** Vertices that define the body */
         std::vector<Vertex*> vertices;
 
+        /** Surface normal */
         FVector3 normal;
 
+        /** Surface centroid */
         FVector3 centroid;
 
+        /** Surface velocity */
         FVector3 velocity;
 
+        /** Surface area */
         FloatP_t area;
 
         /** Volume contributed by this surface to its child bodies */
@@ -93,10 +103,10 @@ namespace TissueForge::models::vertex {
         /** Object actors */
         std::vector<MeshObjActor*> actors;
 
-        /** Species on outward-facing side of the surface, if any */
+        /** Species on outward-facing side of the surface, if any; not currently supported */
         state::StateVector *species1;
 
-        /** Species on inward-facing side of the surface, if any */
+        /** Species on inward-facing side of the surface, if any; not currently supported */
         state::StateVector *species2;
 
         /** Surface style, if any */
@@ -105,82 +115,162 @@ namespace TissueForge::models::vertex {
         Surface();
         ~Surface();
 
-        /** Construct a surface from a set of vertices */
+        /**
+         * @brief Construct a surface from a set of vertices
+         * 
+         * @param _vertices a set of vertices
+         */
         static SurfaceHandle create(const std::vector<VertexHandle> &_vertices);
 
-        /** Construct a surface from a face */
+        /**
+         * @brief Construct a surface from a face
+         * 
+         * @param face a face
+         */
         static SurfaceHandle create(TissueForge::io::ThreeDFFaceData *face);
 
         MESHBOJ_DEFINES_DECL(Body);
         MESHOBJ_DEFINEDBY_DECL(Vertex);
         MESHOBJ_CLASSDEF(MeshObjTypeLabel::SURFACE)
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         std::string str() const;
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString();
 
-        /** Add a vertex */
+        /**
+         * @brief Add a vertex
+         * 
+         * @param v vertex to add
+         */
         HRESULT add(Vertex *v);
 
-        /** Insert a vertex at a location in the list of vertices */
+        /**
+         * @brief Insert a vertex at a location in the list of vertices
+         * 
+         * @param v vertex to insert
+         * @param idx location
+         */
         HRESULT insert(Vertex *v, const int &idx);
 
-        /** Insert a vertex before another vertex */
+        /**
+         * @brief Insert a vertex before another vertex
+         * 
+         * @param v vertex to insert
+         * @param before vertex to insert before
+         */
         HRESULT insert(Vertex *v, Vertex *before);
 
-        /** Insert a vertex between two vertices */
+        /**
+         * @brief Insert a vertex between two vertices
+         * 
+         * @param toInsert vertex to insert
+         * @param v1 first vertex
+         * @param v2 second vertex
+         */
         HRESULT insert(Vertex *toInsert, Vertex *v1, Vertex *v2);
 
-        /** Remove a vertex */
+        /**
+         * @brief Remove a vertex
+         * 
+         * @param v vertex to remove
+         */
         HRESULT remove(Vertex *v);
 
-        /** Replace a vertex at a location in the list of vertices */
+        /**
+         * @brief Replace a vertex at a location in the list of vertices
+         * 
+         * @param toInsert vertex to insert
+         * @param idx location of vertex to replace
+         */
         HRESULT replace(Vertex *toInsert, const int &idx);
 
-        /** Replace a vertex with another vertex */
+        /**
+         * @brief Replace a vertex with another vertex
+         * 
+         * @param toInsert vertex to insert
+         * @param toRemove vertex to remove
+         */
         HRESULT replace(Vertex *toInsert, Vertex *toRemove);
 
-        /** Add a body */
+        /**
+         * @brief Add a body
+         * 
+         * @param b body to add
+         */
         HRESULT add(Body *b);
 
-        /** Remove a body */
+        /**
+         * @brief Remove a body
+         * 
+         * @param b body to remove
+         */
         HRESULT remove(Body *b);
 
-        /** Replace a body at a location in the list of bodies */
+        /**
+         * @brief Replace a body at a location in the list of bodies
+         * 
+         * @param toInsert body to insert
+         * @param idx location of body to remve
+         */
         HRESULT replace(Body *toInsert, const int &idx);
 
-        /** Replace a body with another body */
+        /**
+         * @brief Replace a body with another body
+         * 
+         * @param toInsert body to insert
+         * @param toRemove body to remove
+         */
         HRESULT replace(Body *toInsert, Body *toRemove);
 
         /**
-         * Destroy a surface. 
+         * @brief Destroy a surface. 
          * 
          * Any resulting vertices without a surface are also destroyed. 
+         * 
+         * @param target surface to destroy
          */
         static HRESULT destroy(Surface *target);
 
         /**
-         * Destroy a surface. 
+         * @brief Destroy a surface. 
          * 
          * Any resulting vertices without a surface are also destroyed. 
+         * 
+         * @param target handle to the surface to destroy
          */
         static HRESULT destroy(SurfaceHandle &target);
 
-        /** Refresh internal ordering of defined bodies */
+        /**
+         * @brief Refresh internal ordering of defined bodies
+         */
         HRESULT refreshBodies();
 
-        /** Get the surface type */
+        /**
+         * @brief Get the surface type
+         */
         SurfaceType *type() const;
 
-        /** Become a different type */
+        /**
+         * @brief Become a different type
+         * 
+         * @param stype type to become
+         */
         HRESULT become(SurfaceType *stype);
 
-        /** Get the bodies defined by the surface */
+        /**
+         * @brief Get the bodies defined by the surface
+         */
         std::vector<Body*> getBodies() const;
 
-        /** Get the vertices that define the surface */
+        /**
+         * @brief Get the vertices that define the surface
+         */
         std::vector<Vertex*> getVertices() const { return vertices; }
 
         /**
@@ -197,120 +287,218 @@ namespace TissueForge::models::vertex {
          */
         Body *findBody(const FVector3 &dir) const;
 
-        /** Connected vertices on the same surface. */
+        /**
+         * @brief Connected vertices on the same surface
+         * 
+         * @param v a vertex
+         */
         std::tuple<Vertex*, Vertex*> neighborVertices(const Vertex *v) const;
 
-        /** Connected surfaces on the same body. */
+        /**
+         * @brief Connected surfaces on the same body
+         */
         std::vector<Surface*> neighborSurfaces() const;
 
-        /** Surfaces that share at least one vertex in a set of vertices. */
+        /**
+         * @brief Surfaces that share at least one vertex in a set of vertices
+         * 
+         * @param verts vertices
+         */
         std::vector<Surface*> connectedSurfaces(const std::vector<Vertex*> &verts) const;
 
-        /** Surfaces that share at least one vertex. */
+        /**
+         * @brief Surfaces that share at least one vertex
+         */
         std::vector<Surface*> connectedSurfaces() const;
 
-        /** Get the integer labels of the contiguous edges that this surface shares with another surface */
+        /**
+         * @brief Get the integer labels of the contiguous edges that this surface shares with another surface
+         * 
+         * @param other another surface
+         */
         std::vector<unsigned int> contiguousEdgeLabels(const Surface *other) const;
 
-        /** Get the number of contiguous edges that this surface shares with another surface */
+        /**
+         * @brief Get the number of contiguous edges that this surface shares with another surface
+         * 
+         * @param other another surface
+         */
         unsigned int numSharedContiguousEdges(const Surface *other) const;
 
-        /** Get the surface normal */
+        /**
+         * @brief Get the surface normal
+         */
         FVector3 getNormal() const { return normal; }
 
-        /** Get the centroid */
+        /**
+         * @brief Get the centroid
+         */
         FVector3 getCentroid() const { return centroid; }
 
         /**
-         * Get the velocity, calculated as the velocity of the centroid
-        */
+         * @brief Get the velocity, calculated as the velocity of the centroid
+         */
         FVector3 getVelocity() const { return velocity; }
 
-        /** Get the area */
+        /**
+         * @brief Get the area
+         */
         FloatP_t getArea() const { return area; }
 
-        /** Get the sign of the volume contribution to a body that this surface contributes */
+        /**
+         * @brief Get the sign of the volume contribution to a body that this surface contributes
+         * 
+         * @param body a body
+         */
         FloatP_t volumeSense(const Body *body) const;
 
-        /** Get the volume that this surface contributes to a body */
+        /**
+         * @brief Get the volume that this surface contributes to a body
+         * 
+         * @param body a body
+         */
         FloatP_t getVolumeContr(const Body *body) const { return _volumeContr * volumeSense(body); }
 
-        /** Get the outward facing normal w.r.t. a body */
+        /**
+         * @brief Get the outward facing normal w.r.t. a body
+         * 
+         * @param body a body
+         */
         FVector3 getOutwardNormal(const Body *body) const;
 
-        /** Get the area that a vertex contributes to this surface */
+        /**
+         * @brief Get the area that a vertex contributes to this surface
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexArea(const Vertex *v) const;
 
-        /** Get the normal of a triangle */
+        /**
+         * @brief Get the normal of a triangle
+         * 
+         * @param idx location of first vertex
+         */
         FVector3 triangleNormal(const unsigned int &idx) const;
 
-        /** Get the normal distance to a point; negative distance means that the point is on the inner side */
+        /**
+         * @brief Get the normal distance to a point. 
+         * 
+         * A negative distance means that the point is on the inner side
+         * 
+         * @param pos position
+         */
         FloatP_t normalDistance(const FVector3 &pos) const;
 
-        /** Test whether a point is on the outer side */
+        /**
+         * @brief Test whether a point is on the outer side
+         * 
+         * @param pos position
+         * @return true if the point is on the outer side
+         */
         bool isOutside(const FVector3 &pos) const;
 
-        /** Sew two surfaces 
+        /**
+         * @brief Sew two surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
          * 
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
-        */
+         * 
+         * @param s1 first surface
+         * @param s2 second surface
+         * @param distCf distance criterion coefficient
+         */
         static HRESULT sew(Surface *s1, Surface *s2, const FloatP_t &distCf=0.01);
 
-        /** Sew two surfaces 
+        /**
+         * @brief Sew two surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
          * 
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
-        */
+         * 
+         * @param s1 first surface
+         * @param s2 second surface
+         * @param distCf distance criterion coefficient
+         */
         static HRESULT sew(const SurfaceHandle &s1, const SurfaceHandle &s2, const FloatP_t &distCf=0.01);
 
-        /** Sew a set of surfaces 
+        /**
+         * @brief Sew a set of surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
          * 
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
-        */
+         * 
+         * @param _surfaces a set of surfaces 
+         * @param distCf distance criterion coefficient
+         */
         static HRESULT sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf=0.01);
 
-        /** Sew a set of surfaces 
+        /**
+         * @brief Sew a set of surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
          * 
          * The distance criterion is the square root of the average of the two surface areas, multiplied by a coefficient. 
-        */
+         * 
+         * @param _surfaces a set of surfaces
+         * @param distCf distance criterion coefficient
+         * @return HRESULT 
+         */
         static HRESULT sew(std::vector<SurfaceHandle> _surfaces, const FloatP_t &distCf=0.01);
 
-        /** Merge with a surface. The passed surface is destroyed. 
+        /**
+         * @brief Merge with a surface. The passed surface is destroyed. 
          * 
          * Surfaces must have the same number of vertices. Vertices are paired by nearest distance.
-        */
+         * 
+         * @param toRemove surface to remove
+         * @param lenCfs distance coefficients in [0, 1] for where to place the merged vertex, from each kept vertex to each removed vertex
+         */
         HRESULT merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs);
 
-        /** Create a surface from two vertices and a position */
+        /**
+         * @brief Create a surface from two vertices and a position
+         * 
+         * @param vertIdxStart index of first vertex
+         * @param pos position
+         */
         Surface *extend(const unsigned int &vertIdxStart, const FVector3 &pos);
 
-        /** Create a surface from two vertices of a surface in a mesh by extruding along the normal of the surface
+        /**
+         * @brief Create a surface from two vertices of a surface in a mesh by extruding along the normal of the surface
          * 
          * todo: add support for extruding at an angle w.r.t. the center of the edge and centroid of the base surface
-        */
+         * 
+         * @param vertIdxStart index of first vertex
+         * @param normLen length along surface normal by which to extrude
+         */
         Surface *extrude(const unsigned int &vertIdxStart, const FloatP_t &normLen);
 
-        /** Split into two surfaces
+        /**
+         * @brief Split into two surfaces
          * 
          * Both vertices must already be in the surface and not adjacent
          * 
          * Vertices in the winding from from vertex to second go to newly created surface
          * 
          * Requires updated surface members (e.g., centroid)
-        */
+         * 
+         * @param v1 fist vertex defining the split
+         * @param v2 second vertex defining the split
+         * @return Surface* 
+         */
         Surface *split(Vertex *v1, Vertex *v2);
 
-        /** Split into two surfaces
+        /**
+         * @brief Split into two surfaces
          * 
          * Requires updated surface members (e.g., centroid)
-        */
+         * 
+         * @param cp_pos point on the cut plane
+         * @param cp_norm normal of the cut plane
+         */
         Surface *split(const FVector3 &cp_pos, const FVector3 &cp_norm);
 
 
@@ -323,86 +511,190 @@ namespace TissueForge::models::vertex {
     };
 
 
+    /**
+     * @brief A handle to a @ref Surface. 
+     *
+     * The engine allocates @ref Surface memory in blocks, and @ref Surface
+     * values get moved around all the time, so their addresses change.
+     * 
+     * This is a safe way to work with a @ref Surface.
+     */
     struct CAPI_EXPORT SurfaceHandle {
 
         int id;
 
         SurfaceHandle(const int &_id=-1);
 
-        /** Get the underlying object, if any */
+        /**
+         * @brief Get the underlying object, if any
+         */
         Surface *surface() const;
 
+        /**
+         * @brief Test whether defines a body
+         * 
+         * @param b a body
+         * @return true if defines a body
+         */
         bool defines(const BodyHandle &b) const;
 
+        /**
+         * @brief Test whether defined by a vertex
+         * 
+         * @param v a vertex
+         * @return true if defined by a vertex
+         */
         bool definedBy(const VertexHandle &v) const;
 
-        /** Get the mesh object type */
+        /**
+         * @brief Get the mesh object type
+         */
         MeshObjTypeLabel objType() const { return MeshObjTypeLabel::SURFACE; }
 
-        /** Destroy the body. */
+        /**
+         * @brief Destroy the body
+         */
         HRESULT destroy();
 
-        /** Validate the body */
+        /**
+         * @brief Validate the body
+         * 
+         * @return true if valid
+         */
         bool validate();
 
-        /** Update internal data due to a change in position */
+        /**
+         * @brief Update internal data due to a change in position
+         */
         HRESULT positionChanged();
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         std::string str() const;
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString();
 
-        /** Create an instance from a JSON string representation */
+        /**
+         * @brief Create an instance from a JSON string representation
+         * 
+         * @param s JSON string
+         */
         static SurfaceHandle fromString(const std::string &s);
 
-        /** Add a vertex */
+        /**
+         * @brief Add a vertex
+         * 
+         * @param v vertex to add
+         */
         HRESULT add(const VertexHandle &v);
 
-        /** Insert a vertex at a location in the list of vertices */
+        /**
+         * @brief Insert a vertex at a location in the list of vertices
+         * 
+         * @param v vertex to insert
+         * @param idx location of insertion
+         */
         HRESULT insert(const VertexHandle &v, const int &idx);
 
-        /** Insert a vertex before another vertex */
+        /**
+         * @brief Insert a vertex before another vertex
+         * 
+         * @param v vertex to insert
+         * @param before vertex to insert before
+         */
         HRESULT insert(const VertexHandle &v, const VertexHandle &before);
 
-        /** Insert a vertex between two vertices */
+        /**
+         * @brief Insert a vertex between two vertices
+         * 
+         * @param toInsert vertex to insert
+         * @param v1 first vertex
+         * @param v2 second vertex
+         */
         HRESULT insert(const VertexHandle &toInsert, const VertexHandle &v1, const VertexHandle &v2);
 
-        /** Remove a vertex */
+        /**
+         * @brief Remove a vertex
+         * 
+         * @param v vertex to remove
+         */
         HRESULT remove(const VertexHandle &v);
 
-        /** Replace a vertex at a location in the list of vertices */
+        /**
+         * @brief Replace a vertex at a location in the list of vertices
+         * 
+         * @param toInsert vertex to insert
+         * @param idx location of vertex to remove
+         */
         HRESULT replace(const VertexHandle &toInsert, const int &idx);
 
-        /** Replace a vertex with another vertex */
+        /**
+         * @brief Replace a vertex with another vertex
+         * 
+         * @param toInsert vertex to insert
+         * @param toRemove vertex to remove
+         */
         HRESULT replace(const VertexHandle &toInsert, const VertexHandle &toRemove);
 
-        /** Add a body */
+        /**
+         * @brief Add a body
+         * 
+         * @param b body to add
+         */
         HRESULT add(const BodyHandle &b);
 
-        /** Remove a body */
+        /**
+         * @brief Remove a body
+         * 
+         * @param b body to remove
+         */
         HRESULT remove(const BodyHandle &b);
 
-        /** Replace a body at a location in the list of bodies */
+        /**
+         * @brief Replace a body at a location in the list of bodies
+         * 
+         * @param toInsert body to insert
+         * @param idx location of body to remove
+         */
         HRESULT replace(const BodyHandle &toInsert, const int &idx);
 
-        /** Replace a body with another body */
+        /**
+         * @brief Replace a body with another body
+         * 
+         * @param toInsert body to insert
+         * @param toRemove body to remove
+         */
         HRESULT replace(const BodyHandle &toInsert, const BodyHandle &toRemove);
 
-        /** Refresh internal ordering of defined bodies */
+        /**
+         * @brief Refresh internal ordering of defined bodies
+         */
         HRESULT refreshBodies();
 
-        /** Get the surface type */
+        /**
+         * @brief Get the surface type
+         */
         SurfaceType *type() const;
 
-        /** Become a different type */
+        /**
+         * @brief Become a different type
+         * 
+         * @param stype type to become
+         */
         HRESULT become(SurfaceType *stype);
 
-        /** Get the bodies defined by the surface */
+        /**
+         * @brief Get the bodies defined by the surface
+         */
         std::vector<BodyHandle> getBodies() const;
 
-        /** Get the vertices that define the surface */
+        /**
+         * @brief Get the vertices that define the surface
+         */
         std::vector<VertexHandle> getVertices() const;
 
         /**
@@ -419,106 +711,202 @@ namespace TissueForge::models::vertex {
          */
         BodyHandle findBody(const FVector3 &dir) const;
 
-        /** Connected vertices on the same surface. */
+        /**
+         * @brief Connected vertices on the same surface
+         * 
+         * @param v a vertex
+         */
         std::tuple<VertexHandle, VertexHandle> neighborVertices(const VertexHandle &v) const;
 
-        /** Connected surfaces on the same body. */
+        /**
+         * @brief Connected surfaces on the same body
+         */
         std::vector<SurfaceHandle> neighborSurfaces() const;
 
-        /** Surfaces that share at least one vertex in a set of vertices. */
+        /**
+         * @brief Surfaces that share at least one vertex in a set of vertices
+         * 
+         * @param verts a set of vertices
+         */
         std::vector<SurfaceHandle> connectedSurfaces(const std::vector<VertexHandle> &verts) const;
 
-        /** Surfaces that share at least one vertex. */
+        /**
+         * @brief Surfaces that share at least one vertex
+         */
         std::vector<SurfaceHandle> connectedSurfaces() const;
 
-        /** Get the integer labels of the contiguous edges that this surface shares with another surface */
+        /**
+         * @brief Get the integer labels of the contiguous edges that this surface shares with another surface
+         * 
+         * @param other another surface
+         */
         std::vector<unsigned int> contiguousEdgeLabels(const SurfaceHandle &other) const;
 
-        /** Get the number of contiguous edges that this surface shares with another surface */
+        /**
+         * @brief Get the number of contiguous edges that this surface shares with another surface
+         * 
+         * @param other another surface
+         */
         unsigned int numSharedContiguousEdges(const SurfaceHandle &other) const;
 
-        /** Get the surface normal */
+        /**
+         * @brief Get the normal
+         */
         FVector3 getNormal() const;
 
-        /** Get the centroid */
+        /**
+         * @brief Get the centroid
+         */
         FVector3 getCentroid() const;
 
         /**
-         * Get the velocity, calculated as the velocity of the centroid
-        */
+         * @brief Get the velocity, calculated as the velocity of the centroid
+         */
         FVector3 getVelocity() const;
 
-        /** Get the area */
+        /** 
+         * @brief Get the area 
+         */
         FloatP_t getArea() const;
 
-        /** Get the sign of the volume contribution to a body that this surface contributes */
+        /** 
+         * @brief Get the sign of the volume contribution to a body that this surface contributes 
+         * 
+         * @param body a body
+         */
         FloatP_t volumeSense(const BodyHandle &body) const;
 
-        /** Get the volume that this surface contributes to a body */
+        /** 
+         * @brief Get the volume that this surface contributes to a body 
+         * 
+         * @param body a body
+         */
         FloatP_t getVolumeContr(const BodyHandle &body) const;
 
-        /** Get the outward facing normal w.r.t. a body */
+        /** 
+         * @brief Get the outward facing normal w.r.t. a body 
+         * 
+         * @param body a body
+         */
         FVector3 getOutwardNormal(const BodyHandle &body) const;
 
-        /** Get the area that a vertex contributes to this surface */
+        /**
+         * @brief Get the area that a vertex contributes to this surface
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexArea(const VertexHandle &v) const;
 
-        /** Get the species on outward-facing side of the surface, if any */
+        /** 
+         * @brief Get the species on outward-facing side of the surface, if any 
+         */
         state::StateVector *getSpeciesOutward() const;
 
-        /** Set the species on outward-facing side of the surface */
+        /** 
+         * @brief Set the species on outward-facing side of the surface 
+         * 
+         * @param s species
+         */
         HRESULT setSpeciesOutward(state::StateVector *s) const;
 
-        /** Get the species on inward-facing side of the surface, if any */
+        /** 
+         * @brief Get the species on inward-facing side of the surface, if any 
+         */
         state::StateVector *getSpeciesInward() const;
 
-        /** Set the species on inward-facing side of the surface */
+        /** 
+         * @brief Set the species on inward-facing side of the surface 
+         * 
+         * @param s species
+         */
         HRESULT setSpeciesInward(state::StateVector *s) const;
 
-        /** Get the surface style, if any */
+        /** 
+         * @brief Get the surface style, if any 
+         */
         rendering::Style *getStyle() const;
 
-        /** Set the surface style */
+        /** 
+         * @brief Set the surface style 
+         * 
+         * @param s style
+         */
         HRESULT setStyle(rendering::Style *s) const;
 
-        /** Get the normal of a triangle */
+        /** 
+         * @brief Get the normal of a triangle 
+         * 
+         * @param idx index of first triangle vertex
+         */
         FVector3 triangleNormal(const unsigned int &idx) const;
 
-        /** Get the normal distance to a point; negative distance means that the point is on the inner side */
+        /** 
+         * @brief Get the normal distance to a point.
+         * 
+         * A negative distance means that the point is on the inner side 
+         * 
+         * @param pos position
+         */
         FloatP_t normalDistance(const FVector3 &pos) const;
 
-        /** Test whether a point is on the outer side */
+        /**
+         * @brief Test whether a point is on the outer side
+         * 
+         * @param pos position
+         * @return true if on the outer side
+         */
         bool isOutside(const FVector3 &pos) const;
 
-        /** Merge with a surface. The passed surface is destroyed. 
+        /**
+         * @brief Merge with a surface. The passed surface is destroyed. 
          * 
          * Surfaces must have the same number of vertices. Vertices are paired by nearest distance.
-        */
+         * 
+         * @param toRemove surface to remove 
+         * @param lenCfs distance coefficients in [0, 1] for where to place the merged vertex, from each kept vertex to each removed vertex
+         */
         HRESULT merge(SurfaceHandle &toRemove, const std::vector<FloatP_t> &lenCfs);
 
-        /** Create a surface from two vertices and a position */
+        /**
+         * @brief Create a surface from two vertices and a position
+         * 
+         * @param vertIdxStart index of first vertex
+         * @param pos position
+         */
         SurfaceHandle extend(const unsigned int &vertIdxStart, const FVector3 &pos);
 
-        /** Create a surface from two vertices of a surface in a mesh by extruding along the normal of the surface
+        /**
+         * @brief Create a surface from two vertices of a surface in a mesh by extruding along the normal of the surface
          * 
          * todo: add support for extruding at an angle w.r.t. the center of the edge and centroid of the base surface
-        */
+         * 
+         * @param vertIdxStart index of first vertex
+         * @param normLen length along surface normal by which to extrude
+         */
         SurfaceHandle extrude(const unsigned int &vertIdxStart, const FloatP_t &normLen);
 
-        /** Split into two surfaces
+        /**
+         * @brief Split into two surfaces
          * 
          * Both vertices must already be in the surface and not adjacent
          * 
          * Vertices in the winding from from vertex to second go to newly created surface
          * 
          * Requires updated surface members (e.g., centroid)
-        */
+         * 
+         * @param v1 first vertex
+         * @param v2 second vertex
+         */
         SurfaceHandle split(const VertexHandle &v1, const VertexHandle &v2);
 
-        /** Split into two surfaces
+        /**
+         * @brief Split into two surfaces
          * 
          * Requires updated surface members (e.g., centroid)
-        */
+         * 
+         * @param cp_pos point on the cut plane
+         * @param cp_norm normal of the cut plane
+         */
         SurfaceHandle split(const FVector3 &cp_pos, const FVector3 &cp_norm);
 
         operator bool() const { return id >= 0; }
@@ -550,10 +938,14 @@ namespace TissueForge::models::vertex {
         /** Construct a new surface type */
         SurfaceType(const bool &noReg=false) : SurfaceType(0.1, 0.1, noReg) {};
 
-        /** Get the mesh object type */
+        /**
+         * @brief Get the mesh object type
+         */
         MeshObjTypeLabel objType() const override { return MeshObjTypeLabel::SURFACE; }
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         virtual std::string str() const override;
 
         /**
@@ -570,7 +962,11 @@ namespace TissueForge::models::vertex {
          */
         static SurfaceType *fromString(const std::string &str);
 
-        /** Get a registered type by name */
+        /**
+         * @brief Get a registered type by name
+         * 
+         * @param _name type name
+         */
         static SurfaceType *findFromName(const std::string &_name);
 
         /**
@@ -597,34 +993,75 @@ namespace TissueForge::models::vertex {
          */
         virtual SurfaceType *get();
 
-        /** Add an instance */
+        /**
+         * @brief Add an instance
+         * 
+         * @param i instance to add
+         */
         HRESULT add(const SurfaceHandle &i);
 
-        /** Remove an instance */
+        /**
+         * @brief Remove an instance
+         * 
+         * @param i instance to remove
+         */
         HRESULT remove(const SurfaceHandle &i);
 
-        /** list of instances that belong to this type */    
+        /**
+         * @brief list of instances that belong to this type
+         */
         std::vector<SurfaceHandle> getInstances();
 
-        /** list of instances ids that belong to this type */
+        /**
+         * @brief list of instances ids that belong to this type
+         */
         std::vector<int> getInstanceIds() { return _instanceIds; }
 
-        /** number of instances that belong to this type */
+        /**
+         * @brief number of instances that belong to this type
+         */
         unsigned int getNumInstances();
 
-        /** Construct a surface of this type from a set of vertices */
+        /**
+         * @brief Construct a surface of this type from a set of vertices
+         * 
+         * @param _vertices a set of vertices
+         */
         SurfaceHandle operator() (const std::vector<VertexHandle> &_vertices);
 
-        /** Construct a surface of this type from a set of positions */
+        /**
+         * @brief Construct a surface of this type from a set of positions
+         * 
+         * @param _positions a set of positions
+         */
         SurfaceHandle operator() (const std::vector<FVector3> &_positions);
 
-        /** Construct a surface of this type from a face */
+        /**
+         * @brief Construct a surface of this type from a face
+         * 
+         * @param face a face
+         */
         SurfaceHandle operator() (TissueForge::io::ThreeDFFaceData *face);
 
-        /** Construct a polygon with n vertices circumscribed on a circle */
+        /**
+         * @brief Construct a polygon with n vertices circumscribed on a circle
+         * 
+         * @param n number of vertices
+         * @param center center of circle
+         * @param radius radius of circle
+         * @param ax1 first axis defining the orientation of the circle
+         * @param ax2 second axis defining the orientation of the circle
+         */
         SurfaceHandle nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2);
 
-        /** Replace a vertex with a surface. Vertices are created for the surface along every destroyed edge. */
+        /**
+         * @brief Replace a vertex with a surface. 
+         * 
+         * Vertices are created for the surface along every destroyed edge.
+         * 
+         * @param toReplace vertex to replace
+         * @param lenCfs distance coefficients in [0, 1] defining where to create a new vertex along each edge
+         */
         SurfaceHandle replace(VertexHandle &toReplace, std::vector<FloatP_t> lenCfs);
 
     private:

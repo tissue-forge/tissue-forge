@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfAdhesion.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFADHESION_H_
 #define _MODELS_VERTEX_SOLVER_ACTORS_TFADHESION_H_
 
@@ -28,8 +33,33 @@
 namespace TissueForge::models::vertex { 
 
 
+    /**
+     * @brief Models adhesion between pairs of @ref Surface or @ref Body instances by type. 
+     * 
+     * Adhesion is implemented for two-dimensional objects as minimization of the Hamiltonian, 
+     * 
+     * @f[
+     * 
+     *      \lambda L
+     * 
+     * @f]
+     * 
+     * Here @f$ \lambda @f$ is a parameter and 
+     * @f$ L @f$ is the length of edges shared by two objects. 
+     * 
+     * Adhesion is implemented for three-dimensional objects as minimization of the Hamiltonian, 
+     * 
+     * @f[
+     * 
+     *      \lambda A
+     * 
+     * @f]
+     * 
+     * Here @f$ A @f$ is the area shared by two objects. 
+     */
     struct Adhesion : MeshObjTypePairActor {
 
+        /** Adhesion value. Higher values result in weaker adhesivity. */
         FloatP_t lam;
 
         Adhesion(const FloatP_t &_lam=0) {
@@ -42,12 +72,40 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "Adhesion"; }
 
+        /**
+         * @brief Calculate the energy of a source object acting on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param e energy 
+         */
         FloatP_t energy(const Surface *source, const Vertex *target) override;
 
+        /**
+         * @brief Calculate the force that a source object exerts on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param f force
+         */
         FVector3 force(const Surface *source, const Vertex *target) override;
 
+        /**
+         * @brief Calculate the energy of a source object acting on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param e energy 
+         */
         FloatP_t energy(const Body *source, const Vertex *target) override;
 
+        /**
+         * @brief Calculate the force that a source object exerts on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param f force
+         */
         FVector3 force(const Body *source, const Vertex *target) override;
 
         /**

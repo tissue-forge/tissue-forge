@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfBody.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFBODY_H_
 #define _MODELS_VERTEX_SOLVER_TFBODY_H_
 
@@ -99,48 +104,82 @@ namespace TissueForge::models::vertex {
         MESHOBJ_DEFINEDBY_DECL(Surface);
         MESHOBJ_CLASSDEF(MeshObjTypeLabel::BODY)
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         std::string str() const;
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString();
 
-        /** Update all internal data and parents */
+        /**
+         * @brief Update all internal data and parents
+         */
         void updateInternals();
 
-        /** Add a surface */
+        /**
+         * @brief Add a surface
+         * 
+         * @param s a surface
+         */
         HRESULT add(Surface *s);
 
-        /** Remove a surface */
+        /**
+         * @brief Remove a surface
+         * 
+         * @param s a surface
+         */
         HRESULT remove(Surface *s);
 
-        /** Replace a surface a surface */
+        /**
+         * @brief Replace a surface with a surface
+         * 
+         * @param toInsert surface to insert
+         * @param toRemove surface to remove
+         */
         HRESULT replace(Surface *toInsert, Surface *toRemove);
 
         /**
-         * Destroy a body. 
+         * @brief Destroy a body. 
          * 
          * Any resulting surfaces without a body are also destroyed. 
+         * 
+         * @param target a body
          */
         static HRESULT destroy(Body *target);
 
         /**
-         * Destroy a body. 
+         * @brief Destroy a body. 
          * 
          * Any resulting surfaces without a body are also destroyed. 
+         * 
+         * @param target a handle to a body
+         * @return HRESULT 
          */
         static HRESULT destroy(BodyHandle &target);
 
-        /** Get the body type */
+        /**
+         * @brief Get the body type
+         */
         BodyType *type() const;
 
-        /** Become a different type */
+        /**
+         * @brief Become a different type
+         * 
+         * @param btype the type to become
+         */
         HRESULT become(BodyType *btype);
 
-        /** Get the surfaces that define the body */
+        /**
+         * @brief Get the surfaces that define the body
+         */
         std::vector<Surface*> getSurfaces() const { return surfaces; }
 
-        /** Get the vertices that define the body */
+        /**
+         * @brief Get the vertices that define the body
+         */
         std::vector<Vertex*> getVertices() const;
 
         /**
@@ -158,56 +197,99 @@ namespace TissueForge::models::vertex {
         Surface *findSurface(const FVector3 &dir) const;
 
         /**
-         * Get the neighboring bodies. 
+         * @brief Get the neighboring bodies. 
          * 
          * A body is a neighbor if it shares a surface.
          */
         std::vector<Body*> neighborBodies() const;
 
         /**
-         * Get the neighboring surfaces of a surface on this body.
+         * @brief Get the neighboring surfaces of a surface on this body.
          * 
          * Two surfaces are a neighbor on this body if they define the body and share a vertex
+         * 
+         * @param s a surface of the body
          */
         std::vector<Surface*> neighborSurfaces(const Surface *s) const;
 
-        /** Get the mass density */
+        /**
+         * @brief Get the mass density
+         */
         FloatP_t getDensity() const { return density; }
 
-        /** Set the mass density */
+        /**
+         * @brief Set the mass density
+         * 
+         * @param _density density
+         */
         void setDensity(const FloatP_t &_density) { density = _density; }
 
-        /** Get the centroid */
+        /**
+         * @brief Get the centroid
+         */
         FVector3 getCentroid() const { return centroid; }
 
-        /** Get the velocity, calculated as the velocity of the centroid */
+        /**
+         * @brief Get the velocity, calculated as the velocity of the centroid
+         */
         FVector3 getVelocity() const;
 
-        /** Get the surface area */
+        /**
+         * @brief Get the surface area
+         */
         FloatP_t getArea() const { return area; }
 
-        /** Get the volume */
+        /**
+         * @brief Get the volume
+         */
         FloatP_t getVolume() const { return volume; }
 
-        /** Get the mass */
+        /**
+         * @brief Get the mass
+         */
         FloatP_t getMass() const { return volume * density; }
 
-        /** Get the surface area contribution of a vertex to this body */
+        /**
+         * @brief Get the surface area contribution of a vertex to this body
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexArea(const Vertex *v) const;
 
-        /** Get the volume contribution of a vertex to this body */
+        /**
+         * @brief Get the volume contribution of a vertex to this body
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexVolume(const Vertex *v) const;
 
-        /** Get the mass contribution of a vertex to this body */
+        /**
+         * @brief Get the mass contribution of a vertex to this body
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexMass(const Vertex *v) const { return getVertexVolume(v) * density; }
 
-        /** Get the surfaces that define the interface between this body and another body */
+        /**
+         * @brief Get the surfaces that define the interface between this body and another body
+         * 
+         * @param b a body
+         */
         std::vector<Surface*> findInterface(const Body *b) const;
 
-        /** Get the contacting surface area of this body with another body */
+        /**
+         * @brief Get the contacting surface area of this body with another body
+         * 
+         * @param other a body
+         */
         FloatP_t contactArea(const Body *other) const;
 
-        /** Test whether a point is outside. Test is performed using the nearest surface */
+        /**
+         * @brief Test whether a point is outside. Test is performed using the nearest surface
+         * 
+         * @param pos position
+         * @return true if the point is outside
+         */
         bool isOutside(const FVector3 &pos) const;
 
         /**
@@ -228,59 +310,120 @@ namespace TissueForge::models::vertex {
     };
 
 
+    /**
+     * @brief A handle to a @ref Body. 
+     *
+     * The engine allocates @ref Body memory in blocks, and @ref Body
+     * values get moved around all the time, so their addresses change.
+     * 
+     * This is a safe way to work with a @ref Body.
+     */
     struct CAPI_EXPORT BodyHandle {
 
         int id;
 
         BodyHandle(const int &_id=-1);
 
-        /** Get the underlying object, if any */
+        /**
+         * @brief Get the underlying object, if any
+         */
         Body *body() const;
 
+        /**
+         * @brief Test whether defined by a vertex
+         * 
+         * @param v a vertex
+         * @return true if defined by a vertex
+         */
         bool definedBy(const VertexHandle &v) const;
 
+        /**
+         * @brief Test whether defined by a surface
+         * 
+         * @param s a surface
+         * @return true if defined by a surface
+         */
         bool definedBy(const SurfaceHandle &s) const;
 
-        /** Get the mesh object type */
+        /**
+         * @brief Get the mesh object type
+         */
         MeshObjTypeLabel objType() const { return MeshObjTypeLabel::BODY; }
 
-        /** Destroy the body. */
+        /**
+         * @brief Destroy the body.
+         */
         HRESULT destroy();
 
-        /** Validate the body */
+        /**
+         * @brief Validate the body
+         */
         bool validate();
 
-        /** Update internal data due to a change in position */
+        /**
+         * @brief Update internal data due to a change in position
+         */
         HRESULT positionChanged();
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         std::string str() const;
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString();
 
-        /** Create an instance from a JSON string representation */
+        /**
+         * @brief Create an instance from a JSON string representation
+         * 
+         * @param s a JSON string
+         */
         static BodyHandle fromString(const std::string &s);
 
-        /** Add a surface */
+        /**
+         * @brief Add a surface
+         * 
+         * @param s a surface
+         */
         HRESULT add(const SurfaceHandle &s);
 
-        /** Remove a surface */
+        /**
+         * @brief Remove a surface
+         * 
+         * @param s a surface
+         */
         HRESULT remove(const SurfaceHandle &s);
 
-        /** Replace a surface a surface */
+        /**
+         * @brief Replace a surface with a surface
+         * 
+         * @param toInsert surface to insert
+         * @param toRemove surface to remove
+         */
         HRESULT replace(const SurfaceHandle &toInsert, const SurfaceHandle &toRemove);
 
-        /** Get the body type */
+        /**
+         * @brief Get the body type
+         */
         BodyType *type() const;
 
-        /** Become a different type */
+        /**
+         * @brief Become a different type
+         * 
+         * @param btype the type to become
+         */
         HRESULT become(BodyType *btype);
 
-        /** Get the surfaces that define the body */
+        /**
+         * @brief Get the surfaces that define the body
+         */
         std::vector<SurfaceHandle> getSurfaces() const;
 
-        /** Get the vertices that define the body */
+        /**
+         * @brief Get the vertices that define the body
+         */
         std::vector<VertexHandle> getVertices() const;
 
         /**
@@ -298,62 +441,111 @@ namespace TissueForge::models::vertex {
         SurfaceHandle findSurface(const FVector3 &dir) const;
 
         /**
-         * Get the neighboring bodies. 
+         * @brief Get the neighboring bodies. 
          * 
          * A body is a neighbor if it shares a surface.
          */
         std::vector<BodyHandle> neighborBodies() const;
 
         /**
-         * Get the neighboring surfaces of a surface on this body.
+         * @brief Get the neighboring surfaces of a surface on this body.
          * 
          * Two surfaces are a neighbor on this body if they define the body and share a vertex
+         * 
+         * @param s a surface of the body
          */
         std::vector<SurfaceHandle> neighborSurfaces(const SurfaceHandle &s) const;
 
-        /** Get the mass density */
+        /**
+         * @brief Get the mass density
+         */
         FloatP_t getDensity() const;
 
-        /** Set the mass density */
+        /**
+         * @brief Set the mass density
+         * 
+         * @param _density density
+         */
         void setDensity(const FloatP_t &_density);
 
-        /** Get the centroid */
+        /**
+         * @brief Get the centroid
+         */
         FVector3 getCentroid() const;
 
-        /** Get the velocity, calculated as the velocity of the centroid */
+        /**
+         * @brief Get the velocity, calculated as the velocity of the centroid
+         */
         FVector3 getVelocity() const;
 
-        /** Get the surface area */
+        /**
+         * @brief Get the surface area
+         */
         FloatP_t getArea() const;
 
-        /** Get the volume */
+        /**
+         * @brief Get the volume
+         */
         FloatP_t getVolume() const;
 
-        /** Get the mass */
+        /**
+         * @brief Get the mass
+         */
         FloatP_t getMass() const;
 
-        /** Get the surface area contribution of a vertex to this body */
+        /**
+         * @brief Get the surface area contribution of a vertex to this body
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexArea(const VertexHandle &v) const;
 
-        /** Get the volume contribution of a vertex to this body */
+        /**
+         * @brief Get the volume contribution of a vertex to this body
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexVolume(const VertexHandle &v) const;
 
-        /** Get the mass contribution of a vertex to this body */
+        /**
+         * @brief Get the mass contribution of a vertex to this body
+         * 
+         * @param v a vertex
+         */
         FloatP_t getVertexMass(const VertexHandle &v) const;
 
-        /** Get the amount of species in the enclosed volume, if any */
+        /**
+         * @brief Get the amount of species in the enclosed volume, if any
+         */
         state::StateVector *getSpecies() const;
 
-        /** Set the amount of species in the enclosed volume */
+        /**
+         * @brief Set the amount of species in the enclosed volume
+         * 
+         * @param s species in the enclosed volume
+         */
         HRESULT setSpecies(state::StateVector *s) const;
 
-        /** Get the surfaces that define the interface between this body and another body */
+        /**
+         * @brief Get the surfaces that define the interface between this body and another body
+         * 
+         * @param b a body
+         */
         std::vector<SurfaceHandle> findInterface(const BodyHandle &b) const;
 
-        /** Get the contacting surface area of this body with another body */
+        /**
+         * @brief Get the contacting surface area of this body with another body
+         * 
+         * @param other a body
+         */
         FloatP_t contactArea(const BodyHandle &other) const;
 
-        /** Test whether a point is outside. Test is performed using the nearest surface */
+        /**
+         * @brief Test whether a point is outside. Test is performed using the nearest surface
+         * 
+         * @param pos position
+         * @return true if the point is outside
+         */
         bool isOutside(const FVector3 &pos) const;
 
         /**
@@ -385,10 +577,14 @@ namespace TissueForge::models::vertex {
 
         BodyType(const bool &noReg=false);
 
-        /** Get the mesh object type */
+        /**
+         * @brief Get the mesh object type
+         */
         MeshObjTypeLabel objType() const override { return MeshObjTypeLabel::BODY; }
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         virtual std::string str() const override;
 
         /**
@@ -432,34 +628,61 @@ namespace TissueForge::models::vertex {
          */
         virtual BodyType *get();
 
-        /** Add an instance */
+        /**
+         * @brief Add an instance
+         * 
+         * @param i instance
+         */
         HRESULT add(const BodyHandle &i);
 
-        /** Remove an instance */
+        /**
+         * @brief Remove an instance
+         * 
+         * @param i instance
+         */
         HRESULT remove(const BodyHandle &i);
 
-        /** list of instances that belong to this type */    
+        /**
+         * @brief list of instances that belong to this type
+         */
         std::vector<BodyHandle> getInstances();
 
-        /** list of instances ids that belong to this type */
+        /**
+         * @brief list of instances ids that belong to this type
+         */
         std::vector<int> getInstanceIds() { return _instanceIds; }
 
-        /** number of instances that belong to this type */
+        /**
+         * @brief number of instances that belong to this type
+         */
         unsigned int getNumInstances();
 
-        /** Construct a body of this type from a set of surfaces */
+        /**
+         * @brief Construct a body of this type from a set of surfaces
+         */
         BodyHandle operator() (const std::vector<SurfaceHandle> &surfaces);
 
-        /** Construct a body of this type from a mesh */
+        /**
+         * @brief Construct a body of this type from a mesh
+         */
         BodyHandle operator() (TissueForge::io::ThreeDFMeshData* ioMesh, SurfaceType *stype);
 
-        /** Create a body from a surface in the mesh and a position */
+        /**
+         * @brief Create a body from a surface in the mesh and a position
+         * 
+         * @param base surface
+         * @param pos position
+         */
         BodyHandle extend(const SurfaceHandle &base, const FVector3 &pos);
 
-        /** Create a body from a surface in a mesh by extruding along the outward-facing normal of the surface
+        /**
+         * @brief Create a body from a surface in a mesh by extruding along the outward-facing normal of the surface
          * 
          * todo: add support for extruding at an angle
-        */
+         * 
+         * @param base surface
+         * @param normLen length along which to extrude
+         */
         BodyHandle extrude(const SurfaceHandle &base, const FloatP_t &normLen);
 
     private:

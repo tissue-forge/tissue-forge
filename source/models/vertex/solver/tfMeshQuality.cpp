@@ -856,6 +856,21 @@ MeshQuality::MeshQuality(
     edgeSplitDist = _edgeSplitDistCf * vertexMergeDist;
 }
 
+std::string MeshQuality::str() const {
+    std::stringstream ss;
+
+    ss << "MeshQuality(";
+    ss << "vertexMergeDist="    << this->vertexMergeDist                << ", ";
+    ss << "surfaceDemoteArea="  << this->surfaceDemoteArea              << ", ";
+    ss << "bodyDemoteVolume="   << this->bodyDemoteVolume               << ", ";
+    ss << "edgeSplitDist="      << this->edgeSplitDist                  << ", ";
+    ss << "collision2D="        << (this->collision2D ? "yes" : "no")   << ", ";
+    ss << "working="            << (this->_working    ? "yes" : "no");
+    ss << ")";
+
+    return ss.str();
+}
+
 HRESULT MeshQuality::doQuality() { 
 
     _working = true;
@@ -991,4 +1006,8 @@ namespace TissueForge::io {
 
 std::string TissueForge::models::vertex::MeshQuality::toString() {
     return TissueForge::io::toString(*this);
+}
+
+MeshQuality MeshQuality::fromString(const std::string &s) {
+    return TissueForge::io::fromString<MeshQuality>(s);
 }

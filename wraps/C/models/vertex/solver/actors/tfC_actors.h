@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfC_actors.h
+ * 
+ */
+
 #ifndef _WRAPS_C_VERTEX_SOLVER_TFC_ACTORS_H_
 #define _WRAPS_C_VERTEX_SOLVER_TFC_ACTORS_H_
 

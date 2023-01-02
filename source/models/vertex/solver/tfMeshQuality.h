@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfMeshQuality.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFMESHQUALITY_H_
 #define _MODELS_VERTEX_SOLVER_TFMESHQUALITY_H_
 
@@ -36,7 +41,9 @@ namespace TissueForge::models::vertex {
     class Mesh;
 
 
-    /** An operation that modifies the topology of a mesh to improve its quality */
+    /**
+     * @brief An operation that modifies the topology of a mesh to improve its quality
+     */
     struct MeshQualityOperation {
 
         enum Flag : unsigned int {
@@ -72,40 +79,68 @@ namespace TissueForge::models::vertex {
          * 
          * If the operation is already upstream of this operation, 
          * then the call is ignored
+         * 
+         * @param _next the operation
          */
         HRESULT appendNext(MeshQualityOperation *_next);
 
-        /** Remove an operation to the list of next operations */
+        /**
+         * @brief Remove an operation to the list of next operations
+         * 
+         * @param _next the operation
+         */
         HRESULT removeNext(MeshQualityOperation *_next);
 
-        /** Compute all upstream operations */
+        /**
+         * @brief Compute all upstream operations
+         */
         std::set<MeshQualityOperation*> upstreams() const;
 
-        /** Compute all downstream operations */
+        /**
+         * @brief Compute all downstream operations
+         */
         std::set<MeshQualityOperation*> downstreams() const;
 
-        /** Compute all upstream operations that have no dependencies */
+        /**
+         * @brief Compute all upstream operations that have no dependencies
+         */
         std::set<MeshQualityOperation*> headOperations() const;
 
-        /** Validate this operation. */
+        /**
+         * @brief Validate this operation
+         */
         virtual HRESULT validate() { return S_OK; }
 
-        /** Check whether this operation is still valid */
+        /**
+         * @brief Check whether this operation is still valid
+         * 
+         * @return true if this operation is still valid
+         */
         virtual bool check() { return !(flags & Flag::None); };
 
-        /** Do all prep, checks and planning for this operation */
+        /**
+         * @brief Do all prep, checks and planning for this operation
+         */
         virtual void prep() {}
 
-        /** Returns how many vertices will be created by this operation */
+        /**
+         * @brief Returns how many vertices will be created by this operation
+         */
         virtual size_t numNewVertices() const { return 0; };
 
-        /** Returns how many surfaces will be created by this operation */
+        /**
+         * @brief Returns how many surfaces will be created by this operation
+         */
         virtual size_t numNewSurfaces() const { return 0; };
 
-        /** Returns how many bodies will be created by this operation */
+        /**
+         * @brief Returns how many bodies will be created by this operation
+         */
         virtual size_t numNewBodies() const { return 0; };
 
-        /** Implement this operation */
+        /**
+         * @brief Implement this operation
+         */
         virtual void implement() {}
 
     protected:
@@ -209,43 +244,95 @@ namespace TissueForge::models::vertex {
             const FloatP_t &_edgeSplitDistCf=2.0
         );
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a summary string
+         */
+        std::string str() const;
+
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString();
 
-        /** Perform quality operations work */
+        /**
+         * @brief Create an instance from a JSON string representation
+         * 
+         * @param s JSON string representation
+         */
+        static MeshQuality fromString(const std::string &s);
+
+        /**
+         * @brief Perform quality operations work
+         */
         HRESULT doQuality();
 
-        /** Test whether quality operations are being done */
+        /**
+         * @brief Test whether quality operations are being done
+         * 
+         * @return true if quality operations are being done
+         */
         const bool working() const { return _working; }
 
-        /** Get the distance below which two vertices are scheduled for merging */
+        /**
+         * @brief Get the distance below which two vertices are scheduled for merging
+         */
         FloatP_t getVertexMergeDistance() const { return vertexMergeDist; };
 
-        /** Set the distance below which two vertices are scheduled for merging */
+        /**
+         * @brief Set the distance below which two vertices are scheduled for merging
+         * 
+         * @param _val distance
+         */
         HRESULT setVertexMergeDistance(const FloatP_t &_val);
 
-        /** Get the area below which a surface is scheduled to become a vertex */
+        /**
+         * @brief Get the area below which a surface is scheduled to become a vertex
+         */
         FloatP_t getSurfaceDemoteArea() const { return surfaceDemoteArea; };
 
-        /** Set the area below which a surface is scheduled to become a vertex */
+        /**
+         * @brief Set the area below which a surface is scheduled to become a vertex
+         * 
+         * @param _val area
+         */
         HRESULT setSurfaceDemoteArea(const FloatP_t &_val);
 
-        /** Get the volume below which a body is scheduled to become a vertex */
+        /**
+         * @brief Get the volume below which a body is scheduled to become a vertex
+         */
         FloatP_t getBodyDemoteVolume() const { return bodyDemoteVolume; }
 
-        /** Set the volume below which a body is scheduled to become a vertex */
+        /**
+         * @brief Set the volume below which a body is scheduled to become a vertex
+         * 
+         * @param _val volume
+         */
         HRESULT setBodyDemoteVolume(const FloatP_t &_val);
 
-        /** Get the distance at which two vertices are seperated when a vertex is split */
+        /**
+         * @brief Get the distance at which two vertices are seperated when a vertex is split
+         */
         FloatP_t getEdgeSplitDist() const { return edgeSplitDist; };
 
-        /** Set the distance at which two vertices are seperated when a vertex is split */
+        /**
+         * @brief Set the distance at which two vertices are seperated when a vertex is split
+         * 
+         * @param _val distance
+         */
         HRESULT setEdgeSplitDist(const FloatP_t &_val);
 
-        /** Get whether 2D collisions are implemented */
+        /**
+         * @brief Get whether 2D collisions are implemented
+         * 
+         * @return true if 2D collisions are implemented
+         */
         bool getCollision2D() const { return collision2D; }
 
-        /** Set whether 2D collisions are implemented */
+        /**
+         * @brief Set whether 2D collisions are implemented
+         * 
+         * @param _collision2D flag indicating whether 2D collisions are implemented
+         */
         HRESULT setCollision2D(const bool &_collision2D);
     };
 }

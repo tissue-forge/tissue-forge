@@ -77,5 +77,8 @@
         @collision_2d.setter
         def collision_2d(self, _collision_2d: bool):
             self.setCollision2D(_collision_2d)
+
+        def __str__(self) -> str:
+            return self.str()
     %}
 }

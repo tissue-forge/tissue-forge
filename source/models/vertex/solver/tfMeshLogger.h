@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfMeshLogger.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFMESHLOGGER_H_
 #define _MODELS_VERTEX_SOLVER_TFMESHLOGGER_H_
 
@@ -61,25 +66,45 @@ namespace TissueForge::models::vertex {
      */
     struct CAPI_EXPORT MeshLogger {
 
-        /** Clear the log */
+        /**
+         * @brief Clear the log
+         */
         static HRESULT clear();
 
-        /** Add a log event to the log */
+        /**
+         * @brief Add a log event to the log
+         * 
+         * @param event a log event
+         */
         static HRESULT log(const MeshLogEvent &event);
 
-        /** Get the list of log events */
+        /**
+         * @brief Get the list of log events
+         */
         static std::vector<MeshLogEvent> events();
 
-        /** Test whether the logger is fowarding log events to the main Tissue Forge logger */
+        /**
+         * @brief Test whether the logger is fowarding log events to the main Tissue Forge logger
+         */
         static bool getForwardLogging();
 
-        /** Set whether to foward log events to the main Tissue Forge logger */
+        /**
+         * @brief Set whether to foward log events to the main Tissue Forge logger
+         * 
+         * @param _forward flag indicating whether to foward log events
+         */
         static HRESULT setForwardLogging(const bool &_forward);
 
-        /** Get the current log level */
+        /**
+         * @brief Get the current log level
+         */
         static LogLevel getLogLevel();
 
-        /** set the current log level */
+        /**
+         * @brief Set the current log level
+         * 
+         * @param _level the current log level
+         */
         static HRESULT setLogLevel(const LogLevel &_level);
 
     };

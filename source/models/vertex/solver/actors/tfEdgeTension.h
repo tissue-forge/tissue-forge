@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfEdgeTension.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFEDGETENSION_H_
 #define _MODELS_VERTEX_SOLVER_ACTORS_TFEDGETENSION_H_
 
@@ -30,9 +35,27 @@ namespace TissueForge::models::vertex {
     typedef FVector3 (*EdgeTensionForceFcn)(const Surface*, const Vertex*, const FloatP_t&, const unsigned int&);
 
 
+    /**
+     * @brief Models tension between connected vertices. 
+     * 
+     * Edge tension is implemented for two-dimensional objects as minimization of the Hamiltonian, 
+     * 
+     * @f[
+     * 
+     *      \lambda L^n
+     * 
+     * @f]
+     * 
+     * Here @f$ \lambda @f$ is a parameter, 
+     * @f$ L @f$ is the length of an edge shared by two objects and 
+     * @f$ n > 0 @f$ is the order of the model. 
+     */
     struct EdgeTension : MeshObjActor {
 
+        /** Tension value */
         FloatP_t lam;
+
+        /** Order of distance measurement */
         unsigned int order;
 
         EdgeTension(const FloatP_t &lam=0, const unsigned int &order=1);
@@ -43,8 +66,22 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "EdgeTension"; }
 
+        /**
+         * @brief Calculate the energy of a source object acting on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param e energy 
+         */
         FloatP_t energy(const Surface *source, const Vertex *target) override;
 
+        /**
+         * @brief Calculate the force that a source object exerts on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param f force
+         */
         FVector3 force(const Surface *source, const Vertex *target) override;
 
         /**

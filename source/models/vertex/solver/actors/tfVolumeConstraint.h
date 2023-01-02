@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfVolumeConstraint.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFVOLUMECONSTRAINT_H_
 #define _MODELS_VERTEX_SOLVER_ACTORS_TFVOLUMECONSTRAINT_H_
 
@@ -26,9 +31,28 @@
 namespace TissueForge::models::vertex { 
 
 
+    /**
+     * @brief Imposes a volume constraint. 
+     * 
+     * The volume constraint is implemented for three-dimensional objects 
+     * as minimization of the Hamiltonian, 
+     * 
+     * @f[
+     * 
+     *      \lambda \left( V - V_o \right)^2
+     * 
+     * @f]
+     * 
+     * Here @f$ \lambda @f$ is a parameter, 
+     * @f$ V @f$ is the volume an object and 
+     * @f$ V_o @f$ is a target volume. 
+     */
     struct VolumeConstraint : MeshObjActor {
 
+        /** Constraint value*/
         FloatP_t lam;
+
+        /** Target volume */
         FloatP_t constr;
 
         VolumeConstraint(const FloatP_t &_lam=0, const FloatP_t &_constr=0) {
@@ -42,8 +66,22 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "VolumeConstraint"; }
 
+        /**
+         * @brief Calculate the energy of a source object acting on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param e energy 
+         */
         FloatP_t energy(const Body *source, const Vertex *target) override;
 
+        /**
+         * @brief Calculate the force that a source object exerts on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param f force
+         */
         FVector3 force(const Body *source, const Vertex *target) override;
 
         /**

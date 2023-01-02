@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfMeshObj.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFMESHOBJ_H_
 #define _MODELS_VERTEX_SOLVER_TFMESHOBJ_H_
 
@@ -37,7 +42,9 @@ namespace TissueForge::models::vertex {
     class Surface;
     class Body;
 
-    /** Mesh object type enum */
+    /**
+     * @brief Mesh object type enum
+     */
     enum MeshObjTypeLabel : unsigned int {
         NONE        = 0, 
         VERTEX      = 1, 
@@ -89,12 +96,23 @@ namespace TissueForge::models::vertex {
      */
     struct MeshObjActor { 
 
-        /** Name of the actor */
+        /**
+         * @brief Name of the actor
+         */
         virtual std::string name() const { return "MeshObjActor"; }
 
-        /** Unique name of the actor */
+        /**
+         * @brief Unique name of the actor
+         */
         static std::string actorName() { return "MeshObjActor"; }
 
+        /**
+         * @brief Get a list of actors bound to a mesh object
+         * 
+         * @tparam T type of actor
+         * @tparam O mesh object type
+         * @param obj mesh object
+         */
         template <typename T, typename O> 
         static std::vector<T*> get(O *obj) {
             std::vector<T*> result;
@@ -106,6 +124,12 @@ namespace TissueForge::models::vertex {
             return result;
         }
 
+        /**
+         * @brief Get a list of actors bound to a mesh object type
+         * 
+         * @tparam T type of actor
+         * @param objType mesh object type
+         */
         template <typename T> 
         static std::vector<T*> get(struct MeshObjType *objType) {
             std::vector<T*> result;
@@ -117,7 +141,9 @@ namespace TissueForge::models::vertex {
             return result;
         }
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a JSON string representation
+         */
         virtual std::string toString();
 
         /**
@@ -172,10 +198,14 @@ namespace TissueForge::models::vertex {
         /** Object type actors */
         std::vector<MeshObjActor*> actors;
 
-        /** Get the mesh object type */
+        /**
+         * @brief Get the mesh object type
+         */
         virtual MeshObjTypeLabel objType() const = 0;
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         virtual std::string str() const = 0;
 
     };
@@ -187,16 +217,31 @@ namespace TissueForge::models::vertex {
      */
     struct MeshObjTypePairActor : MeshObjActor {
 
-        /** Name of the actor */
+        /**
+         * @brief Name of the actor
+         */
         virtual std::string name() { return "MeshObjTypePairActor"; }
 
-        /** Unique name of the actor */
+        /**
+         * @brief Unique name of the actor
+         */
         static std::string actorName() { return "MeshObjTypePairActor"; }
 
-        /** Register a pair of types for this actor */
+        /**
+         * @brief Register a pair of types for this actor
+         * 
+         * @param type1 first type
+         * @param type2 second type
+         */
         HRESULT registerPair(MeshObjType *type1, MeshObjType *type2);
 
-        /** Test whether a pair of types is registered with this actor */
+        /**
+         * @brief Test whether a pair of types is registered with this actor
+         * 
+         * @param type1 first type
+         * @param type2 second type
+         * @return true if the pair of types is registered with this actor
+         */
         bool hasPair(MeshObjType *type1, MeshObjType *type2);
 
     protected:

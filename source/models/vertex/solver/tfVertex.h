@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfVertex.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFVERTEX_H_
 #define _MODELS_VERTEX_SOLVER_TFVERTEX_H_
 
@@ -87,45 +92,101 @@ namespace TissueForge::models::vertex {
 
         Vertex();
         ~Vertex();
+
+        /**
+         * @brief Create a vertex
+         * 
+         * @param _pid id of underlying particle
+         */
         static VertexHandle create(const unsigned int &_pid);
+
+        /**
+         * @brief Create a vertex
+         * 
+         * @param position position of vertex
+         */
         static VertexHandle create(const FVector3 &position);
+
+        /**
+         * @brief Create a vertex
+         * 
+         * @param vdata a vertex
+         */
         static VertexHandle create(TissueForge::io::ThreeDFVertexData *vdata);
 
         MESHBOJ_DEFINES_DECL(Surface);
         MESHBOJ_DEFINES_DECL(Body);
         MESHOBJ_CLASSDEF(MeshObjTypeLabel::VERTEX)
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         std::string str() const;
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString();
 
-        /** Add a surface */
+        /**
+         * @brief Add a surface
+         * 
+         * @param s surface to add
+         */
         HRESULT add(Surface *s);
 
-        /** Insert a surface at a location in the list of surfaces */
+        /**
+         * @brief Insert a surface at a location in the list of surfaces
+         * 
+         * @param s surface to insert
+         * @param idx location in the list of surfaces
+         */
         HRESULT insert(Surface *s, const int &idx);
 
-        /** Insert a surface before another surface */
+        /**
+         * @brief Insert a surface before another surface
+         * 
+         * @param s a surface 
+         * @param before surface to insert before
+         */
         HRESULT insert(Surface *s, Surface *before);
 
-        /** Remove a surface */
+        /**
+         * @brief Remove a surface
+         * 
+         * @param s surface to remove
+         */
         HRESULT remove(Surface *s);
 
-        /** Replace a surface at a location in the list of surfaces */
+        /**
+         * @brief Replace a surface at a location in the list of surfaces
+         * 
+         * @param toInsert a surface
+         * @param idx a location in the list of surfaces
+         */
         HRESULT replace(Surface *toInsert, const int &idx);
 
-        /** Replace a surface with another surface */
+        /**
+         * @brief Replace a surface with another surface
+         * 
+         * @param toInsert surface to insert
+         * @param toRemove surface to remove
+         */
         HRESULT replace(Surface *toInsert, Surface *toRemove);
 
-        /** Get the id of the underlying particle */
+        /** 
+         * @brief Get the id of the underlying particle 
+         */
         const int getPartId() const { return pid; }
 
-        /** Get the bodies defined by the vertex */
+        /** 
+         * @brief Get the bodies defined by the vertex 
+         */
         std::vector<Body*> getBodies() const;
 
-        /** Get the surfaces defined by the vertex */
+        /** 
+         * @brief Get the surfaces defined by the vertex 
+         */
         std::vector<Surface*> getSurfaces() const { return surfaces; }
 
         /**
@@ -142,93 +203,215 @@ namespace TissueForge::models::vertex {
          */
         Body *findBody(const FVector3 &dir) const;
 
-        /** Get the neighbor vertices.
+        /** 
+         * @brief Get the neighbor vertices.
          * 
          * A vertex is a neighbor if it defines an edge with this vertex.
          */
         std::vector<Vertex*> neighborVertices() const;
 
-        /** Get the surfaces that this vertex and another vertex both define */
+        /**
+         * @brief Get the surfaces that this vertex and another vertex both define
+         * 
+         * @param other another vertex
+         */
         std::vector<Surface*> sharedSurfaces(const Vertex *other) const;
 
-        /** Get the current volume */
+        /** 
+         * @brief Get the current volume 
+         */
         FloatP_t getVolume() const;
 
-        /** Get the current mass */
+        /** 
+         * @brief Get the current mass 
+         */
         FloatP_t getMass() const;
 
-        /** Update the properties of the underlying particle */
+        /** 
+         * @brief Update the properties of the underlying particle 
+         */
         HRESULT updateProperties();
 
-        /** Get a handle to the underlying particle, if any */
+        /** 
+         * @brief Get a handle to the underlying particle, if any 
+         */
         ParticleHandle *particle() const;
 
-        /** Get the current position */
+        /** 
+         * @brief Get the current position 
+         */
         FVector3 getPosition() const { return _particlePosition; }
 
-        /** Set the current position */
+        /**
+         * @brief Set the current position
+         * 
+         * @param pos position
+         * @param updateChildren flag indicating whether to update dependent objects
+         */
         HRESULT setPosition(const FVector3 &pos, const bool &updateChildren=true);
 
-        /** Get the current velocity */
+        /**
+         * @brief Get the current velocity
+         */
         FVector3 getVelocity() const { return _particleVelocity; }
 
+        /**
+         * @brief Get the cached particle mass from the most recent update
+         */
         FloatP_t getCachedParticleMass() const { return _particleMass; }
 
-        /** Transfer all bonds to another vertex */
+        /**
+         * @brief Transfer all bonds to another vertex
+         * 
+         * @param other another vertex
+         */
         HRESULT transferBondsTo(Vertex *other);
 
-        /** Replace a surface */
+        /**
+         * @brief Replace a surface
+         * 
+         * @param toReplace surface to replace
+         */
         HRESULT replace(Surface *toReplace);
 
-        /** Create a vertex and replace a surface with it */
+        /**
+         * @brief Create a vertex and replace a surface with it
+         * 
+         * @param position position of vertex
+         * @param toReplace surface to replace
+         * @return newly created vertex
+         */
         static Vertex *replace(const FVector3 &position, Surface *toReplace);
 
-        /** Create a vertex and replace a surface with it */
+        /**
+         * @brief Create a vertex and replace a surface with it
+         * 
+         * @param position position of vertex
+         * @param toReplace surface to replace
+         * @return newly created vertex
+         */
         static VertexHandle replace(const FVector3 &position, SurfaceHandle &toReplace);
 
-        /** Replace a body */
+        /**
+         * @brief Replace a body
+         * 
+         * @param toReplace a body
+         */
         HRESULT replace(Body *toReplace);
 
-        /** Create a vertex and replace a body with it */
+        /**
+         * @brief Create a vertex and replace a body with it
+         * 
+         * @param position position
+         * @param toReplace body to replace
+         * @return newly created vertex
+         */
         static Vertex *replace(const FVector3 &position, Body *toReplace);
 
-        /** Create a vertex and replace a body with it */
+        /**
+         * @brief Create a vertex and replace a body with it
+         * 
+         * @param position position
+         * @param toReplace body to replace
+         * @return newly created vertex
+         */
         static VertexHandle replace(const FVector3 &position, BodyHandle &toReplace);
 
-        /** Merge with a vertex. The passed vertex is destroyed. */
+        /**
+         * @brief Merge with a vertex. 
+         * 
+         * The passed vertex is destroyed.
+         * 
+         * @param toRemove vertex to remove
+         * @param lenCf distance coefficient in [0, 1] for where to place the vertex, from the kept vertex to the removed vertex
+         */
         HRESULT merge(Vertex *toRemove, const FloatP_t &lenCf=0.5f);
 
-        /** Inserts a vertex between two vertices */
+        /**
+         * @brief Inserts a vertex between two vertices
+         * 
+         * @param v1 first vertex
+         * @param v2 second vertex
+         */
         HRESULT insert(Vertex *v1, Vertex *v2);
 
-        /** Create a vertex and inserts it between two vertices */
+        /**
+         * @brief Create a vertex and inserts it between two vertices
+         * 
+         * @param position position
+         * @param v1 first vertex
+         * @param v2 second vertex
+         * @return newly created vertex
+         */
         static Vertex *insert(const FVector3 &position, Vertex *v1, Vertex *v2);
 
-        /** Create a vertex and inserts it between two vertices */
+        /**
+         * @brief Create a vertex and inserts it between two vertices
+         * 
+         * @param position position
+         * @param v1 first vertex
+         * @param v2 second vertex
+         * @return newly created vertex
+         */
         static VertexHandle insert(const FVector3 &position, const VertexHandle &v1, const VertexHandle &v2);
 
-        /** Insert a vertex between a vertex and each of a set of vertices */
+        /**
+         * @brief Insert a vertex between a vertex and each of a set of vertices
+         * 
+         * @param vf a vertex
+         * @param nbs a set of vertices
+         */
         HRESULT insert(Vertex *vf, std::vector<Vertex*> nbs);
 
-        /** Create a vertex and insert it between a vertex and each of a set of vertices */
+        /**
+         * @brief Create a vertex and insert it between a vertex and each of a set of vertices
+         * 
+         * @param position position
+         * @param vf a vertex
+         * @param nbs a set of vertices
+         * @return newly created vertex
+         */
         static Vertex *insert(const FVector3 &position, Vertex *vf, std::vector<Vertex*> nbs);
 
-        /** Create a vertex and insert it between a vertex and each of a set of vertices */
+        /**
+         * @brief Create a vertex and insert it between a vertex and each of a set of vertices
+         * 
+         * @param position position
+         * @param vf a vertex
+         * @param nbs a set of vertices
+         * @return newly created vertex
+         */
         static VertexHandle insert(const FVector3 &position, const VertexHandle &vf, const std::vector<VertexHandle> &nbs);
 
-        /** Calculate the topology of a vertex split without implementing the split */
+        /**
+         * @brief Calculate the topology of a vertex split without implementing the split
+         * 
+         * @param sep separation distance
+         * @param verts_v vertices that continue to define existing surface
+         * @param verts_new_v vertices that define a new surface
+         */
         HRESULT splitPlan(const FVector3 &sep, std::vector<Vertex*> &verts_v, std::vector<Vertex*> &verts_new_v);
 
-        /** Implement a pre-calculated vertex split, as determined by splitPlan */
+        /**
+         * @brief Implement a pre-calculated vertex split, as determined by splitPlan
+         * 
+         * @param sep separation distance
+         * @param verts_v vertices that continue to define existing surface
+         * @param verts_new_v vertices that define a new surface
+         */
         Vertex *splitExecute(const FVector3 &sep, const std::vector<Vertex*> &verts_v, const std::vector<Vertex*> &verts_new_v);
 
-        /** Split a vertex into an edge
+        /**
+         * @brief Split a vertex into an edge
          * 
          * The vertex must define at least one surface.
          * 
          * New topology is governed by a cut plane at the midpoint of, and orthogonal to, the new edge. 
          * Each first-order neighbor vertex is connected to the vertex of the new edge on the same side of 
          * the cut plane. 
+         * 
+         * @param sep separation distance
+         * @return newly created vertex
          */
         Vertex *split(const FVector3 &sep);
 
@@ -241,65 +424,137 @@ namespace TissueForge::models::vertex {
     };
 
 
+    /**
+     * @brief A handle to a @ref Vertex. 
+     *
+     * The engine allocates @ref Vertex memory in blocks, and @ref Vertex
+     * values get moved around all the time, so their addresses change.
+     * 
+     * This is a safe way to work with a @ref Vertex.
+     */
     struct CAPI_EXPORT VertexHandle {
 
         int id;
 
         VertexHandle(const int &_id=-1);
 
-        /** Get the underlying object, if any */
+        /**
+         * @brief Get the underlying object, if any
+         */
         Vertex *vertex() const;
 
+        /**
+         * @brief Test whether defines a surface
+         * 
+         * @param s a surface
+         * @return true if defines a surface
+         */
         bool defines(const SurfaceHandle &s) const;
 
+        /**
+         * @brief Test whether defines a body
+         * 
+         * @param b a body
+         * @return true if defines a body
+         */
         bool defines(const BodyHandle &b) const;
 
-        /** Get the mesh object type */
+        /**
+         * @brief Get the mesh object type
+         */
         MeshObjTypeLabel objType() const { return MeshObjTypeLabel::VERTEX; }
 
-        /** Destroy the body. */
+        /** 
+         * @brief Destroy the body. 
+         */
         HRESULT destroy();
 
-        /** Validate the body */
+        /** 
+         * @brief Validate the body 
+         */
         bool validate();
 
-        /** Update internal data due to a change in position */
+        /** 
+         * @brief Update internal data due to a change in position 
+         */
         HRESULT positionChanged();
 
-        /** Get a summary string */
+        /**
+         * @brief Get a summary string
+         */
         std::string str() const;
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString() const;
 
-        /** Create an instance from a JSON string representation */
+        /**
+         * @brief Create an instance from a JSON string representation
+         * 
+         * @param s JSON string
+         */
         static VertexHandle fromString(const std::string &s);
 
-        /** Add a surface */
+        /**
+         * @brief Add a surface
+         * 
+         * @param s surface to add
+         */
         HRESULT add(const SurfaceHandle &s) const;
 
-        /** Insert a surface at a location in the list of surfaces */
+        /**
+         * @brief Insert a surface at a location in the list of surfaces
+         * 
+         * @param s a surface
+         * @param idx location in the list of surfaces
+         */
         HRESULT insert(const SurfaceHandle &s, const int &idx) const;
 
-        /** Insert a surface before another surface */
+        /**
+         * @brief Insert a surface before another surface
+         * 
+         * @param s a surface
+         * @param before surface to insert before
+         */
         HRESULT insert(const SurfaceHandle &s, const SurfaceHandle &before) const;
 
-        /** Remove a surface */
+        /**
+         * @brief Remove a surface
+         * 
+         * @param s surface to remove
+         */
         HRESULT remove(const SurfaceHandle &s) const;
 
-        /** Replace a surface at a location in the list of surfaces */
+        /**
+         * @brief Replace a surface at a location in the list of surfaces
+         * 
+         * @param toInsert a surface
+         * @param idx location in the list of surfaces
+         */
         HRESULT replace(const SurfaceHandle &toInsert, const int &idx) const;
 
-        /** Replace a surface with another surface */
+        /**
+         * @brief Replace a surface with another surface
+         * 
+         * @param toInsert a surface
+         * @param toRemove another surface
+         */
         HRESULT replace(const SurfaceHandle &toInsert, const SurfaceHandle &toRemove) const;
 
-        /** Get the id of the underlying particle */
+        /**
+         * @brief Get the id of the underlying particle
+         */
         const int getPartId() const;
 
-        /** Get the bodies defined by the vertex */
+        /** 
+         * @brief Get the bodies defined by the vertex 
+         */
         std::vector<BodyHandle> getBodies() const;
 
-        /** Get the surfaces defined by the vertex */
+        /** 
+         * @brief Get the surfaces defined by the vertex 
+         */
         std::vector<SurfaceHandle> getSurfaces() const;
 
         /**
@@ -316,67 +571,134 @@ namespace TissueForge::models::vertex {
          */
         BodyHandle findBody(const FVector3 &dir) const;
 
-        /** Get the neighbor vertices.
+        /** 
+         * @brief Get the neighbor vertices.
          * 
          * A vertex is a neighbor if it defines an edge with this vertex.
          */
         std::vector<VertexHandle> neighborVertices() const;
 
-        /** Get the surfaces that this vertex and another vertex both define */
+        /**
+         * @brief Get the surfaces that this vertex and another vertex both define
+         * 
+         * @param other another vertex
+         */
         std::vector<SurfaceHandle> sharedSurfaces(const VertexHandle &other) const;
 
-        /** Get the current volume */
+        /** 
+         * @brief Get the current volume 
+         */
         FloatP_t getVolume() const;
 
-        /** Get the current mass */
+        /** 
+         * @brief Get the current mass 
+         */
         FloatP_t getMass() const;
 
-        /** Update the properties of the underlying particle */
+        /** 
+         * @brief Update the properties of the underlying particle 
+         */
         HRESULT updateProperties() const;
 
-        /** Get a handle to the underlying particle, if any */
+        /** 
+         * @brief Get a handle to the underlying particle, if any 
+         */
         ParticleHandle *particle() const;
 
-        /** Get the current position */
+        /** 
+         * @brief Get the current position 
+         */
         FVector3 getPosition() const;
 
-        /** Set the current position */
+        /**
+         * @brief Set the current position
+         * 
+         * @param pos position
+         * @param updateChildren flag indicating whether to update dependent objects
+         */
         HRESULT setPosition(const FVector3 &pos, const bool &updateChildren=true);
 
-        /** Get the current velocity */
+        /** 
+         * @brief Get the current velocity 
+         */
         FVector3 getVelocity() const;
 
-        /** Transfer all bonds to another vertex */
+        /**
+         * @brief Transfer all bonds to another vertex
+         * 
+         * @param other another vertex
+         */
         HRESULT transferBondsTo(const VertexHandle &other) const;
 
-        /** Replace a surface */
+        /**
+         * @brief Replace a surface
+         * 
+         * @param toReplace surface to replace
+         */
         HRESULT replace(SurfaceHandle &toReplace) const;
 
-        /** Replace a body */
+        /**
+         * @brief Replace a body
+         * 
+         * @param toReplace body to replace
+         */
         HRESULT replace(BodyHandle &toReplace);
 
-        /** Merge with a vertex. The passed vertex is destroyed. */
+        /**
+         * @brief Merge with a vertex. 
+         * 
+         * The passed vertex is destroyed.
+         * 
+         * @param toRemove vertex to remove
+         * @param lenCf distance coefficient in [0, 1] for where to place the vertex, from the kept vertex to the removed vertex
+         */
         HRESULT merge(VertexHandle &toRemove, const FloatP_t &lenCf=0.5f);
 
-        /** Inserts a vertex between two vertices */
+        /**
+         * @brief Inserts a vertex between two vertices
+         * 
+         * @param v1 first vertex
+         * @param v2 second vertex
+         */
         HRESULT insert(const VertexHandle &v1, const VertexHandle &v2);
 
-        /** Insert a vertex between a vertex and each of a set of vertices */
+        /**
+         * @brief Insert a vertex between a vertex and each of a set of vertices
+         * 
+         * @param vf a vertex
+         * @param nbs a set of vertices
+         */
         HRESULT insert(const VertexHandle &vf, const std::vector<VertexHandle> &nbs);
 
-        /** Calculate the topology of a vertex split without implementing the split */
+        /**
+         * @brief Calculate the topology of a vertex split without implementing the split
+         * 
+         * @param sep separation distance
+         * @param verts_v vertices that continue to define existing surface
+         * @param verts_new_v vertices that define a new surface
+         */
         HRESULT splitPlan(const FVector3 &sep, const std::vector<VertexHandle> &verts_v, const std::vector<VertexHandle> &verts_new_v);
 
-        /** Implement a pre-calculated vertex split, as determined by splitPlan */
+        /**
+         * @brief Implement a pre-calculated vertex split, as determined by splitPlan
+         * 
+         * @param sep separation distance
+         * @param verts_v vertices that continue to define existing surface
+         * @param verts_new_v vertices that define a new surface
+         */
         VertexHandle splitExecute(const FVector3 &sep, const std::vector<VertexHandle> &verts_v, const std::vector<VertexHandle> &verts_new_v);
 
-        /** Split a vertex into an edge
+        /**
+         * @brief Split a vertex into an edge
          * 
          * The vertex must define at least one surface.
          * 
          * New topology is governed by a cut plane at the midpoint of, and orthogonal to, the new edge. 
          * Each first-order neighbor vertex is connected to the vertex of the new edge on the same side of 
          * the cut plane. 
+         * 
+         * @param sep separation distance
+         * @return newly created vertex
          */
         VertexHandle split(const FVector3 &sep);
 

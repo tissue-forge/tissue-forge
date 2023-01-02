@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfMesh.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFMESH_H_
 #define _MODELS_VERTEX_SOLVER_TFMESH_H_
 
@@ -40,6 +45,10 @@ namespace TissueForge::models::vertex {
     struct MeshSolver;
 
 
+    /**
+     * @brief Contains all @ref Vertex, @ref Surface and @ref Body instances
+     * 
+     */
     class CAPI_EXPORT Mesh { 
 
         std::vector<Vertex> *vertices;
@@ -69,46 +78,98 @@ namespace TissueForge::models::vertex {
 
         ~Mesh();
 
-        /** Get a JSON string representation */
+        /**
+         * @brief Get a summary string
+         */
+        std::string str() const;
+
+        /**
+         * @brief Get a JSON string representation
+         */
         std::string toString();
 
-        /** Test whether this mesh has a mesh quality instance */
+        /**
+         * @brief Test whether this mesh has a mesh quality instance
+         * 
+         * @return true if this mesh has a mesh quality instance
+         */
         bool hasQuality() const { return _quality; }
 
-        /** Get the mesh quality instance */
+        /**
+         * @brief Get the mesh quality instance
+         */
         TissueForge::models::vertex::MeshQuality &getQuality() const { return *_quality; }
 
-        /** Set the mesh quality instance */
+        /**
+         * @brief Set the mesh quality instance
+         * 
+         * @param quality the mesh quality instance
+         */
         HRESULT setQuality(TissueForge::models::vertex::MeshQuality *quality);
 
-        /** Test whether a mesh quality instance is working on the mesh */
+        /**
+         * @brief Test whether a mesh quality instance is working on the mesh
+         * 
+         * @return true if a mesh quality instance is working on the mesh
+         */
         bool qualityWorking() const { return hasQuality() && getQuality().working(); }
 
-        /** Ensure that there are a given number of allocated vertices */
+        /**
+         * @brief Ensure that there are a given number of allocated vertices
+         * 
+         * @param numAlloc a given number of allocated vertices
+         */
         HRESULT ensureAvailableVertices(const size_t &numAlloc);
 
-        /** Ensure that there are a given number of allocated surfaces */
+        /**
+         * @brief Ensure that there are a given number of allocated surfaces
+         * 
+         * @param numAlloc a given number of allocated surfaces
+         */
         HRESULT ensureAvailableSurfaces(const size_t &numAlloc);
 
-        /** Ensure that there are a given number of allocated bodies */
+        /**
+         * @brief Ensure that there are a given number of allocated bodies
+         * 
+         * @param numAlloc a given number of allocated bodies
+         */
         HRESULT ensureAvailableBodies(const size_t &numAlloc);
 
-        /** Create a vertex */
+        /**
+         * @brief Create a vertex
+         * 
+         * @param obj a vertex to populate
+         * @param pid the id of the underlying particle
+         */
         HRESULT create(Vertex **obj, const unsigned int &pid);
 
-        /** Create a surface */
+        /**
+         * @brief Create a surface
+         * 
+         * @param obj a surface to populate
+         */
         HRESULT create(Surface **obj);
 
-        /** Create a body */
+        /**
+         * @brief Create a body
+         * 
+         * @param obj a body to populate
+         */
         HRESULT create(Body **obj);
 
-        /** Get the mesh */
+        /**
+         * @brief Get the mesh
+         */
         static Mesh *get();
 
-        /** Locks the mesh for thread-safe operations */
+        /**
+         * @brief Locks the mesh for thread-safe operations
+         */
         void lock() { this->meshLock.lock(); }
         
-        /** Unlocks the mesh for thread-safe operations */
+        /**
+         * @brief Unlocks the mesh for thread-safe operations
+         */
         void unlock() { this->meshLock.unlock(); }
 
         /**
@@ -120,60 +181,122 @@ namespace TissueForge::models::vertex {
          */
         Vertex *findVertex(const FVector3 &pos, const FloatP_t &tol = 0.0001);
 
-        /** Get the vertex for a given particle id */
+        /**
+         * @brief Get the vertex for a given particle id
+         * 
+         * @param pid particle id
+         */
         Vertex *getVertexByPID(const unsigned int &pid) const;
 
-        /** Get the vertex at a location in the list of vertices */
+        /**
+         * @brief Get the vertex at a location in the list of vertices
+         * 
+         * @param idx location in the list
+         */
         Vertex *getVertex(const unsigned int &idx);
 
-        /** Get a surface at a location in the list of surfaces */
+        /**
+         * @brief Get the surface at a location in the list of surfaces
+         * 
+         * @param idx location in the list
+         */
         Surface *getSurface(const unsigned int &idx);
 
-        /** Get a body at a location in the list of bodies */
+        /**
+         * @brief Get the body at a location in the list of bodies
+         * 
+         * @param idx location in the list
+         */
         Body *getBody(const unsigned int &idx);
 
-        /** Get the number of vertices */
+        /**
+         * @brief Get the number of vertices
+         */
         unsigned int numVertices() const { return nr_vertices; }
 
-        /** Get the number of surfaces */
+        /**
+         * @brief Get the number of surfaces
+         */
         unsigned int numSurfaces() const { return nr_surfaces; }
 
-        /** Get the number of bodies */
+        /**
+         * @brief Get the number of bodies
+         */
         unsigned int numBodies() const { return nr_bodies; }
 
-        /** Get the size of the list of vertices */
+        /**
+         * @brief Get the size of the list of vertices
+         */
         unsigned int sizeVertices() const { return vertices->size(); }
 
-        /** Get the size of the list of surfaces */
+        /**
+         * @brief Get the size of the list of surfaces
+         */
         unsigned int sizeSurfaces() const { return surfaces->size(); }
 
-        /** Get the size of the list of bodies */
+        /**
+         * @brief Get the size of the list of bodies
+         */
         unsigned int sizeBodies() const { return bodies->size(); }
 
-        /** Validate state of the mesh */
+        /**
+         * @brief Validate state of the mesh
+         * 
+         * @return true if in a valid state
+         */
         bool validate();
 
-        /** Manually notify that the mesh has been changed */
+        /**
+         * @brief Manually notify that the mesh has been changed
+         */
         HRESULT makeDirty();
 
-        /** Check whether two vertices are connected */
+        /**
+         * @brief Check whether two vertices are connected
+         * 
+         * @param v1 first vertex
+         * @param v2 second vertex
+         * @return true if the two vertices are connected
+         */
         bool connected(const Vertex *v1, const Vertex *v2) const;
 
-        /** Check whether two surfaces are connected */
+        /**
+         * @brief Check whether two surfaces are connected
+         * 
+         * @param v1 first surface
+         * @param v2 second surface
+         * @return true if the two surfaces are connected
+         */
         bool connected(const Surface *s1, const Surface *s2) const;
 
-        /** Check whether two bodies are connected */
+        /**
+         * @brief Check whether two bodies are connected
+         * 
+         * @param v1 first body
+         * @param v2 second body
+         * @return true if the two bodies are connected
+         */
         bool connected(const Body *b1, const Body *b2) const;
 
-        // Mesh editing
-
-        /** Remove a vertex from the mesh; all connected surfaces and bodies are also removed */
+        /**
+         * @brief Remove a vertex from the mesh; all dependent surfaces and bodies are also removed
+         * 
+         * @param v a vertex
+         */
         HRESULT remove(Vertex *v);
 
-        /** Remove a surface from the mesh; all connected bodies are also removed */
+        /**
+         * @brief Remove a surface from the mesh; all dependent bodies are also removed
+         * 
+         * @param s a surface
+         */
         HRESULT remove(Surface *s);
 
-        /** Remove a body from the mesh */
+        /**
+         * @brief Remove a body from the mesh
+         * 
+         * @param b a body
+         */
         HRESULT remove(Body *b);
 
         friend MeshRenderer;

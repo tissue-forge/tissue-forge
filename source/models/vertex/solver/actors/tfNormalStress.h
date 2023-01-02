@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfNormalStress.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACENORMAL_H_
 #define _MODELS_VERTEX_SOLVER_ACTORS_TFSURFACENORMAL_H_
 
@@ -28,8 +33,12 @@
 namespace TissueForge::models::vertex { 
 
 
+    /**
+     * @brief Models a stress acting on a @ref Surface along its normal
+     */
     struct NormalStress : MeshObjActor {
 
+        /** Magnitude */
         FloatP_t mag;
 
         NormalStress(const FloatP_t &_mag=0) {
@@ -42,8 +51,22 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "NormalStress"; }
 
+        /**
+         * @brief Calculate the energy of a source object acting on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param e energy 
+         */
         FloatP_t energy(const Surface *source, const Vertex *target) override;
 
+        /**
+         * @brief Calculate the force that a source object exerts on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param f force
+         */
         FVector3 force(const Surface *source, const Vertex *target) override;
 
         /**

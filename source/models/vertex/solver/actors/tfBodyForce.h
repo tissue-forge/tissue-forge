@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfBodyForce.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_ACTORS_TFBODYFORCE_H_
 #define _MODELS_VERTEX_SOLVER_ACTORS_TFBODYFORCE_H_
 
@@ -28,8 +33,12 @@
 namespace TissueForge::models::vertex { 
 
 
+    /**
+     * @brief Imposes a body force on @ref Body instances
+     */
     struct BodyForce : MeshObjActor {
 
+        /** Force components */
         FVector3 comps;
 
         BodyForce(const FVector3 &_force=FVector3(0)) {
@@ -42,8 +51,22 @@ namespace TissueForge::models::vertex {
         /** Unique name of the actor */
         static std::string actorName() { return "BodyForce"; }
 
+        /**
+         * @brief Calculate the energy of a source object acting on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param e energy 
+         */
         FloatP_t energy(const Body *source, const Vertex *target) override;
 
+        /**
+         * @brief Calculate the force that a source object exerts on a target object
+         * 
+         * @param source source object
+         * @param target target object
+         * @param f force
+         */
         FVector3 force(const Body *source, const Vertex *target) override;
 
         /**

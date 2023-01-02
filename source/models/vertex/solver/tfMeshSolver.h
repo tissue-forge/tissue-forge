@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfMeshSolver.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFMESHSOLVER_H_
 #define _MODELS_VERTEX_SOLVER_TFMESHSOLVER_H_
 
@@ -63,10 +68,14 @@ namespace TissueForge::models::vertex {
     }
 
 
-    /** Mesh solver performance timers */
+    /**
+     * @brief Mesh solver performance timers
+     */
     struct CAPI_EXPORT MeshSolverTimers {
 
-        /** Solver routine sections */
+        /**
+         * @brief Solver routine sections
+         */
         enum Section : unsigned int {
             FORCE=0,
             ADVANCE,
@@ -76,7 +85,12 @@ namespace TissueForge::models::vertex {
             LAST
         };
 
-        /** Append time to a section */
+        /**
+         * @brief Append time to a section
+         * 
+         * @param section solver section
+         * @param _ticks time
+         */
         HRESULT append(const Section &section, const ticks _ticks) { timers[section] += _ticks; return S_OK; }
 
         /**
@@ -88,13 +102,17 @@ namespace TissueForge::models::vertex {
          */
         double ms(const Section &section, const bool &avg=true) const;
 
-        /** Reset the timers */
+        /**
+         * @brief Reset the timers
+         */
         HRESULT reset() {
             for(size_t i = 0; i < Section::LAST; i++) timers[i] = 0;
             return S_OK;
         }
 
-        /** Get a string representation of the current timer average values */
+        /**
+         * @brief Get a string representation of the current timer average values
+         */
         std::string str() const;
 
     private:
@@ -104,7 +122,11 @@ namespace TissueForge::models::vertex {
     };
 
 
-    /** Convenience class to time mesh solver performance. Time is recorded when an instance is destroyed. */
+    /**
+     * @brief Convenience class to time mesh solver performance. 
+     * 
+     * Time is recorded when an instance is destroyed.
+     */
     class CAPI_EXPORT MeshSolverTimerInstance {
         
         MeshSolverTimers::Section section;
@@ -121,7 +143,7 @@ namespace TissueForge::models::vertex {
     /**
      * @brief Vertex model mesh solver
      * 
-     * A singleton solver performances all vertex model dynamics simulation at runtime. 
+     * A singleton solver performs all vertex model dynamics simulation at runtime. 
      */
     struct CAPI_EXPORT MeshSolver : SubEngine { 
 
@@ -132,73 +154,129 @@ namespace TissueForge::models::vertex {
         /** Performance timers */
         MeshSolverTimers timers;
 
-        /** Initialize the solver */
+        /**
+         * @brief Initialize the solver
+         */
         static HRESULT init();
 
-        /** Get the solver singleton */
+        /**
+         * @brief Get the solver singleton
+         */
         static MeshSolver *get();
 
-        /** Reduce internal buffers and storage */
+        /**
+         * @brief Reduce internal buffers and storage
+         */
         static HRESULT compact();
 
-        /** Locks the engine for thread-safe engine operations */
+        /**
+         * @brief Locks the engine for thread-safe engine operations
+         */
         static HRESULT engineLock();
         
-        /** Unlocks the engine for thread-safe engine operations */
+        /**
+         * @brief Unlocks the engine for thread-safe engine operations
+         */
         static HRESULT engineUnlock();
 
-        /** Test whether the current mesh state needs updated */
+        /**
+         * @brief Test whether the current mesh state needs updated
+         */
         static bool isDirty();
 
         /** Set whether the current mesh state needs updated */
         static HRESULT setDirty(const bool &_isDirty);
 
-        /** Get the mesh */
+        /**
+         * @brief Get the mesh
+         */
         static Mesh *getMesh();
 
-        /** Register a body type */
+        /**
+         * @brief Register a body type
+         * 
+         * @param _type type
+         */
         static HRESULT registerType(BodyType *_type);
 
-        /** Register a surface type */
+        /**
+         * @brief Register a surface type
+         * 
+         * @param _type type
+         */
         static HRESULT registerType(SurfaceType *_type);
 
-        /** Find a registered surface type by name */
+        /**
+         * @brief Find a registered surface type by name
+         * 
+         * @param _name type name
+         */
         static SurfaceType *findSurfaceFromName(const std::string &_name);
 
-        /** Find a registered body type by name */
+        /**
+         * @brief Find a registered body type by name
+         * 
+         * @param _name type name
+         */
         static BodyType *findBodyFromName(const std::string &_name);
 
-        /** Get the body type by id */
+        /**
+         * @brief Get a body type by id
+         * 
+         * @param typeId type id
+         */
         static BodyType *getBodyType(const unsigned int &typeId);
 
-        /** Get the surface type by id */
+        /**
+         * @brief Get a surface type by id
+         * 
+         * @param typeId type id
+         */
         static SurfaceType *getSurfaceType(const unsigned int &typeId);
 
-        /** Get the number of registered body types */
+        /**
+         * @brief Get the number of registered body types
+         */
         static const int numBodyTypes();
 
-        /** Get the number of registered surface types */
+        /**
+         * @brief Get the number of registered surface types
+         */
         static const int numSurfaceTypes();
 
-        /** Get the number of vertices */
+        /**
+         * @brief Get the number of vertices
+         */
         static unsigned int numVertices();
 
-        /** Get the number of surfaces */
+        /**
+         * @brief Get the number of surfaces
+         */
         static unsigned int numSurfaces();
 
-        /** Get the number of bodies */
+        /**
+         * @brief Get the number of bodies
+         */
         static unsigned int numBodies();
 
-        /** Get the size of the list of vertices */
+        /**
+         * @brief Get the size of the list of vertices
+         */
         static unsigned int sizeVertices();
 
-        /** Get the size of the list of surfaces */
+        /**
+         * @brief Get the size of the list of surfaces
+         */
         static unsigned int sizeSurfaces();
 
-        /** Get the size of the list of bodies */
+        /**
+         * @brief Get the size of the list of bodies
+         */
         static unsigned int sizeBodies();
 
-        /** Update internal data due to a change in position */
+        /**
+         * @brief Update internal data due to a change in position
+         */
         static HRESULT positionChanged();
 
         /**
@@ -213,21 +291,36 @@ namespace TissueForge::models::vertex {
         HRESULT postStepStart() override;
         HRESULT postStepJoin() override;
 
-        /** Get the starting vertex index for each surface */
+        /**
+         * @brief Get the starting vertex index for each surface
+         */
         static std::vector<unsigned int> getSurfaceVertexIndices();
 
-        /** Start getting the starting vertex index for each surface */
+        /**
+         * @brief Start getting the starting vertex index for each surface
+         */
         static HRESULT getSurfaceVertexIndicesAsyncStart();
 
-        /** Finish getting the starting vertex index for each surface */
+        /**
+         * @brief Finish getting the starting vertex index for each surface
+         */
         static std::vector<unsigned int> getSurfaceVertexIndicesAsyncJoin();
 
-        /** Get the current logger events */
+        /**
+         * @brief Get the current logger events
+         */
         static std::vector<MeshLogEvent> getLog() {
             return MeshLogger::events();
         }
 
-        /** Log an event */
+        /**
+         * @brief Log an event
+         * 
+         * @param type type of event
+         * @param objIDs object ids
+         * @param objTypes object type ids
+         * @param name name of event
+         */
         static HRESULT log(const MeshLogEventType &type, const std::vector<int> &objIDs, const std::vector<MeshObjTypeLabel> &objTypes, const std::string &name="");
 
         friend MeshRenderer;

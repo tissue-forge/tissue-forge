@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_mesh_metrics.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TFMESH_METRICS_H_
 #define _MODELS_VERTEX_SOLVER_TFMESH_METRICS_H_
 
@@ -30,13 +35,20 @@
 namespace TissueForge::models::vertex {
 
 
-/** Calculate the strain in a edge defined by two vertices*/
+/**
+ * @brief Calculate the strain in a edge defined by two vertices
+ * 
+ * @param v1 first vertex
+ * @param v2 second vertex
+ */
 FMatrix3 edgeStrain(const VertexHandle &v1, const VertexHandle &v2);
 
 /**
- * Calculate the strain in a vertex. 
+ * @brief Calculate the strain in a vertex. 
  * 
  * Uses a weighted average of edge strains, with a preference for closer measurements. 
+ * 
+ * @param v vertex
  */
 FMatrix3 vertexStrain(const VertexHandle &v);
 

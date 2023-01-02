@@ -106,50 +106,62 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
     %pythoncode %{
         @property
         def bodies(self):
+            """bodies defined by the surface"""
             return self.getBodies()
 
         @property
         def vertices(self):
+            """vertices that define the surface"""
             return self.getVertices()
 
         @property
         def neighbor_surfaces(self):
+            """surfaces that share at least one vertex"""
             return self._neighborSurfaces()
 
         @property
         def normal(self):
+            """normal of the surface"""
             return self.getNormal()
 
         @property
         def centroid(self):
+            """centroid of the surface"""
             return self.getCentroid()
 
         @property
         def velocity(self):
+            """velocity of the surface"""
             return self.getVelocity()
 
         @property
         def area(self):
+            """area of the surface"""
             return self.getArea()
 
         @property
         def normal_stresses(self):
+            """normal stresses bound to the surface"""
             return _vertex_solver_MeshObjActor_getNormalStress(self)
 
         @property
         def surface_area_constraints(self):
+            """surface area constraints bound to the surface"""
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
 
         @property
         def surface_tractions(self):
+            """surface tractions bound to the surface"""
             return _vertex_solver_MeshObjActor_getSurfaceTraction(self)
 
         @property
         def edge_tensions(self):
+            """edge tensions bound to the surface"""
             return _vertex_solver_MeshObjActor_getEdgeTension(self)
 
         @property
         def adhesions(self):
+            """adhesions bound to the surface"""
             return _vertex_solver_MeshObjActor_getAdhesion(self)
 
         @classmethod
@@ -220,54 +232,47 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
     %pythoncode %{
         @property
         def surface(self):
+            """underlying :class:`Surface` instance, if any"""
             return self._surface()
 
         @property
         def bodies(self):
+            """bodies defined by the surface"""
             return self.getBodies()
 
         @property
         def vertices(self):
+            """vertices that define the surface"""
             return self.getVertices()
 
         @property
         def neighbor_surfaces(self):
+            """surfaces that share at least one vertex"""
             return self._neighborSurfaces()
 
         @property
         def normal(self):
+            """normal of the surface"""
             return self.getNormal()
 
         @property
         def centroid(self):
+            """centroid of the surface"""
             return self.getCentroid()
 
         @property
         def velocity(self):
+            """velocity of the surface"""
             return self.getVelocity()
 
         @property
         def area(self):
+            """area of the surface"""
             return self.getArea()
 
         @property
-        def species_outward(self):
-            return self.getSpeciesOutward()
-
-        @species_outward.setter
-        def species_outward(self, _s):
-            self.setSpeciesOutward(_s)
-
-        @property
-        def species_inward(self):
-            return self.getSpeciesInward()
-
-        @species_inward.setter
-        def species_inward(self, _s):
-            self.setSpeciesInward(_s)
-
-        @property
         def style(self):
+            """style of the surface, if any"""
             return self.getStyle()
 
         @style.setter
@@ -276,26 +281,31 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
 
         @property
         def normal_stresses(self):
+            """normal stresses bound to the surface"""
             o = self.surface
             return _vertex_solver_MeshObjActor_getNormalStress(o) if o is not None else None
 
         @property
         def surface_area_constraints(self):
+            """surface area constraints bound to the surface"""
             o = self.surface
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(o) if o is not None else None
 
         @property
         def surface_tractions(self):
+            """surface tractions bound to the surface"""
             o = self.surface
             return _vertex_solver_MeshObjActor_getSurfaceTraction(o) if o is not None else None
 
         @property
         def edge_tensions(self):
+            """edge tensions bound to the surface"""
             o = self.surface
             return _vertex_solver_MeshObjActor_getEdgeTension(o) if o is not None else None
 
         @property
         def adhesions(self):
+            """adhesions bound to the surface"""
             o = self.surface
             return _vertex_solver_MeshObjActor_getAdhesion(o) if o is not None else None
     %}
@@ -305,22 +315,27 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
     %pythoncode %{
         @property
         def normal_stresses(self):
+            """normal stresses bound to the type"""
             return _vertex_solver_MeshObjActor_getNormalStress(self)
 
         @property
         def surface_area_constraints(self):
+            """surface area constraints bound to the type"""
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
 
         @property
         def surface_tractions(self):
+            """surface tractions bound to the type"""
             return _vertex_solver_MeshObjActor_getSurfaceTraction(self)
 
         @property
         def edge_tensions(self):
+            """edge tensions bound to the type"""
             return _vertex_solver_MeshObjActor_getEdgeTension(self)
 
         @property
         def adhesions(self):
+            """adhesions bound to the type"""
             return _vertex_solver_MeshObjActor_getAdhesion(self)
 
         def __call__(self, vertices=None, positions=None, face_data=None):

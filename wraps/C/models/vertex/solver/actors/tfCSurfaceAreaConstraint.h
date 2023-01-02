@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCSurfaceAreaConstraint.h
+ * 
+ */
+
 #ifndef _WRAPS_C_VERTEX_SOLVER_TFCSURFACEAREACONSTRAINT_H_
 #define _WRAPS_C_VERTEX_SOLVER_TFCSURFACEAREACONSTRAINT_H_
 

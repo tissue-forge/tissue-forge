@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_mesh_bind.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TF_MESH_BIND_H_
 #define _MODELS_VERTEX_SOLVER_TF_MESH_BIND_H_
 
@@ -32,19 +37,45 @@ namespace TissueForge::models::vertex {
     namespace bind { 
 
 
-        /** Bind an actor to a body type */
+        /**
+         * @brief Bind an actor to a body type
+         * 
+         * @param a actor
+         * @param b body type
+         */
         CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, BodyType *b);
 
-        /** Bind an actor to a body */
+        /**
+         * @brief Bind an actor to a body
+         * 
+         * @param a actor
+         * @param h body
+         */
         CPPAPI_FUNC(HRESULT) body(MeshObjActor *a, const BodyHandle &h);
 
-        /** Bind an actor to a surface type */
+        /**
+         * @brief Bind an actor to a surface type
+         * 
+         * @param a actor
+         * @param s surface type
+         */
         CPPAPI_FUNC(HRESULT) surface(MeshObjActor *a, SurfaceType *s);
 
-        /** Bind an actor to a surface */
+        /**
+         * @brief Bind an actor to a surface
+         * 
+         * @param a actor
+         * @param h surface
+         */
         CPPAPI_FUNC(HRESULT) surface(MeshObjActor *a, const SurfaceHandle &h);
 
-        /** Bind an actor to a pair of object types */
+        /**
+         * @brief Bind an actor to a pair of object types
+         * 
+         * @param a actor
+         * @param type1 first object type
+         * @param type2 second object type
+         */
         CPPAPI_FUNC(HRESULT) types(MeshObjTypePairActor *a, MeshObjType *type1, MeshObjType *type2);
 
     }

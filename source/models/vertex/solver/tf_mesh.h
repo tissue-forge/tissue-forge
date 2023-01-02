@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tf_mesh.h
+ * 
+ */
+
 #ifndef _MODELS_VERTEX_SOLVER_TF_MESH_H_
 #define _MODELS_VERTEX_SOLVER_TF_MESH_H_
 
@@ -26,7 +31,13 @@
 namespace TissueForge::models::vertex {
 
 
-    /** Check whether an object is an instance of an object type */
+    /**
+     * @brief Check whether an object is an instance of an object type
+     * 
+     * @tparam T a derived class of @ref MeshObjType
+     * @param obj mesh object instance
+     * @return true if the mesh object is an instance of the class
+     */
     template <typename T>
     bool check(void *obj);
 

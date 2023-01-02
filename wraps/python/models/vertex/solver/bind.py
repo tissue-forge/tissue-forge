@@ -25,6 +25,11 @@ from tissue_forge.tissue_forge import _vertex_solver_bind_types as types
 
 
 def body(*args):
+    """
+    Bind an actor to either a body or body type
+
+    :param args: an actor and either a body or body type
+    """
     from tissue_forge.tissue_forge import _vertex_solver_Body, _vertex_solver_BodyHandle
 
     actor = args[0]
@@ -44,6 +49,11 @@ def body(*args):
 
 
 def surface(*args):
+    """
+    Bind an actor to either a surface or surface type
+
+    :param args: an actor and either a body or body type
+    """
     from tissue_forge.tissue_forge import _vertex_solver_Surface, _vertex_solver_SurfaceHandle
     
     actor = args[0]

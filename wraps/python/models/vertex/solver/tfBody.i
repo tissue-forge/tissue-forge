@@ -87,18 +87,22 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
     %pythoncode %{
         @property
         def surfaces(self):
+            """Surfaces that define the body"""
             return self.getSurfaces()
 
         @property
         def vertices(self):
+            """Vertices that define the body"""
             return self.getVertices()
 
         @property
         def neighbor_bodies(self):
+            """bodies in contact"""
             return self._neighborBodies()
 
         @property
         def density(self):
+            """density of the body"""
             return self.getDensity()
 
         @density.setter
@@ -107,34 +111,42 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
 
         @property
         def centroid(self):
+            """centroid of the body"""
             return self.getCentroid()
 
         @property
         def velocity(self):
+            """velocity of the body"""
             return self.getVelocity()
 
         @property
         def area(self):
+            """area of the body"""
             return self.getArea()
 
         @property
         def volume(self):
+            """volume of the body"""
             return self.getVolume()
 
         @property
         def mass(self):
+            """mass of the body"""
             return self.getMass()
 
         @property
         def body_forces(self):
+            """body forces bound to the body"""
             return _vertex_solver_MeshObjActor_getBodyForce(self)
 
         @property
         def surface_area_constraints(self):
+            """surface area constraints bound to the body"""
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
 
         @property
         def volume_constraints(self):
+            """volume constraints bound to the body"""
             return _vertex_solver_MeshObjActor_getVolumeConstraint(self)
 
         @classmethod
@@ -159,22 +171,27 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
     %pythoncode %{
         @property
         def body(self):
+            """underlying :class:`Body` instance, if any"""
             return self._body()
 
         @property
         def surfaces(self):
+            """surfaces that define the body"""
             return self.getSurfaces()
 
         @property
         def vertices(self):
+            """vertices that define the body"""
             return self.getVertices()
 
         @property
         def neighbor_bodies(self):
+            """bodies in contact"""
             return self._neighborBodies()
 
         @property
         def density(self):
+            """density of the body"""
             return self.getDensity()
 
         @density.setter
@@ -183,44 +200,44 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
 
         @property
         def centroid(self):
+            """centroid of the body"""
             return self.getCentroid()
 
         @property
         def velocity(self):
+            """velocity of the body"""
             return self.getVelocity()
 
         @property
         def area(self):
+            """area of the body"""
             return self.getArea()
 
         @property
         def volume(self):
+            """volume of the body"""
             return self.getVolume()
 
         @property
         def mass(self):
+            """mass of the body"""
             return self.getMass()
 
         @property
-        def species(self):
-            return self.getSpecies()
-
-        @species.setter
-        def species(self, _s):
-            self.setSpecies(_s)
-
-        @property
         def body_forces(self):
+            """body forces bound to the body"""
             o = self.body
             return _vertex_solver_MeshObjActor_getBodyForce(o) if o is not None else None
 
         @property
         def surface_area_constraints(self):
+            """surface area constraints bound to the body"""
             o = self.body
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(o) if o is not None else None
 
         @property
         def volume_constraints(self):
+            """volume constraints bound to the body"""
             o = self.body
             return _vertex_solver_MeshObjActor_getVolumeConstraint(o) if o is not None else None
     %}
@@ -230,14 +247,17 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
     %pythoncode %{
         @property
         def body_forces(self):
+            """body forces bound to the type"""
             return _vertex_solver_MeshObjActor_getBodyForce(self)
 
         @property
         def surface_area_constraints(self):
+            """surface area constraints bound to the type"""
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
 
         @property
         def volume_constraints(self):
+            """volume constraints bound to the type"""
             return _vertex_solver_MeshObjActor_getVolumeConstraint(self)
     %}
 }

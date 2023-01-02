@@ -22,8 +22,6 @@
 #include <models/vertex/solver/tfMesh.h>
 %}
 
-%template(vectorMesh) std::vector<TissueForge::models::vertex::Mesh*>;
-
 %rename(ensure_available_vertices) TissueForge::models::vertex::Mesh::ensureAvailableVertices;
 %rename(ensure_available_surfaces) TissueForge::models::vertex::Mesh::ensureAvailableSurfaces;
 %rename(ensure_available_bodies) TissueForge::models::vertex::Mesh::ensureAvailableBodies;
@@ -88,5 +86,8 @@
         def size_bodies(self) -> int:
             """Size of the list of bodies"""
             return self.sizeBodies()
+
+        def __str__(self) -> str:
+            return self.str()
     %}
 }

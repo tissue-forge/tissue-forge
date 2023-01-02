@@ -83,30 +83,37 @@ vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::VertexHandle)
     %pythoncode %{
         @property
         def bodies(self):
+            """bodies defined by the vertex"""
             return self.getBodies()
 
         @property
         def surfaces(self):
+            """surfaces defined by the vertex"""
             return self.getSurfaces()
 
         @property
         def pid(self) -> int:
+            """id of underlying particle"""
             return self._getPartId()
 
         @property
         def neighbor_vertices(self):
+            """connected vertices"""
             return self._neighborVertices()
 
         @property
         def volume(self) -> float:
+            """volume of the vertex"""
             return self.getVolume()
         
         @property
         def mass(self) -> float:
+            """mass of the vertex"""
             return self.getMass()
 
         @property
         def position(self):
+            """position of the vertex"""
             return self.getPosition()
 
         @position.setter
@@ -115,6 +122,7 @@ vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::VertexHandle)
 
         @property
         def velocity(self):
+            """velocity of the vertex"""
             return self.getVelocity()
 
         @classmethod
@@ -184,42 +192,51 @@ vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::VertexHandle)
     %pythoncode %{
         @property
         def vertex(self):
+            """underlying :class:`Vertex` instance, if any"""
             return self._vertex()
 
         @property
         def bodies(self):
+            """bodies defined by the vertex"""
             return self.getBodies()
 
         @property
         def surfaces(self):
+            """surfaces defined by the vertex"""
             return self.getSurfaces()
 
         @property
         def pid(self) -> int:
+            """id of underlying particle"""
             return self._getPartId()
 
         @property
         def neighbor_vertices(self):
+            """connected vertices"""
             return self._neighborVertices()
 
         @property
         def volume(self) -> float:
+            """volume of the vertex"""
             return self.getVolume()
         
         @property
         def mass(self) -> float:
+            """mass of the vertex"""
             return self.getMass()
 
         @property
         def position(self):
+            """position of the vertex"""
             return self.getPosition()
 
         @position.setter
         def position(self, _position):
-            self.setPosition(_position)
+            self.set_position(_position)
 
         @property
         def velocity(self):
+            """velocity of the vertex"""
             return self.getVelocity()
     %}
 }

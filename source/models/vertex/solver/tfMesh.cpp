@@ -95,6 +95,19 @@ Mesh::~Mesh() {
     }
 }
 
+std::string Mesh::str() const {
+    std::stringstream ss;
+
+    ss << "Mesh(";
+    ss << "nr_vertices=" << this->nr_vertices << "(" << this->sizeVertices() << "), ";
+    ss << "nr_surfaces=" << this->nr_surfaces << "(" << this->sizeSurfaces() << "), ";
+    ss << "nr_bodies="   << this->nr_bodies   << "(" << this->sizeBodies()   << "), ";
+    ss << "quality=" << (this->hasQuality() ? "yes" : "no");
+    ss << ")";
+
+    return ss.str();
+}
+
 HRESULT Mesh::setQuality(MeshQuality *quality) {
     if(_quality) delete _quality;
 

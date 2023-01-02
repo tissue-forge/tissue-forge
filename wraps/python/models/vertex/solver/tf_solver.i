@@ -46,9 +46,10 @@ static int _vertex_solver_MeshObjType_getId(const TissueForge::models::vertex::M
 
 %rename(_vertex_solver_edgeStrain) TissueForge::models::vertex::edgeStrain;
 %rename(_vertex_solver_vertexStrain) TissueForge::models::vertex::vertexStrain;
+%rename(_vertex_solver_MeshObjType) TissueForge::models::vertex::MeshObjType;
+%rename(_vertex_solver_MeshObjActor) TissueForge::models::vertex::MeshObjActor;
 
-
-%import <models/vertex/solver/tfMeshObj.h>
+%include <models/vertex/solver/tfMeshObj.h>
 
 %define vertex_solver_MeshObj_prep_py(name) 
 

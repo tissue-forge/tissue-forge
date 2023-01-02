@@ -107,6 +107,13 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
     @classmethod
     def get(cls) -> SurfaceType:
+        """
+        Get the engine type that corresponds to this class.
+
+        The type is automatically registered as necessary.
+
+        :return: registered type instance
+        """
 
         solver: MeshSolver = MeshSolver.get()
         if solver is None:
@@ -145,6 +152,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
     @classmethod
     def edge_tension(cls) -> Optional[EdgeTension]:
+        """edge tension actor generator according to specs, if any"""
         if cls.edge_tension_lam is None:
             return None
 
@@ -155,12 +163,14 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
     @classmethod
     def normal_stress(cls) -> Optional[NormalStress]:
+        """normal stress actor generator according to specs, if any"""
         if cls.normal_stress_mag is None:
             return None
         return NormalStress(cls.normal_stress)
 
     @classmethod
     def surface_area_constaint(cls) -> Optional[SurfaceAreaConstraint]:
+        """surface area constaint actor generator according to specs, if any"""
         if cls.surface_area_lam is None or cls.surface_area_val is None:
             return None
 
@@ -168,6 +178,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
     @classmethod
     def surface_traction(cls) -> Optional[SurfaceTraction]:
+        """surface traction actor generator according to specs, if any"""
         if cls.surface_traction_comps is None:
             return None
 
@@ -176,6 +187,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
     @staticmethod
     def bind_adhesion(specs: List[Type]) -> Dict[str, Dict[str, Adhesion]]:
+        """Bind adhesion to all registered types according to all passed specifications"""
         specs: List[Type[SurfaceTypeSpec]]
 
         result = dict()
@@ -249,6 +261,13 @@ class BodyTypeSpec(_TypeSpecBase):
 
     @classmethod
     def get(cls) -> BodyType:
+        """
+        Get the engine type that corresponds to this class.
+
+        The type is automatically registered as necessary.
+
+        :return: registered type instance
+        """
 
         solver: MeshSolver = MeshSolver.get()
         if solver is None:
@@ -281,6 +300,7 @@ class BodyTypeSpec(_TypeSpecBase):
 
     @classmethod
     def body_force(cls) -> Optional[BodyForce]:
+        """body force actor generator according to specs, if any"""
         if cls.body_force_comps is None:
             return None
 
@@ -289,6 +309,7 @@ class BodyTypeSpec(_TypeSpecBase):
 
     @classmethod
     def surface_area_constaint(cls) -> Optional[SurfaceAreaConstraint]:
+        """surface area constaint actor generator according to specs, if any"""
         if cls.surface_area_lam is None or cls.surface_area_val is None:
             return None
 
@@ -296,6 +317,7 @@ class BodyTypeSpec(_TypeSpecBase):
 
     @classmethod
     def volume_constraint(cls) -> Optional[VolumeConstraint]:
+        """volume constraint actor generator according to specs, if any"""
         if cls.volume_lam is None or cls.volume_val is None:
             return None
 
@@ -303,6 +325,7 @@ class BodyTypeSpec(_TypeSpecBase):
 
     @staticmethod
     def bind_adhesion(specs: List[Type]) -> Dict[str, Dict[str, Adhesion]]:
+        """Bind adhesion to all registered types according to all passed specifications"""
         specs: List[Type[BodyTypeSpec]]
 
         result = dict()

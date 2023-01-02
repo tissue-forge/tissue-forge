@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfCMeshLogger.h
+ * 
+ */
+
 #ifndef _WRAPS_C_VERTEX_SOLVER_TFCMESHLOGGER_H_
 #define _WRAPS_C_VERTEX_SOLVER_TFCMESHLOGGER_H_
 
