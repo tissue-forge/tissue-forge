@@ -217,6 +217,11 @@ namespace TissueForge::models::vertex {
          */
         std::vector<Surface*> sharedSurfaces(const Vertex *other) const;
 
+        /**
+         * @brief Get the current area
+         */
+        FloatP_t getArea() const;
+
         /** 
          * @brief Get the current volume 
          */
@@ -584,6 +589,11 @@ namespace TissueForge::models::vertex {
          * @param other another vertex
          */
         std::vector<SurfaceHandle> sharedSurfaces(const VertexHandle &other) const;
+
+        /**
+         * @brief Get the current area
+         */
+        FloatP_t getArea() const;
 
         /** 
          * @brief Get the current volume 

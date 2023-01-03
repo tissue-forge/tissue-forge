@@ -311,6 +311,14 @@ CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_sharedSurfaces(
 );
 
 /**
+ * @brief Get the current area
+ * 
+ * @param handle populated handle
+ * @param result current area
+ */
+CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_getArea(struct tfVertexSolverVertexHandleHandle *handle, tfFloatP_t *result);
+
+/**
  * @brief Get the current volume
  * 
  * @param handle populated handle

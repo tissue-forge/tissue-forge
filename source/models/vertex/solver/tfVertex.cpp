@@ -98,6 +98,13 @@ std::vector<Surface*> Vertex::sharedSurfaces(const Vertex *other) const {
     return std::vector<Surface*>(result.begin(), result.end());
 }
 
+FloatP_t Vertex::getArea() const {
+    FloatP_t result = 0.f;
+    for(auto &s : getSurfaces()) 
+        result += s->getVertexArea(this);
+    return result;
+}
+
 FloatP_t Vertex::getVolume() const {
     FloatP_t result = 0.f;
     for(auto &b : getBodies()) 
@@ -1162,6 +1169,11 @@ std::vector<SurfaceHandle> VertexHandle::sharedSurfaces(const VertexHandle &othe
     for(auto &s : ss) 
         result.emplace_back(s->objectId());
     return result;
+}
+
+FloatP_t VertexHandle::getArea() const {
+    VertexHandle_GETOBJ(o, 0);
+    return o->getArea();
 }
 
 FloatP_t VertexHandle::getVolume() const {

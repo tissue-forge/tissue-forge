@@ -102,6 +102,11 @@ vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::VertexHandle)
             return self._neighborVertices()
 
         @property
+        def area(self) -> float:
+            """area of the vertex"""
+            return self.getArea()
+
+        @property
         def volume(self) -> float:
             """volume of the vertex"""
             return self.getVolume()
@@ -214,6 +219,11 @@ vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::VertexHandle)
         def neighbor_vertices(self):
             """connected vertices"""
             return self._neighborVertices()
+
+        @property
+        def area(self) -> float:
+            """area of the vertex"""
+            return self.getArea()
 
         @property
         def volume(self) -> float:

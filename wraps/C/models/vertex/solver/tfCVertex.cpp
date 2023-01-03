@@ -322,6 +322,13 @@ HRESULT tfVertexSolverVertexHandle_sharedSurfaces(
     return S_OK;
 }
 
+HRESULT tfVertexSolverVertexHandle_getArea(struct tfVertexSolverVertexHandleHandle *handle, tfFloatP_t *result) {
+    TFC_VERTEXHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = vhandle->getArea();
+    return S_OK;
+}
+
 HRESULT tfVertexSolverVertexHandle_getVolume(struct tfVertexSolverVertexHandleHandle *handle, tfFloatP_t *result) {
     TFC_VERTEXHANDLE_GET(handle);
     TFC_PTRCHECK(result);
