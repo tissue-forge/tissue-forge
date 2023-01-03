@@ -11,3 +11,4 @@ basic Tissue Forge objects (`e.g.`, particles are cells).
     :maxdepth: 2
 
     center/center
+    vertex/vertex
