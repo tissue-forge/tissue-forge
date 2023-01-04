@@ -580,6 +580,26 @@ HRESULT tfVertexSolverSurfaceHandle_getArea(struct tfVertexSolverSurfaceHandleHa
     return S_OK;
 }
 
+HRESULT tfVertexSolverSurfaceHandle_getDensity(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result) {
+    TFC_SURFACEHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = shandle->getDensity();
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceHandle_setDensity(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t density) {
+    TFC_SURFACEHANDLE_GET(handle);
+    shandle->setDensity(density);
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceHandle_getMass(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result) {
+    TFC_SURFACEHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    //
+    return S_OK;
+}
+
 HRESULT tfVertexSolverSurfaceHandle_volumeSense(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverBodyHandleHandle *body, 
@@ -636,6 +656,20 @@ HRESULT tfVertexSolverSurfaceHandle_getVertexArea(
     VertexHandle *_v = TissueForge::castC<VertexHandle, tfVertexSolverVertexHandleHandle>(v);
     TFC_PTRCHECK(_v);
     *result = shandle->getVertexArea(*_v);
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceHandle_getVertexMass(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    struct tfVertexSolverVertexHandleHandle *v, 
+    tfFloatP_t *result
+) {
+    TFC_SURFACEHANDLE_GET(handle);
+    TFC_PTRCHECK(v);
+    TFC_PTRCHECK(result);
+    VertexHandle *_v = TissueForge::castC<VertexHandle, tfVertexSolverVertexHandleHandle>(v);
+    TFC_PTRCHECK(_v);
+    *result = shandle->getVertexMass(*_v);
     return S_OK;
 }
 
@@ -881,6 +915,19 @@ HRESULT tfVertexSolverSurfaceType_getStyle(struct tfVertexSolverSurfaceTypeHandl
     TFC_SURFACETYPE_GET(handle);
     TFC_PTRCHECK(style);
     style->tfObj = (void*)stype->style;
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceType_getDensity(struct tfVertexSolverSurfaceTypeHandle *handle, tfFloatP_t *result) {
+    TFC_SURFACETYPE_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = stype->density;
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceType_setDensity(struct tfVertexSolverSurfaceTypeHandle *handle, tfFloatP_t result) {
+    TFC_SURFACETYPE_GET(handle);
+    stype->density = result;
     return S_OK;
 }
 

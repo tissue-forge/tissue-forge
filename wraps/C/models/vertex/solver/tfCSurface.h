@@ -535,6 +535,30 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getVelocity(struct tfVertexSolver
 CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getArea(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result);
 
 /**
+ * @brief Get the mass density; only used in 2D simulation
+ * 
+ * @param handle populated handle
+ * @param result mass density
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getDensity(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result);
+
+/**
+ * @brief Set the mass density; only used in 2D simulation
+ * 
+ * @param handle populated handle
+ * @param density density
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_setDensity(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t density);
+
+/**
+ * @brief Get the mass; only used in 2D simulation
+ * 
+ * @param handle populated handle
+ * @param result mass
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getMass(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result);
+
+/**
  * @brief Get the sign of the volume contribution to a body that this surface contributes
  * 
  * @param handle populated handle
@@ -581,6 +605,19 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getOutwardNormal(
  * @param result area contribution
  */
 CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getVertexArea(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    struct tfVertexSolverVertexHandleHandle *v, 
+    tfFloatP_t *result
+);
+
+/**
+ * @brief Get the mass contribution of a vertex to this surface; only used in 2D simulation
+ * 
+ * @param populated handle
+ * @param v a vertex
+ * @param result mass contribution
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getVertexMass(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverVertexHandleHandle *v, 
     tfFloatP_t *result
@@ -829,6 +866,22 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_setName(struct tfVertexSolverSurfac
  * @param style style of the surface type
  */
 CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_getStyle(struct tfVertexSolverSurfaceTypeHandle *handle, struct tfRenderingStyleHandle *style);
+
+/**
+ * @brief Get the density of the surface type; only used in 2D simulation
+ * 
+ * @param handle populated handle
+ * @param result density
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_getDensity(struct tfVertexSolverSurfaceTypeHandle *handle, tfFloatP_t *result);
+
+/**
+ * @brief Set the density of the surface type; only used in 2D simulation
+ * 
+ * @param handle populated handle
+ * @param result density
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_setDensity(struct tfVertexSolverSurfaceTypeHandle *handle, tfFloatP_t result);
 
 /**
  * @brief Get the list of instances that belong to this type

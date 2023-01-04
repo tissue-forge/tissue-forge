@@ -66,3 +66,5 @@ Solver
     .. automethod:: get_log
 
     .. automethod:: log
+
+    .. automethod:: is_3d

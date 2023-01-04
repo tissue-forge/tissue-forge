@@ -275,4 +275,13 @@ CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveSurface(struct tfVertexSolverSurfaceH
  */
 CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveBody(struct tfVertexSolverBodyHandleHandle *b);
 
+/**
+ * @brief Test whether the mesh is 3D. 
+ * 
+ * A 3D mesh has at least one body. 
+ * 
+ * @param result result of the test
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshIs3D(bool *result);
+
 #endif // _WRAPS_C_VERTEX_SOLVER_TFCMESH_H_

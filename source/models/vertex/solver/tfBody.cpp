@@ -1004,6 +1004,7 @@ BodyType::BodyType(const bool &noReg) :
     MeshObjType()
 {
     name = "Body";
+    density = 0.f;
 
     if(!noReg) 
         this->registerType();

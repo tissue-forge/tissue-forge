@@ -98,6 +98,9 @@ namespace TissueForge::models::vertex {
         /** Volume contributed by this surface to its child bodies */
         FloatP_t _volumeContr;
 
+        /** Mass density; only used in 2D simulation */
+        FloatP_t density;
+
     public:
 
         /** Object actors */
@@ -346,6 +349,23 @@ namespace TissueForge::models::vertex {
         FloatP_t getArea() const { return area; }
 
         /**
+         * @brief Get the mass density; only used in 2D simulation
+         */
+        FloatP_t getDensity() const { return density; }
+
+        /**
+         * @brief Set the mass density; only used in 2D simulation
+         * 
+         * @param _density density
+         */
+        void setDensity(const FloatP_t &_density) { density = _density; }
+
+        /**
+         * @brief Get the mass; only used in 2D simulation
+         */
+        FloatP_t getMass() const { return area * density; }
+
+        /**
          * @brief Get the sign of the volume contribution to a body that this surface contributes
          * 
          * @param body a body
@@ -372,6 +392,13 @@ namespace TissueForge::models::vertex {
          * @param v a vertex
          */
         FloatP_t getVertexArea(const Vertex *v) const;
+
+        /**
+         * @brief Get the mass contribution of a vertex to this surface; only used in 2D simulation
+         * 
+         * @param v a vertex
+         */
+        FloatP_t getVertexMass(const Vertex *v) const { return getVertexArea(v) * density; }
 
         /**
          * @brief Get the normal of a triangle
@@ -769,6 +796,23 @@ namespace TissueForge::models::vertex {
          */
         FloatP_t getArea() const;
 
+        /**
+         * @brief Get the mass density; only used in 2D simulation
+         */
+        FloatP_t getDensity() const;
+
+        /**
+         * @brief Set the mass density; only used in 2D simulation
+         * 
+         * @param _density density
+         */
+        void setDensity(const FloatP_t &_density) const;
+
+        /**
+         * @brief Get the mass; only used in 2D simulation
+         */
+        FloatP_t getMass() const;
+
         /** 
          * @brief Get the sign of the volume contribution to a body that this surface contributes 
          * 
@@ -796,6 +840,13 @@ namespace TissueForge::models::vertex {
          * @param v a vertex
          */
         FloatP_t getVertexArea(const VertexHandle &v) const;
+
+        /**
+         * @brief Get the mass contribution of a vertex to this surface; only used in 2D simulation
+         * 
+         * @param v a vertex
+         */
+        FloatP_t getVertexMass(const VertexHandle &v) const;
 
         /** 
          * @brief Get the species on outward-facing side of the surface, if any 
@@ -926,6 +977,9 @@ namespace TissueForge::models::vertex {
 
         /** The style of the surface type */
         rendering::Style *style;
+
+        /** Mass density; only used in 2D simulation */
+        FloatP_t density;
 
         /**
          * @brief Construct a new surface type

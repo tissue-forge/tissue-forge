@@ -87,6 +87,11 @@
             """Size of the list of bodies"""
             return self.sizeBodies()
 
+        @property
+        def is_3d(self) -> bool:
+            """Test whether the mesh is 3D. A 3D mesh has at least one body"""
+            return self.is3D()
+
         def __str__(self) -> str:
             return self.str()
     %}

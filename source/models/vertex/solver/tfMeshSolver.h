@@ -193,6 +193,15 @@ namespace TissueForge::models::vertex {
         static Mesh *getMesh();
 
         /**
+         * @brief Test whether the mesh is 3D. 
+         * 
+         * A 3D mesh has at least one body. 
+         * 
+         * @return true if the mesh is 3D
+         */
+        static bool is3D();
+
+        /**
          * @brief Register a body type
          * 
          * @param _type type

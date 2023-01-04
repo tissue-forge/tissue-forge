@@ -39,6 +39,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(get_volume_contr) TissueForge::models::vertex::Surface::getVolumeContr;
 %rename(get_outward_normal) TissueForge::models::vertex::Surface::getOutwardNormal;
 %rename(get_vertex_area) TissueForge::models::vertex::Surface::getVertexArea;
+%rename(get_vertex_mass) TissueForge::models::vertex::Surface::getVertexMass;
 %rename(triangle_normal) TissueForge::models::vertex::Surface::triangleNormal;
 %rename(normal_distance) TissueForge::models::vertex::Surface::normalDistance;
 %rename(is_outside) TissueForge::models::vertex::Surface::isOutside;
@@ -68,6 +69,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(get_volume_contr) TissueForge::models::vertex::SurfaceHandle::getVolumeContr;
 %rename(get_outward_normal) TissueForge::models::vertex::SurfaceHandle::getOutwardNormal;
 %rename(get_vertex_area) TissueForge::models::vertex::SurfaceHandle::getVertexArea;
+%rename(get_vertex_mass) TissueForge::models::vertex::SurfaceHandle::getVertexMass;
 %rename(triangle_normal) TissueForge::models::vertex::SurfaceHandle::triangleNormal;
 %rename(normal_distance) TissueForge::models::vertex::SurfaceHandle::normalDistance;
 %rename(is_outside) TissueForge::models::vertex::SurfaceHandle::isOutside;
@@ -118,6 +120,15 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
         def neighbor_surfaces(self):
             """surfaces that share at least one vertex"""
             return self._neighborSurfaces()
+
+        @property
+        def density(self):
+            """density of the surface; only used in 2D simulation"""
+            return self.getDensity()
+
+        @density.setter
+        def density(self, _density):
+            self.setDensity(_density)
 
         @property
         def normal(self):
@@ -249,6 +260,15 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
         def neighbor_surfaces(self):
             """surfaces that share at least one vertex"""
             return self._neighborSurfaces()
+
+        @property
+        def density(self):
+            """density of the surface; only used in 2D simulation"""
+            return self.getDensity()
+
+        @density.setter
+        def density(self, _density):
+            self.setDensity(_density)
 
         @property
         def normal(self):

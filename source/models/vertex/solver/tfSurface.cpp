@@ -83,7 +83,8 @@ Surface::Surface() :
     typeId{-1},
     species1{NULL}, 
     species2{NULL}, 
-    style{NULL}
+    style{NULL}, 
+    density{0.f}
 {
     MESHOBJ_INITOBJ
 }
@@ -1523,6 +1524,21 @@ FloatP_t SurfaceHandle::getArea() const {
     return o->getArea();
 }
 
+FloatP_t SurfaceHandle::getDensity() const {
+    SurfaceHandle_GETOBJ(o, 0);
+    return o->getDensity();
+}
+
+void SurfaceHandle::setDensity(const FloatP_t &_density) const {
+    SurfaceHandle_GETOBJ(o, );
+    return o->setDensity(_density);
+}
+
+FloatP_t SurfaceHandle::getMass() const {
+    SurfaceHandle_GETOBJ(o, 0);
+    return o->getMass();
+}
+
 FloatP_t SurfaceHandle::volumeSense(const BodyHandle &body) const {
     SurfaceHandle_GETOBJ(o, 0);
     Body *_body = body.body();
@@ -1561,6 +1577,16 @@ FloatP_t SurfaceHandle::getVertexArea(const VertexHandle &v) const {
         return 0;
     }
     return o->getVertexArea(_v);
+}
+
+FloatP_t SurfaceHandle::getVertexMass(const VertexHandle &v) const {
+    SurfaceHandle_GETOBJ(o, 0);
+    Vertex *_v = v.vertex();
+    if(!_v) {
+        SurfaceHandle_INVALIDHANDLERR;
+        return 0;
+    }
+    return o->getVertexMass(_v);
 }
 
 state::StateVector *SurfaceHandle::getSpeciesOutward() const {
@@ -1684,6 +1710,7 @@ SurfaceType::SurfaceType(const FloatP_t &flatLam, const FloatP_t &convexLam, con
     MeshObjType() 
 {
     name = "Surface";
+    density = 0.f;
 
     style = NULL;
     MeshSolver *solver = MeshSolver::get();
@@ -1791,12 +1818,14 @@ unsigned int SurfaceType::getNumInstances() {
 
 static SurfaceHandle SurfaceType_fromVertices(SurfaceType *stype, const std::vector<VertexHandle> &vertices) {
     SurfaceHandle s = Surface::create(vertices);
-    if(!s || stype->add(s) != S_OK) {
+    Surface *_s = s.surface();
+    if(!_s || stype->add(s) != S_OK) {
         TF_Log(LOG_ERROR) << "Failed to create instance";
-        if(s) 
+        if(_s) 
             s.destroy();
         return SurfaceHandle();
     }
+    _s->setDensity(stype->density);
     return s;
 }
 

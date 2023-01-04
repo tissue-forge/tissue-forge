@@ -20,6 +20,8 @@ Surface
 
     .. autoproperty:: neighbor_surfaces
 
+    .. autoproperty:: density
+
     .. autoproperty:: normal
 
     .. autoproperty:: centroid
@@ -90,6 +92,8 @@ Surface
 
     .. automethod:: get_vertex_area
 
+    .. automethod:: get_vertex_mass
+
     .. automethod:: triangle_normal
 
     .. automethod:: normal_distance
@@ -132,6 +136,8 @@ Surface
     .. autoproperty:: vertices
 
     .. autoproperty:: neighbor_surfaces
+
+    .. autoproperty:: density
 
     .. autoproperty:: normal
 
@@ -201,6 +207,8 @@ Surface
 
     .. automethod:: get_vertex_area
 
+    .. automethod:: get_vertex_mass
+
     .. automethod:: triangle_normal
 
     .. automethod:: normal_distance
@@ -229,6 +237,8 @@ Surface
 
 
 .. autoclass:: SurfaceTypeSpec
+
+    .. autoattribute:: density
 
     .. autoattribute:: edge_tension_lam
 
@@ -264,6 +274,8 @@ Surface
     .. autoproperty:: registered
 
     .. autoproperty:: style
+
+    .. autoproperty:: density
 
     .. autoproperty:: normal_stresses
 

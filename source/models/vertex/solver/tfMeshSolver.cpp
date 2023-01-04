@@ -187,6 +187,12 @@ Mesh *MeshSolver::getMesh() {
     return _solver->mesh;
 }
 
+bool MeshSolver::is3D() {
+    TF_MESHSOLVER_CHECKINIT_RET(false)
+
+    return _solver->mesh->is3D();
+}
+
 template <typename T> 
 static bool MeshSolver_assignUniqueNameAsNecessary(T *inst, std::vector<T*> registeredInsts) {
     bool uniqueName = true;

@@ -299,6 +299,15 @@ namespace TissueForge::models::vertex {
          */
         HRESULT remove(Body *b);
 
+        /**
+         * @brief Test whether the mesh is 3D. 
+         * 
+         * A 3D mesh has at least one body. 
+         * 
+         * @return true if the mesh is 3D
+         */
+        bool is3D() const { return nr_bodies > 0; }
+
         friend MeshRenderer;
         friend MeshSolver;
 

@@ -80,6 +80,9 @@ class SurfaceTypeSpec(_TypeSpecBase):
         stype.style.setVisible(False)
     """
 
+    density: Optional[float] = None
+    """Mass density; only used in 2D simulation"""
+
     edge_tension_lam: Optional[float] = None
     """Edge tension Lagrange multiplier"""
 
@@ -125,6 +128,9 @@ class SurfaceTypeSpec(_TypeSpecBase):
             return type_instance
 
         type_instance = SurfaceType(True)
+
+        if cls.density is not None:
+            type_instance.density = cls.density
 
         # process style
 

@@ -26,6 +26,8 @@ Mesh
 
     .. autoproperty:: size_bodies
 
+    .. autoproperty:: is_3d
+
     .. automethod:: toString
 
     .. automethod:: ensure_available_vertices

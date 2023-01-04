@@ -114,8 +114,12 @@ FloatP_t Vertex::getVolume() const {
 
 FloatP_t Vertex::getMass() const {
     FloatP_t result = 0.f;
-    for(auto &b : getBodies()) 
-        result += b->getVertexMass(this);
+    if(MeshSolver::is3D()) 
+        for(auto &b : getBodies()) 
+            result += b->getVertexMass(this);
+    else 
+        for(auto &s : getSurfaces()) 
+            result += s->getVertexMass(this);
     return result;
 }
 

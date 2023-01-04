@@ -339,3 +339,10 @@ HRESULT tfVertexSolverMeshRemoveBody(struct tfVertexSolverBodyHandleHandle *b) {
     TFC_PTRCHECK(_bObj);
     return mesh->remove(_bObj);
 }
+
+HRESULT tfVertexSolverMeshIs3D(bool *result) {
+    TFC_MESH_GET(mesh);
+    TFC_PTRCHECK(result);
+    *result = mesh->is3D();
+    return S_OK;
+}
