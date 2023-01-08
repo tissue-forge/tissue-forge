@@ -140,8 +140,10 @@ namespace TissueForge::models::vertex {
 
         /**
          * @brief Implement this operation
+         * 
+         * @return ids of affected children, if any
          */
-        virtual void implement() {}
+        virtual std::vector<int> implement() { return {}; }
 
     protected:
 
@@ -158,7 +160,7 @@ namespace TissueForge::models::vertex {
 
         typedef bool (*OperationCheck)();
         typedef void (*OperationPrep)();
-        typedef void (*OperationFunction)(std::vector<int>);
+        typedef std::vector<int> (*OperationFunction)(std::vector<int>);
 
         OperationCheck *opCheck;
         OperationPrep *opPrep;
@@ -191,7 +193,7 @@ namespace TissueForge::models::vertex {
             if(opPrep) (*opPrep)();
         }
 
-        void implement() override { (*opFunc)(targets); }
+        std::vector<int> implement() override { return (*opFunc)(targets); }
     };
 
 

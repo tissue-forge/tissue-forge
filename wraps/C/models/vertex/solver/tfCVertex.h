@@ -296,6 +296,13 @@ CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_neighborVertices(
 );
 
 /**
+ * @brief Update internal neighbor vertex data
+ * 
+ * @param handle populated handle
+ */
+CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_updateNeighborVertices(struct tfVertexSolverVertexHandleHandle *handle);
+
+/**
  * @brief Get the surfaces that this vertex and another vertex both define
  * 
  * @param handle populated handle

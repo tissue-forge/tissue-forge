@@ -88,6 +88,9 @@ namespace TissueForge::models::vertex {
         /** Cached particle data: velocity */
         FVector3 _particleVelocity;
 
+        /** Cached neighbor vertices */
+        std::vector<Vertex*> _neighborVertices;
+
     public:
 
         Vertex();
@@ -203,12 +206,17 @@ namespace TissueForge::models::vertex {
          */
         Body *findBody(const FVector3 &dir) const;
 
+        /**
+         * @brief Update internal neighbor vertex data
+         */
+        void updateNeighborVertices();
+
         /** 
          * @brief Get the neighbor vertices.
          * 
          * A vertex is a neighbor if it defines an edge with this vertex.
          */
-        std::vector<Vertex*> neighborVertices() const;
+        std::vector<Vertex*> neighborVertices() const { return _neighborVertices; }
 
         /**
          * @brief Get the surfaces that this vertex and another vertex both define
@@ -575,6 +583,11 @@ namespace TissueForge::models::vertex {
          * @param dir direction to look with respect to the vertex
          */
         BodyHandle findBody(const FVector3 &dir) const;
+
+        /**
+         * @brief Update internal neighbor vertex data
+         */
+        void updateNeighborVertices() const;
 
         /** 
          * @brief Get the neighbor vertices.

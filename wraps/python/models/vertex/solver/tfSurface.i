@@ -131,6 +131,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             self.setDensity(_density)
 
         @property
+        def mass(self):
+            """mass of the surface; only used in 2D simulation"""
+            return self.getMass()
+
+        @property
         def normal(self):
             """normal of the surface"""
             return self.getNormal()
@@ -269,6 +274,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
         @density.setter
         def density(self, _density):
             self.setDensity(_density)
+
+        @property
+        def mass(self):
+            """mass of the surface; only used in 2D simulation"""
+            return self.getMass()
 
         @property
         def normal(self):

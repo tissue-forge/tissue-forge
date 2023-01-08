@@ -33,6 +33,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Vertex)
 %rename(set_position) TissueForge::models::vertex::Vertex::setPosition(const FVector3&, const bool&);
 %rename(find_surface) TissueForge::models::vertex::Vertex::findSurface;
 %rename(find_body) TissueForge::models::vertex::Vertex::findBody;
+%rename(update_neighbor_vertices) TissueForge::models::vertex::Vertex::updateNeighborVertices;
 %rename(shared_surfaces) TissueForge::models::vertex::Vertex::sharedSurfaces;
 %rename(position_changed) TissueForge::models::vertex::Vertex::positionChanged;
 %rename(update_properties) TissueForge::models::vertex::Vertex::updateProperties;
@@ -59,6 +60,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Vertex)
 %rename(set_position) TissueForge::models::vertex::VertexHandle::setPosition(const FVector3&, const bool&);
 %rename(find_surface) TissueForge::models::vertex::VertexHandle::findSurface;
 %rename(find_body) TissueForge::models::vertex::VertexHandle::findBody;
+%rename(update_neighbor_vertices) TissueForge::models::vertex::VertexHandle::updateNeighborVertices;
 %rename(shared_surfaces) TissueForge::models::vertex::VertexHandle::sharedSurfaces;
 %rename(position_changed) TissueForge::models::vertex::VertexHandle::positionChanged;
 %rename(update_properties) TissueForge::models::vertex::VertexHandle::updateProperties;

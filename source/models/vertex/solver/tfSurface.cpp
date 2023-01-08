@@ -106,6 +106,9 @@ static HRESULT Surface_fromVertices(Surface *s, std::vector<Vertex*> vertices) {
         return tf_error(E_FAIL, "Surfaces require at least 3 vertices");
     }
 
+    for(auto &v : vertices) 
+        v->updateNeighborVertices();
+
     return S_OK;
 }
 
@@ -354,19 +357,31 @@ HRESULT Surface::destroy() {
         return E_FAIL;
     if(this->typeId >= 0 && this->type()->remove(SurfaceHandle(this->_objId)) != S_OK) 
         return E_FAIL;
+    std::vector<Vertex*> affectedVertices = getVertices();
     if(this->_objId >= 0) 
         Mesh::get()->remove(this);
+    for(auto &v : affectedVertices) 
+        v->updateNeighborVertices();
     return S_OK;
 }
 
 HRESULT Surface::destroy(Surface *target) {
     auto vertices = target->getVertices();
+
+    std::unordered_set<Vertex*> affectedVertices;
+    for(auto &v : vertices) 
+        for(auto &nv : v->neighborVertices()) 
+            if(!nv->defines(target)) 
+                affectedVertices.insert(nv);
+
     if(target->destroy() != S_OK) 
         return E_FAIL;
 
     for(auto &v : vertices) 
         if(v->getSurfaces().size() == 0) 
             v->destroy();
+    for(auto &v : affectedVertices) 
+        v->updateNeighborVertices();
 
     return S_OK;
 }
@@ -719,6 +734,7 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
     // Find vertices to merge
     FloatP_t distCrit2 = distCf * distCf * 0.5 * (s1->area + s2->area);
     std::vector<int> indicesMatched(s1->vertices.size(), -1);
+    std::vector<FloatP_t> dist2Matched(s1->vertices.size(), distCrit2);
     size_t numMatched = 0;
     for(int i = 0; i < s1->vertices.size(); i++) {
         Vertex *vi = s1->vertices[i];
@@ -736,7 +752,25 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
                 matchedIdx = j;
             }
         }
+
+        // Prevent duplicates
+        if(matchedIdx >= 0) {
+            for(int k = 0; k < i; k++) {
+                if(indicesMatched[k] == matchedIdx) {
+                    if(minDist2 < dist2Matched[k]) {
+                        indicesMatched[k] = -1;
+                        dist2Matched[k] = distCrit2;
+                    }
+                    else {
+                        matchedIdx = -1;
+                        minDist2 = distCrit2;
+                    }
+                }
+            }
+        }
+
         indicesMatched[i] = matchedIdx;
+        dist2Matched[i] = minDist2;
         if(matchedIdx >= 0) 
             numMatched++;
     }
@@ -745,32 +779,16 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
         return S_OK;
 
     // Merge matched vertices
-    std::vector<Vertex*> toRemove;
-    toRemove.reserve(s1->vertices.size());
-    for(int i = 0; i < s1->vertices.size(); i++) {
-        Vertex *vi = s1->vertices[i];
-        int j = indicesMatched[i];
-        if(j >= 0) {
-            Vertex *vj = s2->vertices[j];
-            for(auto &s : vj->getSurfaces()) 
-                for(int k = 0; k < s->vertices.size(); k++) 
-                    if(s->vertices[k]->objectId() == vj->objectId()) {
-                        s->vertices[k] = vi;
-                        if(vi->add(s) != S_OK)
-                            return E_FAIL;
-                        break;
-                    }
-            if(vj->_objId >= 0)
-                toRemove.push_back(vj);
-        }
+    std::vector<std::pair<Vertex*, Vertex*> > toMerge;
+    for(int i = 0; i < indicesMatched.size(); i++) {
+        int vj_idx = indicesMatched[i];
+        if(vj_idx >= 0) 
+            toMerge.push_back({s1->vertices[i], s2->vertices[vj_idx]});
     }
-
-    for(auto &vj : toRemove) {
-        auto children = vj->getSurfaces();
-        for(auto &c : children) 
-            vj->remove(c);
-        if(vj->destroy() != S_OK) 
-            return E_FAIL;
+    for(auto &p : toMerge) {
+        Vertex *vi, *vj;
+        std::tie(vi, vj) = p;
+        vi->merge(vj);
     }
 
     MeshSolver::log(MeshLogEventType::Create, {s1->_objId, s2->_objId}, {s1->objType(), s2->objType()}, "sew");
@@ -901,6 +919,14 @@ HRESULT Surface::merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
         if(v->destroy() != S_OK) 
             return E_FAIL;
 
+    // Update connectivity
+    for(auto &v : vertices) {
+        v->updateNeighborVertices();
+        for(auto &nv : v->neighborVertices()) 
+            if(!nv->defines(this)) 
+                nv->updateNeighborVertices();
+    }
+    
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
 
@@ -1935,9 +1961,7 @@ SurfaceHandle SurfaceType::replace(VertexHandle &toReplace, std::vector<FloatP_t
         VertexHandle v = neighbors[i];
         FVector3 pos1 = v.getPosition();
         FVector3 pos = pos0 + (pos1 - pos0) * cf;
-        MeshParticleType *ptype = MeshParticleType_get();
-        ParticleHandle *ph = (*ptype)(&pos);
-        VertexHandle vInserted = Vertex::create(ph->id);
+        VertexHandle vInserted = Vertex::create(pos);
         if(vInserted.insert(toReplace, v) != S_OK) 
             return SurfaceHandle();
         insertedVertices.push_back(vInserted);
@@ -1946,10 +1970,13 @@ SurfaceHandle SurfaceType::replace(VertexHandle &toReplace, std::vector<FloatP_t
     // Disconnect replaced vertex from all surfaces
     _toReplace = toReplace.vertex();
     std::vector<Surface*> toReplaceSurfaces = _toReplace->getSurfaces();
+    std::vector<Vertex*> affectedVertices = _toReplace->neighborVertices();
     for(auto &s : toReplaceSurfaces) {
         s->remove(_toReplace);
         _toReplace->remove(s);
     }
+    for(auto &v : affectedVertices) 
+        v->updateNeighborVertices();
 
     // Create new surface; its constructor should handle internal connections
     SurfaceHandle inserted = (*this)(insertedVertices);

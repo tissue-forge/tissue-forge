@@ -78,16 +78,16 @@ MeshParticleType *TissueForge::models::vertex::MeshParticleType_get() {
     return (MeshParticleType*)result;
 }
 
-std::vector<Vertex*> Vertex::neighborVertices() const {
+void Vertex::updateNeighborVertices() {
     std::unordered_set<Vertex*> result;
     Vertex *vp, *vn;
 
-    for(auto &s : surfaces) {
+    for(auto &s : getSurfaces()) {
         std::tie(vp, vn) = s->neighborVertices(this);
         result.insert(vp);
         result.insert(vn);
     }
-    return std::vector<Vertex*>(result.begin(), result.end());
+    this->_neighborVertices = std::vector<Vertex*>(result.begin(), result.end());
 }
 
 std::vector<Surface*> Vertex::sharedSurfaces(const Vertex *other) const {
@@ -360,6 +360,7 @@ HRESULT Vertex::destroy() {
         TF_Log(LOG_DEBUG);
     }
     this->pid = -1;
+    this->_neighborVertices.clear();
     return S_OK;
 }
 
@@ -575,6 +576,13 @@ HRESULT Vertex::replace(Surface *toReplace) {
         if(v->destroy() != S_OK) 
             return E_FAIL;
 
+    std::unordered_set<Vertex*> connectedVertices;
+    for(auto &s : connectedSurfaces) 
+        for(auto &v : s->vertices) 
+            connectedVertices.insert(v);
+    for(auto &v : connectedVertices) 
+        v->updateNeighborVertices();
+
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
 
@@ -621,6 +629,7 @@ HRESULT Vertex::replace(Body *toReplace) {
     // Detach surfaces and bodies
     std::set<Vertex*> totalToRemove;
     std::vector<Surface*> b_surfaces(toReplace->surfaces);
+    std::vector<Body*> _neighborBodies = toReplace->neighborBodies();
     for(auto &s : b_surfaces) { 
         for(auto &ns : s->neighborSurfaces()) { 
             if(ns->defines(toReplace)) 
@@ -666,6 +675,13 @@ HRESULT Vertex::replace(Body *toReplace) {
     for(auto &v : totalToRemove) 
         if(v->destroy() != S_OK) 
             return E_FAIL;
+
+    std::unordered_set<Vertex*> connectedVertices;
+    for(auto &b : _neighborBodies) 
+        for(auto &v : b->getVertices()) 
+            connectedVertices.insert(v);
+    for(auto &v : connectedVertices) 
+        v->updateNeighborVertices();
 
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
@@ -714,11 +730,18 @@ HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
     std::vector<Surface*> common_s, different_s;
     common_s.reserve(toRemove->surfaces.size());
     different_s.reserve(toRemove->surfaces.size());
+    std::vector<Vertex*> toRemoveNeighborVertices = toRemove->neighborVertices();
     for(auto &s : toRemove->surfaces) {
         if(!defines(s)) 
             different_s.push_back(s);
-        else 
+        else {
+            // Prevent invalid surface
+            if(s->vertices.size() < 4) {
+                TF_Log(LOG_DEBUG) << "Insufficient surface vertices. Ignoring";
+                return E_FAIL;
+            }
             common_s.push_back(s);
+        }
     }
     for(auto &s : common_s) {
         s->remove(toRemove);
@@ -729,6 +752,15 @@ HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
         add(s);
         s->replace(this, toRemove);
     }
+
+    updateNeighborVertices();
+    std::unordered_set<Vertex*> affectedVertices;
+    for(auto &v : _neighborVertices) 
+        affectedVertices.insert(v);
+    for(auto &v : toRemoveNeighborVertices) 
+        affectedVertices.insert(v);
+    for(auto &v : affectedVertices) 
+        v->updateNeighborVertices();
     
     // Set new position
     const FVector3 posToKeep = getPosition();
@@ -752,6 +784,7 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
     std::vector<Vertex*>::iterator vitr;
 
     // Find the common surface(s)
+    bool inserted = false;
     for(auto &s1 : v1->surfaces) {
         if(defines(s1)) 
             continue;
@@ -759,17 +792,31 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
             std::vector<Vertex*>::iterator vnitr = vitr + 1 == s1->vertices.end() ? s1->vertices.begin() : vitr + 1;
             
             if(((*vitr)->_objId == v1->_objId && (*vnitr)->_objId == v2->_objId) || ((*vitr)->_objId == v2->_objId && (*vnitr)->_objId == v1->_objId)) {
-                s1->vertices.insert(vitr + 1 == s1->vertices.end() ? s1->vertices.begin() : vitr + 1, this);
+                s1->vertices.insert(vnitr, this);
                 add(s1);
+                inserted = true;
                 break;
             }
         }
+    }
+    if(inserted) {
+        updateNeighborVertices();
+        for(auto &v : _neighborVertices) 
+            v->updateNeighborVertices();
+        std::unordered_set<Vertex*> affectedVertices;
+        for(auto &v : v1->neighborVertices()) 
+            affectedVertices.insert(v);
+        for(auto &v : v2->neighborVertices()) 
+            affectedVertices.insert(v);
+        affectedVertices.erase(this);
+        for(auto &v : affectedVertices) 
+            v->updateNeighborVertices();
     }
 
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
 
-    MeshSolver::log(MeshLogEventType::Create, {_objId, v2->_objId}, {objType(), v2->objType()}, "insert");
+    MeshSolver::log(MeshLogEventType::Create, {_objId, v1->_objId, v2->_objId}, {objType(), v1->objType(), v2->objType()}, "insert");
 
     return S_OK;
 }
@@ -870,9 +917,7 @@ HRESULT Vertex::splitPlan(const FVector3 &sep, std::vector<Vertex*> &verts_v, st
 
     std::vector<Vertex*> nbs = neighborVertices();
 
-    // Verify that 
-    //  1. the vertex is in the mesh
-    //  2. the vertex defines at least one surface
+    // Verify that the vertex defines at least one surface
     if(nbs.size() == 0) 
         return tf_error(E_FAIL, "Vertex must define a surface");
     
@@ -953,6 +998,13 @@ Vertex *Vertex::splitExecute(const FVector3 &sep, const std::vector<Vertex*> &ve
             }
         }
     }
+
+    updateNeighborVertices();
+    u->updateNeighborVertices();
+    for(auto &nv : _neighborVertices) 
+        nv->updateNeighborVertices();
+    for(auto &nv : u->neighborVertices()) 
+        nv->updateNeighborVertices();
 
     if(!Mesh::get()->qualityWorking()) 
         MeshSolver::positionChanged();
@@ -1148,6 +1200,11 @@ BodyHandle VertexHandle::findBody(const FVector3 &dir) const {
     Body *b = o->findBody(dir);
     int bid = b ? b->objectId() : -1;
     return BodyHandle(bid);
+}
+
+void VertexHandle::updateNeighborVertices() const {
+    VertexHandle_GETOBJ(o, );
+    return o->updateNeighborVertices();
 }
 
 std::vector<VertexHandle> VertexHandle::neighborVertices() const {

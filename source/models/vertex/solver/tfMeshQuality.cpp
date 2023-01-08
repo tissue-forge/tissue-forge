@@ -152,6 +152,7 @@ struct VertexMergeOperation : MeshQualityOperation {
 
     int vId, v2Id;
     Vertex *v, *v2;
+    std::unordered_set<int> affectedChildren;
 
     VertexMergeOperation(Mesh *_mesh, Vertex *_source, Vertex *_target) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
@@ -164,17 +165,23 @@ struct VertexMergeOperation : MeshQualityOperation {
     void prep() override {
         v =  mesh->getVertex(vId);
         v2 = mesh->getVertex(v2Id);
+        for(auto &t : targets) 
+            for(auto &b : mesh->getSurface(t)->getBodies()) 
+                affectedChildren.insert(b->objectId());
     }
 
-    void implement() override { 
+    std::vector<int> implement() override { 
         MeshSolver::engineLock();
-        
+
         HRESULT res = v->merge(v2);
         
         MeshSolver::engineUnlock();
 
-        if(res == S_OK) 
+        if(res == S_OK) {
             next.clear();
+            return std::vector<int>(affectedChildren.begin(), affectedChildren.end());
+        }
+        return {};
     }
 };
 
@@ -184,6 +191,7 @@ struct VertexCreateInsertOperation : MeshQualityOperation {
 
     int v1Id, v2Id;
     Vertex *v1, *v2;
+    std::unordered_set<int> affectedChildren;
 
     VertexCreateInsertOperation(Mesh *_mesh, Vertex *_source, Vertex *_target) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
@@ -198,9 +206,12 @@ struct VertexCreateInsertOperation : MeshQualityOperation {
     void prep() override {
         v1 = mesh->getVertex(v1Id);
         v2 = mesh->getVertex(v2Id);
+        for(auto &t : targets) 
+            for(auto &b : mesh->getSurface(t)->getBodies()) 
+                affectedChildren.insert(b->objectId());
     }
 
-    void implement() override { 
+    std::vector<int> implement() override { 
 
         MeshSolver::engineLock();
         
@@ -208,8 +219,11 @@ struct VertexCreateInsertOperation : MeshQualityOperation {
         
         MeshSolver::engineUnlock();
 
-        if(res == S_OK) 
+        if(res == S_OK) {
             next.clear();
+            return std::vector<int>(affectedChildren.begin(), affectedChildren.end());
+        }
+        return {};
     }
 };
 
@@ -218,6 +232,7 @@ struct VertexInsertOperation : MeshQualityOperation {
 
     int vId, vaId, vbId;
     Vertex *v, *va, *vb;
+    std::unordered_set<int> affectedChildren;
 
     VertexInsertOperation(Mesh *_mesh, Vertex *_source, Surface *_target, Vertex *_va, Vertex *_vb) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
@@ -226,6 +241,8 @@ struct VertexInsertOperation : MeshQualityOperation {
         vbId = _vb->objectId();
 
         std::unordered_set<int> target_surfs = {_target->objectId()};
+        for(auto &s : _source->getSurfaces()) 
+            target_surfs.insert(s->objectId());
         for(auto &s : _target->connectedSurfaces({_va, _vb})) 
             target_surfs.insert(s->objectId());
         targets = std::vector<int>(target_surfs.begin(), target_surfs.end());
@@ -235,17 +252,23 @@ struct VertexInsertOperation : MeshQualityOperation {
         v = mesh->getVertex(vId);
         va = mesh->getVertex(vaId);
         vb = mesh->getVertex(vbId);
+        for(auto &t : targets) 
+            for(auto &b : mesh->getSurface(t)->getBodies()) 
+                affectedChildren.insert(b->objectId());
     }
 
-    void implement() override {
+    std::vector<int> implement() override {
         MeshSolver::engineLock();
 
         HRESULT res = v->insert(va, vb);
 
         MeshSolver::engineUnlock();
 
-        if(res == S_OK) 
+        if(res == S_OK) {
             next.clear();
+            return std::vector<int>(affectedChildren.begin(), affectedChildren.end());
+        }
+        return {};
     }
 };
 
@@ -268,7 +291,7 @@ struct BodyDemoteOperation : MeshQualityOperation {
         toReplace = mesh->getBody(toReplaceId);
     }
 
-    void implement() override {
+    std::vector<int> implement() override {
         const FVector3 toReplaceCentroid = toReplace->getCentroid();
 
         MeshSolver::engineLock();
@@ -279,6 +302,7 @@ struct BodyDemoteOperation : MeshQualityOperation {
 
         if(res == S_OK) 
             next.clear();
+        return {};
     };
 };
 
@@ -287,6 +311,7 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
 
     int toReplaceId;
     Surface *toReplace;
+    std::unordered_set<int> affectedChildren;
 
     SurfaceDemoteOperation(Mesh *_mesh, Surface *_source) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
@@ -299,9 +324,12 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
 
     void prep() override {
         toReplace = mesh->getSurface(toReplaceId);
+        for(auto &t : targets) 
+            for(auto &b : mesh->getSurface(t)->getBodies()) 
+                affectedChildren.insert(b->objectId());
     }
 
-    void implement() override {
+    std::vector<int> implement() override {
         const FVector3 toReplaceCentroid = toReplace->getCentroid();
 
         MeshSolver::engineLock();
@@ -310,8 +338,11 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
 
         MeshSolver::engineUnlock();
 
-        if(res == S_OK) 
+        if(res == S_OK) {
             next.clear();
+            return std::vector<int>(affectedChildren.begin(), affectedChildren.end());
+        }
+        return {};
     }
 };
 
@@ -320,16 +351,17 @@ struct EdgeDemoteOperation : MeshQualityOperation {
 
     int vId, v2Id;
     Vertex *v, *v2;
+    std::unordered_set<int> affectedChildren;
 
     EdgeDemoteOperation(Mesh *_mesh, Vertex *_v1, Vertex *_v2) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
         vId = _v1->objectId();
         v2Id = _v2->objectId();
 
-        std::unordered_set<int> targets_set;
-        for(auto &c : _v1->getSurfaces()) 
+        std::unordered_set<int> targets_set{vId, v2Id};
+        for(auto &c : _v1->neighborVertices()) 
             targets_set.insert(c->objectId());
-        for(auto &c : _v2->getSurfaces()) 
+        for(auto &c : _v2->neighborVertices()) 
             targets_set.insert(c->objectId());
         targets = std::vector<int>(targets_set.begin(), targets_set.end());
     }
@@ -337,14 +369,20 @@ struct EdgeDemoteOperation : MeshQualityOperation {
     void prep() override {
         v = mesh->getVertex(vId);
         v2 = mesh->getVertex(v2Id);
+        for(auto &t : targets) 
+            for(auto &s : mesh->getVertex(t)->getSurfaces()) 
+                affectedChildren.insert(s->objectId());
     }
 
-    void implement() override {
+    std::vector<int> implement() override {
         MeshSolver::engineLock();
         HRESULT res = v->merge(v2);
         MeshSolver::engineUnlock();
-        if(res == S_OK) 
+        if(res == S_OK) {
             next.clear();
+            return std::vector<int>(affectedChildren.begin(), affectedChildren.end());
+        }
+        return {};
     }
 };
 
@@ -353,6 +391,7 @@ struct EdgeInsertOperation : MeshQualityOperation {
 
     int v0Id, v1Id, v2Id;
     Vertex *v0, *v1, *v2;
+    std::unordered_set<int> affectedChildren;
 
     EdgeInsertOperation(Mesh *_mesh, Vertex *_source, Vertex *_target1, Vertex *_target2) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
@@ -371,11 +410,14 @@ struct EdgeInsertOperation : MeshQualityOperation {
         v0 = mesh->getVertex(v0Id);
         v1 = mesh->getVertex(v1Id);
         v2 = mesh->getVertex(v2Id);
+        for(auto &t : targets) 
+            for(auto &s : mesh->getVertex(t)->getSurfaces()) 
+                affectedChildren.insert(s->objectId());
     }
 
     size_t numNewVertices() const override { return 2; };
 
-    void implement() override {
+    std::vector<int> implement() override {
         const FVector3 pos0 = v0->getPosition();
         const FVector3 pos1 = (pos0 + v1->getPosition()) * 0.5;
         const FVector3 pos2 = (pos0 + v2->getPosition()) * 0.5;
@@ -389,6 +431,7 @@ struct EdgeInsertOperation : MeshQualityOperation {
         MeshSolver::engineUnlock();
 
         next.clear();
+        return std::vector<int>(affectedChildren.begin(), affectedChildren.end());
     }
 
 };
@@ -399,13 +442,13 @@ static bool MeshQuality_vertexSplitTest(
     Mesh *m, 
     const FloatP_t &edgeSplitDist, 
     FVector3 &sep, 
+    const std::vector<Vertex*> &v_nbs, 
     std::vector<Vertex*> &vert_nbs, 
     std::vector<Vertex*> &new_vert_nbs
 ) {
     Particle *p = v->particle()->part();
 
     // Calculate current relative force
-    std::vector<Vertex*> v_nbs = v->neighborVertices();
     FVector3 force_rel(0);
     for(auto &vn : v_nbs) {
         force_rel += vn->particle()->getForce();
@@ -428,7 +471,7 @@ static bool MeshQuality_vertexSplitTest(
     // Get split plan along direction of force
     v->splitPlan(sep, vert_nbs, new_vert_nbs);
 
-    // Enforce that a split must create a new surface
+    // Enforce that a split must create a new shared edge
     if(vert_nbs.size() < 2 || new_vert_nbs.size() < 2) 
         return false;
 
@@ -453,6 +496,7 @@ struct VertexSplitOperation : MeshQualityOperation {
     Vertex *v;
     std::vector<int> vert_nbsIds, new_vert_nbsIds;
     std::vector<Vertex*> vert_nbs, new_vert_nbs;
+    std::unordered_set<int> affectedChildren;
 
     VertexSplitOperation(Mesh *_mesh, Vertex *_source, const FVector3 &_sep, std::vector<Vertex*> _vert_nbs, std::vector<Vertex*> _new_vert_nbs) : 
         MeshQualityOperation(_mesh), 
@@ -480,9 +524,12 @@ struct VertexSplitOperation : MeshQualityOperation {
             vert_nbs.push_back(mesh->getVertex(vn));
         for(auto &vn : new_vert_nbsIds) 
             new_vert_nbs.push_back(mesh->getVertex(vn));
+        for(auto &t : targets) 
+            for(auto &s : mesh->getVertex(t)->getSurfaces()) 
+                affectedChildren.insert(s->objectId());
     }
 
-    void implement() override { 
+    std::vector<int> implement() override { 
 
         // Create a candidate vertex
         MeshSolver::engineLock();
@@ -490,8 +537,11 @@ struct VertexSplitOperation : MeshQualityOperation {
         MeshSolver::engineUnlock();
 
         // Only invalidate if a vertex was created, since some requested configurations are invalid and subsequently ignored
-        if(new_v) 
+        if(new_v) {
             next.clear();
+            return std::vector<int>(affectedChildren.begin(), affectedChildren.end());
+        }
+        return {};
     }
 };
 
@@ -514,12 +564,14 @@ HRESULT MeshQuality_constructChains(std::vector<MeshQualityOperation*> &ops) {
 static HRESULT MeshQuality_constructOperationsVertex(
     Mesh *mesh, 
     const FloatP_t &edgeSplitDist, 
+    const FloatP_t &vertexMergeDist, 
     std::vector<MeshQualityOperation*> &ops_active, 
     std::vector<MeshQualityOperation*> &op_heads
 ) {
     std::vector<MeshQualityOperation*> ops(mesh->sizeVertices(), 0);
+    const FloatP_t vertexMergeDist2 = vertexMergeDist * vertexMergeDist;
 
-    auto check_verts = [&mesh, &ops, edgeSplitDist](int i) -> void {
+    auto check_verts = [&mesh, &ops, edgeSplitDist, vertexMergeDist2](int i) -> void {
         Vertex *v = mesh->getVertex(i);
         if(!v) return;
 
@@ -527,14 +579,35 @@ static HRESULT MeshQuality_constructOperationsVertex(
 
         // Check for vertex split if the vertex defines four or more surfaces
 
-        if(v->getSurfaces().size() >= 4) {
+        std::vector<Vertex*> v_nbs = v->neighborVertices();
+        if(v_nbs.size() > 3) {
             FVector3 sep;
             std::vector<Vertex*> vert_nbs, new_vert_nbs;
-            if(MeshQuality_vertexSplitTest(v, mesh, edgeSplitDist, sep, vert_nbs, new_vert_nbs)) {
+            if(MeshQuality_vertexSplitTest(v, mesh, edgeSplitDist, sep, v_nbs, vert_nbs, new_vert_nbs)) {
                 ops[i] = new VertexSplitOperation(mesh, v, sep, vert_nbs, new_vert_nbs);
                 return;
             }
 
+        }
+
+        // Check vertex merge distance for neighbor vertices with a greater id
+
+        FVector3 vpos = v->getPosition();
+        for(auto &nv : v_nbs) {
+
+            if(v->objectId() < nv->objectId()) {
+
+                FVector3 nvpos = nv->getPosition();
+                FVector3 nvrelPos = metrics::relativePosition(vpos, nvpos);
+                FloatP_t nvdist2 = nvrelPos.dot();
+                if(nvdist2 < vertexMergeDist2) {
+                    TF_Log(LOG_TRACE) << v->objectId() << ", " << nv->objectId() << ", " << nvrelPos;
+                    
+                    ops[i] = new EdgeDemoteOperation(mesh, v, nv);
+                    return;
+                }
+
+            }
         }
 
     };
@@ -559,15 +632,16 @@ static HRESULT MeshQuality_constructOperationsVertex(
 
 static HRESULT MeshQuality_constructOperationsSurface(
     Mesh *mesh, 
+    const std::vector<bool> &passMask, 
     const FloatP_t &surfaceDemoteArea, 
-    const FloatP_t &vertexMergeDist, 
     std::vector<MeshQualityOperation*> &ops_active, 
     std::vector<MeshQualityOperation*> &op_heads
 ) {
     std::vector<MeshQualityOperation*> ops(mesh->sizeSurfaces(), 0);
-    const FloatP_t vertexMergeDist2 = vertexMergeDist * vertexMergeDist;
 
-    auto check_surfs = [&mesh, &ops, surfaceDemoteArea, vertexMergeDist2](int i) -> void {
+    auto check_surfs = [&mesh, &passMask, &ops, surfaceDemoteArea](int i) -> void {
+        if(passMask[i]) return;
+
         Surface *s = mesh->getSurface(i);
         if(!s) return;
 
@@ -582,51 +656,12 @@ static HRESULT MeshQuality_constructOperationsSurface(
             return;
         }
 
-        // Check vertex merge distance for vertices where this surface is the first child
-        auto vertices = s->getVertices();
-        for(auto itr = vertices.begin(); itr != vertices.end(); itr++) {
-            Vertex *v = *itr;
-            FVector3 vpos = v->getPosition();
-
-            Vertex *nv = itr + 1 == vertices.end() ? vertices.front() : *(itr + 1);
-
-            if(v->objectId() < nv->objectId()) {
-
-                FVector3 nvpos = nv->getPosition();
-                FVector3 nvrelPos = metrics::relativePosition(vpos, nvpos);
-                FloatP_t nvdist2 = nvrelPos.dot();
-                if(nvdist2 < vertexMergeDist2) {
-                    TF_Log(LOG_TRACE) << v->objectId() << ", " << nv->objectId() << ", " << nvrelPos;
-                    
-                    ops[i] = new EdgeDemoteOperation(mesh, v, nv);
-                    return;
-                }
-
-            }
-
-            Vertex *pv = itr == vertices.begin() ? vertices.back() : *(itr - 1);
-
-            if(v->objectId() < pv->objectId()) {
-
-                FVector3 pvpos = pv->getPosition();
-                FVector3 pvrelPos = metrics::relativePosition(vpos, pvpos);
-                FloatP_t pvdist2 = pvrelPos.dot();
-                if(pvdist2 < vertexMergeDist2) {
-                    TF_Log(LOG_TRACE) << v->objectId() << ", " << pv->objectId() << ", " << pvrelPos;
-                    
-                    ops[i] = new EdgeDemoteOperation(mesh, v, pv);
-                    return;
-                }
-
-            }
-        }
-
         // Check for edge penetration
 
         //  Determine neighborhood search distance
         FloatP_t nbsSearchDist2 = 0;
         FVector3 centroid = s->getCentroid();
-        for(auto &v : vertices) {
+        for(auto &v : s->getVertices()) {
             FloatP_t thisVertDist2 = (centroid - v->getPosition()).dot();
             if(thisVertDist2 > nbsSearchDist2) 
                 nbsSearchDist2 = thisVertDist2;
@@ -719,13 +754,16 @@ static HRESULT MeshQuality_constructOperationsSurface(
 
 static HRESULT MeshQuality_constructOperationsBody(
     Mesh *mesh, 
+    const std::vector<bool> &passMask, 
     const FloatP_t &bodyDemoteVolume, 
     std::vector<MeshQualityOperation*> &ops_active, 
     std::vector<MeshQualityOperation*> &op_heads
 ) {
     std::vector<MeshQualityOperation*> ops(mesh->sizeBodies(), 0);
 
-    auto check_bodys = [&mesh, &ops, bodyDemoteVolume](int i) -> void {
+    auto check_bodys = [&mesh, &passMask, &ops, bodyDemoteVolume](int i) -> void {
+        if(passMask[i]) return;
+
         Body *b = mesh->getBody(i);
         if(!b) return;
 
@@ -757,7 +795,7 @@ static HRESULT MeshQuality_constructOperationsBody(
     return S_OK;
 }
 
-static HRESULT MeshQuality_doOperations(MeshQualityOperation *op) {
+static HRESULT MeshQuality_doOperations(MeshQualityOperation *op, std::unordered_set<int> &affectedChildren) {
     if(!op->check()) { 
         for(auto &n : op->next) {
             auto itr = std::find(n->prev.begin(), n->prev.end(), op);
@@ -770,7 +808,8 @@ static HRESULT MeshQuality_doOperations(MeshQualityOperation *op) {
         return S_OK;
     }
 
-    op->implement();
+    for(auto &i : op->implement()) 
+        affectedChildren.insert(i);
 
     for(auto &n : op->next) {
         auto itr = std::find(n->prev.begin(), n->prev.end(), op);
@@ -779,7 +818,7 @@ static HRESULT MeshQuality_doOperations(MeshQualityOperation *op) {
         n->lock.lock();
         n->prev.erase(itr);
         if(n->prev.empty()) 
-            res = MeshQuality_doOperations(n);
+            res = MeshQuality_doOperations(n, affectedChildren);
         n->lock.unlock();
 
         if(res != S_OK) 
@@ -792,7 +831,8 @@ static HRESULT MeshQuality_doOperations(MeshQualityOperation *op) {
 static HRESULT MeshQuality_doOperations(
     Mesh *mesh, 
     std::vector<MeshQualityOperation*> &op_active, 
-    std::vector<MeshQualityOperation*> &op_heads) 
+    std::vector<MeshQualityOperation*> &op_heads, 
+    std::vector<int> &affectedChildren) 
 {
     std::atomic<size_t> atomic_numNewVertices = 0;
     std::atomic<size_t> atomic_numNewSurfaces = 0;
@@ -822,7 +862,22 @@ static HRESULT MeshQuality_doOperations(
     mesh->ensureAvailableBodies(atomic_numNewBodies);
     
     parallel_for(op_active.size(), [&op_active](int i) -> void { op_active[i]->prep(); });
-    parallel_for(op_heads.size(), [&op_heads](int i) -> void { MeshQuality_doOperations(op_heads[i]); });
+
+    static std::mutex affectedChildrenLock;
+    std::unordered_set<int> affectedChildrenSet;
+    auto func_do = [&op_heads, &affectedChildrenSet](int tid) -> void {
+        std::unordered_set<int> affectedChildren_tid;
+        for(int i = tid; i < op_heads.size();) {
+            MeshQuality_doOperations(op_heads[i], affectedChildren_tid);
+            i += ThreadPool::size();
+        }
+        affectedChildrenLock.lock();
+        for(auto &i : affectedChildren_tid) 
+            affectedChildrenSet.insert(i);
+        affectedChildrenLock.unlock();
+    };
+    parallel_for(ThreadPool::size(), func_do);
+    affectedChildren = std::vector<int>(affectedChildrenSet.begin(), affectedChildrenSet.end());
 
     return S_OK;
 }
@@ -878,11 +933,13 @@ HRESULT MeshQuality::doQuality() {
     Mesh *mesh = Mesh::get();
 
     std::vector<MeshQualityOperation*> op_active, op_heads;
+    std::vector<int> affectedChildren;
+    std::vector<bool> passMask;
 
     // Vertex checks
     
-    if(MeshQuality_constructOperationsVertex(mesh, edgeSplitDist, op_active, op_heads) != S_OK || 
-        MeshQuality_doOperations(mesh, op_active, op_heads) != S_OK || 
+    if(MeshQuality_constructOperationsVertex(mesh, edgeSplitDist, vertexMergeDist, op_active, op_heads) != S_OK || 
+        MeshQuality_doOperations(mesh, op_active, op_heads, affectedChildren) != S_OK || 
         MeshQuality_clearOperations(op_active) != S_OK) {
         _working = false;
         return E_FAIL;
@@ -890,8 +947,18 @@ HRESULT MeshQuality::doQuality() {
 
     // Surface checks
 
-    if(MeshQuality_constructOperationsSurface(mesh, surfaceDemoteArea, vertexMergeDist, op_active, op_heads) != S_OK || 
-        MeshQuality_doOperations(mesh, op_active, op_heads) != S_OK || 
+    passMask = std::vector<bool>(mesh->sizeSurfaces(), false);
+    std::unordered_set<int> affectedBodiesImpl;
+    for(auto &i : affectedChildren) {
+        passMask[i] = true;
+        Surface *s = mesh->getSurface(i);
+        if(s) 
+            for(auto &b : s->getBodies()) 
+                affectedBodiesImpl.insert(b->objectId());
+    }
+
+    if(MeshQuality_constructOperationsSurface(mesh, passMask, surfaceDemoteArea, op_active, op_heads) != S_OK || 
+        MeshQuality_doOperations(mesh, op_active, op_heads, affectedChildren) != S_OK || 
         MeshQuality_clearOperations(op_active) != S_OK) {
         _working = false;
         return E_FAIL;
@@ -899,8 +966,14 @@ HRESULT MeshQuality::doQuality() {
 
     // Body checks
 
-    if(MeshQuality_constructOperationsBody(mesh, bodyDemoteVolume, op_active, op_heads) != S_OK || 
-        MeshQuality_doOperations(mesh, op_active, op_heads) != S_OK || 
+    passMask = std::vector<bool>(mesh->sizeBodies(), false);
+    for(auto &i : affectedChildren) 
+        passMask[i] = true;
+    for(auto &i : affectedBodiesImpl) 
+        passMask[i] = true;
+
+    if(MeshQuality_constructOperationsBody(mesh, passMask, bodyDemoteVolume, op_active, op_heads) != S_OK || 
+        MeshQuality_doOperations(mesh, op_active, op_heads, affectedChildren) != S_OK || 
         MeshQuality_clearOperations(op_active) != S_OK) {
         _working = false;
         return E_FAIL;

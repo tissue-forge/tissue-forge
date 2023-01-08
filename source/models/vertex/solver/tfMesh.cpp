@@ -144,13 +144,18 @@ HRESULT Mesh::incrementVertices(const size_t &numIncr) {
     }
 
     auto &m_verticesByPID = verticesByPID;
-    auto func_pids = [&m_verticesByPID, &new_vertices](int vid) -> void {
+    auto func_vertices = [&m_verticesByPID, &new_vertices](int vid) -> void {
         Vertex &v = (*new_vertices)[vid];
         if(v._objId < 0) 
             return;
         m_verticesByPID[v.pid]  = &(*new_vertices)[vid];
+        std::vector<Vertex*> &v_neighborVertices = v._neighborVertices;
+        for(unsigned int i = 0; i < v_neighborVertices.size(); i++) {
+            Vertex *nv = v_neighborVertices[i];
+            v._neighborVertices[i] = &(*new_vertices)[nv->_objId];
+        }
     };
-    parallel_for(vertices->size(), func_pids);
+    parallel_for(vertices->size(), func_vertices);
     
     if(vertices) 
         delete vertices;

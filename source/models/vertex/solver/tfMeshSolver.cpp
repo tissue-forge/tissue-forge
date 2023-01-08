@@ -468,8 +468,10 @@ HRESULT MeshSolver::preStepStart() {
         int i1 = std::min<int>(i0 + blockSize, m_size_vertices);
         for(int i = i0; i < i1; i++) { 
             Vertex &v = m_vertices[i];
-            if(v.objectId() >= 0) 
+            if(v.objectId() >= 0) {
+                v.updateProperties();
                 VertexForce(&v, &v_forces[i * 3]);
+            }
         }
     };
     parallel_for(ThreadPool::size(), func);

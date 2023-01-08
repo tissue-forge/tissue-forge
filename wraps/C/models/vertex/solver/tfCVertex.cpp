@@ -299,6 +299,12 @@ HRESULT tfVertexSolverVertexHandle_neighborVertices(
     return S_OK;
 }
 
+HRESULT tfVertexSolverVertexHandle_updateNeighborVertices(struct tfVertexSolverVertexHandleHandle *handle) {
+    TFC_VERTEXHANDLE_GET(handle);
+    vhandle->updateNeighborVertices();
+    return S_OK;
+}
+
 HRESULT tfVertexSolverVertexHandle_sharedSurfaces(
     struct tfVertexSolverVertexHandleHandle *handle, 
     struct tfVertexSolverVertexHandleHandle *other, 
