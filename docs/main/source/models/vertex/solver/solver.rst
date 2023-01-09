@@ -120,13 +120,12 @@ Currently the vertex model solver supports the following quality operations,
     Vertices are merged when they are too close ("Vertex merge") and a vertex
     splits if the resulting edge is predicted to grow ("Vertex split", top row).
     A surface becomes a vertex if its area is too small ("Surface demote", middle row).
-    Two surfaces collide if a vertex from a surface penetrates that perimeter of a
+    Two surfaces collide if a vertex from a surface penetrates the perimeter of a
     nearby surface ("Vertex insert", bottom row).
     Quality operations on bodies demote a body to a vertex when the volume of the
     body is too small ("Body demote").
-    T1 transformations are completely reversible by automatic mesh quality operations, whereas
-    T2 transformations can be reversed by replacing a vertex with a surface, and
-    T3 transformations can be reversed by removing a vertex from a surface.
+    T1 and T3 transformations are completely reversible by automatic mesh quality operations, whereas
+    T2 transformations can be reversed by replacing a vertex with a surface.
 
 In Python, all functionality of the vertex model solver module can be accessed from the
 :mod:`solver <tissue_forge.models.vertex.solver>` module (``models::vertex`` namespace in C++), ::
