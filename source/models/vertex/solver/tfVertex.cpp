@@ -1042,7 +1042,10 @@ Vertex *Vertex::split(const FVector3 &sep) {
 VertexHandle::VertexHandle(const int &_id) : id{_id} {}
 
 Vertex *VertexHandle::vertex() const {
-    VertexHandle_GETOBJ(o, NULL);
+    Vertex *o = this->id >= 0 ? Mesh::get()->getVertex(this->id) : NULL;
+    if(!o) {
+        TF_Log(LOG_ERROR) << "Invalid handle";
+    }
     return o;
 }
 

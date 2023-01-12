@@ -1231,7 +1231,10 @@ Surface *Surface::split(const FVector3 &cp_pos, const FVector3 &cp_norm) {
 SurfaceHandle::SurfaceHandle(const int &_id) : id{_id} {}
 
 Surface *SurfaceHandle::surface() const {
-    SurfaceHandle_GETOBJ(o, NULL);
+    Surface *o = this->id >= 0 ? Mesh::get()->getSurface(this->id) : NULL;
+    if(!o) {
+        TF_Log(LOG_ERROR) << "Invalid handle";
+    }
     return o;
 }
 

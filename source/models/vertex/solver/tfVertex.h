@@ -478,12 +478,12 @@ namespace TissueForge::models::vertex {
         MeshObjTypeLabel objType() const { return MeshObjTypeLabel::VERTEX; }
 
         /** 
-         * @brief Destroy the body. 
+         * @brief Destroy the vertex 
          */
         HRESULT destroy();
 
         /** 
-         * @brief Validate the body 
+         * @brief Validate the vertex
          */
         bool validate();
 

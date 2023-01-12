@@ -80,7 +80,7 @@ namespace TissueForge::models::vertex {
         /** Connected body, if any, where the surface normal is inward-facing */
         Body *b2;
 
-        /** Vertices that define the body */
+        /** Vertices that define the surface */
         std::vector<Vertex*> vertices;
 
         /** Surface normal */
@@ -579,12 +579,12 @@ namespace TissueForge::models::vertex {
         MeshObjTypeLabel objType() const { return MeshObjTypeLabel::SURFACE; }
 
         /**
-         * @brief Destroy the body
+         * @brief Destroy the surface
          */
         HRESULT destroy();
 
         /**
-         * @brief Validate the body
+         * @brief Validate the surface
          * 
          * @return true if valid
          */

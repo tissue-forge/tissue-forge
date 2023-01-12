@@ -691,7 +691,10 @@ Body *Body::split(const FVector3 &cp_pos, const FVector3 &cp_norm, SurfaceType *
 BodyHandle::BodyHandle(const int &_id) : id{_id} {}
 
 Body *BodyHandle::body() const {
-    BodyHandle_GETOBJ(o, NULL);
+    Body *o = this->id >= 0 ? Mesh::get()->getBody(this->id) : NULL;
+    if(!o) {
+        TF_Log(LOG_ERROR) << "Invalid handle";
+    }
     return o;
 }
 
