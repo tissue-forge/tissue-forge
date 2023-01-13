@@ -16,7 +16,7 @@ Body
 
     .. autoproperty:: vertices
 
-    .. autoproperty:: neighbor_bodies
+    .. autoproperty:: connected_bodies
 
     .. autoproperty:: density
 
@@ -107,7 +107,7 @@ Body
 
     .. autoproperty:: vertices
 
-    .. autoproperty:: neighbor_bodies
+    .. autoproperty:: connected_bodies
 
     .. autoproperty:: density
 

@@ -280,7 +280,7 @@ HRESULT tfVertexSolverVertexHandle_findBody(
     return tfVertexSolverBodyHandle_init(result, _result.id);
 }
 
-HRESULT tfVertexSolverVertexHandle_neighborVertices(
+HRESULT tfVertexSolverVertexHandle_connectedVertices(
     struct tfVertexSolverVertexHandleHandle *handle, 
     struct tfVertexSolverVertexHandleHandle **objs, 
     int *numObjs
@@ -288,7 +288,7 @@ HRESULT tfVertexSolverVertexHandle_neighborVertices(
     TFC_VERTEXHANDLE_GET(handle);
     TFC_PTRCHECK(objs);
     TFC_PTRCHECK(numObjs);
-    std::vector<VertexHandle> _objs = vhandle->neighborVertices();
+    std::vector<VertexHandle> _objs = vhandle->connectedVertices();
     *numObjs = _objs.size();
     if(*numObjs == 0) 
         return S_OK;
@@ -299,9 +299,9 @@ HRESULT tfVertexSolverVertexHandle_neighborVertices(
     return S_OK;
 }
 
-HRESULT tfVertexSolverVertexHandle_updateNeighborVertices(struct tfVertexSolverVertexHandleHandle *handle) {
+HRESULT tfVertexSolverVertexHandle_updateConnectedVertices(struct tfVertexSolverVertexHandleHandle *handle) {
     TFC_VERTEXHANDLE_GET(handle);
-    vhandle->updateNeighborVertices();
+    vhandle->updateConnectedVertices();
     return S_OK;
 }
 

@@ -88,8 +88,8 @@ namespace TissueForge::models::vertex {
         /** Cached particle data: velocity */
         FVector3 _particleVelocity;
 
-        /** Cached neighbor vertices */
-        std::vector<Vertex*> _neighborVertices;
+        /** Cached connected vertices */
+        std::vector<Vertex*> _connectedVertices;
 
     public:
 
@@ -207,16 +207,16 @@ namespace TissueForge::models::vertex {
         Body *findBody(const FVector3 &dir) const;
 
         /**
-         * @brief Update internal neighbor vertex data
+         * @brief Update internal connected vertex data
          */
-        void updateNeighborVertices();
+        void updateConnectedVertices();
 
         /** 
-         * @brief Get the neighbor vertices.
+         * @brief Get the connected vertices.
          * 
-         * A vertex is a neighbor if it defines an edge with this vertex.
+         * A vertex is connected if it defines an edge with this vertex.
          */
-        std::vector<Vertex*> neighborVertices() const { return _neighborVertices; }
+        std::vector<Vertex*> connectedVertices() const { return _connectedVertices; }
 
         /**
          * @brief Get the surfaces that this vertex and another vertex both define
@@ -585,16 +585,16 @@ namespace TissueForge::models::vertex {
         BodyHandle findBody(const FVector3 &dir) const;
 
         /**
-         * @brief Update internal neighbor vertex data
+         * @brief Update internal connected vertex data
          */
-        void updateNeighborVertices() const;
+        void updateConnectedVertices() const;
 
         /** 
-         * @brief Get the neighbor vertices.
+         * @brief Get the connected vertices.
          * 
-         * A vertex is a neighbor if it defines an edge with this vertex.
+         * A vertex is connected if it defines an edge with this vertex.
          */
-        std::vector<VertexHandle> neighborVertices() const;
+        std::vector<VertexHandle> connectedVertices() const;
 
         /**
          * @brief Get the surfaces that this vertex and another vertex both define

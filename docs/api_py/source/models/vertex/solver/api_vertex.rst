@@ -16,7 +16,7 @@ Vertex
 
     .. autoproperty:: pid
 
-    .. autoproperty:: neighbor_vertices
+    .. autoproperty:: connected_vertices
 
     .. autoproperty:: area
 
@@ -55,6 +55,8 @@ Vertex
     .. automethod:: find_surface
 
     .. automethod:: find_body
+
+    .. automethod:: update_connected_vertices
 
     .. automethod:: shared_surfaces
 
@@ -101,7 +103,7 @@ Vertex
 
     .. autoproperty:: pid
 
-    .. autoproperty:: neighbor_vertices
+    .. autoproperty:: connected_vertices
 
     .. autoproperty:: area
 
@@ -132,6 +134,8 @@ Vertex
     .. automethod:: find_surface
 
     .. automethod:: find_body
+
+    .. automethod:: update_connected_vertices
 
     .. automethod:: shared_surfaces
 

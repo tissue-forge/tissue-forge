@@ -28,7 +28,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 // Body //
 //////////
 
-%rename(_neighborBodies) TissueForge::models::vertex::Body::neighborBodies;
+%rename(_connectedBodies) TissueForge::models::vertex::Body::connectedBodies;
 %rename(update_internals) TissueForge::models::vertex::Body::updateInternals;
 %rename(position_changed) TissueForge::models::vertex::Body::positionChanged;
 %rename(find_vertex) TissueForge::models::vertex::Body::findVertex;
@@ -49,7 +49,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 ////////////////
 
 %rename(_body) TissueForge::models::vertex::BodyHandle::body;
-%rename(_neighborBodies) TissueForge::models::vertex::BodyHandle::neighborBodies;
+%rename(_connectedBodies) TissueForge::models::vertex::BodyHandle::connectedBodies;
 %rename(update_internals) TissueForge::models::vertex::BodyHandle::updateInternals;
 %rename(position_changed) TissueForge::models::vertex::BodyHandle::positionChanged;
 %rename(find_vertex) TissueForge::models::vertex::BodyHandle::findVertex;
@@ -96,9 +96,9 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
             return self.getVertices()
 
         @property
-        def neighbor_bodies(self):
+        def connected_bodies(self):
             """bodies in contact"""
-            return self._neighborBodies()
+            return self._connectedBodies()
 
         @property
         def density(self):
@@ -185,9 +185,9 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
             return self.getVertices()
 
         @property
-        def neighbor_bodies(self):
+        def connected_bodies(self):
             """bodies in contact"""
-            return self._neighborBodies()
+            return self._connectedBodies()
 
         @property
         def density(self):

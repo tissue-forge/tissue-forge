@@ -281,26 +281,26 @@ CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_findBody(
 );
 
 /**
- * @brief Get the neighbor vertices. 
+ * @brief Get the connected vertices. 
  * 
- * A vertex is a neighbor if it defines an edge with this vertex.
+ * A vertex is connected if it defines an edge with this vertex.
  * 
  * @param handle populated handle
- * @param objs neighbors
- * @param numObjs number of neighbors
+ * @param objs connected vertices
+ * @param numObjs number of connected vertices
  */
-CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_neighborVertices(
+CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_connectedVertices(
     struct tfVertexSolverVertexHandleHandle *handle, 
     struct tfVertexSolverVertexHandleHandle **objs, 
     int *numObjs
 );
 
 /**
- * @brief Update internal neighbor vertex data
+ * @brief Update internal connected vertex data
  * 
  * @param handle populated handle
  */
-CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_updateNeighborVertices(struct tfVertexSolverVertexHandleHandle *handle);
+CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_updateConnectedVertices(struct tfVertexSolverVertexHandleHandle *handle);
 
 /**
  * @brief Get the surfaces that this vertex and another vertex both define

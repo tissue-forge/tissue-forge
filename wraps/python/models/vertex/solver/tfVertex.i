@@ -33,7 +33,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Vertex)
 %rename(set_position) TissueForge::models::vertex::Vertex::setPosition(const FVector3&, const bool&);
 %rename(find_surface) TissueForge::models::vertex::Vertex::findSurface;
 %rename(find_body) TissueForge::models::vertex::Vertex::findBody;
-%rename(update_neighbor_vertices) TissueForge::models::vertex::Vertex::updateNeighborVertices;
+%rename(update_connected_vertices) TissueForge::models::vertex::Vertex::updateConnectedVertices;
 %rename(shared_surfaces) TissueForge::models::vertex::Vertex::sharedSurfaces;
 %rename(position_changed) TissueForge::models::vertex::Vertex::positionChanged;
 %rename(update_properties) TissueForge::models::vertex::Vertex::updateProperties;
@@ -48,7 +48,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Vertex)
 %rename(_replace_h1) TissueForge::models::vertex::Vertex::replace(const FVector3&, SurfaceHandle&);
 %rename(_replace_h2) TissueForge::models::vertex::Vertex::replace(const FVector3&, BodyHandle&);
 %rename(_getPartId) TissueForge::models::vertex::Vertex::getPartId;
-%rename(_neighborVertices) TissueForge::models::vertex::Vertex::neighborVertices;
+%rename(_connectedVertices) TissueForge::models::vertex::Vertex::connectedVertices;
 
 //////////////////
 // VertexHandle //
@@ -60,7 +60,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Vertex)
 %rename(set_position) TissueForge::models::vertex::VertexHandle::setPosition(const FVector3&, const bool&);
 %rename(find_surface) TissueForge::models::vertex::VertexHandle::findSurface;
 %rename(find_body) TissueForge::models::vertex::VertexHandle::findBody;
-%rename(update_neighbor_vertices) TissueForge::models::vertex::VertexHandle::updateNeighborVertices;
+%rename(update_connected_vertices) TissueForge::models::vertex::VertexHandle::updateConnectedVertices;
 %rename(shared_surfaces) TissueForge::models::vertex::VertexHandle::sharedSurfaces;
 %rename(position_changed) TissueForge::models::vertex::VertexHandle::positionChanged;
 %rename(update_properties) TissueForge::models::vertex::VertexHandle::updateProperties;
@@ -68,7 +68,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Vertex)
 
 %rename(_vertex) TissueForge::models::vertex::VertexHandle::vertex;
 %rename(_getPartId) TissueForge::models::vertex::VertexHandle::getPartId;
-%rename(_neighborVertices) TissueForge::models::vertex::VertexHandle::neighborVertices;
+%rename(_connectedVertices) TissueForge::models::vertex::VertexHandle::connectedVertices;
 %rename(_replace_body) TissueForge::models::vertex::VertexHandle::replace(const FVector3&, const BodyHandle&);
 
 
@@ -99,9 +99,9 @@ vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::VertexHandle)
             return self._getPartId()
 
         @property
-        def neighbor_vertices(self):
+        def connected_vertices(self):
             """connected vertices"""
-            return self._neighborVertices()
+            return self._connectedVertices()
 
         @property
         def area(self) -> float:
@@ -218,9 +218,9 @@ vertex_solver_MeshObjHandle_extend_py(TissueForge::models::vertex::VertexHandle)
             return self._getPartId()
 
         @property
-        def neighbor_vertices(self):
+        def connected_vertices(self):
             """connected vertices"""
-            return self._neighborVertices()
+            return self._connectedVertices()
 
         @property
         def area(self) -> float:

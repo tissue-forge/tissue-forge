@@ -346,7 +346,7 @@ Surface *Body::findSurface(const FVector3 &dir) const {
     return result;
 }
 
-std::vector<Body*> Body::neighborBodies() const {
+std::vector<Body*> Body::connectedBodies() const {
     std::unordered_set<Body*> result;
     for(auto &s : surfaces) 
         for(auto &b : s->getBodies()) 
@@ -830,9 +830,9 @@ SurfaceHandle BodyHandle::findSurface(const FVector3 &dir) const {
     return s ? SurfaceHandle(s->objectId()) : SurfaceHandle();
 }
 
-std::vector<BodyHandle> BodyHandle::neighborBodies() const {
+std::vector<BodyHandle> BodyHandle::connectedBodies() const {
     BodyHandle_GETOBJ(o, {});
-    std::vector<Body*> _result = o->neighborBodies();
+    std::vector<Body*> _result = o->connectedBodies();
     std::vector<BodyHandle> result;
     result.reserve(_result.size());
     for(auto &_b : _result) 

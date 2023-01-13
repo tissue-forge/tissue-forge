@@ -281,7 +281,7 @@ struct BodyDemoteOperation : MeshQualityOperation {
     BodyDemoteOperation(Mesh *_mesh, Body *_source) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
         toReplaceId = _source->objectId();
-        for(auto &nb : _source->neighborBodies()) 
+        for(auto &nb : _source->connectedBodies()) 
             targets.push_back(nb->objectId());
     }
 
@@ -359,9 +359,9 @@ struct EdgeDemoteOperation : MeshQualityOperation {
         v2Id = _v2->objectId();
 
         std::unordered_set<int> targets_set{vId, v2Id};
-        for(auto &c : _v1->neighborVertices()) 
+        for(auto &c : _v1->connectedVertices()) 
             targets_set.insert(c->objectId());
-        for(auto &c : _v2->neighborVertices()) 
+        for(auto &c : _v2->connectedVertices()) 
             targets_set.insert(c->objectId());
         targets = std::vector<int>(targets_set.begin(), targets_set.end());
     }
@@ -579,7 +579,7 @@ static HRESULT MeshQuality_constructOperationsVertex(
 
         // Check for vertex split if the vertex defines four or more surfaces
 
-        std::vector<Vertex*> v_nbs = v->neighborVertices();
+        std::vector<Vertex*> v_nbs = v->connectedVertices();
         if(v_nbs.size() > 3) {
             FVector3 sep;
             std::vector<Vertex*> vert_nbs, new_vert_nbs;

@@ -82,7 +82,7 @@ FMatrix3 vertexStrain(const VertexHandle &v) {
         return result;
     }
 
-    std::vector<Vertex*> nbs_v = _v->neighborVertices();
+    std::vector<Vertex*> nbs_v = _v->connectedVertices();
     if(nbs_v.size() == 0) {
         tf_error(E_FAIL, "Vertex is insufficiently connected");
         return result;

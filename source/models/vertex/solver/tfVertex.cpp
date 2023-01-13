@@ -78,7 +78,7 @@ MeshParticleType *TissueForge::models::vertex::MeshParticleType_get() {
     return (MeshParticleType*)result;
 }
 
-void Vertex::updateNeighborVertices() {
+void Vertex::updateConnectedVertices() {
     std::unordered_set<Vertex*> result;
     Vertex *vp, *vn;
 
@@ -87,7 +87,7 @@ void Vertex::updateNeighborVertices() {
         result.insert(vp);
         result.insert(vn);
     }
-    this->_neighborVertices = std::vector<Vertex*>(result.begin(), result.end());
+    this->_connectedVertices = std::vector<Vertex*>(result.begin(), result.end());
 }
 
 std::vector<Surface*> Vertex::sharedSurfaces(const Vertex *other) const {
@@ -360,7 +360,7 @@ HRESULT Vertex::destroy() {
         TF_Log(LOG_DEBUG);
     }
     this->pid = -1;
-    this->_neighborVertices.clear();
+    this->_connectedVertices.clear();
     return S_OK;
 }
 
@@ -629,7 +629,7 @@ HRESULT Vertex::replace(Body *toReplace) {
     // Detach surfaces and bodies
     std::set<Vertex*> totalToRemove;
     std::vector<Surface*> b_surfaces(toReplace->surfaces);
-    std::vector<Body*> _neighborBodies = toReplace->neighborBodies();
+    std::vector<Body*> _connectedBodies = toReplace->connectedBodies();
     for(auto &s : b_surfaces) { 
         for(auto &ns : s->neighborSurfaces()) { 
             if(ns->defines(toReplace)) 
@@ -677,11 +677,11 @@ HRESULT Vertex::replace(Body *toReplace) {
             return E_FAIL;
 
     std::unordered_set<Vertex*> connectedVertices;
-    for(auto &b : _neighborBodies) 
+    for(auto &b : _connectedBodies) 
         for(auto &v : b->getVertices()) 
             connectedVertices.insert(v);
     for(auto &v : connectedVertices) 
-        v->updateNeighborVertices();
+        v->updateConnectedVertices();
 
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
@@ -730,7 +730,7 @@ HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
     std::vector<Surface*> common_s, different_s;
     common_s.reserve(toRemove->surfaces.size());
     different_s.reserve(toRemove->surfaces.size());
-    std::vector<Vertex*> toRemoveNeighborVertices = toRemove->neighborVertices();
+    std::vector<Vertex*> toRemoveConnectedVertices = toRemove->connectedVertices();
     for(auto &s : toRemove->surfaces) {
         if(!defines(s)) 
             different_s.push_back(s);
@@ -753,14 +753,14 @@ HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
         s->replace(this, toRemove);
     }
 
-    updateNeighborVertices();
+    updateConnectedVertices();
     std::unordered_set<Vertex*> affectedVertices;
-    for(auto &v : _neighborVertices) 
+    for(auto &v : _connectedVertices) 
         affectedVertices.insert(v);
-    for(auto &v : toRemoveNeighborVertices) 
+    for(auto &v : toRemoveConnectedVertices) 
         affectedVertices.insert(v);
     for(auto &v : affectedVertices) 
-        v->updateNeighborVertices();
+        v->updateConnectedVertices();
     
     // Set new position
     const FVector3 posToKeep = getPosition();
@@ -800,17 +800,17 @@ HRESULT Vertex::insert(Vertex *v1, Vertex *v2) {
         }
     }
     if(inserted) {
-        updateNeighborVertices();
-        for(auto &v : _neighborVertices) 
-            v->updateNeighborVertices();
+        updateConnectedVertices();
+        for(auto &v : _connectedVertices) 
+            v->updateConnectedVertices();
         std::unordered_set<Vertex*> affectedVertices;
-        for(auto &v : v1->neighborVertices()) 
+        for(auto &v : v1->connectedVertices()) 
             affectedVertices.insert(v);
-        for(auto &v : v2->neighborVertices()) 
+        for(auto &v : v2->connectedVertices()) 
             affectedVertices.insert(v);
         affectedVertices.erase(this);
         for(auto &v : affectedVertices) 
-            v->updateNeighborVertices();
+            v->updateConnectedVertices();
     }
 
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
@@ -915,7 +915,7 @@ HRESULT Vertex::splitPlan(const FVector3 &sep, std::vector<Vertex*> &verts_v, st
     verts_v.clear();
     verts_new_v.clear();
 
-    std::vector<Vertex*> nbs = neighborVertices();
+    std::vector<Vertex*> nbs = connectedVertices();
 
     // Verify that the vertex defines at least one surface
     if(nbs.size() == 0) 
@@ -999,12 +999,12 @@ Vertex *Vertex::splitExecute(const FVector3 &sep, const std::vector<Vertex*> &ve
         }
     }
 
-    updateNeighborVertices();
-    u->updateNeighborVertices();
-    for(auto &nv : _neighborVertices) 
-        nv->updateNeighborVertices();
-    for(auto &nv : u->neighborVertices()) 
-        nv->updateNeighborVertices();
+    updateConnectedVertices();
+    u->updateConnectedVertices();
+    for(auto &nv : _connectedVertices) 
+        nv->updateConnectedVertices();
+    for(auto &nv : u->connectedVertices()) 
+        nv->updateConnectedVertices();
 
     if(!Mesh::get()->qualityWorking()) 
         MeshSolver::positionChanged();
@@ -1205,14 +1205,14 @@ BodyHandle VertexHandle::findBody(const FVector3 &dir) const {
     return BodyHandle(bid);
 }
 
-void VertexHandle::updateNeighborVertices() const {
+void VertexHandle::updateConnectedVertices() const {
     VertexHandle_GETOBJ(o, );
-    return o->updateNeighborVertices();
+    return o->updateConnectedVertices();
 }
 
-std::vector<VertexHandle> VertexHandle::neighborVertices() const {
+std::vector<VertexHandle> VertexHandle::connectedVertices() const {
     VertexHandle_GETOBJ(o, {});
-    auto nbs = o->neighborVertices();
+    auto nbs = o->connectedVertices();
     std::vector<VertexHandle> result;
     result.reserve(nbs.size());
     for(auto &n : nbs) 

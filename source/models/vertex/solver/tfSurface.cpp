@@ -107,7 +107,7 @@ static HRESULT Surface_fromVertices(Surface *s, std::vector<Vertex*> vertices) {
     }
 
     for(auto &v : vertices) 
-        v->updateNeighborVertices();
+        v->updateConnectedVertices();
 
     return S_OK;
 }
@@ -361,7 +361,7 @@ HRESULT Surface::destroy() {
     if(this->_objId >= 0) 
         Mesh::get()->remove(this);
     for(auto &v : affectedVertices) 
-        v->updateNeighborVertices();
+        v->updateConnectedVertices();
     return S_OK;
 }
 
@@ -370,7 +370,7 @@ HRESULT Surface::destroy(Surface *target) {
 
     std::unordered_set<Vertex*> affectedVertices;
     for(auto &v : vertices) 
-        for(auto &nv : v->neighborVertices()) 
+        for(auto &nv : v->connectedVertices()) 
             if(!nv->defines(target)) 
                 affectedVertices.insert(nv);
 
@@ -381,7 +381,7 @@ HRESULT Surface::destroy(Surface *target) {
         if(v->getSurfaces().size() == 0) 
             v->destroy();
     for(auto &v : affectedVertices) 
-        v->updateNeighborVertices();
+        v->updateConnectedVertices();
 
     return S_OK;
 }
@@ -921,10 +921,10 @@ HRESULT Surface::merge(Surface *toRemove, const std::vector<FloatP_t> &lenCfs) {
 
     // Update connectivity
     for(auto &v : vertices) {
-        v->updateNeighborVertices();
-        for(auto &nv : v->neighborVertices()) 
+        v->updateConnectedVertices();
+        for(auto &nv : v->connectedVertices()) 
             if(!nv->defines(this)) 
-                nv->updateNeighborVertices();
+                nv->updateConnectedVertices();
     }
     
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
@@ -1028,7 +1028,7 @@ Surface *Surface::split(Vertex *v1, Vertex *v2) {
     }
 
     // Verify that vertices are not adjacent
-    const std::vector<Vertex*> v1_nbs = v1->neighborVertices();
+    const std::vector<Vertex*> v1_nbs = v1->connectedVertices();
     if(std::find(v1_nbs.begin(), v1_nbs.end(), v2) != v1_nbs.end()) {
         tf_error(E_FAIL, "Vertices are adjacent");
         return NULL;
@@ -1933,7 +1933,7 @@ SurfaceHandle SurfaceType::replace(VertexHandle &toReplace, std::vector<FloatP_t
         return SurfaceHandle();
     }
 
-    std::vector<VertexHandle> neighbors = toReplace.neighborVertices();
+    std::vector<VertexHandle> neighbors = toReplace.connectedVertices();
     if(lenCfs.size() != neighbors.size()) {
         TF_Log(LOG_ERROR) << "Length coefficients are inconsistent with connectivity";
         return SurfaceHandle();
@@ -1973,13 +1973,13 @@ SurfaceHandle SurfaceType::replace(VertexHandle &toReplace, std::vector<FloatP_t
     // Disconnect replaced vertex from all surfaces
     _toReplace = toReplace.vertex();
     std::vector<Surface*> toReplaceSurfaces = _toReplace->getSurfaces();
-    std::vector<Vertex*> affectedVertices = _toReplace->neighborVertices();
+    std::vector<Vertex*> affectedVertices = _toReplace->connectedVertices();
     for(auto &s : toReplaceSurfaces) {
         s->remove(_toReplace);
         _toReplace->remove(s);
     }
     for(auto &v : affectedVertices) 
-        v->updateNeighborVertices();
+        v->updateConnectedVertices();
 
     // Create new surface; its constructor should handle internal connections
     SurfaceHandle inserted = (*this)(insertedVertices);

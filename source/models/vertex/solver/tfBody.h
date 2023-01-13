@@ -197,11 +197,11 @@ namespace TissueForge::models::vertex {
         Surface *findSurface(const FVector3 &dir) const;
 
         /**
-         * @brief Get the neighboring bodies. 
+         * @brief Get the connected bodies. 
          * 
-         * A body is a neighbor if it shares a surface.
+         * A body is connected if it shares a surface.
          */
-        std::vector<Body*> neighborBodies() const;
+        std::vector<Body*> connectedBodies() const;
 
         /**
          * @brief Get the neighboring surfaces of a surface on this body.
@@ -441,11 +441,11 @@ namespace TissueForge::models::vertex {
         SurfaceHandle findSurface(const FVector3 &dir) const;
 
         /**
-         * @brief Get the neighboring bodies. 
+         * @brief Get the connected bodies. 
          * 
-         * A body is a neighbor if it shares a surface.
+         * A body is connected if it shares a surface.
          */
-        std::vector<BodyHandle> neighborBodies() const;
+        std::vector<BodyHandle> connectedBodies() const;
 
         /**
          * @brief Get the neighboring surfaces of a surface on this body.

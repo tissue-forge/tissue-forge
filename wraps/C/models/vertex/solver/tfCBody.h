@@ -296,15 +296,15 @@ CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_findSurface(
 );
 
 /**
- * @brief Get the neighboring bodies. 
+ * @brief Get the connected bodies. 
  * 
- * A body is a neighbor if it shares a surface.
+ * A body is connected if it shares a surface.
  * 
  * @param handle populated handle
- * @param objs neighboring bodies
- * @param numObjs number of neighboring bodies
+ * @param objs connected bodies
+ * @param numObjs number of connected bodies
  */
-CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_neighborBodies(
+CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_connectedBodies(
     struct tfVertexSolverBodyHandleHandle *handle, 
     struct tfVertexSolverBodyHandleHandle **objs, 
     int *numObjs
