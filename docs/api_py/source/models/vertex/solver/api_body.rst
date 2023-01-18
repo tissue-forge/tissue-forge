@@ -18,6 +18,8 @@ Body
 
     .. autoproperty:: connected_bodies
 
+    .. autoproperty:: adjacent_bodies
+
     .. autoproperty:: density
 
     .. autoproperty:: centroid
@@ -76,6 +78,8 @@ Body
 
     .. automethod:: contact_area
 
+    .. automethod:: shared_vertices
+
     .. automethod:: is_outside
 
     .. automethod:: split
@@ -108,6 +112,8 @@ Body
     .. autoproperty:: vertices
 
     .. autoproperty:: connected_bodies
+
+    .. autoproperty:: adjacent_bodies
 
     .. autoproperty:: density
 
@@ -164,6 +170,8 @@ Body
     .. automethod:: find_interface
 
     .. automethod:: contact_area
+
+    .. automethod:: shared_vertices
 
     .. automethod:: is_outside
 

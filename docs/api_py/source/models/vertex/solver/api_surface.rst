@@ -84,9 +84,13 @@ Surface
 
     .. automethod:: connected_surfaces
 
+    .. automethod:: connecting_vertices
+
     .. automethod:: contiguous_edge_labels
 
     .. automethod:: num_shared_contiguous_edges
+
+    .. automethod:: shared_contiguous_edge
 
     .. automethod:: volume_sense
 
@@ -203,9 +207,13 @@ Surface
 
     .. automethod:: connected_surfaces
 
+    .. automethod:: connecting_vertices
+
     .. automethod:: contiguous_edge_labels
 
     .. automethod:: num_shared_contiguous_edges
+
+    .. automethod:: shared_contiguous_edge
 
     .. automethod:: volume_sense
 

@@ -204,6 +204,13 @@ namespace TissueForge::models::vertex {
         std::vector<Body*> connectedBodies() const;
 
         /**
+         * @brief Get the adjacent bodies. 
+         * 
+         * A body is adjacent if it shares a vertex.
+         */
+        std::vector<Body*> adjacentBodies() const;
+
+        /**
          * @brief Get the neighboring surfaces of a surface on this body.
          * 
          * Two surfaces are a neighbor on this body if they define the body and share a vertex
@@ -283,6 +290,13 @@ namespace TissueForge::models::vertex {
          * @param other a body
          */
         FloatP_t contactArea(const Body *other) const;
+
+        /**
+         * @brief Get the vertices that define both this body and another body
+         * 
+         * @param other a body
+         */
+        std::vector<Vertex*> sharedVertices(const Body *other) const;
 
         /**
          * @brief Test whether a point is outside. Test is performed using the nearest surface
@@ -448,6 +462,13 @@ namespace TissueForge::models::vertex {
         std::vector<BodyHandle> connectedBodies() const;
 
         /**
+         * @brief Get the adjacent bodies. 
+         * 
+         * A body is adjacent if it shares a vertex.
+         */
+        std::vector<BodyHandle> adjacentBodies() const;
+
+        /**
          * @brief Get the neighboring surfaces of a surface on this body.
          * 
          * Two surfaces are a neighbor on this body if they define the body and share a vertex
@@ -539,6 +560,13 @@ namespace TissueForge::models::vertex {
          * @param other a body
          */
         FloatP_t contactArea(const BodyHandle &other) const;
+
+        /**
+         * @brief Get the vertices that define both this body and another body
+         * 
+         * @param other a body
+         */
+        std::vector<VertexHandle> sharedVertices(const BodyHandle &other) const;
 
         /**
          * @brief Test whether a point is outside. Test is performed using the nearest surface

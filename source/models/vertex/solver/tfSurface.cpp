@@ -583,6 +583,15 @@ std::vector<Surface*> Surface::connectedSurfaces() const {
     return connectedSurfaces(vertices);
 }
 
+std::vector<Vertex*> Surface::connectingVertices(const Surface *other) const {
+    std::vector<Vertex*> result;
+    result.reserve(vertices.size());
+    for(auto &v : vertices) 
+        if(v->defines(other)) 
+            result.push_back(v);
+    return result;
+}
+
 std::vector<unsigned int> Surface::contiguousEdgeLabels(const Surface *other) const {
     std::vector<bool> sharedVertices(vertices.size(), false);
     for(unsigned int i = 0; i < sharedVertices.size(); i++) 
@@ -615,6 +624,16 @@ unsigned int Surface::numSharedContiguousEdges(const Surface *other) const {
     unsigned int result = 0;
     for(auto &i : contiguousEdgeLabels(other)) 
         result = std::max(result, i);
+    return result;
+}
+
+std::vector<Vertex*> Surface::sharedContiguousEdge(const Surface *other, const unsigned int &edgeLabel) const {
+    std::vector<unsigned int> labs = contiguousEdgeLabels(other);
+    std::vector<Vertex*> result;
+    result.reserve(vertices.size());
+    for(unsigned int i = 0; i < labs.size(); i++) 
+        if(labs[i] == edgeLabel) 
+            result.push_back(vertices[i]);
     return result;
 }
 
@@ -1513,6 +1532,21 @@ std::vector<SurfaceHandle> SurfaceHandle::connectedSurfaces() const {
     return result;
 }
 
+std::vector<VertexHandle> SurfaceHandle::connectingVertices(const SurfaceHandle &other) const {
+    SurfaceHandle_GETOBJ(o, {});
+    Surface *_other = other.surface();
+    if(!_other) {
+        SurfaceHandle_INVALIDHANDLERR;
+        return {};
+    }
+    std::vector<Vertex*> _result = o->connectingVertices(_other);
+    std::vector<VertexHandle> result;
+    result.reserve(_result.size());
+    for(auto &_s : _result) 
+        result.push_back(_s ? VertexHandle(_s->objectId()) : VertexHandle());
+    return result;
+}
+
 std::vector<unsigned int> SurfaceHandle::contiguousEdgeLabels(const SurfaceHandle &other) const {
     SurfaceHandle_GETOBJ(o, {});
     Surface *_other = other.surface();
@@ -1531,6 +1565,21 @@ unsigned int SurfaceHandle::numSharedContiguousEdges(const SurfaceHandle &other)
         return {};
     }
     return o->numSharedContiguousEdges(_other);
+}
+
+std::vector<VertexHandle> SurfaceHandle::sharedContiguousEdge(const SurfaceHandle &other, const unsigned int &edgeLabel) const {
+    SurfaceHandle_GETOBJ(o, {});
+    Surface *_other = other.surface();
+    if(!_other) {
+        SurfaceHandle_INVALIDHANDLERR;
+        return {};
+    }
+    std::vector<Vertex*> _result = o->sharedContiguousEdge(_other, edgeLabel);
+    std::vector<VertexHandle> result;
+    result.reserve(_result.size());
+    for(auto &_s : _result) 
+        result.push_back(_s ? VertexHandle(_s->objectId()) : VertexHandle());
+    return result;
 }
 
 FVector3 SurfaceHandle::getNormal() const {

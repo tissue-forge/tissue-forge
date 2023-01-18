@@ -24,6 +24,7 @@
 #include "tf_mesh_metrics.h"
 #include "tf_mesh_io.h"
 #include "tfVertexSolverFIO.h"
+#include "tf_mesh_ops.h"
 
 #include <tfError.h>
 #include <tfUniverse.h>
@@ -281,7 +282,7 @@ struct BodyDemoteOperation : MeshQualityOperation {
     BodyDemoteOperation(Mesh *_mesh, Body *_source) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
         toReplaceId = _source->objectId();
-        for(auto &nb : _source->connectedBodies()) 
+        for(auto &nb : adjacentTo(removedBodiesByB2V(_source))) 
             targets.push_back(nb->objectId());
     }
 
@@ -316,8 +317,12 @@ struct SurfaceDemoteOperation : MeshQualityOperation {
     SurfaceDemoteOperation(Mesh *_mesh, Surface *_source) : MeshQualityOperation(_mesh) {
         flags = MeshQualityOperation::Flag::Active;
         toReplaceId = _source->objectId();
-        for(auto &nb : _source->connectedSurfaces()) 
+        std::unordered_set<Surface*> removed = removedSurfacesByS2V(_source);
+        for(auto &nb : removed) 
             targets.push_back(nb->objectId());
+        for(auto &nb : connectedSurfacesToS2V(removed)) 
+            if(nb->objectId() != _source->objectId()) 
+                targets.push_back(nb->objectId());
     }
 
     size_t numNewVertices() const override { return 1; };

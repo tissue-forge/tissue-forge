@@ -315,6 +315,13 @@ namespace TissueForge::models::vertex {
         std::vector<Surface*> connectedSurfaces() const;
 
         /**
+         * @brief Vertices defining this and another surface
+         * 
+         * @param other another surface
+         */
+        std::vector<Vertex*> connectingVertices(const Surface *other) const;
+
+        /**
          * @brief Get the integer labels of the contiguous edges that this surface shares with another surface
          * 
          * @param other another surface
@@ -327,6 +334,18 @@ namespace TissueForge::models::vertex {
          * @param other another surface
          */
         unsigned int numSharedContiguousEdges(const Surface *other) const;
+
+        /**
+         * @brief Get the vertices of a contiguous shared edge with another surface. 
+         * 
+         * Edges are labeled in increasing order starting with "1". A requested edge that does not exist returns empty. 
+         * 
+         * A requested edge with label "0" returns all vertices not shared with another surface
+         * 
+         * @param other another surface
+         * @param edgeLabel edge label
+         */
+        std::vector<Vertex*> sharedContiguousEdge(const Surface *other, const unsigned int &edgeLabel) const;
 
         /**
          * @brief Get the surface normal
@@ -763,6 +782,13 @@ namespace TissueForge::models::vertex {
         std::vector<SurfaceHandle> connectedSurfaces() const;
 
         /**
+         * @brief Vertices defining this and another surface
+         * 
+         * @param other another surface
+         */
+        std::vector<VertexHandle> connectingVertices(const SurfaceHandle &other) const;
+
+        /**
          * @brief Get the integer labels of the contiguous edges that this surface shares with another surface
          * 
          * @param other another surface
@@ -775,6 +801,18 @@ namespace TissueForge::models::vertex {
          * @param other another surface
          */
         unsigned int numSharedContiguousEdges(const SurfaceHandle &other) const;
+
+        /**
+         * @brief Get the vertices of a contiguous shared edge with another surface. 
+         * 
+         * Edges are labeled in increasing order starting with "1". A requested edge that does not exist returns empty. 
+         * 
+         * A requested edge with label "0" returns all vertices not shared with another surface
+         * 
+         * @param other another surface
+         * @param edgeLabel edge label
+         */
+        std::vector<VertexHandle> sharedContiguousEdge(const SurfaceHandle &other, const unsigned int &edgeLabel) const;
 
         /**
          * @brief Get the normal

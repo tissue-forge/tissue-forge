@@ -29,6 +29,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 //////////
 
 %rename(_connectedBodies) TissueForge::models::vertex::Body::connectedBodies;
+%rename(_adjacentBodies) TissueForge::models::vertex::Body::adjacentBodies;
 %rename(update_internals) TissueForge::models::vertex::Body::updateInternals;
 %rename(position_changed) TissueForge::models::vertex::Body::positionChanged;
 %rename(find_vertex) TissueForge::models::vertex::Body::findVertex;
@@ -39,6 +40,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 %rename(get_vertex_mass) TissueForge::models::vertex::Body::getVertexMass;
 %rename(find_interface) TissueForge::models::vertex::Body::findInterface;
 %rename(contact_area) TissueForge::models::vertex::Body::contactArea;
+%rename(shared_vertices) TissueForge::models::vertex::Body::sharedVertices;
 %rename(is_outside) TissueForge::models::vertex::Body::isOutside;
 
 %rename(_destroy_o) TissueForge::models::vertex::Body::destroy(Body*);
@@ -50,6 +52,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 
 %rename(_body) TissueForge::models::vertex::BodyHandle::body;
 %rename(_connectedBodies) TissueForge::models::vertex::BodyHandle::connectedBodies;
+%rename(_adjacentBodies) TissueForge::models::vertex::BodyHandle::adjacentBodies;
 %rename(update_internals) TissueForge::models::vertex::BodyHandle::updateInternals;
 %rename(position_changed) TissueForge::models::vertex::BodyHandle::positionChanged;
 %rename(find_vertex) TissueForge::models::vertex::BodyHandle::findVertex;
@@ -60,6 +63,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Body)
 %rename(get_vertex_mass) TissueForge::models::vertex::BodyHandle::getVertexMass;
 %rename(find_interface) TissueForge::models::vertex::BodyHandle::findInterface;
 %rename(contact_area) TissueForge::models::vertex::BodyHandle::contactArea;
+%rename(shared_vertices) TissueForge::models::vertex::BodyHandle::sharedVertices;
 %rename(is_outside) TissueForge::models::vertex::BodyHandle::isOutside;
 
 //////////////
@@ -99,6 +103,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
         def connected_bodies(self):
             """bodies in contact"""
             return self._connectedBodies()
+
+        @property
+        def adjacent_bodies(self):
+            """adjacent bodies"""
+            return self._adjacentBodies()
 
         @property
         def density(self):
@@ -188,6 +197,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::BodyType)
         def connected_bodies(self):
             """bodies in contact"""
             return self._connectedBodies()
+
+        @property
+        def adjacent_bodies(self):
+            """adjacent bodies"""
+            return self._adjacentBodies()
 
         @property
         def density(self):

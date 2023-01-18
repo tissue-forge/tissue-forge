@@ -24,6 +24,7 @@
 #include "tfMeshSolver.h"
 #include "tf_mesh_io.h"
 #include "tfVertexSolverFIO.h"
+#include "tf_mesh_ops.h"
 
 #include <tfError.h>
 #include <tfLogger.h>
@@ -530,58 +531,79 @@ HRESULT Vertex::replace(Surface *toReplace) {
     // Remove the replaced surface from the mesh
     // Add the inserted vertex to the mesh
 
-    // Prevent nonsensical resultant bodies
-    if(toReplace->b1 && toReplace->b1->surfaces.size() < 5) { 
-        TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << toReplace->b1->surfaces.size() << ") in first body (" << toReplace->b1->_objId << ") for replace";
-        return E_FAIL;
-    }
-    else if(toReplace->b2 && toReplace->b2->surfaces.size() < 5) {
-        TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << toReplace->b2->surfaces.size() << ") in first body (" << toReplace->b2->_objId << ") for replace";
+    // Gather first analysis step
+    std::unordered_set<Surface*> removedSurfaces = removedSurfacesByS2V(toReplace);
+    
+    // Prevent destroyed bodies
+    if(!removedChildrenByRemovedParents(removedSurfaces).empty()) {
+        TF_Log(LOG_DEBUG) << "Insufficient surfaces";
         return E_FAIL;
     }
 
-    // Gather every contacting surface
-    std::vector<Surface*> connectedSurfaces = toReplace->connectedSurfaces();
+    // Gather remaining analysis
+    std::unordered_set<Vertex*> removedVertices = orphanedVertices(removedSurfaces);
+    for(auto &v : toReplace->vertices) 
+        removedVertices.insert(v);
+    std::unordered_set<Vertex*> connVerts;
+    std::unordered_map<Surface*, std::unordered_set<Vertex*> > vsmapRemoved;
+    connectedToMapGiven(removedVertices, connVerts, vsmapRemoved);
+    vsmapRemoved.erase(vsmapRemoved.find(toReplace));
 
-    // Disconnect every vertex connected to the replaced surface
-    std::set<Vertex*> totalToRemove;
-    for(auto &s : connectedSurfaces) 
-        if(Vertex_SurfaceDisconnectReplace(this, toReplace, s, s->vertices, totalToRemove) != S_OK) 
-            return E_FAIL;
+    // Do replacement on every surface that stays
+    for(auto &s : removedSurfaces) 
+        vsmapRemoved.erase(vsmapRemoved.find(s));
+    for(auto &mapEntry : vsmapRemoved) {
+        Surface *s;
+        std::unordered_set<Vertex*> vsRemoved;
+        std::tie(s, vsRemoved) = mapEntry;
+        if(vsRemoved.empty()) 
+            continue;
+        Vertex *v = *vsRemoved.begin();
+        s->replace(this, v);
+        add(s);
+        v->remove(s);
+        vsRemoved.erase(vsRemoved.begin());
+        for(auto &vv : vsRemoved) {
+            s->remove(vv);
+            vv->remove(s);
+        }
+    }
 
     MeshSolver::log(MeshLogEventType::Create, {_objId, toReplace->_objId}, {objType(), toReplace->objType()}, "replace");
 
-    // Remove the replaced surface and its vertices
-    while(!toReplace->vertices.empty()) {
-        Vertex *v = toReplace->vertices.front();
-        v->remove(toReplace);
-        toReplace->remove(v);
-        totalToRemove.insert(v);
-    }
-    if(toReplace->b1) { 
-        Body *b1 = toReplace->b1;
-        b1->remove(toReplace);
-        toReplace->remove(b1);
-        b1->positionChanged();
-    }
-    if(toReplace->b2) { 
-        Body *b2 = toReplace->b2;
-        b2->remove(toReplace);
-        toReplace->remove(b2);
-        b2->positionChanged();
-    }
-    if(toReplace->destroy() != S_OK) 
-        return E_FAIL;
-    for(auto &v : totalToRemove) 
-        if(v->destroy() != S_OK) 
-            return E_FAIL;
+    // Destroy as instructed
 
-    std::unordered_set<Vertex*> connectedVertices;
-    for(auto &s : connectedSurfaces) 
-        for(auto &v : s->vertices) 
-            connectedVertices.insert(v);
-    for(auto &v : connectedVertices) 
-        v->updateNeighborVertices();
+    removedSurfaces.insert(toReplace);
+    for(auto &s : removedSurfaces) 
+        for(auto &b : s->getBodies()) {
+            b->remove(s);
+            s->remove(b);
+        }
+    for(auto &v : removedVertices) 
+        while(!v->surfaces.empty()) {
+            Surface *s = v->surfaces.front();
+            v->remove(s);
+            s->remove(v);
+        }
+    for(auto &s : removedSurfaces) 
+        s->destroy();
+    for(auto &v : removedVertices) 
+        v->destroy();
+
+    // Update connected objects
+    updateConnectedVertices();
+    for(auto &v : _connectedVertices) 
+        v->updateConnectedVertices();
+    std::unordered_set<Body*> connectedBodies;
+    for(auto &mapEntry : vsmapRemoved) {
+        mapEntry.first->positionChanged();
+        for(auto &b : mapEntry.first->getBodies()) 
+            connectedBodies.insert(b);
+    }
+    for(auto &b : connectedBodies) 
+        b->positionChanged();
+    for(auto &mapEntry : vsmapRemoved) 
+        mapEntry.first->refreshBodies();
 
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
@@ -597,6 +619,7 @@ Vertex *Vertex::replace(const FVector3 &position, Surface *toReplace) {
         return NULL;
     }
     result->pid = _pid;
+    result->positionChanged();
     if(result->replace(toReplace) != S_OK) {
         result->destroy();
         return NULL;
@@ -626,61 +649,60 @@ VertexHandle Vertex::replace(const FVector3 &position, SurfaceHandle &toReplace)
 
 HRESULT Vertex::replace(Body *toReplace) {
 
-    // Detach surfaces and bodies
-    std::set<Vertex*> totalToRemove;
-    std::vector<Surface*> b_surfaces(toReplace->surfaces);
-    std::vector<Body*> _connectedBodies = toReplace->connectedBodies();
-    for(auto &s : b_surfaces) { 
-        for(auto &ns : s->neighborSurfaces()) { 
-            if(ns->defines(toReplace)) 
-                continue;
-            if(Vertex_SurfaceDisconnectReplace(this, s, ns, ns->vertices, totalToRemove) != S_OK) 
-                return E_FAIL;
-        }
+    // Gather instructions
 
-        if(s->b1 && s->b1 != toReplace) {
-            if(s->b1->surfaces.size() < 5) {
-                TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b1->surfaces.size() << ") in first body (" << s->b1->_objId << ") for replace";
-                return E_FAIL;
-            }
-            s->b1->remove(s);
-            s->remove(s->b1);
-        }
-        if(s->b2 && s->b2 != toReplace) {
-            if(s->b2->surfaces.size() < 5) {
-                TF_Log(LOG_DEBUG) << "Insufficient surfaces (" << s->b2->surfaces.size() << ") in first body (" << s->b2->_objId << ") for replace";
-                return E_FAIL;
-            }
-            s->b2->remove(s);
-            s->remove(s->b2);
-        }
-    }
+    std::unordered_set<Vertex*> removedVertices;
+    std::unordered_set<Surface*> removedSurfaces;
+    std::unordered_set<Body*> removedBodies;
+    std::unordered_map<Surface*, std::unordered_set<Vertex*> > replacementMap;
+    transformedByB2V(toReplace, removedVertices, removedSurfaces, removedBodies, replacementMap);
 
     MeshSolver::log(MeshLogEventType::Create, {_objId, toReplace->_objId}, {objType(), toReplace->objType()}, "replace");
-
-    while(!toReplace->surfaces.empty()) {
-        Surface *s = toReplace->surfaces.front();
-        while(!s->vertices.empty()) {
-            Vertex *v = s->vertices.front();
-            s->remove(v);
-            v->remove(s);
-            totalToRemove.insert(v);
+    
+    // Replace as instructed
+    for(auto &p : replacementMap) {
+        Surface *s = p.first;
+        std::unordered_set<Vertex*> cv = p.second;
+        if(cv.empty()) 
+            continue;
+        Vertex *v = *cv.begin();
+        s->replace(this, v);
+        v->remove(s);
+        add(s);
+        cv.erase(cv.begin());
+        for(auto &vv : cv) {
+            s->remove(vv);
+            vv->remove(s);
         }
-        toReplace->remove(s);
-        s->remove(toReplace);
+    }
+
+    // Destroy as instructed
+    for(auto &b : removedBodies) {
+        for(auto &s : b->getSurfaces()) 
+            s->remove(b);
+        b->destroy();
+    }
+    for(auto &s : removedSurfaces) {
+        for(auto &b : s->getBodies()) {
+            b->remove(s);
+            s->remove(b);
+        }
+        for(auto &v : s->getVertices()) 
+            v->remove(s);
         s->destroy();
     }
-    if(toReplace->destroy() != S_OK) 
-        return E_FAIL;
-    for(auto &v : totalToRemove) 
-        if(v->destroy() != S_OK) 
-            return E_FAIL;
+    for(auto &v : removedVertices) {
+        for(auto &s : v->getSurfaces()) {
+            s->remove(v);
+            v->remove(s);
+        }
+        v->destroy();
+    }
 
-    std::unordered_set<Vertex*> connectedVertices;
-    for(auto &b : _connectedBodies) 
-        for(auto &v : b->getVertices()) 
-            connectedVertices.insert(v);
-    for(auto &v : connectedVertices) 
+    // Update
+
+    updateConnectedVertices();
+    for(auto &v : _connectedVertices) 
         v->updateConnectedVertices();
 
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
@@ -697,6 +719,7 @@ Vertex *Vertex::replace(const FVector3 &position, Body *toReplace) {
         return NULL;
     }
     result->pid = _pid;
+    result->positionChanged();
     if(result->replace(toReplace) != S_OK) {
         result->destroy();
         return NULL;
@@ -829,6 +852,7 @@ Vertex *Vertex::insert(const FVector3 &position, Vertex *v1, Vertex *v2) {
         return NULL;
     }
     result->pid = _pid;
+    result->positionChanged();
     if(result->insert(v1, v2) != S_OK) {
         result->destroy();
         return NULL;
@@ -871,6 +895,7 @@ Vertex *Vertex::insert(const FVector3 &position, Vertex *vf, std::vector<Vertex*
         return NULL;
     }
     result->pid = _pid;
+    result->positionChanged();
     if(result->insert(vf, nbs) != S_OK) {
         result->destroy();
         return NULL;
@@ -978,6 +1003,7 @@ Vertex *Vertex::splitExecute(const FVector3 &sep, const std::vector<Vertex*> &ve
         return 0;
     }
     u->pid = _pid;
+    u->positionChanged();
     setPosition(v_pos1);
 
     //  Replace v with u where removing

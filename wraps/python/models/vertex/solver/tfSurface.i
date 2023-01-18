@@ -33,8 +33,10 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(find_body) TissueForge::models::vertex::Surface::findBody;
 %rename(neighbor_vertices) TissueForge::models::vertex::Surface::neighborVertices;
 %rename(connected_surfaces) TissueForge::models::vertex::Surface::connectedSurfaces;
+%rename(connecting_vertices) TissueForge::models::vertex::Surface::connectingVertices;
 %rename(contiguous_edge_labels) TissueForge::models::vertex::Surface::contiguousEdgeLabels;
 %rename(num_shared_contiguous_edges) TissueForge::models::vertex::Surface::numSharedContiguousEdges;
+%rename(shared_contiguous_edge) TissueForge::models::vertex::Surface::sharedContiguousEdge;
 %rename(volume_sense) TissueForge::models::vertex::Surface::volumeSense;
 %rename(get_volume_contr) TissueForge::models::vertex::Surface::getVolumeContr;
 %rename(get_outward_normal) TissueForge::models::vertex::Surface::getOutwardNormal;
@@ -63,8 +65,10 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(find_body) TissueForge::models::vertex::SurfaceHandle::findBody;
 %rename(neighbor_vertices) TissueForge::models::vertex::SurfaceHandle::neighborVertices;
 %rename(connected_surfaces) TissueForge::models::vertex::SurfaceHandle::connectedSurfaces;
+%rename(connecting_vertices) TissueForge::models::vertex::SurfaceHandle::connectingVertices;
 %rename(contiguous_edge_labels) TissueForge::models::vertex::SurfaceHandle::contiguousEdgeLabels;
 %rename(num_shared_contiguous_edges) TissueForge::models::vertex::SurfaceHandle::numSharedContiguousEdges;
+%rename(shared_contiguous_edge) TissueForge::models::vertex::SurfaceHandle::sharedContiguousEdge;
 %rename(volume_sense) TissueForge::models::vertex::SurfaceHandle::volumeSense;
 %rename(get_volume_contr) TissueForge::models::vertex::SurfaceHandle::getVolumeContr;
 %rename(get_outward_normal) TissueForge::models::vertex::SurfaceHandle::getOutwardNormal;

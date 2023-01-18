@@ -355,6 +355,15 @@ std::vector<Body*> Body::connectedBodies() const {
     return std::vector<Body*>(result.begin(), result.end());
 }
 
+std::vector<Body*> Body::adjacentBodies() const {
+    std::unordered_set<Body*> result;
+    for(auto &v : getVertices()) 
+        for(auto &b : v->getBodies()) 
+            result.insert(b);
+    result.erase(result.find(const_cast<Body*>(this)));
+    return std::vector<Body*>(result.begin(), result.end());
+}
+
 std::vector<Surface*> Body::neighborSurfaces(const Surface *s) const {
     std::unordered_set<Surface*> result;
     for(auto &so : surfaces) {
@@ -402,6 +411,15 @@ FloatP_t Body::contactArea(const Body *other) const {
     for(auto &s : surfaces) 
         if(s->defines(other)) 
             result += s->area;
+    return result;
+}
+
+std::vector<Vertex*> Body::sharedVertices(const Body *other) const {
+    std::vector<Vertex*> verts = getVertices();
+    std::vector<Vertex*> result;
+    for(auto &v : other->getVertices()) 
+        if(std::find(verts.begin(), verts.end(), v) != verts.end()) 
+            result.push_back(v);
     return result;
 }
 
@@ -840,6 +858,16 @@ std::vector<BodyHandle> BodyHandle::connectedBodies() const {
     return result;
 }
 
+std::vector<BodyHandle> BodyHandle::adjacentBodies() const {
+    BodyHandle_GETOBJ(o, {});
+    std::vector<Body*> _result = o->adjacentBodies();
+    std::vector<BodyHandle> result;
+    result.reserve(_result.size());
+    for(auto &_b : _result) 
+        result.push_back(_b ? BodyHandle(_b->_objId) : BodyHandle());
+    return result;
+}
+
 std::vector<SurfaceHandle> BodyHandle::neighborSurfaces(const SurfaceHandle &s) const {
     BodyHandle_GETOBJ(o, {});
     Surface *_s = s.surface();
@@ -907,6 +935,20 @@ FloatP_t BodyHandle::getVertexVolume(const VertexHandle &v) const {
         return 0;
     }
     return o->getVertexVolume(_v);
+}
+
+std::vector<VertexHandle> BodyHandle::sharedVertices(const BodyHandle &other) const {
+    BodyHandle_GETOBJ(o, {});
+    Body *_other = other.body();
+    if(!_other) {
+        BodyHandle_INVALIDHANDLERR;
+        return {};
+    }
+    std::vector<Vertex*> _result = o->sharedVertices(_other);
+    std::vector<VertexHandle> result;
+    for(auto &_other : _result) 
+        result.push_back(_other ? VertexHandle(_other->objectId()) : VertexHandle());
+    return result;
 }
 
 FloatP_t BodyHandle::getVertexMass(const VertexHandle &v) const {

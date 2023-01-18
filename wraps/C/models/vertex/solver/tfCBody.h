@@ -311,6 +311,21 @@ CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_connectedBodies(
 );
 
 /**
+ * @brief Get the adjacent bodies. 
+ * 
+ * A body is adjacent if it shares a surface.
+ * 
+ * @param handle populated handle
+ * @param objs adjacent bodies
+ * @param numObjs number of adjacent bodies
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_adjacentBodies(
+    struct tfVertexSolverBodyHandleHandle *handle, 
+    struct tfVertexSolverBodyHandleHandle **objs, 
+    int *numObjs
+);
+
+/**
  * @brief Get the neighboring surfaces of a surface on this body.
  * 
  * Two surfaces are a neighbor on this body if they define the body and share a vertex
@@ -448,6 +463,21 @@ CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_contactArea(
     struct tfVertexSolverBodyHandleHandle *handle, 
     struct tfVertexSolverBodyHandleHandle *other, 
     tfFloatP_t *result
+);
+
+/**
+ * @brief Get the vertices that define both this body and another body
+ * 
+ * @param handle populated handle
+ * @param other a body
+ * @param objs shared vertices
+ * @param numObjs number of shared vertices
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_sharedVertices(
+    struct tfVertexSolverBodyHandleHandle *handle, 
+    struct tfVertexSolverBodyHandleHandle *other, 
+    struct tfVertexSolverVertexHandleHandle **objs, 
+    int *numObjs
 );
 
 /**

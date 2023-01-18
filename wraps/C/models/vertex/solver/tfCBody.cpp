@@ -319,6 +319,25 @@ HRESULT tfVertexSolverBodyHandle_connectedBodies(
     return S_OK;
 }
 
+HRESULT tfVertexSolverBodyHandle_adjacentBodies(
+    struct tfVertexSolverBodyHandleHandle *handle, 
+    struct tfVertexSolverBodyHandleHandle **objs, 
+    int *numObjs
+) {
+    TFC_BODYHANDLE_GET(handle);
+    TFC_PTRCHECK(objs);
+    TFC_PTRCHECK(numObjs);
+    std::vector<BodyHandle> _objs = bhandle->adjacentBodies();
+    *numObjs = _objs.size();
+    if(*numObjs == 0) 
+        return S_OK;
+    *objs = (struct tfVertexSolverBodyHandleHandle*)malloc(sizeof(struct tfVertexSolverBodyHandleHandle) * _objs.size());
+    for(size_t i = 0; i < _objs.size(); i++) 
+        if(tfVertexSolverBodyHandle_init(&(*objs)[i], _objs[i].id) != S_OK) 
+            return E_FAIL;
+    return S_OK;
+}
+
 HRESULT tfVertexSolverBodyHandle_neighborSurfaces(
     struct tfVertexSolverBodyHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *s, 
@@ -473,6 +492,28 @@ HRESULT tfVertexSolverBodyHandle_contactArea(
     TFC_PTRCHECK(_other);
     *result = bhandle->contactArea(*_other);
     return S_OK;
+}
+
+HRESULT tfVertexSolverBodyHandle_sharedVertices(
+    struct tfVertexSolverBodyHandleHandle *handle, 
+    struct tfVertexSolverBodyHandleHandle *other, 
+    struct tfVertexSolverVertexHandleHandle **objs, 
+    int *numObjs
+) {
+    TFC_BODYHANDLE_GET(handle);
+    TFC_PTRCHECK(other);
+    TFC_PTRCHECK(objs);
+    TFC_PTRCHECK(numObjs);
+    BodyHandle *_other = TissueForge::castC<BodyHandle, tfVertexSolverBodyHandleHandle>(other);
+    TFC_PTRCHECK(_other);
+    std::vector<VertexHandle> _objs = bhandle->sharedVertices(*_other);
+    *numObjs = _objs.size();
+    if(*numObjs == 0) 
+        return S_OK;
+    *objs = (struct tfVertexSolverVertexHandleHandle*)malloc(sizeof(struct tfVertexSolverVertexHandleHandle) * _objs.size());
+    for(size_t i = 0; i < _objs.size(); i++) 
+        if(tfVertexSolverVertexHandle_init(&(*objs)[i], _objs[i].id) != S_OK) 
+            return E_FAIL;
 }
 
 HRESULT tfVertexSolverBodyHandle_isOutside(

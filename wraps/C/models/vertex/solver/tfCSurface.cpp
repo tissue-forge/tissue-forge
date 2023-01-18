@@ -522,6 +522,28 @@ HRESULT tfVertexSolverSurfaceHandle_connectedSurfaces(
     return S_OK;
 }
 
+HRESULT tfVertexSolverSurfaceHandle_connectingVertices(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    struct tfVertexSolverSurfaceHandleHandle *other, 
+    struct tfVertexSolverVertexHandleHandle **objs, 
+    int *numObjs
+) {
+    TFC_SURFACEHANDLE_GET(handle);
+    SurfaceHandle *_other = TissueForge::castC<SurfaceHandle, tfVertexSolverSurfaceHandleHandle>(other);
+    TFC_PTRCHECK(_other);
+    TFC_PTRCHECK(objs);
+    TFC_PTRCHECK(numObjs);
+    std::vector<VertexHandle> _objs = shandle->connectingVertices(*_other);
+    *numObjs = _objs.size();
+    if(*numObjs == 0) 
+        return S_OK;
+    *objs = (struct tfVertexSolverVertexHandleHandle*)malloc(sizeof(struct tfVertexSolverVertexHandleHandle) * _objs.size());
+    for(size_t i = 0; i < _objs.size(); i++) 
+        if(tfVertexSolverVertexHandle_init(&(*objs)[i], _objs[i].id) != S_OK) 
+            return E_FAIL;
+    return S_OK;
+}
+
 HRESULT tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *other, 
@@ -540,6 +562,29 @@ HRESULT tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
         return S_OK;
     *labels = (unsigned int*)malloc(sizeof(unsigned int) * _labels.size());
     memcpy(&(*labels)[0], &_labels.data()[0], sizeof(unsigned int) * _labels.size());
+    return S_OK;
+}
+
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_sharedContiguousEdge(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    struct tfVertexSolverSurfaceHandleHandle *other, 
+    unsigned int edgeLabel, 
+    struct tfVertexSolverVertexHandleHandle **objs, 
+    int *numObjs
+) {
+    TFC_SURFACEHANDLE_GET(handle);
+    SurfaceHandle *_other = TissueForge::castC<SurfaceHandle, tfVertexSolverSurfaceHandleHandle>(other);
+    TFC_PTRCHECK(_other);
+    TFC_PTRCHECK(objs);
+    TFC_PTRCHECK(numObjs);
+    std::vector<VertexHandle> _objs = shandle->sharedContiguousEdge(*_other, edgeLabel);
+    *numObjs = _objs.size();
+    if(*numObjs == 0) 
+        return S_OK;
+    *objs = (struct tfVertexSolverVertexHandleHandle*)malloc(sizeof(struct tfVertexSolverVertexHandleHandle) * _objs.size());
+    for(size_t i = 0; i < _objs.size(); i++) 
+        if(tfVertexSolverVertexHandle_init(&(*objs)[i], _objs[i].id) != S_OK) 
+            return E_FAIL;
     return S_OK;
 }
 

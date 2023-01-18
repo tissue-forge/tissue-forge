@@ -488,6 +488,21 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_connectedSurfaces(
 );
 
 /**
+ * @brief Vertices defining this and another surface
+ * 
+ * @param handle
+ * @param other another surface
+ * @param objs objects
+ * @param numObjs number of objects
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_connectingVertices(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    struct tfVertexSolverSurfaceHandleHandle *other, 
+    struct tfVertexSolverVertexHandleHandle **objs, 
+    int *numObjs
+);
+
+/**
  * @brief Get the integer labels of the contiguous edges that this surface shares with another surface
  * 
  * @param handle populated handle
@@ -500,6 +515,27 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
     struct tfVertexSolverSurfaceHandleHandle *other, 
     unsigned int **labels, 
     int *numLabels
+);
+
+/**
+ * @brief Get the vertices of a contiguous shared edge with another surface. 
+ * 
+ * Edges are labeled in increasing order starting with "1". A requested edge that does not exist returns empty. 
+ * 
+ * A requested edge with label "0" returns all vertices not shared with another surface
+ * 
+ * @param handle populated handle
+ * @param other another surface
+ * @param edgeLabel edge label
+ * @param objs objects
+ * @param numObjs number of objects
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_sharedContiguousEdge(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    struct tfVertexSolverSurfaceHandleHandle *other, 
+    unsigned int edgeLabel, 
+    struct tfVertexSolverVertexHandleHandle **objs, 
+    int *numObjs
 );
 
 /**
