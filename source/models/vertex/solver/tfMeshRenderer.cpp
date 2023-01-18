@@ -27,6 +27,7 @@
 #include <rendering/tfStyle.h>
 #include <tfEngine.h>
 #include <tfLogger.h>
+#include <tf_metrics.h>
 #include <tf_system.h>
 #include <tfTaskScheduler.h>
 
@@ -66,49 +67,14 @@ static inline HRESULT render_meshFacesEdges(MeshFaceInstanceData *faceData,
 
     Magnum::Vector3 centroid = s->getCentroid();
 
-    // cell id of centroid
-    int cid, locj[3];
-
-    if((cid = space_get_cellids_for_pos(&_Engine.s, centroid.data(), locj)) < 0) {
-        TF_Log(LOG_ERROR);
-        return E_FAIL;
-    }
-
-    fVector3 pj_origin = FVector3::from(_Engine.s.cells[cid].origin);
-    
-    int shiftij[3], shiftkj[3];
-    fVector3 pixij, pixkj;
-
     std::vector<Vertex*> vertices = s->getVertices();
 
     for(unsigned int j = 0; j < vertices.size(); j++) {
         Vertex *vi = vertices[j];
         Vertex *vk = vertices[j == vertices.size() - 1 ? 0 : j + 1];
 
-        Particle *pi = vi->particle()->part();
-        Particle *pk = vk->particle()->part();
-
-        int *loci = _Engine.s.celllist[pi->id]->loc;
-        int *lock = _Engine.s.celllist[pk->id]->loc;
-
-        for(unsigned int k = 0; k < 3; k++) {
-            int locjk = locj[k];
-            shiftij[k] = loci[k] - locjk;
-            shiftkj[k] = lock[k] - locjk;
-            
-            if(shiftij[k] > 1) shiftij[k] = -1;
-            else if (shiftij[k] < -1) shiftij[k] = 1;
-            
-            if(shiftkj[k] > 1) shiftkj[k] = -1;
-            else if (shiftkj[k] < -1) shiftkj[k] = 1;
-
-            float h = _Engine.s.h[k];
-            pixij[k] = pi->x[k] + h * shiftij[k];
-            pixkj[k] = pk->x[k] + h * shiftkj[k];
-        }
-
-        fVector3 posi = pixij + pj_origin;
-        fVector3 posk = pixkj + pj_origin;
+        fVector3 posi = centroid + metrics::relativePosition(vi->getPosition(), centroid);
+        fVector3 posk = centroid + metrics::relativePosition(vk->getPosition(), centroid);
 
         MeshEdgeInstanceData *edgeData_j = &edgeData[2 * (idx + j)];
         edgeData_j[0].position = posi;
