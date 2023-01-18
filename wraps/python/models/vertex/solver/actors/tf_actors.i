@@ -42,6 +42,8 @@ static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solve
 
 %include "tfAdhesion.i"
 %include "tfBodyForce.i"
+%include "tfConvexPolygonConstraint.i"
+%include "tfFlatSurfaceConstraint.i"
 %include "tfNormalStress.i"
 %include "tfSurfaceAreaConstraint.i"
 %include "tfSurfaceTraction.i"

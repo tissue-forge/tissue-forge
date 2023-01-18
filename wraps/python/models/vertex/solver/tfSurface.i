@@ -180,6 +180,16 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             """adhesions bound to the surface"""
             return _vertex_solver_MeshObjActor_getAdhesion(self)
 
+        @property
+        def convex_polygon_constraints(self):
+            """convex polygon constraints bound to the surface"""
+            return _vertex_solver_MeshObjActor_getConvexPolygonConstraint(self)
+
+        @property
+        def flat_surface_constraints(self):
+            """flat surface constraints bound to the surface"""
+            return _vertex_solver_MeshObjActor_getFlatSurfaceConstraint(self)
+
         @classmethod
         def destroy_c(cls, s):
             """
@@ -338,6 +348,18 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             """adhesions bound to the surface"""
             o = self.surface
             return _vertex_solver_MeshObjActor_getAdhesion(o) if o is not None else None
+
+        @property
+        def convex_polygon_constraints(self):
+            """convex polygon constraints bound to the surface"""
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getConvexPolygonConstraint(o) if o is not None else None
+
+        @property
+        def flat_surface_constraints(self):
+            """flat surface constraints bound to the surface"""
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getFlatSurfaceConstraint(o) if o is not None else None
     %}
 }
 
@@ -367,6 +389,16 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
         def adhesions(self):
             """adhesions bound to the type"""
             return _vertex_solver_MeshObjActor_getAdhesion(self)
+
+        @property
+        def convex_polygon_constraints(self):
+            """convex polygon constraints bound to the type"""
+            return _vertex_solver_MeshObjActor_getConvexPolygonConstraint(self)
+
+        @property
+        def flat_surface_constraints(self):
+            """flat surface constraints bound to the type"""
+            return _vertex_solver_MeshObjActor_getFlatSurfaceConstraint(self)
 
         def __call__(self, vertices=None, positions=None, face_data=None):
             """

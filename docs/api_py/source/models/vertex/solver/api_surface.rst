@@ -40,6 +40,10 @@ Surface
 
     .. autoproperty:: adhesions
 
+    .. autoproperty:: convex_polygon_constraints
+
+    .. autoproperty:: flat_surface_constraints
+
     .. automethod:: create
 
     .. automethod:: defines
@@ -158,6 +162,10 @@ Surface
     .. autoproperty:: edge_tensions
 
     .. autoproperty:: adhesions
+
+    .. autoproperty:: convex_polygon_constraints
+
+    .. autoproperty:: flat_surface_constraints
 
     .. automethod:: defines
 
@@ -286,6 +294,10 @@ Surface
     .. autoproperty:: edge_tensions
 
     .. autoproperty:: adhesions
+
+    .. autoproperty:: convex_polygon_constraints
+
+    .. autoproperty:: flat_surface_constraints
 
     .. automethod:: toString
 
