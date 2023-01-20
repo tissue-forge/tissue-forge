@@ -639,12 +639,13 @@ static HRESULT MeshQuality_constructOperationsSurface(
     Mesh *mesh, 
     const std::vector<bool> &passMask, 
     const FloatP_t &surfaceDemoteArea, 
+    const bool &collision2D, 
     std::vector<MeshQualityOperation*> &ops_active, 
     std::vector<MeshQualityOperation*> &op_heads
 ) {
     std::vector<MeshQualityOperation*> ops(mesh->sizeSurfaces(), 0);
 
-    auto check_surfs = [&mesh, &passMask, &ops, surfaceDemoteArea](int i) -> void {
+    auto check_surfs = [&mesh, &passMask, &ops, surfaceDemoteArea, collision2D](int i) -> void {
         if(passMask[i]) return;
 
         Surface *s = mesh->getSurface(i);
@@ -660,6 +661,9 @@ static HRESULT MeshQuality_constructOperationsSurface(
             ops[i] = new SurfaceDemoteOperation(mesh, s);
             return;
         }
+
+        if(!collision2D) 
+            return;
 
         // Check for edge penetration
 
@@ -962,7 +966,7 @@ HRESULT MeshQuality::doQuality() {
                 affectedBodiesImpl.insert(b->objectId());
     }
 
-    if(MeshQuality_constructOperationsSurface(mesh, passMask, surfaceDemoteArea, op_active, op_heads) != S_OK || 
+    if(MeshQuality_constructOperationsSurface(mesh, passMask, surfaceDemoteArea, collision2D, op_active, op_heads) != S_OK || 
         MeshQuality_doOperations(mesh, op_active, op_heads, affectedChildren) != S_OK || 
         MeshQuality_clearOperations(op_active) != S_OK) {
         _working = false;
