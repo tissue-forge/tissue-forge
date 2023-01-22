@@ -565,7 +565,7 @@ HRESULT tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
     return S_OK;
 }
 
-CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_sharedContiguousEdge(
+HRESULT tfVertexSolverSurfaceHandle_sharedContiguousEdge(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *other, 
     unsigned int edgeLabel, 
@@ -592,6 +592,16 @@ HRESULT tfVertexSolverSurfaceHandle_getNormal(struct tfVertexSolverSurfaceHandle
     TFC_SURFACEHANDLE_GET(handle);
     TFC_PTRCHECK(result);
     FVector3 _result = shandle->getNormal();
+    (*result)[0] = _result[0];
+    (*result)[1] = _result[1];
+    (*result)[2] = _result[2];
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceHandle_getUnnormalizedNormal(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t **result) {
+    TFC_SURFACEHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    FVector3 _result = shandle->getUnnormalizedNormal();
     (*result)[0] = _result[0];
     (*result)[1] = _result[1];
     (*result)[2] = _result[2];

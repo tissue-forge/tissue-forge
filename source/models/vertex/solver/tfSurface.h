@@ -350,7 +350,12 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the surface normal
          */
-        FVector3 getNormal() const { return normal; }
+        FVector3 getNormal() const;
+
+        /**
+         * @brief Get the surface unnormalized normal
+         */
+        FVector3 getUnnormalizedNormal() const { return normal; }
 
         /**
          * @brief Get the centroid
@@ -818,6 +823,11 @@ namespace TissueForge::models::vertex {
          * @brief Get the normal
          */
         FVector3 getNormal() const;
+
+        /**
+         * @brief Get the surface unnormalized normal
+         */
+        FVector3 getUnnormalizedNormal() const;
 
         /**
          * @brief Get the centroid

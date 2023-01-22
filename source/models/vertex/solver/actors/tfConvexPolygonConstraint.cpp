@@ -23,7 +23,10 @@
 #include <models/vertex/solver/tfVertex.h>
 
 #include <tfEngine.h>
+#include <tf_metrics.h>
 #include <io/tfFIO.h>
+
+#include <Magnum/Math/Math.h>
 
 
 using namespace TissueForge;
@@ -37,25 +40,27 @@ static inline bool ConvexPolygonConstraint_acts(const Vertex *vc, const Surface 
 
     Vertex *va, *vb;
     std::tie(va, vb) = s->neighborVertices(vc);
-    const FVector3 posva = va->getPosition();
-    const FVector3 posvb = vb->getPosition();
+    const FVector3 scent = s->getCentroid();
+    const FVector3 posva = scent + metrics::relativePosition(va->getPosition(), scent);
+    const FVector3 posvb = scent + metrics::relativePosition(vb->getPosition(), scent);
+    const FVector3 posvc = scent + metrics::relativePosition(vc->getPosition(), scent);
 
-    // Perpindicular vector from vertex to line connecting neighbors should point 
-    //  in the opposite direction as the vector from the vertex to the centroid of all other vertices
-    // rel_c2ab = posvc.lineShortestDisplacementTo(posva, posvb);
-    // const FVector3 rel_cent2ab = cent_loo.lineShortestDisplacementTo(posva, posvb);
+    const FloatP_t areaABc = Magnum::Math::cross(metrics::relativePosition(posva, scent), metrics::relativePosition(posvb, scent)).length();
+    const FloatP_t areaABC = Magnum::Math::cross(metrics::relativePosition(posva, posvc), metrics::relativePosition(posvb, posvc)).length();
+    const FloatP_t areaBcC = Magnum::Math::cross(metrics::relativePosition(posvb, posvc), metrics::relativePosition(scent, posvc)).length();
+    const FloatP_t areacAC = Magnum::Math::cross(metrics::relativePosition(scent, posvc), metrics::relativePosition(posva, posvc)).length();
+
+    if(abs((areaABC + areaBcC + areacAC) / areaABc - 1) >= 1E-6) 
+        return false;
+
     FVector3 lineDir = posvb - posva;
     if(lineDir.isZero()) 
         return false;
     lineDir = lineDir.normalized();
 
-    const FVector3 posvc = vc->getPosition();
-    const FloatP_t numVerts = vertices.size();
-    const FVector3 cent_loo = (s->getCentroid() * numVerts - posvc) / (numVerts - 1.0);
     rel_c2ab = posva + (posvc - posva).dot(lineDir) * lineDir - posvc;
-    const FVector3 rel_cent2ab = posva + (cent_loo - posva).dot(lineDir) * lineDir - cent_loo;
     
-    return rel_c2ab.dot(rel_cent2ab) > 0;
+    return true;
 }
 
 FloatP_t ConvexPolygonConstraint::energy(const Surface *source, const Vertex *target) {

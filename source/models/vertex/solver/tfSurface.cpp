@@ -637,6 +637,8 @@ std::vector<Vertex*> Surface::sharedContiguousEdge(const Surface *other, const u
     return result;
 }
 
+FVector3 Surface::getNormal() const { return normal.normalized(); }
+
 FloatP_t Surface::volumeSense(const Body *body) const {
     if(b1 && body->objectId() == b1->objectId()) 
         return 1.f;
@@ -647,9 +649,9 @@ FloatP_t Surface::volumeSense(const Body *body) const {
 
 FVector3 Surface::getOutwardNormal(const Body *body) const {
     if(b1 && body->objectId() == b1->objectId()) 
-        return normal;
+        return getNormal();
     else if(b2 && body->objectId() == b2->objectId()) 
-        return normal * -1;
+        return getNormal() * -1;
     return FVector3(0);
 }
 
@@ -676,7 +678,7 @@ FVector3 Surface::triangleNormal(const unsigned int &idx) const {
 }
 
 FloatP_t Surface::normalDistance(const FVector3 &pos) const {
-    return FVector4::planeEquation(normal, centroid).distance(pos);
+    return FVector4::planeEquation(getNormal(), centroid).distance(pos);
 }
 
 bool Surface::isOutside(const FVector3 &pos) const {
@@ -717,16 +719,11 @@ HRESULT Surface::positionChanged() {
     // then choose an arbitrary normal and hope for the best
     FVector3 _normal = normal.normalized();
     if(Magnum::Math::isNan(_normal)) {
-        FloatP_t normLen = normal.length();
-        if(normLen != 0) 
-            normal /= normLen;
-        else {
+        if(normal.length() == 0) {
             TF_Log(LOG_DEBUG) << "Zero normal";
             normal = {1.0, 0.0, 0.0};
         }
     } 
-    else 
-        normal = _normal;
 
     return S_OK;
 }
@@ -1014,7 +1011,7 @@ Surface *Surface::extrude(const unsigned int &vertIdxStart, const FloatP_t &norm
     VertexHandle v1(vertices[vertIdxStart == vertices.size() - 1 ? 0 : vertIdxStart + 1]->_objId);
 
     // Construct new vertices
-    FVector3 disp = normal * normLen;
+    FVector3 disp = getNormal() * normLen;
     VertexHandle v2 = Vertex::create(v0.getPosition() + disp);
     VertexHandle v3 = Vertex::create(v1.getPosition() + disp);
     if(!v2 || !v3) {
@@ -1590,6 +1587,11 @@ FVector3 SurfaceHandle::getNormal() const {
 FVector3 SurfaceHandle::getCentroid() const {
     SurfaceHandle_GETOBJ(o, FVector3());
     return o->getCentroid();
+}
+
+FVector3 SurfaceHandle::getUnnormalizedNormal() const {
+    SurfaceHandle_GETOBJ(o, FVector3());
+    return o->getUnnormalizedNormal();
 }
 
 FVector3 SurfaceHandle::getVelocity() const {

@@ -547,6 +547,14 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_sharedContiguousEdge(
 CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getNormal(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t **result);
 
 /**
+ * @brief Get the surface unnormalized normal
+ * 
+ * @param handle populated handle
+ * @param result surface unnormalized normal
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getUnnormalizedNormal(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t **result);
+
+/**
  * @brief Get the centroid
  * 
  * @param handle populated handle

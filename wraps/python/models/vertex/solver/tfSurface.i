@@ -145,6 +145,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             return self.getNormal()
 
         @property
+        def unnormalized_normal(self):
+            """unnormalized normal of the surface"""
+            return self.getUnnormalizedNormal()
+
+        @property
         def centroid(self):
             """centroid of the surface"""
             return self.getCentroid()
@@ -298,6 +303,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
         def normal(self):
             """normal of the surface"""
             return self.getNormal()
+
+        @property
+        def unnormalized_normal(self):
+            """unnormalized normal of the surface"""
+            return self.getUnnormalizedNormal()
 
         @property
         def centroid(self):
