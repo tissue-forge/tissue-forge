@@ -24,6 +24,8 @@ Surface
 
     .. autoproperty:: normal
 
+    .. autoproperty:: unnormalized_normal
+
     .. autoproperty:: centroid
 
     .. autoproperty:: velocity
@@ -148,6 +150,8 @@ Surface
     .. autoproperty:: density
 
     .. autoproperty:: normal
+
+    .. autoproperty:: unnormalized_normal
 
     .. autoproperty:: centroid
 

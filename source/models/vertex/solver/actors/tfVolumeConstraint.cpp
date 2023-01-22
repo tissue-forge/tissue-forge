@@ -47,18 +47,15 @@ FVector3 VolumeConstraint::force(const Body *source, const Vertex *target) {
         if(!s->defines(source)) 
             continue;
         
-        auto svertices = s->getVertices();
         std::tie(vp, vn) = s->neighborVertices(target);
 
-        FVector3 sftotal = Magnum::Math::cross(s->getCentroid(), vp->getPosition() - vn->getPosition());
-        for(unsigned int i = 0; i < svertices.size(); i++) {
-            sftotal -= s->triangleNormal(i) / svertices.size();
-        }
-
-        ftotal += sftotal * s->volumeSense(source);
+        ftotal += (
+            Magnum::Math::cross(s->getCentroid(), vn->getPosition() - vp->getPosition()) + 
+            s->getUnnormalizedNormal() / s->getVertices().size()
+        ) * s->volumeSense(source);
     }
     
-    return ftotal * (lam * (source->getVolume() - constr) / 3.f);
+    return ftotal * (lam * (constr - source->getVolume()) / 3.f);
 }
 
 namespace TissueForge::io { 

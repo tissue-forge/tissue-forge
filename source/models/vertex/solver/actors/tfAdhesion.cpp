@@ -66,10 +66,6 @@ static FloatP_t Adhesion_energy_Body(const Body *b, const Vertex *v, const Float
 static FVector3 Adhesion_force_Body(const Body *b, const Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes) {
     FVector3 f(0.0);
 
-    FVector3 posv = v->getPosition();
-
-    Vertex *vp, *vn;
-
     for(auto &s : v->getSurfaces()) {
         std::vector<Body*> bodies = s->getBodies();
         Body *b1 = bodies[0];
@@ -83,21 +79,26 @@ static FVector3 Adhesion_force_Body(const Body *b, const Vertex *v, const FloatP
         if(!bo || targetTypes.find(bo->typeId) == targetTypes.end()) 
             continue;
 
-        FVector3 scent = s->getCentroid();
-        std::tie(vp, vn) = s->neighborVertices(v);
-        FVector3 posvp = vp->getPosition();
-        FVector3 posvn = vn->getPosition();
-        FVector3 posv_rel = posv - scent;
-
-        FVector3 normvp = Magnum::Math::cross(posv_rel, posvp - scent);
-        FVector3 normvn = Magnum::Math::cross(posvn - scent, posv_rel);
-
-        if(!normvp.isZero() && !normvn.isZero()) 
-            f += (1.0 / s->getVertices().size() - 1.0) * (Magnum::Math::cross(normvp.normalized(), posv - posvp) + 
-                Magnum::Math::cross(normvn.normalized(), posvn - posv));
+        std::vector<Vertex*> svertices = s->getVertices();
+        const FVector3 scent = s->getCentroid();
+        for(std::vector<Vertex*>::iterator itr = svertices.begin(); itr != svertices.end(); itr++) {
+            Vertex *vc = *itr;
+            Vertex *vn = itr + 1 == svertices.end() ? svertices.front() : *(itr + 1);
+            const FVector3 posvc = vc->getPosition();
+            const FVector3 posvn = vn->getPosition();
+            const FVector3 triNorm = Magnum::Math::cross(posvc - scent, posvn - scent);
+            if(triNorm.isZero()) 
+                continue;
+            FVector3 g = (posvc - posvn) / svertices.size();
+            if(vc == v) 
+                g += posvn - scent;
+            else if(vn == v) 
+                g -= posvc - scent;
+            f += Magnum::Math::cross(triNorm.normalized(), g);
+        }
     }
 
-    return 0.5 * lam * f;
+    return 0.25 * lam * f;
 }
 
 static inline void countNeighborSurfaces(
