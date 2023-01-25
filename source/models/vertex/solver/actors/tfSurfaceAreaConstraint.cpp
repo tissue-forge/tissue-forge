@@ -61,7 +61,7 @@ FVector3 SurfaceAreaConstraint::force(const Body *source, const Vertex *target) 
         }
     }
 
-    return ftotal * (lam * (constr - source->getArea()));
+    return ftotal * (lam * (source->getArea() - constr));
 }
 
 FloatP_t SurfaceAreaConstraint::energy(const Surface *source, const Vertex *target) {
