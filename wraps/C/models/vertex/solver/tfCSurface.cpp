@@ -544,7 +544,7 @@ HRESULT tfVertexSolverSurfaceHandle_connectingVertices(
     return S_OK;
 }
 
-HRESULT tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
+HRESULT tfVertexSolverSurfaceHandle_contiguousVertexLabels(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *other, 
     unsigned int **labels, 
@@ -556,7 +556,7 @@ HRESULT tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
     TFC_PTRCHECK(_other);
     TFC_PTRCHECK(labels);
     TFC_PTRCHECK(numLabels);
-    std::vector<unsigned int> _labels = shandle->contiguousEdgeLabels(*_other);
+    std::vector<unsigned int> _labels = shandle->contiguousVertexLabels(*_other);
     *numLabels = _labels.size();
     if(*numLabels == 0) 
         return S_OK;
@@ -565,7 +565,7 @@ HRESULT tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
     return S_OK;
 }
 
-HRESULT tfVertexSolverSurfaceHandle_sharedContiguousEdge(
+HRESULT tfVertexSolverSurfaceHandle_sharedContiguousVertices(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *other, 
     unsigned int edgeLabel, 
@@ -577,7 +577,7 @@ HRESULT tfVertexSolverSurfaceHandle_sharedContiguousEdge(
     TFC_PTRCHECK(_other);
     TFC_PTRCHECK(objs);
     TFC_PTRCHECK(numObjs);
-    std::vector<VertexHandle> _objs = shandle->sharedContiguousEdge(*_other, edgeLabel);
+    std::vector<VertexHandle> _objs = shandle->sharedContiguousVertices(*_other, edgeLabel);
     *numObjs = _objs.size();
     if(*numObjs == 0) 
         return S_OK;

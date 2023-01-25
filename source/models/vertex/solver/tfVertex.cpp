@@ -498,7 +498,7 @@ static HRESULT Vertex_SurfaceDisconnectReplace(
     std::vector<Vertex*> &targetSurf_vertices, 
     std::set<Vertex*> &totalToRemove) 
 {
-    std::vector<unsigned int> edgeLabels = targetSurf->contiguousEdgeLabels(toReplace);
+    std::vector<unsigned int> edgeLabels = targetSurf->contiguousVertexLabels(toReplace);
     std::vector<Vertex*> toRemove;
     for(unsigned int i = 0; i < edgeLabels.size(); i++) {
         unsigned int lab = edgeLabels[i];

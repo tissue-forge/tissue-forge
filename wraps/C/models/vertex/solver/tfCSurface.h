@@ -503,14 +503,14 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_connectingVertices(
 );
 
 /**
- * @brief Get the integer labels of the contiguous edges that this surface shares with another surface
+ * @brief Get the integer labels of the contiguous vertices that this surface shares with another surface
  * 
  * @param handle populated handle
  * @param other another surface
  * @param labels edge labels
  * @param numLabels number of edge labels
  */
-CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_contiguousVertexLabels(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *other, 
     unsigned int **labels, 
@@ -530,7 +530,7 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_contiguousEdgeLabels(
  * @param objs objects
  * @param numObjs number of objects
  */
-CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_sharedContiguousEdge(
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_sharedContiguousVertices(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *other, 
     unsigned int edgeLabel, 

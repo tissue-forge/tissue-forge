@@ -322,30 +322,30 @@ namespace TissueForge::models::vertex {
         std::vector<Vertex*> connectingVertices(const Surface *other) const;
 
         /**
-         * @brief Get the integer labels of the contiguous edges that this surface shares with another surface
+         * @brief Get the integer labels of the contiguous vertices that this surface shares with another surface
          * 
          * @param other another surface
          */
-        std::vector<unsigned int> contiguousEdgeLabels(const Surface *other) const;
+        std::vector<unsigned int> contiguousVertexLabels(const Surface *other) const;
 
         /**
-         * @brief Get the number of contiguous edges that this surface shares with another surface
+         * @brief Get the number of contiguous vertex sets that this surface shares with another surface
          * 
          * @param other another surface
          */
-        unsigned int numSharedContiguousEdges(const Surface *other) const;
+        unsigned int numSharedContiguousVertexSets(const Surface *other) const;
 
         /**
-         * @brief Get the vertices of a contiguous shared edge with another surface. 
+         * @brief Get the vertices of a contiguous shared vertex set with another surface. 
          * 
-         * Edges are labeled in increasing order starting with "1". A requested edge that does not exist returns empty. 
+         * Vertices are labeled in increasing order starting with "1". A requested set that does not exist returns empty. 
          * 
          * A requested edge with label "0" returns all vertices not shared with another surface
          * 
          * @param other another surface
          * @param edgeLabel edge label
          */
-        std::vector<Vertex*> sharedContiguousEdge(const Surface *other, const unsigned int &edgeLabel) const;
+        std::vector<Vertex*> sharedContiguousVertices(const Surface *other, const unsigned int &edgeLabel) const;
 
         /**
          * @brief Get the surface normal
@@ -798,14 +798,14 @@ namespace TissueForge::models::vertex {
          * 
          * @param other another surface
          */
-        std::vector<unsigned int> contiguousEdgeLabels(const SurfaceHandle &other) const;
+        std::vector<unsigned int> contiguousVertexLabels(const SurfaceHandle &other) const;
 
         /**
          * @brief Get the number of contiguous edges that this surface shares with another surface
          * 
          * @param other another surface
          */
-        unsigned int numSharedContiguousEdges(const SurfaceHandle &other) const;
+        unsigned int numSharedContiguousVertexSets(const SurfaceHandle &other) const;
 
         /**
          * @brief Get the vertices of a contiguous shared edge with another surface. 
@@ -817,7 +817,7 @@ namespace TissueForge::models::vertex {
          * @param other another surface
          * @param edgeLabel edge label
          */
-        std::vector<VertexHandle> sharedContiguousEdge(const SurfaceHandle &other, const unsigned int &edgeLabel) const;
+        std::vector<VertexHandle> sharedContiguousVertices(const SurfaceHandle &other, const unsigned int &edgeLabel) const;
 
         /**
          * @brief Get the normal

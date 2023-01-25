@@ -88,11 +88,11 @@ Surface
 
     .. automethod:: connecting_vertices
 
-    .. automethod:: contiguous_edge_labels
+    .. automethod:: contiguous_vertex_labels
 
-    .. automethod:: num_shared_contiguous_edges
+    .. automethod:: num_shared_contiguous_vertex_sets
 
-    .. automethod:: shared_contiguous_edge
+    .. automethod:: shared_contiguous_vertices
 
     .. automethod:: volume_sense
 
@@ -213,11 +213,11 @@ Surface
 
     .. automethod:: connecting_vertices
 
-    .. automethod:: contiguous_edge_labels
+    .. automethod:: contiguous_vertex_labels
 
-    .. automethod:: num_shared_contiguous_edges
+    .. automethod:: num_shared_contiguous_vertex_sets
 
-    .. automethod:: shared_contiguous_edge
+    .. automethod:: shared_contiguous_vertices
 
     .. automethod:: volume_sense
 
