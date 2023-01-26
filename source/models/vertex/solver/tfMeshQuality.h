@@ -32,6 +32,7 @@
 
 #include <mutex>
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 
@@ -237,6 +238,12 @@ namespace TissueForge::models::vertex {
         /** Flag for whether currently doing work */
         bool _working;
 
+        std::unordered_set<unsigned int> excludedVertices;
+
+        std::unordered_set<unsigned int> excludedSurfaces;
+
+        std::unordered_set<unsigned int> excludedBodies;
+
     public:
 
         MeshQuality(
@@ -336,6 +343,54 @@ namespace TissueForge::models::vertex {
          * @param _collision2D flag indicating whether 2D collisions are implemented
          */
         HRESULT setCollision2D(const bool &_collision2D);
+
+        /**
+         * @brief Exclude a vertex from quality operations
+         * 
+         * @param id vertex id
+         */
+        HRESULT excludeVertex(const unsigned int &id);
+
+        /**
+         * @brief Exclude a surface from quality operations
+         * 
+         * @param id surface id
+         */
+        HRESULT excludeSurface(const unsigned int &id);
+
+        /**
+         * @brief Exclude a body from quality operations
+         * 
+         * @param id body id
+         */
+        HRESULT excludeBody(const unsigned int &id);
+
+        /**
+         * @brief Include a vertex from quality operations. 
+         * 
+         * Unless otherwise specified, all vertices are subject to operations.
+         * 
+         * @param id vertex id
+         */
+        HRESULT includeVertex(const unsigned int &id);
+
+        /**
+         * @brief Include a surface from quality operations. 
+         * 
+         * Unless otherwise specified, all surfaces are subject to operations.
+         * 
+         * @param id surface id
+         */
+        HRESULT includeSurface(const unsigned int &id);
+
+        /**
+         * @brief Include a body from quality operations. 
+         * 
+         * Unless otherwise specified, all bodies are subject to operations.
+         * 
+         * @param id body id
+         */
+        HRESULT includeBody(const unsigned int &id);
     };
 }
 

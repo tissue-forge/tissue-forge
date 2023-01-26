@@ -26,6 +26,12 @@
 %ignore TissueForge::models::vertex::CustomQualityOperation;
 
 %rename(do_quality) TissueForge::models::vertex::MeshQuality::doQuality;
+%rename(exclude_vertex) TissueForge::models::vertex::MeshQuality::excludeVertex;
+%rename(exclude_surface) TissueForge::models::vertex::MeshQuality::excludeSurface;
+%rename(exclude_body) TissueForge::models::vertex::MeshQuality::excludeBody;
+%rename(include_vertex) TissueForge::models::vertex::MeshQuality::includeVertex;
+%rename(include_surface) TissueForge::models::vertex::MeshQuality::includeSurface;
+%rename(include_body) TissueForge::models::vertex::MeshQuality::includeBody;
 
 %rename(_vertex_solver_Quality) TissueForge::models::vertex::MeshQuality;
 

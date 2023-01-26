@@ -567,6 +567,7 @@ HRESULT MeshQuality_constructChains(std::vector<MeshQualityOperation*> &ops) {
 
 static HRESULT MeshQuality_constructOperationsVertex(
     Mesh *mesh, 
+    const std::vector<bool> &passMask, 
     const FloatP_t &edgeSplitDist, 
     const FloatP_t &vertexMergeDist, 
     std::vector<MeshQualityOperation*> &ops_active, 
@@ -575,7 +576,9 @@ static HRESULT MeshQuality_constructOperationsVertex(
     std::vector<MeshQualityOperation*> ops(mesh->sizeVertices(), 0);
     const FloatP_t vertexMergeDist2 = vertexMergeDist * vertexMergeDist;
 
-    auto check_verts = [&mesh, &ops, edgeSplitDist, vertexMergeDist2](int i) -> void {
+    auto check_verts = [&mesh, &passMask, &ops, edgeSplitDist, vertexMergeDist2](int i) -> void {
+        if(passMask[i]) return;
+
         Vertex *v = mesh->getVertex(i);
         if(!v) return;
 
@@ -946,7 +949,11 @@ HRESULT MeshQuality::doQuality() {
 
     // Vertex checks
     
-    if(MeshQuality_constructOperationsVertex(mesh, edgeSplitDist, vertexMergeDist, op_active, op_heads) != S_OK || 
+    passMask = std::vector<bool>(mesh->sizeVertices(), false);
+    for(auto &i : excludedVertices) 
+        if(i < passMask.size()) 
+            passMask[i] = true;
+    if(MeshQuality_constructOperationsVertex(mesh, passMask, edgeSplitDist, vertexMergeDist, op_active, op_heads) != S_OK || 
         MeshQuality_doOperations(mesh, op_active, op_heads, affectedChildren) != S_OK || 
         MeshQuality_clearOperations(op_active) != S_OK) {
         _working = false;
@@ -964,7 +971,9 @@ HRESULT MeshQuality::doQuality() {
             for(auto &b : s->getBodies()) 
                 affectedBodiesImpl.insert(b->objectId());
     }
-
+    for(auto &i : excludedSurfaces) 
+        if(i < passMask.size()) 
+            passMask[i] = true;
     if(MeshQuality_constructOperationsSurface(mesh, passMask, surfaceDemoteArea, collision2D, op_active, op_heads) != S_OK || 
         MeshQuality_doOperations(mesh, op_active, op_heads, affectedChildren) != S_OK || 
         MeshQuality_clearOperations(op_active) != S_OK) {
@@ -979,7 +988,9 @@ HRESULT MeshQuality::doQuality() {
         passMask[i] = true;
     for(auto &i : affectedBodiesImpl) 
         passMask[i] = true;
-
+    for(auto &i : excludedBodies) 
+        if(i < passMask.size()) 
+            passMask[i] = true;
     if(MeshQuality_constructOperationsBody(mesh, passMask, bodyDemoteVolume, op_active, op_heads) != S_OK || 
         MeshQuality_doOperations(mesh, op_active, op_heads, affectedChildren) != S_OK || 
         MeshQuality_clearOperations(op_active) != S_OK) {
@@ -1022,6 +1033,36 @@ HRESULT MeshQuality::setEdgeSplitDist(const FloatP_t &_val) {
 
 HRESULT MeshQuality::setCollision2D(const bool &_collision2D) {
     collision2D = _collision2D;
+    return S_OK;
+}
+
+HRESULT MeshQuality::excludeVertex(const unsigned int &id) {
+    excludedVertices.insert(id);
+    return S_OK;
+}
+
+HRESULT MeshQuality::excludeSurface(const unsigned int &id) {
+    excludedSurfaces.insert(id);
+    return S_OK;
+}
+
+HRESULT MeshQuality::excludeBody(const unsigned int &id) {
+    excludedBodies.insert(id);
+    return S_OK;
+}
+
+HRESULT MeshQuality::includeVertex(const unsigned int &id) {
+    excludedVertices.erase(id);
+    return S_OK;
+}
+
+HRESULT MeshQuality::includeSurface(const unsigned int &id) {
+    excludedSurfaces.erase(id);
+    return S_OK;
+}
+
+HRESULT MeshQuality::includeBody(const unsigned int &id) {
+    excludedBodies.erase(id);
     return S_OK;
 }
 

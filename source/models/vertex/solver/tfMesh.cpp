@@ -460,6 +460,8 @@ HRESULT Mesh::remove(Vertex *v) {
         if(itr != verticesByPID.end()) 
             verticesByPID.erase(itr);
     }
+    if(_quality) 
+        _quality->includeVertex(v->_objId);
     (*this->vertices)[v->_objId] = Vertex();
     nr_vertices--;
 
@@ -488,6 +490,8 @@ HRESULT Mesh::remove(Surface *s) {
     for(auto &v : s->getVertices()) 
         v->remove(s);
     this->surfaceIdsAvail.insert(s->_objId);
+    if(_quality) 
+        _quality->includeSurface(s->_objId);
     (*this->surfaces)[s->_objId] = Surface();
     nr_surfaces--;
 
@@ -515,6 +519,8 @@ HRESULT Mesh::remove(Body *b) {
     for(auto &s : b->getSurfaces()) 
         s->remove(b);
     this->bodyIdsAvail.insert(b->_objId);
+    if(_quality) 
+        _quality->includeBody(b->_objId);
     (*this->bodies)[b->_objId] = Body();
     nr_bodies--;
 

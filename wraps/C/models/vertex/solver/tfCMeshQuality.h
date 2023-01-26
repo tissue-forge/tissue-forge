@@ -175,4 +175,58 @@ CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_getCollision2D(struct tfVertexSolve
  */
 CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_setCollision2D(struct tfVertexSolverMeshQualityHandle *handle, bool collision2D);
 
+/**
+ * @brief Exclude a vertex from quality operations
+ * 
+ * @param handle populated handle
+ * @param id vertex id
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_excludeVertex(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id);
+
+/**
+ * @brief Exclude a surface from quality operations
+ * 
+ * @param handle populated handle
+ * @param id surface id
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_excludeSurface(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id);
+
+/**
+ * @brief Exclude a body from quality operations
+ * 
+ * @param handle populated handle
+ * @param id body id
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_excludeBody(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id);
+
+/**
+ * @brief Include a vertex from quality operations. 
+ * 
+ * Unless otherwise specified, all vertices are subject to operations.
+ * 
+ * @param handle populated handle
+ * @param id vertex id
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_includeVertex(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id);
+
+/**
+ * @brief Include a surface from quality operations. 
+ * 
+ * Unless otherwise specified, all surfaces are subject to operations.
+ * 
+ * @param handle populated handle
+ * @param id surface id
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_includeSurface(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id);
+
+/**
+ * @brief Include a body from quality operations. 
+ * 
+ * Unless otherwise specified, all bodies are subject to operations.
+ * 
+ * @param handle populated handle
+ * @param id body id
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshQuality_includeBody(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id);
+
 #endif // _WRAPS_C_VERTEX_SOLVER_TFCMESHQUALITY_H_

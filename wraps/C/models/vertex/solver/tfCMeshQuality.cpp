@@ -139,3 +139,33 @@ HRESULT tfVertexSolverMeshQuality_setCollision2D(struct tfVertexSolverMeshQualit
     TFC_MESHQUALITY_GET(handle, quality);
     return quality->setCollision2D(collision2D);
 }
+
+HRESULT tfVertexSolverMeshQuality_excludeVertex(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id) {
+    TFC_MESHQUALITY_GET(handle, quality);
+    return quality->excludeVertex(id);
+}
+
+HRESULT tfVertexSolverMeshQuality_excludeSurface(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id) {
+    TFC_MESHQUALITY_GET(handle, quality);
+    return quality->excludeSurface(id);
+}
+
+HRESULT tfVertexSolverMeshQuality_excludeBody(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id) {
+    TFC_MESHQUALITY_GET(handle, quality);
+    return quality->excludeBody(id);
+}
+
+HRESULT tfVertexSolverMeshQuality_includeVertex(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id) {
+    TFC_MESHQUALITY_GET(handle, quality);
+    return quality->includeVertex(id);
+}
+
+HRESULT tfVertexSolverMeshQuality_includeSurface(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id) {
+    TFC_MESHQUALITY_GET(handle, quality);
+    return quality->includeSurface(id);
+}
+
+HRESULT tfVertexSolverMeshQuality_includeBody(struct tfVertexSolverMeshQualityHandle *handle, const unsigned int &id) {
+    TFC_MESHQUALITY_GET(handle, quality);
+    return quality->includeBody(id);
+}
