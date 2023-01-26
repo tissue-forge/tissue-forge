@@ -44,6 +44,17 @@ Actors
     .. automethod:: force
 
 
+.. autoclass:: PerimeterConstraint
+
+    .. autoproperty:: lam
+
+    .. autoproperty:: constr
+
+    .. automethod:: energy
+
+    .. automethod:: force
+
+
 .. autoclass:: SurfaceAreaConstraint
 
     .. autoproperty:: lam

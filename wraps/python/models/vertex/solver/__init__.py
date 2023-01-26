@@ -37,6 +37,7 @@ from tissue_forge.tissue_forge import _vertex_solver_Logger
 from tissue_forge.tissue_forge import _vertex_solver_Quality
 from tissue_forge.tissue_forge import _vertex_solver_BodyForce
 from tissue_forge.tissue_forge import _vertex_solver_NormalStress
+from tissue_forge.tissue_forge import _vertex_solver_PerimeterConstraint
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceAreaConstraint
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceTraction
 from tissue_forge.tissue_forge import _vertex_solver_VolumeConstraint
@@ -191,6 +192,23 @@ class BodyForce(_vertex_solver_BodyForce):
 class NormalStress(_vertex_solver_NormalStress):
     """
     Models a stress acting on a :class:`Surface` along its normal
+    """
+    pass
+
+class PerimeterConstraint(_vertex_solver_PerimeterConstraint):
+    """
+    Imposes a perimeter constraint on 'Surface' instances.
+
+    The perimeter constraint is implemented for two-dimensional objects
+    as minimization of the Hamiltonian,
+
+    .. math::
+
+        \lambda \left( L - L_o \right)^2
+
+    Here :math:`\lambda` is a parameter,
+    :math:`L` is the perimeter of an object and
+    :math:`L_o` is a target perimeter.
     """
     pass
 

@@ -32,7 +32,11 @@ Surface
 
     .. autoproperty:: area
 
+    .. autoproperty:: perimeter
+
     .. autoproperty:: normal_stresses
+
+    .. autoproperty:: perimeter_constraints
 
     .. autoproperty:: surface_area_constraints
 
@@ -159,9 +163,13 @@ Surface
 
     .. autoproperty:: area
 
+    .. autoproperty:: perimeter
+
     .. autoproperty:: style
 
     .. autoproperty:: normal_stresses
+
+    .. autoproperty:: perimeter_constraints
 
     .. autoproperty:: surface_area_constraints
 
@@ -266,6 +274,10 @@ Surface
 
     .. autoattribute:: normal_stress_mag
 
+    .. autoattribute:: perimeter_lam
+
+    .. autoattribute:: perimeter_val
+
     .. autoattribute:: surface_area_lam
 
     .. autoattribute:: surface_area_val
@@ -279,6 +291,8 @@ Surface
     .. automethod:: edge_tension
 
     .. automethod:: normal_stress
+
+    .. automethod:: perimeter_constaint
 
     .. automethod:: surface_area_constaint
 

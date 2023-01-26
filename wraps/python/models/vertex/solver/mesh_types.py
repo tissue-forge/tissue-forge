@@ -28,6 +28,7 @@ from tissue_forge.tissue_forge import _vertex_solver_Adhesion as Adhesion
 from tissue_forge.tissue_forge import _vertex_solver_BodyForce as BodyForce
 from tissue_forge.tissue_forge import _vertex_solver_EdgeTension as EdgeTension
 from tissue_forge.tissue_forge import _vertex_solver_NormalStress as NormalStress
+from tissue_forge.tissue_forge import _vertex_solver_PerimeterConstraint as PerimeterConstraint
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceAreaConstraint as SurfaceAreaConstraint
 from tissue_forge.tissue_forge import _vertex_solver_SurfaceTraction as SurfaceTraction
 from tissue_forge.tissue_forge import _vertex_solver_VolumeConstraint as VolumeConstraint
@@ -92,6 +93,12 @@ class SurfaceTypeSpec(_TypeSpecBase):
     normal_stress_mag: Optional[float] = None
     """Normal stress magnitude"""
 
+    perimeter_lam: Optional[float] = None
+    """Perimeter constraing Lagrange multiplier"""
+
+    perimeter_val: Optional[float] = None
+    """Perimeter constraint target value"""
+
     surface_area_lam: Optional[float] = None
     """Surface area constraint Lagrange multiplier"""
 
@@ -144,6 +151,7 @@ class SurfaceTypeSpec(_TypeSpecBase):
 
         cls._bind_generator(cls.edge_tension, type_instance)
         cls._bind_generator(cls.normal_stress, type_instance)
+        cls._bind_generator(cls.perimeter_constaint, type_instance)
         cls._bind_generator(cls.surface_area_constaint, type_instance)
         cls._bind_generator(cls.surface_traction, type_instance)
 
@@ -173,6 +181,14 @@ class SurfaceTypeSpec(_TypeSpecBase):
         if cls.normal_stress_mag is None:
             return None
         return NormalStress(cls.normal_stress)
+
+    @classmethod
+    def perimeter_constaint(cls) -> Optional[PerimeterConstraint]:
+        """perimeter constaint actor generator according to specs, if any"""
+        if cls.perimeter_lam is None or cls.perimeter_val is None:
+            return None
+
+        return PerimeterConstraint(cls.perimeter_lam, cls.perimeter_val)
 
     @classmethod
     def surface_area_constaint(cls) -> Optional[SurfaceAreaConstraint]:

@@ -17,23 +17,13 @@
  * 
  ******************************************************************************/
 
-/**
- * @file tf_actors.h
- * 
- */
+%{
 
-#ifndef _MODELS_VERTEX_SOLVER_ACTORS_TF_ACTORS_H_
-#define _MODELS_VERTEX_SOLVER_ACTORS_TF_ACTORS_H_
+#include <models/vertex/solver/actors/tfPerimeterConstraint.h>
+%}
 
-#include "tfAdhesion.h"
-#include "tfBodyForce.h"
-#include "tfConvexPolygonConstraint.h"
-#include "tfEdgeTension.h"
-#include "tfFlatSurfaceConstraint.h"
-#include "tfNormalStress.h"
-#include "tfPerimeterConstraint.h"
-#include "tfSurfaceAreaConstraint.h"
-#include "tfSurfaceTraction.h"
-#include "tfVolumeConstraint.h"
+%rename(_vertex_solver_PerimeterConstraint) TissueForge::models::vertex::PerimeterConstraint;
 
-#endif // _MODELS_VERTEX_SOLVER_ACTORS_TF_ACTORS_H_
+%include <models/vertex/solver/actors/tfPerimeterConstraint.h>
+
+vertex_solver_MeshObjActor_prep(PerimeterConstraint)

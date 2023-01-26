@@ -635,6 +635,13 @@ HRESULT tfVertexSolverSurfaceHandle_getArea(struct tfVertexSolverSurfaceHandleHa
     return S_OK;
 }
 
+HRESULT tfVertexSolverSurfaceHandle_getPerimeter(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result) {
+    TFC_SURFACEHANDLE_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = shandle->getPerimeter();
+    return S_OK;
+}
+
 HRESULT tfVertexSolverSurfaceHandle_getDensity(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result) {
     TFC_SURFACEHANDLE_GET(handle);
     TFC_PTRCHECK(result);

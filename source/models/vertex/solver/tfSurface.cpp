@@ -79,6 +79,7 @@ Surface::Surface() :
     b1{NULL}, 
     b2{NULL}, 
     area{0.f}, 
+    perimeter{0.f}, 
     _volumeContr{0.f}, 
     typeId{-1},
     species1{NULL}, 
@@ -690,6 +691,7 @@ HRESULT Surface::positionChanged() {
     centroid = FVector3(0.f);
     velocity = FVector3(0.f);
     area = 0.f;
+    perimeter = 0.f;
     _volumeContr = 0.f;
 
     for(auto &v : vertices) {
@@ -700,12 +702,11 @@ HRESULT Surface::positionChanged() {
     velocity /= (FloatP_t)vertices.size();
 
     for(unsigned int i = 0; i < vertices.size(); i++) {
-        FVector3 triNormal = triNorm(
-            vertices[i]->getPosition(), 
-            centroid, 
-            vertices[Surface_VERTEXINDEX(vertices, i + 1)]->getPosition()
-        );
+        const FVector3 posc = vertices[i]->getPosition();
+        const FVector3 posp = vertices[Surface_VERTEXINDEX(vertices, i + 1)]->getPosition();
+        perimeter += (posp - posc).length();
 
+        const FVector3 triNormal = triNorm(posc, centroid, posp);
         _volumeContr += triNormal.dot(centroid);
         area += triNormal.length();
         normal += triNormal;
@@ -1602,6 +1603,11 @@ FVector3 SurfaceHandle::getVelocity() const {
 FloatP_t SurfaceHandle::getArea() const {
     SurfaceHandle_GETOBJ(o, 0);
     return o->getArea();
+}
+
+FloatP_t SurfaceHandle::getPerimeter() const {
+    SurfaceHandle_GETOBJ(o, 0);
+    return o->getPerimeter();
 }
 
 FloatP_t SurfaceHandle::getDensity() const {

@@ -95,6 +95,9 @@ namespace TissueForge::models::vertex {
         /** Surface area */
         FloatP_t area;
 
+        /** Surface perimeter*/
+        FloatP_t perimeter;
+
         /** Volume contributed by this surface to its child bodies */
         FloatP_t _volumeContr;
 
@@ -371,6 +374,11 @@ namespace TissueForge::models::vertex {
          * @brief Get the area
          */
         FloatP_t getArea() const { return area; }
+
+        /**
+         * @brief Get the perimeter
+         */
+        FloatP_t getPerimeter() const { return perimeter; }
 
         /**
          * @brief Get the mass density; only used in 2D simulation
@@ -843,6 +851,11 @@ namespace TissueForge::models::vertex {
          * @brief Get the area 
          */
         FloatP_t getArea() const;
+
+        /**
+         * @brief Get the perimeter
+         */
+        FloatP_t getPerimeter() const;
 
         /**
          * @brief Get the mass density; only used in 2D simulation

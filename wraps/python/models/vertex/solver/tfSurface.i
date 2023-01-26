@@ -165,6 +165,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             return self.getArea()
 
         @property
+        def perimeter(self):
+            """perimeter of the surface"""
+            return self.getPerimeter()
+
+        @property
         def normal_stresses(self):
             """normal stresses bound to the surface"""
             return _vertex_solver_MeshObjActor_getNormalStress(self)
@@ -325,6 +330,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             return self.getArea()
 
         @property
+        def perimeter(self):
+            """perimeter of the surface"""
+            return self.getPerimeter()
+
+        @property
         def style(self):
             """style of the surface, if any"""
             return self.getStyle()
@@ -344,6 +354,12 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             """surface area constraints bound to the surface"""
             o = self.surface
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(o) if o is not None else None
+
+        @property
+        def perimeter_constraints(self):
+            """perimeter constraints bound to the surface"""
+            o = self.surface
+            return _vertex_solver_MeshObjActor_getPerimeterConstraint(o) if o is not None else None
 
         @property
         def surface_tractions(self):
@@ -388,6 +404,11 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
         def surface_area_constraints(self):
             """surface area constraints bound to the type"""
             return _vertex_solver_MeshObjActor_getSurfaceAreaConstraint(self)
+
+        @property
+        def perimeter_constraints(self):
+            """perimeter constraints bound to the type"""
+            return _vertex_solver_MeshObjActor_getPerimeterConstraint(self)
 
         @property
         def surface_tractions(self):

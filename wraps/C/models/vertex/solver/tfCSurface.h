@@ -579,6 +579,14 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getVelocity(struct tfVertexSolver
 CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getArea(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result);
 
 /**
+ * @brief Get the perimeter
+ * 
+ * @param handle populated handle
+ * @param result perimeter
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_getPerimeter(struct tfVertexSolverSurfaceHandleHandle *handle, tfFloatP_t *result);
+
+/**
  * @brief Get the mass density; only used in 2D simulation
  * 
  * @param handle populated handle

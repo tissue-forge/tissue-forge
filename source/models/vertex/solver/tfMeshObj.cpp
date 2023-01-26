@@ -21,15 +21,7 @@
 
 #include "tfMeshSolver.h"
 
-#include "actors/tfAdhesion.h"
-#include "actors/tfBodyForce.h"
-#include "actors/tfConvexPolygonConstraint.h"
-#include "actors/tfEdgeTension.h"
-#include "actors/tfFlatSurfaceConstraint.h"
-#include "actors/tfNormalStress.h"
-#include "actors/tfSurfaceAreaConstraint.h"
-#include "actors/tfSurfaceTraction.h"
-#include "actors/tfVolumeConstraint.h"
+#include "actors/tf_actors.h"
 
 #include <tfError.h>
 #include <io/tfFIO.h>
@@ -101,6 +93,7 @@ HRESULT toFile(TissueForge::models::vertex::MeshObjActor *dataElement, const Met
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::EdgeTension, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::FlatSurfaceConstraint, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::NormalStress, dataElement, metaData, fileElement);
+    MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::PerimeterConstraint, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::SurfaceAreaConstraint, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::SurfaceTraction, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::VolumeConstraint, dataElement, metaData, fileElement);
@@ -117,6 +110,7 @@ HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueF
     MESHOBJACTOR_CONDFROMFILECASTRET(TissueForge::models::vertex::EdgeTension, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDFROMFILECASTRET(TissueForge::models::vertex::FlatSurfaceConstraint, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDFROMFILECASTRET(TissueForge::models::vertex::NormalStress, dataElement, metaData, fileElement);
+    MESHOBJACTOR_CONDFROMFILECASTRET(TissueForge::models::vertex::PerimeterConstraint, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDFROMFILECASTRET(TissueForge::models::vertex::SurfaceAreaConstraint, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDFROMFILECASTRET(TissueForge::models::vertex::SurfaceTraction, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDFROMFILECASTRET(TissueForge::models::vertex::VolumeConstraint, dataElement, metaData, fileElement);

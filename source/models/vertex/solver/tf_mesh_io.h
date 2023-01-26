@@ -30,15 +30,7 @@
 #include "tfBody.h"
 #include "tfMesh.h"
 #include "tfMeshQuality.h"
-#include "actors/tfAdhesion.h"
-#include "actors/tfBodyForce.h"
-#include "actors/tfConvexPolygonConstraint.h"
-#include "actors/tfEdgeTension.h"
-#include "actors/tfFlatSurfaceConstraint.h"
-#include "actors/tfNormalStress.h"
-#include "actors/tfSurfaceAreaConstraint.h"
-#include "actors/tfSurfaceTraction.h"
-#include "actors/tfVolumeConstraint.h"
+#include "actors/tf_actors.h"
 
 #include <io/tf_io.h>
 
@@ -150,6 +142,12 @@ namespace TissueForge::io {
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::NormalStress **dataElement);
+
+    template <>
+    HRESULT toFile(TissueForge::models::vertex::PerimeterConstraint *dataElement, const MetaData &metaData, IOElement *fileElement);
+
+    template <>
+    HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::PerimeterConstraint **dataElement);
 
     template <>
     HRESULT toFile(TissueForge::models::vertex::SurfaceAreaConstraint *dataElement, const MetaData &metaData, IOElement *fileElement);

@@ -81,6 +81,7 @@ Currently, the vertex model solver provides the following actors that operate on
 * :class:`EdgeTension`: Models tension between connected vertices
 * :class:`FlatSurfaceConstraint` (automatically applied): Imposes that surfaces are flat
 * :class:`NormalStress`: Models a stress acting on a surface along its normal
+* :class:`PerimeterConstraint`: Imposes a perimeter constraint
 * :class:`SurfaceAreaConstraint`: Imposes a surface area constraint
 * :class:`SurfaceTraction`: Models a traction force
 

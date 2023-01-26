@@ -31,6 +31,7 @@
 #include "tfCEdgeTension.h"
 #include "tfCFlatSurfaceConstraint.h"
 #include "tfCNormalStress.h"
+#include "tfCPerimeterConstraint.h"
 #include "tfCSurfaceAreaConstraint.h"
 #include "tfCSurfaceTraction.h"
 #include "tfCVolumeConstraint.h"
