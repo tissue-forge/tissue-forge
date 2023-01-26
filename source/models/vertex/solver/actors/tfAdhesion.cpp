@@ -132,7 +132,7 @@ static FloatP_t Adhesion_energy_Surface(const Surface *s, const Vertex *v, const
     FVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), posv);
     FVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), posv);
 
-    return lam * 2.f * (posvp_rel.length() * count_vp + posvn_rel.length() * count_vn);
+    return lam * (posvp_rel.length() * count_vp + posvn_rel.length() * count_vn);
 }
 
 static FVector3 Adhesion_force_Surface(const Surface *s, const Vertex *v, const FloatP_t &lam, const std::unordered_set<int> &targetTypes) {

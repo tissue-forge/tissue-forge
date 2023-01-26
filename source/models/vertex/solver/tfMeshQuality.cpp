@@ -459,17 +459,16 @@ static bool MeshQuality_vertexSplitTest(
         force_rel += vn->particle()->getForce();
     }
     force_rel -= p->force * v_nbs.size();
-    if(force_rel.isZero()) 
-        return false;
-
-    sep = force_rel.normalized() * edgeSplitDist;
-    
     FPTYPE mask[] = {
         (p->flags & PARTICLE_FROZEN_X) ? 0.0f : 1.0f,
         (p->flags & PARTICLE_FROZEN_Y) ? 0.0f : 1.0f,
         (p->flags & PARTICLE_FROZEN_Z) ? 0.0f : 1.0f
     };
-    for(int k = 0; k < 3; k++) sep[k] *= mask[k];
+    for(int k = 0; k < 3; k++) force_rel[k] *= mask[k];
+    if(force_rel.isZero()) 
+        return false;
+
+    sep = force_rel.normalized() * edgeSplitDist;
     if(sep.isZero()) 
         return false;
 
