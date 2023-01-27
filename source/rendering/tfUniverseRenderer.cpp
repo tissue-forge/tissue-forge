@@ -444,6 +444,27 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::draw(T& camera, const 
     return *this;
 }
 
+const Float rendering::UniverseRenderer::lineWidth() {
+    GLfloat lw;
+    glGetFloatv(GL_LINE_WIDTH, &lw);
+    return lw;
+}
+
+rendering::UniverseRenderer& rendering::UniverseRenderer::setLineWidth(const Float &lw) {
+    Magnum::GL::Renderer::setLineWidth(lw);
+    return *this;
+}
+
+const Float rendering::UniverseRenderer::lineWidthMin() {
+    auto lwr = Magnum::GL::Renderer::lineWidthRange();
+    return lwr.min();
+}
+
+const Float rendering::UniverseRenderer::lineWidthMax() {
+    auto lwr = Magnum::GL::Renderer::lineWidthRange();
+    return lwr.max();
+}
+
 rendering::UniverseRenderer& rendering::UniverseRenderer::setAmbientColor(const Color3& color) {
     sphereShader.setAmbientColor(color);
 

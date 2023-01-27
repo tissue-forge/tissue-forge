@@ -135,6 +135,14 @@ namespace TissueForge {
                 return *this;
             }
 
+            const Float lineWidth();
+
+            UniverseRenderer& setLineWidth(const Float &lw);
+
+            const Float lineWidthMin();
+
+            const Float lineWidthMax();
+
             Color3& ambientColor() { return _ambientColor; }
 
             UniverseRenderer& setAmbientColor(const Color3& color);

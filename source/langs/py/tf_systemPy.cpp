@@ -143,6 +143,14 @@ void py::set_rendering_3d_all(const bool &_flag) { return system::setRendering3D
 
 void py::toggle_rendering_3d_all() { return system::toggleRendering3DAll(); }
 
+FloatP_t py::get_line_width() { return system::getLineWidth(); }
+
+HRESULT py::set_line_width(const FloatP_t &lineWidth) { return system::setLineWidth(lineWidth); }
+
+FloatP_t py::get_line_width_min() { return system::getLineWidthMin(); }
+
+FloatP_t py::get_line_width_max() { return system::getLineWidthMax(); }
+
 FVector3 py::get_ambient_color() { return system::getAmbientColor(); }
 
 HRESULT py::set_ambient_color(const FVector3 &color) { return system::setAmbientColor(color); }

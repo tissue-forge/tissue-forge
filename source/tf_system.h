@@ -392,6 +392,18 @@ namespace TissueForge::system {
     /** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
     CPPAPI_FUNC(void) toggleRendering3DAll();
 
+    /** Get the line width */
+    CPPAPI_FUNC(const FloatP_t) getLineWidth();
+
+    /** Set the line width */
+    CPPAPI_FUNC(HRESULT) setLineWidth(const FloatP_t &lineWidth);
+
+    /** Get the minimum line width */
+    CPPAPI_FUNC(const FloatP_t) getLineWidthMin();
+
+    /** Get the maximum line width */
+    CPPAPI_FUNC(const FloatP_t) getLineWidthMax();
+
     /**
      * @brief Get the ambient color
      * 
