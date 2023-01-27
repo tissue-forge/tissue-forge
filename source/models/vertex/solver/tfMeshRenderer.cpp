@@ -194,12 +194,13 @@ HRESULT MeshRenderer::draw(rendering::ArcBallCamera *camera, const iVector2 &vie
     _bufferFaces.unmap();
     _bufferEdges.unmap();
     
-    _shaderFaces
-        .setTransformationProjectionMatrix(camera->projectionMatrix() * camera->cameraMatrix() * modelViewMat)
-        .draw(_meshFaces);
+    // Order ensures that edges are drawn over surfaces
     _shaderEdges
         .setTransformationProjectionMatrix(camera->projectionMatrix() * camera->cameraMatrix() * modelViewMat)
         .draw(_meshEdges);
+    _shaderFaces
+        .setTransformationProjectionMatrix(camera->projectionMatrix() * camera->cameraMatrix() * modelViewMat)
+        .draw(_meshFaces);
 
     return S_OK;
 }
