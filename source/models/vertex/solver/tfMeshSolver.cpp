@@ -459,6 +459,9 @@ HRESULT MeshSolver::preStepStart() {
     }
     memset(_solver->_forces, 0.f, 3 * sizeof(FloatP_t) * _bufferSize);
 
+    if(_totalVertices == 0) 
+        return S_OK;
+
     Vertex *m_vertices = &(*mesh->vertices)[0];
     FloatP_t *v_forces = &_forces[0];
     const size_t m_size_vertices = mesh->vertices->size();
@@ -482,6 +485,9 @@ HRESULT MeshSolver::preStepStart() {
 HRESULT MeshSolver::preStepJoin() {
 
     MeshSolverTimerInstance t(MeshSolverTimers::Section::ADVANCE);
+
+    if(_totalVertices == 0) 
+        return S_OK;
 
     FloatP_t *v_forces = &_forces[0];
     Vertex *m_vertices = &(*mesh->vertices)[0];

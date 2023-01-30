@@ -457,6 +457,22 @@ namespace TissueForge::models::vertex {
         bool isOutside(const FVector3 &pos) const;
 
         /**
+         * @brief Test whether the surface contains a point
+         * 
+         * @param pos position of the point
+         * @param v0 a vertex of the nearest edge
+         * @param v1 a vertex of the nearest edge
+         */
+        bool contains(const FVector3 &pos, Vertex **v0, Vertex **v1) const;
+
+        /**
+         * @brief Test whether the surface contains a point
+         * 
+         * @param pos position of the point
+         */
+        bool contains(const FVector3 &pos) const;
+
+        /**
          * @brief Sew two surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
@@ -968,6 +984,22 @@ namespace TissueForge::models::vertex {
          * @return true if on the outer side
          */
         bool isOutside(const FVector3 &pos) const;
+
+        /**
+         * @brief Test whether the surface contains a point
+         * 
+         * @param pos position of the point
+         * @param v0 a vertex of the nearest edge
+         * @param v1 a vertex of the nearest edge
+         */
+        bool contains(const FVector3 &pos, VertexHandle &v0, VertexHandle &v1) const;
+
+        /**
+         * @brief Test whether the surface contains a point
+         * 
+         * @param pos position of the point
+         */
+        bool contains(const FVector3 &pos) const;
 
         /**
          * @brief Merge with a surface. The passed surface is destroyed. 

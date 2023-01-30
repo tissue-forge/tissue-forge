@@ -114,6 +114,8 @@ Surface
 
     .. automethod:: is_outside
 
+    .. automethod:: contains
+
     .. automethod:: sew
 
     .. automethod:: merge
@@ -242,6 +244,8 @@ Surface
     .. automethod:: normal_distance
 
     .. automethod:: is_outside
+
+    .. automethod:: contains
 
     .. automethod:: merge
 

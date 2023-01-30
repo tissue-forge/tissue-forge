@@ -785,6 +785,28 @@ HRESULT tfVertexSolverSurfaceHandle_isOutside(
     return S_OK;
 }
 
+HRESULT tfVertexSolverSurfaceHandle_contains(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    tfFloatP_t *pos, 
+    bool *result, 
+    struct tfVertexSolverVertexHandleHandle *v0, 
+    struct tfVertexSolverVertexHandleHandle *v1
+) {
+    TFC_SURFACEHANDLE_GET(handle);
+    TFC_PTRCHECK(pos);
+    TFC_PTRCHECK(result);
+    TFC_PTRCHECK(v0);
+    TFC_PTRCHECK(v1);
+    FVector3 _pos = FVector3::from(pos);
+    VertexHandle _v0, _v1;
+    *result = shandle->contains(_pos, _v0, _v1);
+    if(*result) {
+        tfVertexSolverVertexHandle_init(v0, _v0.id);
+        tfVertexSolverVertexHandle_init(v1, _v1.id);
+    }
+    return S_OK;
+}
+
 HRESULT tfVertexSolverSurfaceHandle_merge(
     struct tfVertexSolverSurfaceHandleHandle *handle, 
     struct tfVertexSolverSurfaceHandleHandle *toRemove, 

@@ -686,6 +686,68 @@ bool Surface::isOutside(const FVector3 &pos) const {
     return normalDistance(pos) > 0;
 }
 
+bool Surface::contains(const FVector3 &pos, Vertex **v0, Vertex **v1) const {
+    if(std::abs(normalDistance(pos)) > std::numeric_limits<FloatP_t>::min()) 
+        return false;
+
+    //  Find the nearest vertex
+    Vertex *va = findVertex(pos - centroid);
+
+    //  Find the relevant edges
+    Vertex *vb, *vc;
+    std::tie(vb, vc) = neighborVertices(va);
+
+    //  Test for penetration
+
+    const FVector3 va_pos = va->getPosition();
+    const FVector3 vb_pos = vb->getPosition();
+
+    const FVector3 va_pos_rel = metrics::relativePosition(va_pos, centroid);
+    const FVector3 pos_rel = metrics::relativePosition(pos, centroid);
+
+    const FVector3 vb_pos_rel = metrics::relativePosition(vb_pos, centroid);
+    const FloatP_t a_va_nb = Magnum::Math::cross(va_pos_rel, pos_rel).length();
+    const FVector3 va_pos_rel_nb = metrics::relativePosition(va_pos, pos);
+
+    FloatP_t area, areaTest;
+    area = Magnum::Math::cross(va_pos_rel, vb_pos_rel).length();
+    areaTest = 
+        a_va_nb + 
+        Magnum::Math::cross(vb_pos_rel, pos_rel).length() + 
+        Magnum::Math::cross(va_pos_rel_nb, metrics::relativePosition(vb_pos, pos)).length()
+    ;
+
+    if(areaTest > 0 && abs(area / areaTest - 1) < 1E-6) {
+        *v0 = va;
+        *v1 = vb;
+        return true;
+    }
+
+    const FVector3 vc_pos = vc->getPosition();
+
+    const FVector3 vc_pos_rel = metrics::relativePosition(vc_pos, centroid);
+
+    area = Magnum::Math::cross(va_pos_rel, vc_pos_rel).length();
+    areaTest = 
+        a_va_nb + 
+        Magnum::Math::cross(vc_pos_rel, pos_rel).length() + 
+        Magnum::Math::cross(va_pos_rel_nb, metrics::relativePosition(vc_pos, pos)).length()
+    ;
+
+    if(areaTest > 0 && abs(area / areaTest - 1) < 1E-6) {
+        *v0 = va;
+        *v1 = vc;
+        return true;
+    }
+
+    return false;
+}
+
+bool Surface::contains(const FVector3 &pos) const {
+    Vertex *v0, *v1;
+    return contains(pos, &v0, &v1);
+}
+
 HRESULT Surface::positionChanged() {
     normal = FVector3(0.f);
     centroid = FVector3(0.f);
@@ -1721,6 +1783,22 @@ FloatP_t SurfaceHandle::normalDistance(const FVector3 &pos) const {
 bool SurfaceHandle::isOutside(const FVector3 &pos) const {
     SurfaceHandle_GETOBJ(o, false);
     return o->isOutside(pos);
+}
+
+bool SurfaceHandle::contains(const FVector3 &pos, VertexHandle &v0, VertexHandle &v1) const {
+    SurfaceHandle_GETOBJ(o, false);
+    Vertex *_v0, *_v1;
+    bool result = o->contains(pos, &_v0, &_v1);
+    if(result) {
+        v0.id = _v0->objectId();
+        v1.id = _v1->objectId();
+    }
+    return result;
+}
+
+bool SurfaceHandle::contains(const FVector3 &pos) const {
+    SurfaceHandle_GETOBJ(o, false);
+    return o->contains(pos);
 }
 
 HRESULT SurfaceHandle::merge(SurfaceHandle &toRemove, const std::vector<FloatP_t> &lenCfs) {

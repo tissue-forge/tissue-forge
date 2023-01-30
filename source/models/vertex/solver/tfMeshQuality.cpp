@@ -692,53 +692,9 @@ static HRESULT MeshQuality_constructOperationsSurface(
             if(v_nb->defines(s)) 
                 continue;
             
-            const FVector3 nb_pos = nb->getPosition();
-
-            //  Find the nearest vertex
-            Vertex *va = s->findVertex(nb_pos - centroid);
-
-            //  Find the relevant edges
-            Vertex *vb, *vc;
-            std::tie(vb, vc) = s->neighborVertices(va);
-
-            //  Test for penetration
-
-            const FVector3 va_pos = va->getPosition();
-            const FVector3 vb_pos = vb->getPosition();
-
-            const FVector3 va_pos_rel = metrics::relativePosition(va_pos, centroid);
-            const FVector3 nb_pos_rel = metrics::relativePosition(nb_pos, centroid);
-
-            const FVector3 vb_pos_rel = metrics::relativePosition(vb_pos, centroid);
-            const FloatP_t a_va_nb = Magnum::Math::cross(va_pos_rel, nb_pos_rel).length();
-            const FVector3 va_pos_rel_nb = metrics::relativePosition(va_pos, nb_pos);
-
-            FloatP_t area, areaTest;
-            area = Magnum::Math::cross(va_pos_rel, vb_pos_rel).length();
-            areaTest = 
-                a_va_nb + 
-                Magnum::Math::cross(vb_pos_rel, nb_pos_rel).length() + 
-                Magnum::Math::cross(va_pos_rel_nb, metrics::relativePosition(vb_pos, nb_pos)).length()
-            ;
-
-            if(areaTest > 0 && abs(area / areaTest - 1) < 1E-6) {
+            Vertex *va, *vb;
+            if(s->contains(nb->getPosition(), &va, &vb)) {
                 ops[i] = new VertexInsertOperation(mesh, v_nb, s, va, vb);
-                return;
-            }
-
-            const FVector3 vc_pos = vc->getPosition();
-
-            const FVector3 vc_pos_rel = metrics::relativePosition(vc_pos, centroid);
-
-            area = Magnum::Math::cross(va_pos_rel, vc_pos_rel).length();
-            areaTest = 
-                a_va_nb + 
-                Magnum::Math::cross(vc_pos_rel, nb_pos_rel).length() + 
-                Magnum::Math::cross(va_pos_rel_nb, metrics::relativePosition(vc_pos, nb_pos)).length()
-            ;
-
-            if(areaTest > 0 && abs(area / areaTest - 1) < 1E-6) {
-                ops[i] = new VertexInsertOperation(mesh, v_nb, s, va, vc);
                 return;
             }
         }

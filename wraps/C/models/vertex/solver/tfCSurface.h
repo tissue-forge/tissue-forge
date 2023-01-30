@@ -726,6 +726,23 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_isOutside(
 );
 
 /**
+ * @brief Test whether the surface contains a point
+ * 
+ * @param handle populated handle
+ * @param pos position of the point
+ * @param result result of the test
+ * @param v0 a vertex of the nearest edge
+ * @param v1 a vertex of the nearest edge
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_contains(
+    struct tfVertexSolverSurfaceHandleHandle *handle, 
+    tfFloatP_t *pos, 
+    bool *result, 
+    struct tfVertexSolverVertexHandleHandle *v0, 
+    struct tfVertexSolverVertexHandleHandle *v1
+);
+
+/**
  * @brief Merge with a surface. The passed surface is destroyed. 
  * 
  * Surfaces must have the same number of vertices. Vertices are paired by nearest distance.
