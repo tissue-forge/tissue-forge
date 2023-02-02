@@ -22,6 +22,8 @@
 #include <models/vertex/solver/tfBody.h>
 #include <models/vertex/solver/tfSurface.h>
 #include <models/vertex/solver/tfVertex.h>
+#include <models/vertex/solver/tfMeshSolver.h>
+#include <models/vertex/solver/tfVertexSolverFIO.h>
 
 #include <types/tf_types.h>
 #include <tf_metrics.h>
@@ -144,16 +146,18 @@ static FVector3 Adhesion_force_Surface(const Surface *s, const Vertex *v, const 
     if(count_vp + count_vn == 0) 
         return FVector3(0);
 
-    const FVector3 posv = v->getPosition();
-    FVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), posv);
-    FVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), posv);
-
     FVector3 force(0);
 
-    if(!posvp_rel.isZero()) 
-        force += posvp_rel.normalized() * count_vp;
-    if(!posvn_rel.isZero()) 
-        force += posvn_rel.normalized() * count_vn;
+    if(count_vp > 0) {
+        const FVector3 posvp_rel = metrics::relativePosition(vp->getPosition(), v->getPosition());
+        if(!posvp_rel.isZero()) 
+            force += posvp_rel.normalized() * count_vp;
+    }
+    if(count_vn > 0) {
+        const FVector3 posvn_rel = metrics::relativePosition(vn->getPosition(), v->getPosition());
+        if(!posvn_rel.isZero()) 
+            force += posvn_rel.normalized() * count_vn;
+    }
 
     return lam * force;
 }
@@ -207,6 +211,7 @@ namespace TissueForge::io {
         IOElement *fe;
 
         TF_ACTORIOTOEASY(fe, "lam", dataElement->lam);
+        TF_ACTORIOTOEASY(fe, "typePairs", dataElement->getTypePairs());
 
         fileElement->type = "Adhesion";
 
@@ -216,11 +221,37 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Adhesion **dataElement) { 
 
+        if(!FIO::hasImport()) 
+            return tf_error(E_FAIL, "No import data available");
+        else if(!TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) 
+            return tf_error(E_FAIL, "No vertex import data available");
+
+        TissueForge::models::vertex::MeshSolver *solver = TissueForge::models::vertex::MeshSolver::get();
+        if(!solver) 
+            return tf_error(E_FAIL, "No vertex solver available");
+
         IOChildMap::const_iterator feItr;
 
         FloatP_t lam;
         TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "lam", &lam);
         *dataElement = new Adhesion(lam);
+
+        std::unordered_map<int, std::unordered_set<int> > typePairs;
+        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "typePairs", &typePairs);
+        for(auto &mitr : typePairs) {
+            auto stype1Id_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.find(mitr.first);
+            if(stype1Id_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.end()) 
+                return tf_error(E_FAIL, "Could not identify type");
+
+            for(auto &stype2Id : mitr.second) {
+                auto stype2Id_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.find(stype2Id);
+                if(stype2Id_itr == TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.end()) 
+                    return tf_error(E_FAIL, "Could not identify type");
+
+                if(!(*dataElement)->hasPair(stype1Id_itr->second, stype2Id_itr->second)) 
+                    (*dataElement)->registerPair(stype1Id_itr->second, stype2Id_itr->second);
+            }
+        }
 
         return S_OK;
     }

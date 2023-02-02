@@ -391,6 +391,21 @@ namespace TissueForge::models::vertex {
          * @param id body id
          */
         HRESULT includeBody(const unsigned int &id);
+
+        /**
+         * @brief Get the current set of excluded vertices
+         */
+        std::unordered_set<unsigned int> getExcludedVertices() const { return excludedVertices; }
+
+        /**
+         * @brief Get the current set of excluded surfaces
+         */
+        std::unordered_set<unsigned int> getExcludedSurfaces() const { return excludedSurfaces; }
+
+        /**
+         * @brief Get the current set of excluded bodies
+         */
+        std::unordered_set<unsigned int> getExcludedBodies() const { return excludedBodies; }
     };
 }
 

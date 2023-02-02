@@ -92,25 +92,23 @@ HRESULT VMod::io::VertexSolverFIOModule::fromFile(const TissueForge::io::MetaDat
 
     // Load and register types and store their id maps
 
-    std::vector<VMod::BodyType*> bodyTypes;
     std::vector<int> bodyTypeIds;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "bodyTypes", &bodyTypes);
     TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "bodyTypeIds", &bodyTypeIds);
-    for(size_t i = 0; i < bodyTypes.size(); i++) {
-        auto t = bodyTypes[i];
-        solver->registerType(t);
-        VMod::io::VertexSolverFIOModule::importSummary->bodyTypeIdMap.insert({bodyTypeIds[i], t->id});
-    }
+    for(size_t i = 0; i < bodyTypeIds.size(); i++) 
+        VMod::io::VertexSolverFIOModule::importSummary->bodyTypeIdMap.insert({bodyTypeIds[i], solver->numBodyTypes() + i});
+    std::vector<VMod::BodyType*> bodyTypes;
+    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "bodyTypes", &bodyTypes);
+    for(size_t i = 0; i < bodyTypes.size(); i++) 
+        solver->registerType(bodyTypes[i]);
 
-    std::vector<VMod::SurfaceType*> surfaceTypes;
     std::vector<int> surfaceTypeIds;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "surfaceTypes", &surfaceTypes);
     TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "surfaceTypeIds", &surfaceTypeIds);
-    for(size_t i = 0; i < surfaceTypes.size(); i++) {
-        auto t = surfaceTypes[i];
-        solver->registerType(t);
-        VMod::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.insert({surfaceTypeIds[i], t->id});
-    }
+    for(size_t i = 0; i < surfaceTypeIds.size(); i++) 
+        VMod::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.insert({surfaceTypeIds[i], solver->numSurfaceTypes() + i});
+    std::vector<VMod::SurfaceType*> surfaceTypes;
+    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "surfaceTypes", &surfaceTypes);
+    for(size_t i = 0; i < surfaceTypes.size(); i++) 
+        solver->registerType(surfaceTypes[i]);
 
     // Load meshes
 

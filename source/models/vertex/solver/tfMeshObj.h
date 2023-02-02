@@ -230,10 +230,27 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Register a pair of types for this actor
          * 
+         * @param type1 first type id
+         * @param type2 second type id
+         */
+        HRESULT registerPair(const int &type1, const int &type2);
+
+        /**
+         * @brief Register a pair of types for this actor
+         * 
          * @param type1 first type
          * @param type2 second type
          */
         HRESULT registerPair(MeshObjType *type1, MeshObjType *type2);
+
+        /**
+         * @brief Test whether a pair of types is registered with this actor
+         * 
+         * @param type1 first type id
+         * @param type2 second type id
+         * @return true if the pair of types is registered with this actor
+         */
+        bool hasPair(const int &type1, const int &type2);
 
         /**
          * @brief Test whether a pair of types is registered with this actor
@@ -243,6 +260,11 @@ namespace TissueForge::models::vertex {
          * @return true if the pair of types is registered with this actor
          */
         bool hasPair(MeshObjType *type1, MeshObjType *type2);
+
+        /**
+         * @brief Get the type pair data
+         */
+        std::unordered_map<int, std::unordered_set<int> > getTypePairs() { return typePairs; };
 
     protected:
 

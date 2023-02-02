@@ -30,27 +30,35 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
-HRESULT MeshObjTypePairActor::registerPair(MeshObjType *type1, MeshObjType *type2) {
-    if(type1->id < 0 || type2->id < 0) {
+HRESULT MeshObjTypePairActor::registerPair(const int &type1, const int &type2) {
+    if(type1 < 0 || type2 < 0) {
         tf_error(E_FAIL, "Object type not registered");
         return E_FAIL;
     }
 
-    auto &v1 = typePairs[type1->id];
-    v1.insert(type2->id);
+    auto &v1 = typePairs[type1];
+    v1.insert(type2);
 
-    auto &v2 = typePairs[type2->id];
-    v2.insert(type1->id);
+    auto &v2 = typePairs[type2];
+    v2.insert(type1);
 
     return S_OK;
 }
 
-bool MeshObjTypePairActor::hasPair(MeshObjType *type1, MeshObjType *type2) {
-    auto itr1 = typePairs.find(type1->id);
+HRESULT MeshObjTypePairActor::registerPair(MeshObjType *type1, MeshObjType *type2) {
+    return registerPair(type1->id, type2->id);
+}
+
+bool MeshObjTypePairActor::hasPair(const int &type1, const int &type2) {
+    auto itr1 = typePairs.find(type1);
     if(itr1 != typePairs.end()) 
-        return itr1->second.find(type2->id) != itr1->second.end();
+        return itr1->second.find(type2) != itr1->second.end();
     else 
         return false;
+}
+
+bool MeshObjTypePairActor::hasPair(MeshObjType *type1, MeshObjType *type2) {
+    return hasPair(type1->id, type2->id);
 }
 
 namespace TissueForge::io {

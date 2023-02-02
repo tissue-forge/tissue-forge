@@ -1047,6 +1047,9 @@ namespace TissueForge::io {
         TF_MESH_MESHQUALITYIOTOEASY(fe, "bodyDemoteVolume", dataElement.getBodyDemoteVolume());
         TF_MESH_MESHQUALITYIOTOEASY(fe, "edgeSplitDist", dataElement.getEdgeSplitDist());
         TF_MESH_MESHQUALITYIOTOEASY(fe, "collision2D", dataElement.getCollision2D());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "excludedVertices", dataElement.getExcludedVertices());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "excludedSurfaces", dataElement.getExcludedSurfaces());
+        TF_MESH_MESHQUALITYIOTOEASY(fe, "excludedBodies", dataElement.getExcludedBodies());
 
         fileElement->type = "MeshQuality";
 
@@ -1077,6 +1080,32 @@ namespace TissueForge::io {
         bool collision2D;
         TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "collision2D", &collision2D);
         dataElement->setCollision2D(collision2D);
+
+        if(FIO::hasImport() && TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) {
+            std::unordered_set<unsigned int> excludedVertices;
+            TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "excludedVertices", &excludedVertices);
+            for(auto &oldId : excludedVertices) {
+                auto id_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap.find(oldId);
+                if(id_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap.end()) 
+                    dataElement->excludeVertex(id_itr->second);
+            }
+
+            std::unordered_set<unsigned int> excludedSurfaces;
+            TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "excludedSurfaces", &excludedSurfaces);
+            for(auto &oldId : excludedSurfaces) {
+                auto id_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.find(oldId);
+                if(id_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->surfaceIdMap.end()) 
+                    dataElement->excludeSurface(id_itr->second);
+            }
+
+            std::unordered_set<unsigned int> excludedBodies;
+            TF_MESH_MESHQUALITYIOFROMEASY(feItr, fileElement.children, metaData, "excludedBodies", &excludedBodies);
+            for(auto &oldId : excludedBodies) {
+                auto id_itr = TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyIdMap.find(oldId);
+                if(id_itr != TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->bodyIdMap.end()) 
+                    dataElement->excludeBody(id_itr->second);
+            }
+        }
 
         return S_OK;
     }

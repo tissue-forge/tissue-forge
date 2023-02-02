@@ -2309,6 +2309,7 @@ namespace TissueForge::io {
         IOChildMap::const_iterator feItr;
 
         *dataElement = new TissueForge::models::vertex::SurfaceType();
+        (*dataElement)->actors.clear();
 
         TF_MESH_SURFACEIOFROMEASY(feItr, fileElement.children, metaData, "name", &(*dataElement)->name);
         if(fileElement.children.find("actors") != fileElement.children.end()) {
