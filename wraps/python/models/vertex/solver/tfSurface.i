@@ -91,7 +91,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(_getNumInstances) TissueForge::models::vertex::SurfaceType::getNumInstances;
 %rename(_operator_vertices) TissueForge::models::vertex::SurfaceType::operator() (const std::vector<VertexHandle>&);
 %rename(_operator_positions) TissueForge::models::vertex::SurfaceType::operator() (const std::vector<FVector3>&);
-%rename(_operator_iofacedata) TissueForge::models::vertex::SurfaceType::operator() (io::ThreeDFFaceData*);
+%rename(_operator_iofacedata) TissueForge::models::vertex::SurfaceType::operator() (TissueForge::io::ThreeDFFaceData*);
 %rename(_n_polygon) TissueForge::models::vertex::SurfaceType::nPolygon;
 %rename(_replace) TissueForge::models::vertex::SurfaceType::replace;
 
@@ -455,8 +455,6 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             elif face_data is not None:
                 result = self._operator_iofacedata(face_data)
 
-            if result is not None:
-                result.thisown = 0
             return result
 
         def n_polygon(self, n: int, center, radius: float, ax1, ax2):
