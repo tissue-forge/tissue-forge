@@ -419,11 +419,15 @@ HRESULT Mesh::makeDirty() {
 }
 
 bool Mesh::connected(const Vertex *v1, const Vertex *v2) const {
-    for(auto &s1 : v1->surfaces) 
+    for(auto &s1 : v1->surfaces) {
+        if(s1->vertices.front()->objectId() == v1->objectId() && s1->vertices.back()->objectId() == v2->objectId() || 
+            s1->vertices.front()->objectId() == v2->objectId() && s1->vertices.back()->objectId() == v1->objectId()) 
+            return true;
         for(auto vitr = s1->vertices.begin() + 1; vitr != s1->vertices.end(); vitr++) 
             if(((*vitr)->objectId() == v1->objectId() && (*(vitr - 1))->objectId() == v2->objectId()) || 
                 ((*vitr)->objectId() == v2->objectId() && (*(vitr - 1))->objectId() == v1->objectId())) 
                 return true;
+    }
 
     return false;
 }
