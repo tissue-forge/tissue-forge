@@ -25,3 +25,12 @@ install(
     DESTINATION 
     ${TF_SITEPACKAGES}/tissue_forge/models/vertex/solver
 )
+install(FILES 
+    examples/CapillaryLoop.obj 
+    examples/capillary_loop.py 
+    examples/cell_migration.py 
+    examples/cell_sorting.py 
+    examples/cell_splitting.py 
+    DESTINATION 
+    ${TF_SITEPACKAGES}/tissue_forge/examples/models/vertex/solver
+)

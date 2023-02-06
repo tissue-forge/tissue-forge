@@ -5,6 +5,15 @@
 Vertex Model Solver
 ^^^^^^^^^^^^^^^^^^^^
 
+.. figure:: tf_interactive_2dsplitting.png
+    :width: 600px
+    :alt: Two-dimensional cell splitting demo
+    :align: center
+    :figclass: align-center
+    :target: https://github.com/tissue-forge/tissue-forge/tree/main/docs/main/source/models/vertx/solver/tf_interactive_2dsplitting.mp4
+
+    Two-dimensional cell splitting live demo. Cell splitting events are implemented using a keyboard event.
+
 The vertex model solver implements the vertex model formalism for modeling biological objects
 as topologically connected :ref:`vertices <api_vertex_solver_vertex>` in a mesh.
 Each vertex is constructed from a Tissue Forge :ref:`particle <creating_particles_and_types>`.
