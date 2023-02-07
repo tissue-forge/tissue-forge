@@ -9,6 +9,7 @@ dependencies:
   - matplotlib
   - assimp=5
   - nlohmann_json
+  - eigen
   - xorg-libxrandr
   - xorg-libxcursor
   - xorg-libxinerama

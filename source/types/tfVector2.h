@@ -72,6 +72,12 @@ namespace TissueForge::types {
                 return Magnum::Math::Distance::lineSegmentPoint(lineStartPt, lineEndPt, *this);
             }
 
+            template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
+            TVector2<T> lineShortestDisplacementTo(const TVector2<T> &lineStartPt, const TVector2<T> &lineEndPt) const {
+                const TVector2<T> lineDir = (lineEndPt - lineStartPt).normalized();
+                return lineStartPt + (*this - lineStartPt).dot(lineDir) * lineDir - *this;
+            }
+
             /** Get the cross product with another vector */
             T cross(const TVector2<T> &other) {
                 return Magnum::Math::cross(*this, other);

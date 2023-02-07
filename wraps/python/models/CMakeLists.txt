@@ -18,5 +18,6 @@
 #*******************************************************************************
 
 add_subdirectory(center)
+add_subdirectory(vertex)
 
 install(FILES __init__.py DESTINATION ${TF_SITEPACKAGES}/tissue_forge/models)

@@ -5,6 +5,8 @@ Metrics
 
 .. autofunction:: relative_position
 
+.. autofunction:: neighborhood_particles
+
 .. autofunction:: calculate_virial
 
 .. autofunction:: particles_virial
@@ -20,3 +22,7 @@ Metrics
 .. autofunction:: cartesian_to_spherical
 
 .. autofunction:: particle_neighbors
+
+.. autofunction:: eigenvals
+
+.. autofunction:: eigenvecs_vals

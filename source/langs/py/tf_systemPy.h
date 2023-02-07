@@ -388,6 +388,18 @@ namespace TissueForge::py {
    /** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
    CPPAPI_FUNC(void) toggle_rendering_3d_all();
 
+   /** Get the line width */
+   CPPAPI_FUNC(FloatP_t) get_line_width();
+
+   /** Set the line width */
+   CPPAPI_FUNC(HRESULT) set_line_width(const FloatP_t &lineWidth);
+
+   /** Get the minimum line width */
+   CPPAPI_FUNC(FloatP_t) get_line_width_min();
+
+   /** Get the maximum line width */
+   CPPAPI_FUNC(FloatP_t) get_line_width_max();
+
    /**
    * @brief Get the ambient color
    * 

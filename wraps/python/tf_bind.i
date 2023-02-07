@@ -29,7 +29,7 @@
 %rename(_bind_types) TissueForge::py::types;
 %rename(_bind_boundary_conditions) TissueForge::py::boundary_conditions;
 %rename(_bind_boundary_condition) TissueForge::py::boundary_condition;
-%rename(_bind_force) force;
+%rename(_bind_force) TissueForge::py::force;
 
 #include <tfBond.h>
 #include <tfParticle.h>

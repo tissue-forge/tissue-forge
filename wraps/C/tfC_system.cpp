@@ -303,6 +303,28 @@ HRESULT tfSystem_toggleRendering3DAll() {
     return S_OK;
 }
 
+HRESULT tfSystem_getLineWidth(tfFloatP_t *lineWidth) {
+    TFC_PTRCHECK(lineWidth);
+    *lineWidth = system::getLineWidth();
+    return S_OK;
+}
+
+HRESULT tfSystem_setLineWidth(tfFloatP_t lineWidth) {
+    return system::setLineWidth(lineWidth);
+}
+
+HRESULT tfSystem_getLineWidthMin(tfFloatP_t *lineWidth) {
+    TFC_PTRCHECK(lineWidth);
+    *lineWidth = system::getLineWidthMin();
+    return S_OK;
+}
+
+HRESULT tfSystem_getLineWidthMax(tfFloatP_t *lineWidth) {
+    TFC_PTRCHECK(lineWidth);
+    *lineWidth = system::getLineWidthMax();
+    return S_OK;
+}
+
 HRESULT tfSystem_getAmbientColor(float **color) {
     TFC_PTRCHECK(color);
     auto _color = system::getAmbientColor();

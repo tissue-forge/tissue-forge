@@ -18,6 +18,7 @@
 # ******************************************************************************
 
 from tissue_forge.tissue_forge import _metrics_relative_position as relative_position
+from tissue_forge.tissue_forge import _metrics_neighborhood_particles as neighborhood_particles
 from tissue_forge.tissue_forge import _metrics_calculate_virial as calculate_virial
 from tissue_forge.tissue_forge import _metrics_particles_virial as particles_virial
 from tissue_forge.tissue_forge import _metrics_particles_radius_of_gyration as particles_radius_of_gyration
@@ -26,3 +27,5 @@ from tissue_forge.tissue_forge import _metrics_particles_center_of_geometry as p
 from tissue_forge.tissue_forge import _metrics_particles_moment_of_inertia as particles_moment_of_inertia
 from tissue_forge.tissue_forge import _metrics_cartesian_to_spherical as cartesian_to_spherical
 from tissue_forge.tissue_forge import _metrics_particle_neighbors as particle_neighbors
+from tissue_forge.tissue_forge import _metrics_eigenvals as eigenvals
+from tissue_forge.tissue_forge import _metrics_eigenvecs_vals as eigenvecs_vals

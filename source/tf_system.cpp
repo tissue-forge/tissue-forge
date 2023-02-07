@@ -971,6 +971,52 @@ void system::toggleRendering3DAll() {
     }
 }
 
+const FloatP_t system::getLineWidth() {
+    try {
+        return system::getRenderer()->lineWidth();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return -1;
+    }
+}
+
+HRESULT system::setLineWidth(const FloatP_t &lineWidth) {
+    if(lineWidth < system::getLineWidthMin() || lineWidth > system::getLineWidthMax()) {
+        return tf_error(E_FAIL, "Line width outside of permissible range");
+    }
+
+    try {
+        system::getRenderer()->setLineWidth(lineWidth);
+        
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+const FloatP_t system::getLineWidthMin() {
+    try {
+        return system::getRenderer()->lineWidthMin();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return -1;
+    }
+}
+
+const FloatP_t system::getLineWidthMax() {
+    try {
+        return system::getRenderer()->lineWidthMax();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return -1;
+    }
+}
+
 FVector3 system::getAmbientColor() {
     try {
         return system::getRenderer()->ambientColor();

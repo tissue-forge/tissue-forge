@@ -86,6 +86,10 @@
 %rename(_system_toggle_rendering_3d_dihedrals) TissueForge::py::toggle_rendering_3d_dihedrals;
 %rename(_system_set_rendering_3d_all) TissueForge::py::set_rendering_3d_all;
 %rename(_system_toggle_rendering_3d_all) TissueForge::py::toggle_rendering_3d_all;
+%rename(_system_get_line_width) TissueForge::py::get_line_width;
+%rename(_system_set_line_width) TissueForge::py::set_line_width;
+%rename(_system_get_line_width_min) TissueForge::py::get_line_width_min;
+%rename(_system_get_line_width_max) TissueForge::py::get_line_width_max;
 %rename(_system_get_ambient_color) TissueForge::py::get_ambient_color;
 %rename(_system_set_ambient_color) TissueForge::py::set_ambient_color;
 %rename(_system_get_diffuse_color) TissueForge::py::get_diffuse_color;
