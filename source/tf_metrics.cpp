@@ -1048,7 +1048,7 @@ HRESULT metrics::particleGrid(const iVector3 &shape, ParticleList *result) {
 
 template <typename TFV, typename TFM> 
 HRESULT _eigenVals(const TFM &mat, TFV &evals, const bool &symmetric) {
-    Eigen::Vector<FloatP_t, TFV::Size> _evals;
+    Eigen::Matrix<FloatP_t, TFV::Size, 1> _evals;
 
     if(symmetric) {
         Eigen::SelfAdjointEigenSolver<Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size> > es;
@@ -1069,7 +1069,7 @@ HRESULT _eigenVals(const TFM &mat, TFV &evals, const bool &symmetric) {
 
 template <typename TFV, typename TFM> 
 HRESULT _eigenVecsVals(const TFM &mat, TFV &evals, TFM &evecs, const bool &symmetric) {
-    Eigen::Vector<FloatP_t, TFV::Size> _evals;
+    Eigen::Matrix<FloatP_t, TFV::Size, 1> _evals;
     Eigen::Matrix<FloatP_t, TFM::Size, TFM::Size> _evecs;
 
     if(symmetric) {

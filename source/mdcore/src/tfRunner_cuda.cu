@@ -2977,7 +2977,7 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
          cudaEventCreate(&toc_load) != cudaSuccess ||
          cudaEventCreate(&toc_run) != cudaSuccess ||
          cudaEventCreate(&toc_unload) != cudaSuccess)
-        return cuda_error(E_FAIL);
+        return cuda_error();
     
     /* Start the clock on the first stream. */
     cuda_safe_call(cudaEventRecord(tic, (cudaStream_t)e->streams[e->nr_devices-1]));
@@ -3260,7 +3260,7 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     /* Stop the clock on the last stream. */
     if(cudaEventRecord(toc_unload, (cudaStream_t)e->streams[e->nr_devices-1]) != cudaSuccess ||
          cudaStreamSynchronize((cudaStream_t)e->streams[e->nr_devices-1]) != cudaSuccess)
-        return cuda_error(E_FAIL);
+        return cuda_error();
     
     /* Check for any missed CUDA errors. */
     cuda_safe_call(cudaPeekAtLastError());
@@ -3269,7 +3269,7 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     if(cudaEventElapsedTime(&ms_load, tic, toc_load) != cudaSuccess ||
          cudaEventElapsedTime(&ms_run, toc_load, toc_run) != cudaSuccess ||
          cudaEventElapsedTime(&ms_unload, toc_run, toc_unload) != cudaSuccess)
-        return cuda_error(E_FAIL);
+        return cuda_error();
     e->timers[ engine_timer_cuda_load ] += ms_load / 1000 * CPU_TPS;
     e->timers[ engine_timer_cuda_dopairs ] += ms_run / 1000 * CPU_TPS;
     e->timers[ engine_timer_cuda_unload ] += ms_unload / 1000 * CPU_TPS;
@@ -3815,10 +3815,10 @@ HRESULT engine_cuda_finalize_particles(struct engine *e) {
 extern "C" HRESULT cuda::engine_cuda_refresh_particles(struct engine *e) {
 
     if(engine_cuda_finalize_particles(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     if(engine_cuda_allocate_particles(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     bool is_stateful = e->nr_fluxes_cuda > 1;
 
@@ -3885,10 +3885,10 @@ extern "C" HRESULT cuda::engine_cuda_finalize_particle_states(struct engine *e) 
 
 extern "C" HRESULT cuda::engine_cuda_refresh_particle_states(struct engine *e) {
     if(engine_cuda_finalize_particle_states(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     if(engine_cuda_allocate_particle_states(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     for(int did = 0; did < e->nr_devices; did++) {
 
