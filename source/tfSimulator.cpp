@@ -723,7 +723,6 @@ HRESULT TissueForge::Simulator_init(const Simulator::Config &conf, const std::ve
 
     #ifdef TF_WITHCUDA
     cuda::init();
-    cuda::setGLDevice(0);
     _SimulatorCUDAConfig = new cuda::SimulatorConfig();
     #endif
     
@@ -835,7 +834,6 @@ HRESULT Simulator::initConfig(const Simulator::Config &conf, const Simulator::GL
 
     #ifdef TF_WITHCUDA
     cuda::init();
-    cuda::setGLDevice(0);
     _SimulatorCUDAConfig = new cuda::SimulatorConfig();
     #endif
 

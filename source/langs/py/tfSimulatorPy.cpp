@@ -483,7 +483,6 @@ PyObject *py::SimulatorPy_init(PyObject *args, PyObject *kwargs) {
 
         #ifdef TF_WITHCUDA
         cuda::init();
-        cuda::setGLDevice(0);
         sim->makeCUDAConfigCurrent(new cuda::SimulatorConfig());
         #endif
 
