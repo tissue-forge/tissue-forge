@@ -243,7 +243,7 @@ void TissueForge::ParticleType::setFrozen(const bool &frozen) {
 }
 
 bool TissueForge::ParticleType::getFrozenX() {
-    return particle_flags & PARTICLE_FROZEN;
+    return particle_flags & PARTICLE_FROZEN_X;
 }
 
 void TissueForge::ParticleType::setFrozenX(const bool &frozen) {
