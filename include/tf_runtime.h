@@ -34,6 +34,7 @@
 #include <tfFlux.h>
 #include <event/tfParticleEventSingle.h>
 #include <event/tfParticleTimeEvent.h>
+#include <io/tfIO.h>
 #include <rendering/tfClipPlane.h>
 #include <rendering/tfKeyEvent.h>
 #include <rendering/tfColorMapper.h>
