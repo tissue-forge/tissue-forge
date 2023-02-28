@@ -31,26 +31,12 @@ namespace VMod = TissueForge::models::vertex;
 
 std::string VMod::io::VertexSolverFIOModule::moduleName() { return "VertexSolver"; }
 
-#define TF_MESH_IOTOEASY(fe, key, member) \
-    fe = new TissueForge::io::IOElement(); \
-    if(TissueForge::io::toFile(member, metaData, fe) != S_OK)  \
-        return E_FAIL; \
-    fe->parent = fileElement; \
-    fileElement->children[key] = fe;
-
-#define TF_MESH_IOFROMEASY(feItr, children, metaData, key, member_p) \
-    feItr = children.find(key); \
-    if(feItr == children.end() || TissueForge::io::fromFile(*feItr->second, metaData, member_p) != S_OK) \
-        return E_FAIL;
-
-HRESULT VMod::io::VertexSolverFIOModule::toFile(const TissueForge::io::MetaData &metaData, TissueForge::io::IOElement *fileElement) {
+HRESULT VMod::io::VertexSolverFIOModule::toFile(const TissueForge::io::MetaData &metaData, TissueForge::io::IOElement &fileElement) {
 
     VMod::MeshSolver *solver = VMod::MeshSolver::get();
 
     if(!solver) 
         return tf_error(E_FAIL, "toFile requested without a solver");
-
-    TissueForge::io::IOElement *fe;
 
     // Store types
 
@@ -61,8 +47,8 @@ HRESULT VMod::io::VertexSolverFIOModule::toFile(const TissueForge::io::MetaData 
         bodyTypes.push_back(*o);
         bodyTypeIds.push_back(o->id);
     }
-    TF_MESH_IOTOEASY(fe, "bodyTypes", bodyTypes);
-    TF_MESH_IOTOEASY(fe, "bodyTypeIds", bodyTypeIds);
+    TF_IOTOEASY(fileElement, metaData, "bodyTypes", bodyTypes);
+    TF_IOTOEASY(fileElement, metaData, "bodyTypeIds", bodyTypeIds);
 
     std::vector<VMod::SurfaceType> surfaceTypes;
     std::vector<int> surfaceTypeIds;
@@ -71,9 +57,9 @@ HRESULT VMod::io::VertexSolverFIOModule::toFile(const TissueForge::io::MetaData 
         surfaceTypes.push_back(*o);
         surfaceTypeIds.push_back(o->id);
     }
-    TF_MESH_IOTOEASY(fe, "surfaceTypes", surfaceTypes);
-    TF_MESH_IOTOEASY(fe, "surfaceTypeIds", surfaceTypeIds);
-    TF_MESH_IOTOEASY(fe, "mesh", solver->mesh);
+    TF_IOTOEASY(fileElement, metaData, "surfaceTypes", surfaceTypes);
+    TF_IOTOEASY(fileElement, metaData, "surfaceTypeIds", surfaceTypeIds);
+    TF_IOTOEASY(fileElement, metaData, "mesh", solver->mesh);
 
     return S_OK;
 }
@@ -88,31 +74,29 @@ HRESULT VMod::io::VertexSolverFIOModule::fromFile(const TissueForge::io::MetaDat
         return tf_error(E_FAIL, "Failed clearing previous import");
     VMod::io::VertexSolverFIOModule::importSummary = new VMod::io::VertexSolverFIOImportSummary();
 
-    TissueForge::io::IOChildMap::const_iterator feItr;
-
     // Load and register types and store their id maps
 
     std::vector<int> bodyTypeIds;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "bodyTypeIds", &bodyTypeIds);
+    TF_IOFROMEASY(fileElement, metaData, "bodyTypeIds", &bodyTypeIds);
     for(size_t i = 0; i < bodyTypeIds.size(); i++) 
         VMod::io::VertexSolverFIOModule::importSummary->bodyTypeIdMap.insert({bodyTypeIds[i], solver->numBodyTypes() + i});
     std::vector<VMod::BodyType*> bodyTypes;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "bodyTypes", &bodyTypes);
+    TF_IOFROMEASY(fileElement, metaData, "bodyTypes", &bodyTypes);
     for(size_t i = 0; i < bodyTypes.size(); i++) 
         solver->registerType(bodyTypes[i]);
 
     std::vector<int> surfaceTypeIds;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "surfaceTypeIds", &surfaceTypeIds);
+    TF_IOFROMEASY(fileElement, metaData, "surfaceTypeIds", &surfaceTypeIds);
     for(size_t i = 0; i < surfaceTypeIds.size(); i++) 
         VMod::io::VertexSolverFIOModule::importSummary->surfaceTypeIdMap.insert({surfaceTypeIds[i], solver->numSurfaceTypes() + i});
     std::vector<VMod::SurfaceType*> surfaceTypes;
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "surfaceTypes", &surfaceTypes);
+    TF_IOFROMEASY(fileElement, metaData, "surfaceTypes", &surfaceTypes);
     for(size_t i = 0; i < surfaceTypes.size(); i++) 
         solver->registerType(surfaceTypes[i]);
 
     // Load meshes
 
-    TF_MESH_IOFROMEASY(feItr, fileElement.children, metaData, "mesh", solver->mesh);
+    TF_IOFROMEASY(fileElement, metaData, "mesh", solver->mesh);
 
     return S_OK;
 }

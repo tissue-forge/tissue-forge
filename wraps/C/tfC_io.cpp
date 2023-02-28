@@ -192,11 +192,11 @@ struct tfIoFIOModule : io::FIOModule {
 
     std::string moduleName() { return this->_moduleName; }
 
-    HRESULT toFile(const io::MetaData &metaData, io::IOElement *fileElement) {
+    HRESULT toFile(const io::MetaData &metaData, io::IOElement &fileElement) {
         tfIoMetaDataHandle _metaData;
         tfIoIOElementHandle _fileElement;
         TissueForge::castC(metaData, &_metaData);
-        TissueForge::castC(*fileElement, &_fileElement);
+        TissueForge::castC(fileElement, &_fileElement);
         return this->_toFile(_metaData, &_fileElement);
     }
 
@@ -321,13 +321,13 @@ HRESULT tfIoIOElement_destroy(struct tfIoIOElementHandle *handle) {
 HRESULT tfIoIOElement_getType(struct tfIoIOElementHandle *handle, char **type, unsigned int *numChars) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_PTRCHECK(numChars);
-    TissueForge::capi::str2Char(ioel->type, type, numChars);
+    TissueForge::capi::str2Char(ioel->get()->type, type, numChars);
     return S_OK;
 }
 
 HRESULT tfIoIOElement_setType(struct tfIoIOElementHandle *handle, const char *type) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
-    ioel->type = type;
+    ioel->get()->type = type;
     return S_OK;
 }
 
@@ -335,42 +335,42 @@ HRESULT tfIoIOElement_getValue(struct tfIoIOElementHandle *handle, char **value,
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_PTRCHECK(value);
     TFC_PTRCHECK(numChars);
-    return TissueForge::capi::str2Char(ioel->value, value, numChars);
+    return TissueForge::capi::str2Char(ioel->get()->value, value, numChars);
 }
 
 HRESULT tfIoIOElement_setValue(struct tfIoIOElementHandle *handle, const char *value) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_PTRCHECK(value);
-    ioel->value = value;
+    ioel->get()->value = value;
     return S_OK;
 }
 
 HRESULT tfIoIOElement_hasParent(struct tfIoIOElementHandle *handle, bool *hasParent) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_PTRCHECK(hasParent);
-    *hasParent = ioel->parent != NULL;
+    *hasParent = ioel->get()->parent.get()->type.size() > 0;
     return S_OK;
 }
 
 HRESULT tfIoIOElement_getParent(struct tfIoIOElementHandle *handle, struct tfIoIOElementHandle *parent) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
-    TFC_PTRCHECK(ioel->parent);
     TFC_PTRCHECK(parent);
-    parent->tfObj = (void*)ioel->parent;
+    TissueForge::io::IOElement *_parent = new TissueForge::io::IOElement(ioel->get()->parent);
+    parent->tfObj = (void*)_parent;
     return S_OK;
 }
 
 HRESULT tfIoIOElement_setParent(struct tfIoIOElementHandle *handle, struct tfIoIOElementHandle *parent) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_IOELEMENTHANDLE_GET(parent, pioel);
-    ioel->parent = pioel;
+    ioel->get()->parent = *pioel;
     return S_OK;
 }
 
 HRESULT tfIoIOElement_getNumChildren(struct tfIoIOElementHandle *handle, unsigned int *numChildren) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_PTRCHECK(numChildren);
-    *numChildren = ioel->children.size();
+    *numChildren = ioel->get()->children.size();
     return S_OK;
 }
 
@@ -378,13 +378,13 @@ HRESULT tfIoIOElement_getKeys(struct tfIoIOElementHandle *handle, char ***keys) 
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     if(!keys) 
         return E_FAIL;
-    auto numChildren = ioel->children.size();
+    auto numChildren = ioel->get()->children.size();
     if(numChildren > 0) {
         char **_keys = (char**)malloc(numChildren * sizeof(char*));
         if(!_keys) 
             return E_OUTOFMEMORY;
         unsigned int i = 0;
-        for(auto &itr : ioel->children) {
+        for(auto &itr : ioel->get()->children) {
             char *_c = new char[itr.first.size() + 1];
             std::strcpy(_c, itr.first.c_str());
             _keys[i] = _c;
@@ -398,10 +398,11 @@ HRESULT tfIoIOElement_getKeys(struct tfIoIOElementHandle *handle, char ***keys) 
 HRESULT tfIoIOElement_getChild(struct tfIoIOElementHandle *handle, const char *key, struct tfIoIOElementHandle *child) {
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_PTRCHECK(child);
-    auto itr = ioel->children.find(key);
-    if(itr == ioel->children.end()) 
+    auto itr = ioel->get()->children.find(key);
+    if(itr == ioel->get()->children.end()) 
         return E_FAIL;
-    child->tfObj = (void*)itr->second;
+    TissueForge::io::IOElement *_child = new TissueForge::io::IOElement(itr->second);
+    child->tfObj = (void*)_child;
     return S_OK;
 }
 
@@ -409,7 +410,7 @@ HRESULT tfIoIOElement_setChild(struct tfIoIOElementHandle *handle, const char *k
     TFC_IOELEMENTHANDLE_GET(handle, ioel);
     TFC_PTRCHECK(key);
     TFC_IOELEMENTHANDLE_GET(child, cioel);
-    ioel->children.insert({key, cioel});
+    ioel->get()->children.insert({key, *cioel});
     return S_OK;
 }
 
@@ -1325,7 +1326,10 @@ HRESULT tfIoFIOModule_load(struct tfIoFIOModuleHandle *handle) {
 
 
 HRESULT tfIoFIO_getIORootElement(struct tfIoIOElementHandle *handle) {
-    io::IOElement *rootElement = io::FIO::currentRootElement == NULL ? io::FIO::generateIORootElement() : io::FIO::currentRootElement;
+    io::IOElement *rootElement;
+    if(!io::FIO::hasImport()) 
+        io::FIO::generateIORootElement();
+    io::FIO::getCurrentIORootElement(rootElement);
     if(!rootElement) 
         return E_FAIL;
     handle->tfObj = (void*)rootElement;
@@ -1338,7 +1342,7 @@ HRESULT tfIoFIO_releaseIORootElement() {
 
 HRESULT tfIoFIO_hasImport(bool *value) {
     TFC_PTRCHECK(value);
-    *value = io::FIO::currentRootElement != NULL;
+    *value = io::FIO::hasImport();
     return S_OK;
 }
 

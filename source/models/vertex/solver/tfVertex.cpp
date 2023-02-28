@@ -1463,31 +1463,17 @@ VertexHandle VertexHandle::split(const FVector3 &sep) {
 namespace TissueForge::io {
 
 
-    #define TF_MESH_VERTEXIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_MESH_VERTEXIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Vertex *dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(TissueForge::models::vertex::Vertex *dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
-
-        TF_MESH_VERTEXIOTOEASY(fe, "objId", dataElement->objectId());
+        TF_IOTOEASY(fileElement, metaData, "objId", dataElement->objectId());
 
         ParticleHandle *ph = dataElement->particle();
         if(ph == NULL) {
-            TF_MESH_VERTEXIOTOEASY(fe, "pid", -1);
+            TF_IOTOEASY(fileElement, metaData, "pid", -1);
         } 
         else {
-            TF_MESH_VERTEXIOTOEASY(fe, "pid", ph->getId());
+            TF_IOTOEASY(fileElement, metaData, "pid", ph->getId());
         }
 
         std::vector<TissueForge::models::vertex::Surface*> surfaces = dataElement->getSurfaces();
@@ -1495,9 +1481,9 @@ namespace TissueForge::io {
         surfaceIds.reserve(surfaces.size());
         for(auto &s : surfaces) 
             surfaceIds.push_back(s->objectId());
-        TF_MESH_VERTEXIOTOEASY(fe, "surfaces", surfaceIds);
+        TF_IOTOEASY(fileElement, metaData, "surfaces", surfaceIds);
 
-        fileElement->type = "Vertex";
+        fileElement.get()->type = "Vertex";
 
         return S_OK;
     }
@@ -1510,10 +1496,8 @@ namespace TissueForge::io {
         else if(!TissueForge::models::vertex::io::VertexSolverFIOModule::hasImport()) 
             return tf_error(E_FAIL, "No vertex import data available");
 
-        IOChildMap::const_iterator feItr;
-
         int pidOld;
-        TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "pid", &pidOld);
+        TF_IOFROMEASY(fileElement, metaData, "pid", &pidOld);
         auto idItr = FIO::importSummary->particleIdMap.find(pidOld);
         if(idItr == FIO::importSummary->particleIdMap.end() || idItr->second < 0) 
             return tf_error(E_FAIL, "Could not locate particle to import");
@@ -1524,19 +1508,17 @@ namespace TissueForge::io {
         }
 
         int objIdOld;
-        TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "objId", &objIdOld);
+        TF_IOFROMEASY(fileElement, metaData, "objId", &objIdOld);
         TissueForge::models::vertex::io::VertexSolverFIOModule::importSummary->vertexIdMap.insert({objIdOld, (*dataElement)->objectId()});
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::VertexHandle &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        IOElement *fe;
+    HRESULT toFile(const TissueForge::models::vertex::VertexHandle &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
 
-        TF_MESH_VERTEXIOTOEASY(fe, "id", dataElement.id);
-
-        fileElement->type = "VertexHandle";
+        fileElement.get()->type = "VertexHandle";
 
         return S_OK;
     }
@@ -1544,10 +1526,8 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::VertexHandle *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
         int id;
-        TF_MESH_VERTEXIOFROMEASY(feItr, fileElement.children, metaData, "id", &id);
+        TF_IOFROMEASY(fileElement, metaData, "id", &id);
         *dataElement = TissueForge::models::vertex::VertexHandle(id);
 
         return S_OK;
@@ -1555,10 +1535,10 @@ namespace TissueForge::io {
 }
 
 std::string TissueForge::models::vertex::Vertex::toString() {
-    TissueForge::io::IOElement el;
+    TissueForge::io::IOElement el = TissueForge::io::IOElement::create();
     std::string result;
-    if(TissueForge::io::toFile(this, TissueForge::io::MetaData(), &el) == S_OK) 
-        result = TissueForge::io::toStr(&el);
+    if(TissueForge::io::toFile(this, TissueForge::io::MetaData(), el) == S_OK) 
+        result = TissueForge::io::toStr(el);
     else 
         result = "";
     return result;

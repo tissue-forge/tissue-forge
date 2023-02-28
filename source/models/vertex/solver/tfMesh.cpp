@@ -537,22 +537,8 @@ HRESULT Mesh::remove(Body *b) {
 namespace TissueForge::io {
 
 
-    #define TF_MESH_MESHIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_MESH_MESHIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Mesh *dataElement, const MetaData &metaData, IOElement *fileElement) {
-
-        IOElement *fe;
+    HRESULT toFile(TissueForge::models::vertex::Mesh *dataElement, const MetaData &metaData, IOElement &fileElement) {
 
         std::vector<TissueForge::models::vertex::Vertex*> vertices;
         if(dataElement->numVertices() > 0) {
@@ -563,7 +549,7 @@ namespace TissueForge::io {
                     vertices.push_back(o);
             }
         }
-        TF_MESH_MESHIOTOEASY(fe, "vertices", vertices);
+        TF_IOTOEASY(fileElement, metaData, "vertices", vertices);
 
         std::vector<TissueForge::models::vertex::Surface*> surfaces;
         if(dataElement->numSurfaces() > 0) {
@@ -574,7 +560,7 @@ namespace TissueForge::io {
                     surfaces.push_back(o);
             }
         }
-        TF_MESH_MESHIOTOEASY(fe, "surfaces", surfaces);
+        TF_IOTOEASY(fileElement, metaData, "surfaces", surfaces);
 
         std::vector<TissueForge::models::vertex::Body*> bodies;
         if(dataElement->numBodies() > 0) {
@@ -585,13 +571,13 @@ namespace TissueForge::io {
                     bodies.push_back(o);
             }
         }
-        TF_MESH_MESHIOTOEASY(fe, "bodies", bodies);
+        TF_IOTOEASY(fileElement, metaData, "bodies", bodies);
 
         if(dataElement->hasQuality()) {
-            TF_MESH_MESHIOTOEASY(fe, "quality", dataElement->getQuality());
+            TF_IOTOEASY(fileElement, metaData, "quality", dataElement->getQuality());
         }
 
-        fileElement->type = "Mesh";
+        fileElement.get()->type = "Mesh";
 
         return S_OK;
     }
@@ -608,25 +594,21 @@ namespace TissueForge::io {
         if(!solver) 
             return tf_error(E_FAIL, "No vertex solver available");
 
-        IOChildMap::const_iterator feItr;
-
         // Import objects
 
-        IOChildMap::const_iterator feItr_vertices;
         std::vector<TissueForge::models::vertex::Vertex*> vertices;
-        TF_MESH_MESHIOFROMEASY(feItr_vertices, fileElement.children, metaData, "vertices", &vertices);
-        IOChildMap::const_iterator feItr_surfaces;
+        TF_IOFROMEASY(fileElement, metaData, "vertices", &vertices);
         std::vector<TissueForge::models::vertex::Surface*> surfaces;
-        TF_MESH_MESHIOFROMEASY(feItr_surfaces, fileElement.children, metaData, "surfaces", &surfaces);
-        IOChildMap::const_iterator feItr_bodies;
+        TF_IOFROMEASY(fileElement, metaData, "surfaces", &surfaces);
         std::vector<TissueForge::models::vertex::Body*> bodies;
-        TF_MESH_MESHIOFROMEASY(feItr_bodies, fileElement.children, metaData, "bodies", &bodies);
+        TF_IOFROMEASY(fileElement, metaData, "bodies", &bodies);
 
         // Get quality, if any
 
-        if(fileElement.children.find("quality") != fileElement.children.end()) {
+        IOChildMap fec = IOElement::children(fileElement);
+        if(fec.find("quality") != fec.end()) {
             TissueForge::models::vertex::MeshQuality quality;
-            TF_MESH_MESHIOFROMEASY(feItr, fileElement.children, metaData, "quality", &quality);
+            TF_IOFROMEASY(fileElement, metaData, "quality", &quality);
             (*dataElement).setQuality(new TissueForge::models::vertex::MeshQuality(quality));
         }
 
@@ -635,10 +617,9 @@ namespace TissueForge::io {
 }
 
 std::string TissueForge::models::vertex::Mesh::toString() {
-    TissueForge::io::IOElement *el = new TissueForge::io::IOElement();
+    TissueForge::io::IOElement el = TissueForge::io::IOElement::create();
     std::string result;
     if(TissueForge::io::toFile(this, TissueForge::io::MetaData(), el) != S_OK) result = "";
     else result = TissueForge::io::toStr(el);
-    delete el;
     return result;
 }

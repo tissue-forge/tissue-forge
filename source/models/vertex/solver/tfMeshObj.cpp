@@ -66,11 +66,12 @@ namespace TissueForge::io {
 
 template <typename T> 
 bool MeshObjActor_isString(const IOElement &fileElement, const MetaData &metaData) {
-    auto itr = fileElement.children.find("name");
-    if(itr == fileElement.children.end()) 
+    IOChildMap fec = IOElement::children(fileElement);
+    auto itr = fec.find("name");
+    if(itr == fec.end()) 
         return false;
     std::string name;
-    if(fromFile<std::string>(*itr->second, metaData, &name) != S_OK) 
+    if(fromFile<std::string>(itr->second, metaData, &name) != S_OK) 
         return false;
     return strcmp(name.c_str(), T::actorName().c_str()) == 0;
 }
@@ -89,11 +90,10 @@ bool MeshObjActor_isString(const IOElement &fileElement, const MetaData &metaDat
 
 
 template <>
-HRESULT toFile(TissueForge::models::vertex::MeshObjActor *dataElement, const MetaData &metaData, IOElement *fileElement) {
-    IOElement *nameElement = new IOElement();
-    fileElement->children["name"] = nameElement;
-    toFile(dataElement->name(), metaData, nameElement);
-    fileElement->type = "MeshObjActor";
+HRESULT toFile(TissueForge::models::vertex::MeshObjActor *dataElement, const MetaData &metaData, IOElement &fileElement) {
+    IOElement nameElement = IOElement::create();
+    TF_IOTOEASY(fileElement, metaData, "name", dataElement->name());
+    fileElement.get()->type = "MeshObjActor";
 
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::Adhesion, dataElement, metaData, fileElement);
     MESHOBJACTOR_CONDTOFILECASTRET(TissueForge::models::vertex::BodyForce, dataElement, metaData, fileElement);
@@ -130,10 +130,9 @@ HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueF
 };
 
 std::string TissueForge::models::vertex::MeshObjActor::toString() {
-    TissueForge::io::IOElement *el = new TissueForge::io::IOElement();
+    TissueForge::io::IOElement el = TissueForge::io::IOElement::create();
     std::string result;
     if(TissueForge::io::toFile(this, TissueForge::io::MetaData(), el) != S_OK) result = "";
     else result = TissueForge::io::toStr(el);
-    delete el;
     return result;
 }

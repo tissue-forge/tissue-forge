@@ -131,29 +131,14 @@ rendering::Style *rendering::Style::fromString(const std::string &str) {
 namespace TissueForge::io {
 
     template <>
-    HRESULT toFile(const rendering::Style &dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(const rendering::Style &dataElement, const MetaData &metaData, IOElement &fileElement) { 
         
-        IOElement *fe;
-
-        fe = new IOElement();
         fVector3 color = {dataElement.color.r(), dataElement.color.g(), dataElement.color.b()};
-        if(toFile(color, metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["color"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.flags, metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["flags"] = fe;
+        TF_IOTOEASY(fileElement, metaData, "color", color);
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
 
         if(dataElement.mapper != NULL) {
-            fe = new IOElement();
-            if(toFile(*dataElement.mapper, metaData, fe) != S_OK) 
-                return E_FAIL;
-            fe->parent = fileElement;
-            fileElement->children["mapper"] = fe;
+            TF_IOTOEASY(fileElement, metaData, "mapper", *dataElement.mapper);
         }
 
         return S_OK;
@@ -162,23 +147,17 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, rendering::Style *dataElement) { 
 
-        IOChildMap::const_iterator feItr;
-
         fVector3 color;
-        feItr = fileElement.children.find("color");
-        if(feItr != fileElement.children.end() && fromFile(*feItr->second, metaData, &color) != S_OK)
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "color", &color);
         dataElement->color = {color.x(), color.y(), color.z()};
 
-        feItr = fileElement.children.find("flags");
-        if(feItr != fileElement.children.end() && fromFile(*feItr->second, metaData, &dataElement->flags) != S_OK)
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "flags", &dataElement->flags);
 
-        feItr = fileElement.children.find("mapper");
-        if(feItr != fileElement.children.end()) {
+        IOChildMap fec = IOElement::children(fileElement);
+        auto feItr = fec.find("mapper");
+        if(feItr != fec.end()) {
             rendering::ColorMapper *mapper = new rendering::ColorMapper();
-            if(fromFile(*feItr->second, metaData, mapper) != S_OK) 
-                return E_FAIL;
+            TF_IOFROMEASY(fileElement, metaData, "mapper", mapper);
             dataElement->setColorMapper(mapper);
         }
 

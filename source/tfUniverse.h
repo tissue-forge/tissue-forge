@@ -326,7 +326,7 @@ namespace TissueForge {
     namespace io { 
 
         template <>
-        HRESULT toFile(const Universe &dataElement, const MetaData &metaData, IOElement *fileElement);
+        HRESULT toFile(const Universe &dataElement, const MetaData &metaData, IOElement &fileElement);
 
         template <>
         HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Universe *dataElement);

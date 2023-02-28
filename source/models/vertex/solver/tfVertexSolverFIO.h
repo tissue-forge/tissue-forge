@@ -68,7 +68,7 @@ namespace TissueForge::models::vertex::io {
         inline static VertexSolverFIOImportSummary *importSummary = NULL;
 
         std::string moduleName() override;
-        HRESULT toFile(const TissueForge::io::MetaData &metaData, TissueForge::io::IOElement *fileElement) override;
+        HRESULT toFile(const TissueForge::io::MetaData &metaData, TissueForge::io::IOElement &fileElement) override;
         HRESULT fromFile(const TissueForge::io::MetaData &metaData, const TissueForge::io::IOElement &fileElement) override;
 
         /**

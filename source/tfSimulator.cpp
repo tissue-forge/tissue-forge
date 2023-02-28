@@ -158,27 +158,27 @@ struct ArgumentsWrapper  {
 
 HRESULT TissueForge::initSimConfigFromFile(const std::string &loadFilePath, Simulator::Config &conf) {
 
-    if(io::FIO::currentRootElement != NULL) {
+    if(io::FIO::hasImport()) {
         tf_error(E_FAIL, "Cannot load from multiple files");
         return E_FAIL;
     }
 
-    io::IOElement *fe = io::FIO::fromFile(loadFilePath);
-    if(fe == NULL) {
+    io::IOElement fe;
+    if(io::FIO::fromFile(loadFilePath, fe) != S_OK) {
         tf_error(E_FAIL, "Error loading file");
         return E_FAIL;
     }
 
     io::MetaData metaData, metaDataFile;
 
-    auto feItr = fe->children.find(io::FIO::KEY_METADATA);
-    if(feItr == fe->children.end() || io::fromFile(*feItr->second, metaData, &metaDataFile) != S_OK) {
+    auto feItr = fe.get()->children.find(io::FIO::KEY_METADATA);
+    if(feItr == fe.get()->children.end() || io::fromFile(feItr->second, metaData, &metaDataFile) != S_OK) {
         tf_error(E_FAIL, "Error loading metadata");
         return E_FAIL;
     }
 
-    feItr = fe->children.find(io::FIO::KEY_SIMULATOR);
-    if(feItr == fe->children.end() || io::fromFile(*feItr->second, metaDataFile, &conf) != S_OK) {
+    feItr = fe.get()->children.find(io::FIO::KEY_SIMULATOR);
+    if(feItr == fe.get()->children.end() || io::fromFile(feItr->second, metaDataFile, &conf) != S_OK) {
         tf_error(E_FAIL, "Error loading simulator");
         return E_FAIL;
     }
@@ -681,18 +681,21 @@ HRESULT TissueForge::universe_init(const UniverseConfig &conf ) {
 
     // if loading from file, populate universe if data is available
     
-    if(io::FIO::currentRootElement != NULL) {
+    if(io::FIO::hasImport()) {
         TF_Log(LOG_INFORMATION) << "Populating universe from file";
 
         io::MetaData metaData, metaDataFile;
 
-        auto feItr = io::FIO::currentRootElement->children.find(io::FIO::KEY_METADATA);
-        if(feItr == io::FIO::currentRootElement->children.end() || io::fromFile(*feItr->second, metaData, &metaDataFile) != S_OK) 
+        io::IOElement currentRootElement;
+        io::FIO::getCurrentIORootElement(&currentRootElement);
+
+        auto feItr = currentRootElement.get()->children.find(io::FIO::KEY_METADATA);
+        if(feItr == currentRootElement.get()->children.end() || io::fromFile(feItr->second, metaData, &metaDataFile) != S_OK) 
             return tf_error(E_FAIL, errs_err_msg[MDCERR_io]);
 
-        feItr = io::FIO::currentRootElement->children.find(io::FIO::KEY_UNIVERSE);
-        if(feItr != io::FIO::currentRootElement->children.end()) {
-            if(io::fromFile(*feItr->second, metaDataFile, Universe::get()) != S_OK) 
+        feItr = currentRootElement.get()->children.find(io::FIO::KEY_UNIVERSE);
+        if(feItr != currentRootElement.get()->children.end()) {
+            if(io::fromFile(feItr->second, metaDataFile, Universe::get()) != S_OK) 
                 return tf_error(E_FAIL, errs_err_msg[MDCERR_io]);
         }
     }
@@ -920,32 +923,18 @@ HRESULT Simulator::makeCurrent() {
 
 namespace TissueForge::io {
 
-    #define TF_SIMULATORIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_SIMULATORIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(const Simulator &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Simulator &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
-
-        TF_SIMULATORIOTOEASY(fe, "dim", FVector3::from(_Engine.s.dim));
-        TF_SIMULATORIOTOEASY(fe, "cutoff", _Engine.s.cutoff);
-        TF_SIMULATORIOTOEASY(fe, "cells", iVector3::from(_Engine.s.cdim));
-        TF_SIMULATORIOTOEASY(fe, "integrator", (int)_Engine.integrator);
-        TF_SIMULATORIOTOEASY(fe, "dt", _Engine.dt);
-        TF_SIMULATORIOTOEASY(fe, "time", _Engine.time);
-        TF_SIMULATORIOTOEASY(fe, "boundary_conditions", _Engine.boundary_conditions);
-        TF_SIMULATORIOTOEASY(fe, "max_distance", _Engine.particle_max_dist_fraction * _Engine.s.h[0]);
-        TF_SIMULATORIOTOEASY(fe, "seed", getSeed());
+        TF_IOTOEASY(fileElement, metaData, "dim", FVector3::from(_Engine.s.dim));
+        TF_IOTOEASY(fileElement, metaData, "cutoff", _Engine.s.cutoff);
+        TF_IOTOEASY(fileElement, metaData, "cells", iVector3::from(_Engine.s.cdim));
+        TF_IOTOEASY(fileElement, metaData, "integrator", (int)_Engine.integrator);
+        TF_IOTOEASY(fileElement, metaData, "dt", _Engine.dt);
+        TF_IOTOEASY(fileElement, metaData, "time", _Engine.time);
+        TF_IOTOEASY(fileElement, metaData, "boundary_conditions", _Engine.boundary_conditions);
+        TF_IOTOEASY(fileElement, metaData, "max_distance", _Engine.particle_max_dist_fraction * _Engine.s.h[0]);
+        TF_IOTOEASY(fileElement, metaData, "seed", getSeed());
         
         if(dataElement.app != NULL) {
             auto renderer = dataElement.app->getRenderer();
@@ -962,14 +951,14 @@ namespace TissueForge::io {
                     points.push_back(point);
                 }
 
-                TF_SIMULATORIOTOEASY(fe, "clipPlaneNormals", normals);
-                TF_SIMULATORIOTOEASY(fe, "clipPlanePoints", points);
+                TF_IOTOEASY(fileElement, metaData, "clipPlaneNormals", normals);
+                TF_IOTOEASY(fileElement, metaData, "clipPlanePoints", points);
 
             }
 
         }
 
-        fileElement->type = "Simulator";
+        fileElement.get()->type = "Simulator";
 
         return S_OK;
     }
@@ -977,42 +966,42 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Simulator::Config *dataElement) { 
 
-        io::IOChildMap::const_iterator feItr;
-
         // Do sim setup
 
         FVector3 dim(0.);
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "dim", &dim);
+        TF_IOFROMEASY(fileElement, metaData, "dim", &dim);
         dataElement->universeConfig.dim = FVector3(dim);
 
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "cutoff", &dataElement->universeConfig.cutoff);
+        TF_IOFROMEASY(fileElement, metaData, "cutoff", &dataElement->universeConfig.cutoff);
 
         iVector3 cells(0);
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "cells", &cells);
+        TF_IOFROMEASY(fileElement, metaData, "cells", &cells);
         dataElement->universeConfig.spaceGridSize = cells;
         
         int integrator;
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "integrator", &integrator); 
+        TF_IOFROMEASY(fileElement, metaData, "integrator", &integrator); 
         dataElement->universeConfig.integrator = (EngineIntegrator)integrator;
         
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "dt", &dataElement->universeConfig.dt);
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "time", &dataElement->universeConfig.start_step);
+        TF_IOFROMEASY(fileElement, metaData, "dt", &dataElement->universeConfig.dt);
+        TF_IOFROMEASY(fileElement, metaData, "time", &dataElement->universeConfig.start_step);
         
         BoundaryConditionsArgsContainer *bcArgs = new BoundaryConditionsArgsContainer();
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "boundary_conditions", bcArgs);
+        TF_IOFROMEASY(fileElement, metaData, "boundary_conditions", bcArgs);
         dataElement->universeConfig.setBoundaryConditions(bcArgs);
         
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "max_distance", &dataElement->universeConfig.max_distance);
+        TF_IOFROMEASY(fileElement, metaData, "max_distance", &dataElement->universeConfig.max_distance);
 
         unsigned int seed;
-        TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "seed", &seed);
+        TF_IOFROMEASY(fileElement, metaData, "seed", &seed);
         dataElement->setSeed(seed);
+
+        IOChildMap fec = IOElement::children(fileElement);
         
-        if(fileElement.children.find("clipPlaneNormals") != fileElement.children.end()) {
+        if(fec.find("clipPlaneNormals") != fec.end()) {
             std::vector<fVector3> normals, points;
             std::vector<std::tuple<fVector3, fVector3> > clipPlanes;
-            TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "clipPlaneNormals", &normals);
-            TF_SIMULATORIOFROMEASY(feItr, fileElement.children, metaData, "clipPlanePoints", &points);
+            TF_IOFROMEASY(fileElement, metaData, "clipPlaneNormals", &normals);
+            TF_IOFROMEASY(fileElement, metaData, "clipPlanePoints", &points);
             if(normals.size() > 0) {
                 for(unsigned int i = 0; i < normals.size(); i++) 
                     clipPlanes.push_back(std::make_tuple(normals[i], points[i]));

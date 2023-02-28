@@ -103,30 +103,16 @@ py::CustomForcePy *py::CustomForcePy::fromForce(Force *f) {
 namespace TissueForge::io { 
 
 
-    #define TF_FORCEPYIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_FORCEPYIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(const py::CustomForcePy &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const py::CustomForcePy &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "type", dataElement.type);
+        TF_IOTOEASY(fileElement, metaData, "stateVectorIndex", dataElement.stateVectorIndex);
+        TF_IOTOEASY(fileElement, metaData, "updateInterval", dataElement.updateInterval);
+        TF_IOTOEASY(fileElement, metaData, "lastUpdate", dataElement.lastUpdate);
+        TF_IOTOEASY(fileElement, metaData, "force", dataElement.force);
 
-        TF_FORCEPYIOTOEASY(fe, "type", dataElement.type);
-        TF_FORCEPYIOTOEASY(fe, "stateVectorIndex", dataElement.stateVectorIndex);
-        TF_FORCEPYIOTOEASY(fe, "updateInterval", dataElement.updateInterval);
-        TF_FORCEPYIOTOEASY(fe, "lastUpdate", dataElement.lastUpdate);
-        TF_FORCEPYIOTOEASY(fe, "force", dataElement.force);
-
-        fileElement->type = "ConstantPyForce";
+        fileElement.get()->type = "ConstantPyForce";
 
         return S_OK;
     }
@@ -134,13 +120,11 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, py::CustomForcePy *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_FORCEPYIOFROMEASY(feItr, fileElement.children, metaData, "type", &dataElement->type);
-        TF_FORCEPYIOFROMEASY(feItr, fileElement.children, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
-        TF_FORCEPYIOFROMEASY(feItr, fileElement.children, metaData, "updateInterval", &dataElement->updateInterval);
-        TF_FORCEPYIOFROMEASY(feItr, fileElement.children, metaData, "lastUpdate", &dataElement->lastUpdate);
-        TF_FORCEPYIOFROMEASY(feItr, fileElement.children, metaData, "force", &dataElement->force);
+        TF_IOFROMEASY(fileElement, metaData, "type", &dataElement->type);
+        TF_IOFROMEASY(fileElement, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
+        TF_IOFROMEASY(fileElement, metaData, "updateInterval", &dataElement->updateInterval);
+        TF_IOFROMEASY(fileElement, metaData, "lastUpdate", &dataElement->lastUpdate);
+        TF_IOFROMEASY(fileElement, metaData, "force", &dataElement->force);
         dataElement->userFunc = NULL;
         dataElement->callable = NULL;
 

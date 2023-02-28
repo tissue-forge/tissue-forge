@@ -49,7 +49,7 @@ DPDPotential *DPDPotential::fromPot(Potential *pot) {
 }
 
 std::string DPDPotential::toString() {
-    io::IOElement *fe = new io::IOElement();
+    io::IOElement fe = io::IOElement::create();
     io::MetaData metaData;
     if(io::toFile(this, metaData, fe) != S_OK) 
         return "";
@@ -64,32 +64,18 @@ DPDPotential *DPDPotential::fromString(const std::string &str) {
 namespace TissueForge::io {
 
 
-    #define TF_DPDPOTENTIALIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
+    HRESULT toFile(DPDPotential *dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-    #define TF_DPDPOTENTIALIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
+        TF_IOTOEASY(fileElement, metaData, "kind", dataElement->kind);
+        TF_IOTOEASY(fileElement, metaData, "alpha", dataElement->alpha);
+        TF_IOTOEASY(fileElement, metaData, "gamma", dataElement->gamma);
+        TF_IOTOEASY(fileElement, metaData, "sigma", dataElement->sigma);
+        TF_IOTOEASY(fileElement, metaData, "a", dataElement->a);
+        TF_IOTOEASY(fileElement, metaData, "b", dataElement->b);
+        TF_IOTOEASY(fileElement, metaData, "name", std::string(dataElement->name));
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement->flags);
 
-    HRESULT toFile(DPDPotential *dataElement, const MetaData &metaData, IOElement *fileElement) {
-
-        IOElement *fe;
-
-        TF_DPDPOTENTIALIOTOEASY(fe, "kind", dataElement->kind);
-        TF_DPDPOTENTIALIOTOEASY(fe, "alpha", dataElement->alpha);
-        TF_DPDPOTENTIALIOTOEASY(fe, "gamma", dataElement->gamma);
-        TF_DPDPOTENTIALIOTOEASY(fe, "sigma", dataElement->sigma);
-        TF_DPDPOTENTIALIOTOEASY(fe, "a", dataElement->a);
-        TF_DPDPOTENTIALIOTOEASY(fe, "b", dataElement->b);
-        TF_DPDPOTENTIALIOTOEASY(fe, "name", std::string(dataElement->name));
-        TF_DPDPOTENTIALIOTOEASY(fe, "flags", dataElement->flags);
-
-        fileElement->type = "DPDPotential";
+        fileElement.get()->type = "DPDPotential";
 
         return S_OK;
     }
@@ -97,17 +83,15 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, DPDPotential **dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
         uint32_t kind, flags;
-        TF_DPDPOTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "kind", &kind);
-        TF_DPDPOTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "flags", &flags);
+        TF_IOFROMEASY(fileElement, metaData, "kind", &kind);
+        TF_IOFROMEASY(fileElement, metaData, "flags", &flags);
 
         FPTYPE alpha, gamma, sigma, b;
-        TF_DPDPOTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "alpha", &alpha);
-        TF_DPDPOTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "gamma", &gamma);
-        TF_DPDPOTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "sigma", &sigma);
-        TF_DPDPOTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "b", &b);
+        TF_IOFROMEASY(fileElement, metaData, "alpha", &alpha);
+        TF_IOFROMEASY(fileElement, metaData, "gamma", &gamma);
+        TF_IOFROMEASY(fileElement, metaData, "sigma", &sigma);
+        TF_IOFROMEASY(fileElement, metaData, "b", &b);
 
         *dataElement = new DPDPotential(alpha, gamma, sigma, b, flags & POTENTIAL_SHIFTED);
 

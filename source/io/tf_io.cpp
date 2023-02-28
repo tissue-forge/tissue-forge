@@ -28,13 +28,13 @@ using namespace TissueForge;
 
 
 #define TF_IOEASYTOFILE(dataElement, typeName) \
-    fileElement->value = std::to_string(dataElement); \
-    fileElement->type = typeName; \
+    fileElement.get()->value = std::to_string(dataElement); \
+    fileElement.get()->type = typeName; \
     return S_OK;
 
 #define TF_IOFINDSAFE(fileElement, itrName, keyName, valObj) \
-    auto itrName = fileElement.children.find(keyName); \
-    if(itrName == fileElement.children.end()) \
+    auto itrName = fileElement.el->children.find(keyName); \
+    if(itrName == fileElement.el->children.end()) \
         return E_FAIL; \
     valObj = itrName->second;
 
@@ -48,49 +48,49 @@ namespace TissueForge::io {
     // char
 
     template <>
-    HRESULT toFile(const char &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const char &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "char");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, char *dataElement) {
-        *dataElement = fileElement.value[0];
+        *dataElement = IOElement::value(fileElement)[0];
         return S_OK;
     }
 
     // signed char
 
     template <>
-    HRESULT toFile(const signed char &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const signed char &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "signed_char");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, signed char *dataElement) {
-        *dataElement = fileElement.value[0];
+        *dataElement = IOElement::value(fileElement)[0];
         return S_OK;
     }
 
     // unsigned char
 
     template <>
-    HRESULT toFile(const unsigned char &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const unsigned char &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "unsigned_char");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned char *dataElement) {
-        *dataElement = fileElement.value[0];
+        *dataElement = IOElement::value(fileElement)[0];
         return S_OK;
     }
 
     // short
 
     template <>
-    HRESULT toFile(const short &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const short &dataElement, const MetaData &metaData, IOElement &fileElement) {
         if(toFile((int)dataElement, metaData, fileElement) != S_OK) 
             return E_FAIL;
-        fileElement->type = "short";
+        fileElement.get()->type = "short";
         return S_OK;
     }
 
@@ -114,10 +114,10 @@ namespace TissueForge::io {
     // unsigned short
 
     template <>
-    HRESULT toFile(const unsigned short &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const unsigned short &dataElement, const MetaData &metaData, IOElement &fileElement) {
         if(toFile((unsigned int)dataElement, metaData, fileElement) != S_OK) 
             return E_FAIL;
-        fileElement->type = "unsigned_short";
+        fileElement.get()->type = "unsigned_short";
         return S_OK;
     }
 
@@ -141,33 +141,33 @@ namespace TissueForge::io {
     // int
 
     template <>
-    HRESULT toFile(const int &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const int &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "int");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, int *dataElement) {
-        *dataElement = std::stoi(fileElement.value);
+        *dataElement = std::stoi(IOElement::value(fileElement));
         return S_OK;
     }
 
     // unsigned int
 
     template <>
-    HRESULT toFile(const unsigned int &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const unsigned int &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "unsigned_int");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned int *dataElement) {
-        *dataElement = std::stoul(fileElement.value);
+        *dataElement = std::stoul(IOElement::value(fileElement));
         return S_OK;
     }
 
     // bool
 
     template <>
-    HRESULT toFile(const bool &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const bool &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "bool");
     }
 
@@ -183,93 +183,93 @@ namespace TissueForge::io {
     // long
 
     template <>
-    HRESULT toFile(const long &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const long &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "long");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, long *dataElement) {
-        *dataElement = std::stol(fileElement.value);
+        *dataElement = std::stol(IOElement::value(fileElement));
         return S_OK;
     }
 
     // unsigned long
 
     template <>
-    HRESULT toFile(const unsigned long &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const unsigned long &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "unsigned_long");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned long *dataElement) {
-        *dataElement = std::stoul(fileElement.value);
+        *dataElement = std::stoul(IOElement::value(fileElement));
         return S_OK;
     }
 
     // long long
 
     template <>
-    HRESULT toFile(const long long &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const long long &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "long_long");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, long long *dataElement) {
-        *dataElement = std::stoll(fileElement.value);
+        *dataElement = std::stoll(IOElement::value(fileElement));
         return S_OK;
     }
 
     // unsigned long long
 
     template <>
-    HRESULT toFile(const unsigned long long &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const unsigned long long &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "unsigned_long_long");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned long long *dataElement) {
-        *dataElement = std::stoull(fileElement.value);
+        *dataElement = std::stoull(IOElement::value(fileElement));
         return S_OK;
     }
 
     // float
 
     template <>
-    HRESULT toFile(const float &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const float &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "float");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, float *dataElement) {
-        *dataElement = std::stof(fileElement.value);
+        *dataElement = std::stof(IOElement::value(fileElement));
         return S_OK;
     }
 
     // double
 
     template <>
-    HRESULT toFile(const double &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const double &dataElement, const MetaData &metaData, IOElement &fileElement) {
         TF_IOEASYTOFILE(dataElement, "double");
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, double *dataElement) {
-        *dataElement = std::stod(fileElement.value);
+        *dataElement = std::stod(IOElement::value(fileElement));
         return S_OK;
     }
 
     // string
 
     template <>
-    HRESULT toFile(const std::string &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        fileElement->value = dataElement;
-        fileElement->type = "string";
+    HRESULT toFile(const std::string &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        fileElement.get()->value = dataElement;
+        fileElement.get()->type = "string";
         return S_OK;
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::string *dataElement) {
-        *dataElement = std::string(fileElement.value);
+        *dataElement = std::string(IOElement::value(fileElement));
         return S_OK;
     }
 
@@ -282,26 +282,12 @@ namespace TissueForge::io {
     // MetaData
 
     template <>
-    HRESULT toFile(const MetaData &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        IOElement *vMajfe = new IOElement();
-        IOElement *vMinfe = new IOElement();
-        IOElement *vPatfe = new IOElement();
+    HRESULT toFile(const MetaData &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        TF_IOTOEASY(fileElement, metaData, "versionMajor", dataElement.versionMajor);
+        TF_IOTOEASY(fileElement, metaData, "versionMinor", dataElement.versionMinor);
+        TF_IOTOEASY(fileElement, metaData, "versionPatch", dataElement.versionPatch);
 
-        if(toFile(dataElement.versionMajor, metaData, vMajfe) != S_OK) 
-            return E_FAIL;
-        if(toFile(dataElement.versionMinor, metaData, vMinfe) != S_OK) 
-            return E_FAIL;
-        if(toFile(dataElement.versionPatch, metaData, vPatfe) != S_OK) 
-            return E_FAIL;
-        
-        vMajfe->parent = fileElement;
-        vMinfe->parent = fileElement;
-        vPatfe->parent = fileElement;
-        fileElement->children["versionMajor"] = vMajfe;
-        fileElement->children["versionMinor"] = vMinfe;
-        fileElement->children["versionPatch"] = vPatfe;
-
-        fileElement->type = "MetaData";
+        fileElement.get()->type = "MetaData";
 
         return S_OK;
     }
@@ -309,23 +295,9 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, MetaData *dataElement) { 
 
-        IOElement *vMajfe, *vMinfe, *vPatfe;
-        TF_IOFINDSAFE(fileElement, vMajfeItr, "versionMajor", vMajfe);
-        TF_IOFINDSAFE(fileElement, vMinfeItr, "versionMinor", vMinfe);
-        TF_IOFINDSAFE(fileElement, vPatfeItr, "versionPatch", vPatfe);
-
-        unsigned int vMajde, vMinde, vPatde;
-
-        if(fromFile(*vMajfe, metaData, &vMajde) != S_OK) 
-            return E_FAIL;
-        if(fromFile(*vMinfe, metaData, &vMinde) != S_OK) 
-            return E_FAIL;
-        if(fromFile(*vPatfe, metaData, &vPatde) != S_OK) 
-            return E_FAIL;
-
-        dataElement->versionMajor = vMajde;
-        dataElement->versionMinor = vMinde;
-        dataElement->versionPatch = vPatde;
+        TF_IOFROMEASY(fileElement, metaData, "versionMajor", &dataElement->versionMajor);
+        TF_IOFROMEASY(fileElement, metaData, "versionMinor", &dataElement->versionMinor);
+        TF_IOFROMEASY(fileElement, metaData, "versionPatch", &dataElement->versionPatch);
 
         return S_OK;
     }
