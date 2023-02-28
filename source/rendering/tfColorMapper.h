@@ -97,7 +97,7 @@ namespace TissueForge {
     namespace io {
 
         template <>
-        HRESULT toFile(const rendering::ColorMapper &dataElement, const MetaData &metaData, IOElement *fileElement);
+        HRESULT toFile(const rendering::ColorMapper &dataElement, const MetaData &metaData, IOElement &fileElement);
 
         template <>
         HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, rendering::ColorMapper *dataElement);

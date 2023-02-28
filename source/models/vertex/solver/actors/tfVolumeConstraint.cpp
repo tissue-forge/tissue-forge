@@ -61,27 +61,13 @@ FVector3 VolumeConstraint::force(const Body *source, const Vertex *target) {
 namespace TissueForge::io { 
 
 
-    #define TF_ACTORIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_ACTORIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(VolumeConstraint *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(VolumeConstraint *dataElement, const MetaData &metaData, IOElement &fileElement) { 
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "lam", dataElement->lam);
+        TF_IOTOEASY(fileElement, metaData, "constr", dataElement->constr);
 
-        TF_ACTORIOTOEASY(fe, "lam", dataElement->lam);
-        TF_ACTORIOTOEASY(fe, "constr", dataElement->constr);
-
-        fileElement->type = "VolumeConstraint";
+        fileElement.get()->type = "VolumeConstraint";
 
         return S_OK;
     }
@@ -89,11 +75,9 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, VolumeConstraint **dataElement) { 
 
-        IOChildMap::const_iterator feItr;
-
         FloatP_t lam, constr;
-        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "lam", &lam);
-        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "constr", &constr);
+        TF_IOFROMEASY(fileElement, metaData, "lam", &lam);
+        TF_IOFROMEASY(fileElement, metaData, "constr", &constr);
         *dataElement = new VolumeConstraint(lam, constr);
 
         return S_OK;

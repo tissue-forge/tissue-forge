@@ -161,24 +161,11 @@ state::StateVector *state::StateVector::fromString(const std::string &str) {
 namespace TissueForge::io { 
 
     template <>
-    HRESULT toFile(const state::StateVector &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        IOElement *fe;
-
-        fe = new IOElement();
-        fe->parent = fileElement;
-        toFile(dataElement.flags, metaData, fe);
-        fileElement->children["flags"] = fe;
-
-        fe = new IOElement();
-        fe->parent = fileElement;
-        toFile(dataElement.size, metaData, fe);
-        fileElement->children["size"] = fe;
-
+    HRESULT toFile(const state::StateVector &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
+        TF_IOTOEASY(fileElement, metaData, "size", dataElement.size);
         if(dataElement.species != NULL) {
-            fe = new IOElement();
-            fe->parent = fileElement;
-            toFile(*dataElement.species, metaData, fe);
-            fileElement->children["species"] = fe;
+            TF_IOTOEASY(fileElement, metaData, "species", *dataElement.species);
         }
 
         if(dataElement.size > 0) {
@@ -190,23 +177,9 @@ namespace TissueForge::io {
                 species_flags.push_back(dataElement.species_flags[i]);
             }
             
-            fe = new IOElement();
-            fe->parent = fileElement;
-            if(toFile(fvec, metaData, fe) != S_OK) 
-                return E_FAIL;
-            fileElement->children["quantities"] = fe;
-
-            fe = new IOElement();
-            fe->parent = fileElement;
-            if(toFile(q, metaData, fe) != S_OK) 
-                return E_FAIL;
-            fileElement->children["fluxes"] = fe;
-
-            fe = new IOElement();
-            fe->parent = fileElement;
-            if(toFile(species_flags, metaData, fe) != S_OK) 
-                return E_FAIL;
-            fileElement->children["species_flags"] = fe;
+            TF_IOTOEASY(fileElement, metaData, "quantities", fvec);
+            TF_IOTOEASY(fileElement, metaData, "fluxes", q);
+            TF_IOTOEASY(fileElement, metaData, "species_flags", species_flags);
         }
 
         return S_OK;
@@ -214,47 +187,21 @@ namespace TissueForge::io {
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, state::StateVector **dataElement) {
-        std::unordered_map<std::string, IOElement *>::const_iterator feItr;
-        auto c = fileElement.children;
-
         uint32_t flags;
-        feItr = c.find("flags");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &flags) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "flags", &flags);
         
         uint32_t size;
-        feItr = c.find("size");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &size) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "size", &size);
 
         state::SpeciesList *species = new state::SpeciesList();
         std::vector<FloatP_t> fvec, q;
         std::vector<uint32_t> species_flags;
 
         if(size > 0) {
-            feItr = c.find("species");
-            if(feItr == c.end()) 
-                return E_FAIL;
-            fromFile(*feItr->second, metaData, species);
-
-            feItr = c.find("quantities");
-            if(feItr == c.end()) 
-                return E_FAIL;
-            fromFile(*feItr->second, metaData, &fvec);
-
-            feItr = c.find("fluxes");
-            if(feItr == c.end()) 
-                return E_FAIL;
-            fromFile(*feItr->second, metaData, &q);
-
-            feItr = c.find("species_flags");
-            if(feItr == c.end()) 
-                return E_FAIL;
-            fromFile(*feItr->second, metaData, &species_flags);
+            TF_IOFROMEASY(fileElement, metaData, "species", species);
+            TF_IOFROMEASY(fileElement, metaData, "quantities", &fvec);
+            TF_IOFROMEASY(fileElement, metaData, "fluxes", &q);
+            TF_IOFROMEASY(fileElement, metaData, "species_flags", &species_flags);
         }
 
         *dataElement = new state::StateVector(species, 0, 0, flags);

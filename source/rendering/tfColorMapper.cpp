@@ -240,27 +240,11 @@ namespace TissueForge::io {
 
 
     template <>
-    HRESULT toFile(const rendering::ColorMapper &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const rendering::ColorMapper &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.species_index, metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["species_index"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.min_val, metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["min_val"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.max_val, metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["max_val"] = fe;
+        TF_IOTOEASY(fileElement, metaData, "species_index", dataElement.species_index);
+        TF_IOTOEASY(fileElement, metaData, "min_val", dataElement.min_val);
+        TF_IOTOEASY(fileElement, metaData, "max_val", dataElement.max_val);
         
         const int numMaps = sizeof(colormap_items) / sizeof(ColormapItem);
         
@@ -274,11 +258,7 @@ namespace TissueForge::io {
         }
 
         if(cMapName.size() > 0) {
-            fe = new IOElement();
-            if(toFile(cMapName, metaData, fe) != S_OK) 
-                return E_FAIL;
-            fe->parent = fileElement;
-            fileElement->children["colorMap"] = fe;
+            TF_IOTOEASY(fileElement, metaData, "colorMap", cMapName);
         }
 
         return S_OK;
@@ -287,25 +267,15 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, rendering::ColorMapper *dataElement) {
 
-        IOChildMap::const_iterator feItr;
+        TF_IOFROMEASY(fileElement, metaData, "species_index", &dataElement->species_index);
+        TF_IOFROMEASY(fileElement, metaData, "min_val", &dataElement->min_val);
+        TF_IOFROMEASY(fileElement, metaData, "max_val", &dataElement->max_val);
 
-        feItr = fileElement.children.find("species_index");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &dataElement->species_index) != S_OK) 
-            return E_FAIL;
-        
-        feItr = fileElement.children.find("min_val");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &dataElement->min_val) != S_OK) 
-            return E_FAIL;
-
-        feItr = fileElement.children.find("max_val");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &dataElement->max_val) != S_OK) 
-            return E_FAIL;
-
-        feItr = fileElement.children.find("colorMap");
-        if(feItr != fileElement.children.end()) {
+        IOChildMap fec = IOElement::children(fileElement);
+        auto feItr = fec.find("colorMap");
+        if(feItr != fec.end()) {
             std::string cMapName;
-            if(fromFile(*feItr->second, metaData, &cMapName) != S_OK) 
-                return E_FAIL;
+            TF_IOFROMEASY(fileElement, metaData, "colorMap", &cMapName);
 
             auto idx = colormap_index_of_name(cMapName.c_str());
             if(idx >= 0) 

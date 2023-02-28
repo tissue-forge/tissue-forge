@@ -26,6 +26,7 @@
 #include <io/tfThreeDFRenderData.h>
 #include <io/tfIO.h>
 #include <io/tfFIO.h>
+#include <io/tf_io.h>
 
 %}
 

@@ -132,27 +132,13 @@ TissueForge::FVector3 EdgeTension::force(const Surface *source, const Vertex *ta
 namespace TissueForge::io { 
 
 
-    #define TF_ACTORIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_ACTORIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(EdgeTension *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(EdgeTension *dataElement, const MetaData &metaData, IOElement &fileElement) { 
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "lam", dataElement->lam);
+        TF_IOTOEASY(fileElement, metaData, "order", dataElement->order);
 
-        TF_ACTORIOTOEASY(fe, "lam", dataElement->lam);
-        TF_ACTORIOTOEASY(fe, "order", dataElement->order);
-
-        fileElement->type = "EdgeTension";
+        fileElement.get()->type = "EdgeTension";
 
         return S_OK;
     }
@@ -160,12 +146,10 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, EdgeTension **dataElement) { 
 
-        IOChildMap::const_iterator feItr;
-
         FloatP_t lam;
         unsigned int order;
-        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "lam", &lam);
-        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "order", &order);
+        TF_IOFROMEASY(fileElement, metaData, "lam", &lam);
+        TF_IOFROMEASY(fileElement, metaData, "order", &order);
         *dataElement = new EdgeTension(lam, order);
 
         return S_OK;

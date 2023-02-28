@@ -2724,7 +2724,7 @@ Potential& TissueForge::Potential::operator+(const Potential& rhs) {
 }
 
 std::string TissueForge::Potential::toString() {
-	io::IOElement *fe = new io::IOElement();
+	io::IOElement fe = io::IOElement::create();
     io::MetaData metaData;
     if(io::toFile(this, metaData, fe) != S_OK) 
         return "";
@@ -3248,43 +3248,27 @@ bool TissueForge::Potential::getRSquare() {
 namespace TissueForge::io {
 
 
-	#define TF_POTENTIALIOTOEASY(fe, key, member) \
-		fe = new IOElement(); \
-		if(toFile(member, metaData, fe) != S_OK)  \
-			return error(MDCERR_io); \
-		fe->parent = fileElement; \
-		fileElement->children[key] = fe;
+	HRESULT toFile(CoulombRPotential *dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-	#define TF_POTENTIALIOFROMEASY(feItr, children, metaData, key, member_p) \
-		feItr = children.find(key); \
-		if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-			return error(MDCERR_io);
+		TF_IOTOEASY(fileElement, metaData, "modes", dataElement->modes);
+		TF_IOTOEASY(fileElement, metaData, "q", dataElement->q);
+		TF_IOTOEASY(fileElement, metaData, "kappa", dataElement->kappa);
 
-	HRESULT toFile(CoulombRPotential *dataElement, const MetaData &metaData, IOElement *fileElement) {
-
-		IOElement *fe;
-
-		TF_POTENTIALIOTOEASY(fe, "modes", dataElement->modes);
-		TF_POTENTIALIOTOEASY(fe, "q", dataElement->q);
-		TF_POTENTIALIOTOEASY(fe, "kappa", dataElement->kappa);
-
-		fileElement->type = "CoulombRPotential";
+		fileElement.get()->type = "CoulombRPotential";
 		
 		return S_OK;
 	}
 
 	HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, CoulombRPotential **dataElement) {
 
-		IOChildMap::const_iterator feItr;
-
 		unsigned int modes;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "modes", &modes);
+		TF_IOFROMEASY(fileElement, metaData, "modes", &modes);
 		FPTYPE q, kappa;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "q", &q);
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "kappa", &kappa);
+		TF_IOFROMEASY(fileElement, metaData, "q", &q);
+		TF_IOFROMEASY(fileElement, metaData, "kappa", &kappa);
 		FPTYPE a, b;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "a", &a);
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "b", &b);
+		TF_IOFROMEASY(fileElement, metaData, "a", &a);
+		TF_IOFROMEASY(fileElement, metaData, "b", &b);
 
 		*dataElement = (CoulombRPotential*)Potential::coulombR(q, kappa, a, b, &modes);
 
@@ -3292,30 +3276,28 @@ namespace TissueForge::io {
 	}
 
 	template <>
-	HRESULT toFile(Potential *dataElement, const MetaData &metaData, IOElement *fileElement) {
+	HRESULT toFile(Potential *dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-		IOElement *fe;
+		fileElement.get()->type = "Potential";
 
-		fileElement->type = "Potential";
-
-		TF_POTENTIALIOTOEASY(fe, "kind", dataElement->kind);
-		TF_POTENTIALIOTOEASY(fe, "flags", dataElement->flags);
+		TF_IOTOEASY(fileElement, metaData, "kind", dataElement->kind);
+		TF_IOTOEASY(fileElement, metaData, "flags", dataElement->flags);
 
 		std::string name = dataElement->name;
-		TF_POTENTIALIOTOEASY(fe, "name", name);
+		TF_IOTOEASY(fileElement, metaData, "name", name);
 
 		// Handle kind
 		
 		if(dataElement->kind == POTENTIAL_KIND_COMBINATION) {
 			if(dataElement->pca != NULL) 
-				TF_POTENTIALIOTOEASY(fe, "PotentialA", dataElement->pca);
+				TF_IOTOEASY(fileElement, metaData, "PotentialA", dataElement->pca);
 			if(dataElement->pcb != NULL) 
-				TF_POTENTIALIOTOEASY(fe, "PotentialB", dataElement->pcb);
+				TF_IOTOEASY(fileElement, metaData, "PotentialB", dataElement->pcb);
 			return S_OK;
 		}
 
-		TF_POTENTIALIOTOEASY(fe, "a", dataElement->a);
-		TF_POTENTIALIOTOEASY(fe, "b", dataElement->b);
+		TF_IOTOEASY(fileElement, metaData, "a", dataElement->a);
+		TF_IOTOEASY(fileElement, metaData, "b", dataElement->b);
 
 		if(dataElement->kind == POTENTIAL_KIND_DPD) {
 			return toFile((DPDPotential*)dataElement, metaData, fileElement);
@@ -3332,23 +3314,23 @@ namespace TissueForge::io {
 		std::vector<FPTYPE> alpha;
 		for(unsigned int i = 0; i < 4; i++) 
 			alpha.push_back(dataElement->alpha[i]);
-		TF_POTENTIALIOTOEASY(fe, "alpha", alpha);
+		TF_IOTOEASY(fileElement, metaData, "alpha", alpha);
 
-		TF_POTENTIALIOTOEASY(fe, "n", dataElement->n);
+		TF_IOTOEASY(fileElement, metaData, "n", dataElement->n);
 
 		std::vector<FPTYPE> c;
 		for(unsigned int i = 0; i < (dataElement->n + 1) * potential_chunk; i++) {
 			c.push_back(dataElement->c[i]);
 		}
-		TF_POTENTIALIOTOEASY(fe, "c", c);
+		TF_IOTOEASY(fileElement, metaData, "c", c);
 
-		TF_POTENTIALIOTOEASY(fe, "r0_plusone", dataElement->r0_plusone);
-		TF_POTENTIALIOTOEASY(fe, "mu", dataElement->mu);
+		TF_IOTOEASY(fileElement, metaData, "r0_plusone", dataElement->r0_plusone);
+		TF_IOTOEASY(fileElement, metaData, "mu", dataElement->mu);
 
 		std::vector<FPTYPE> offset;
 		for(unsigned int i = 0; i < 3; i++) 
 			offset.push_back(dataElement->offset[i]);
-		TF_POTENTIALIOTOEASY(fe, "offset", offset);
+		TF_IOTOEASY(fileElement, metaData, "offset", offset);
 
 		return S_OK;
 	}
@@ -3356,13 +3338,11 @@ namespace TissueForge::io {
 	template <>
 	HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Potential **dataElement) {
 
-		IOChildMap::const_iterator feItr;
-
 		uint32_t kind;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "kind", &kind);
+		TF_IOFROMEASY(fileElement, metaData, "kind", &kind);
 
 		uint32_t flags;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "flags", &flags);
+		TF_IOFROMEASY(fileElement, metaData, "flags", &flags);
 
 		if(kind == POTENTIAL_KIND_DPD) {
 			DPDPotential *dpdp = NULL;
@@ -3387,45 +3367,46 @@ namespace TissueForge::io {
 		p->flags = flags;
 
 		std::string name;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "name", &name);
+		TF_IOFROMEASY(fileElement, metaData, "name", &name);
 		char *cname = new char[name.size() + 1];
 		std::strcpy(cname, name.c_str());
 		p->name = cname;
 		
 		if(p->kind == POTENTIAL_KIND_COMBINATION) {
-			if(fileElement.children.find("PotentialA") != fileElement.children.end()) {
+			IOChildMap fec = IOElement::children(fileElement);
+			if(fec.find("PotentialA") != fec.end()) {
 				p->pca = NULL;
-				TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "PotentialA", &p->pca);
+				TF_IOFROMEASY(fileElement, metaData, "PotentialA", &p->pca);
 			}
-			if(fileElement.children.find("PotentialB") != fileElement.children.end()) {
+			if(fec.find("PotentialB") != fec.end()) {
 				p->pcb = NULL;
-				TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "PotentialB", &p->pcb);
+				TF_IOFROMEASY(fileElement, metaData, "PotentialB", &p->pcb);
 			}
 			*dataElement = p;
 			return S_OK;
 		} 
 		
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "a", &p->a);
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "b", &p->b);
+		TF_IOFROMEASY(fileElement, metaData, "a", &p->a);
+		TF_IOFROMEASY(fileElement, metaData, "b", &p->b);
 
 		std::vector<FPTYPE> alpha;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "alpha", &alpha);
+		TF_IOFROMEASY(fileElement, metaData, "alpha", &alpha);
 		for(unsigned int i = 0; i < 4; i++) 
 			p->alpha[i] = alpha[i];
 
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "n", &p->n);
+		TF_IOFROMEASY(fileElement, metaData, "n", &p->n);
 		
 		std::vector<FPTYPE> c;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "c", &c);
+		TF_IOFROMEASY(fileElement, metaData, "c", &c);
 		p->c = (FPTYPE*)malloc(sizeof(FPTYPE) * (p->n + 1) * potential_chunk);
 		for(unsigned int i = 0; i < (p->n + 1) * potential_chunk; i++) 
 			p->c[i] = c[i];
 
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "r0_plusone", &p->r0_plusone);
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "mu", &p->mu);
+		TF_IOFROMEASY(fileElement, metaData, "r0_plusone", &p->r0_plusone);
+		TF_IOFROMEASY(fileElement, metaData, "mu", &p->mu);
 
 		std::vector<FPTYPE> offset;
-		TF_POTENTIALIOFROMEASY(feItr, fileElement.children, metaData, "offset", &offset);
+		TF_IOFROMEASY(fileElement, metaData, "offset", &offset);
 		for(unsigned int i = 0; i < 3; i++) 
 			p->offset[i] = offset[i];
 

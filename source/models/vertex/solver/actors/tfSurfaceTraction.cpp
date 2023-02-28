@@ -41,26 +41,12 @@ FVector3 SurfaceTraction::force(const Surface *source, const Vertex *target) {
 namespace TissueForge::io { 
 
 
-    #define TF_ACTORIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_ACTORIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(SurfaceTraction *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(SurfaceTraction *dataElement, const MetaData &metaData, IOElement &fileElement) { 
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "comps", dataElement->comps);
 
-        TF_ACTORIOTOEASY(fe, "comps", dataElement->comps);
-
-        fileElement->type = "SurfaceTraction";
+        fileElement.get()->type = "SurfaceTraction";
 
         return S_OK;
     }
@@ -68,10 +54,8 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, SurfaceTraction **dataElement) { 
 
-        IOChildMap::const_iterator feItr;
-
         FVector3 comps;
-        TF_ACTORIOFROMEASY(feItr, fileElement.children, metaData, "comps", &comps);
+        TF_IOFROMEASY(fileElement, metaData, "comps", &comps);
         *dataElement = new SurfaceTraction(comps);
 
         return S_OK;

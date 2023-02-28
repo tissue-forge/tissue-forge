@@ -39,130 +39,130 @@ namespace TissueForge::io {
 
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Vertex *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::Vertex *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     /** Does not assemble mesh child connectivity */
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Vertex **dataElement);
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::VertexHandle &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const TissueForge::models::vertex::VertexHandle &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::VertexHandle *dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Surface *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::Surface *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     /** Does not assemble mesh child connectivity */
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Surface **dataElement);
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::SurfaceHandle &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const TissueForge::models::vertex::SurfaceHandle &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::SurfaceHandle *dataElement);
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::SurfaceType &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const TissueForge::models::vertex::SurfaceType &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::SurfaceType **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Body *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::Body *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     /** Does not assemble mesh child connectivity */
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Body **dataElement);
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::BodyHandle &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const TissueForge::models::vertex::BodyHandle &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::BodyHandle *dataElement);
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::BodyType &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const TissueForge::models::vertex::BodyType &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::BodyType **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Mesh *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::Mesh *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Mesh *dataElement);
 
     template <>
-    HRESULT toFile(const TissueForge::models::vertex::MeshQuality &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const TissueForge::models::vertex::MeshQuality &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::MeshQuality *dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::MeshObjActor *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::MeshObjActor *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::MeshObjActor **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::Adhesion *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::Adhesion *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::Adhesion **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::BodyForce *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::BodyForce *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::BodyForce **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::ConvexPolygonConstraint *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::ConvexPolygonConstraint *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::ConvexPolygonConstraint **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::EdgeTension *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::EdgeTension *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::EdgeTension **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::FlatSurfaceConstraint *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::FlatSurfaceConstraint *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::FlatSurfaceConstraint **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::NormalStress *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::NormalStress *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::NormalStress **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::PerimeterConstraint *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::PerimeterConstraint *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::PerimeterConstraint **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::SurfaceAreaConstraint *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::SurfaceAreaConstraint *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::SurfaceAreaConstraint **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::SurfaceTraction *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::SurfaceTraction *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::SurfaceTraction **dataElement);
 
     template <>
-    HRESULT toFile(TissueForge::models::vertex::VolumeConstraint *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(TissueForge::models::vertex::VolumeConstraint *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::models::vertex::VolumeConstraint **dataElement);

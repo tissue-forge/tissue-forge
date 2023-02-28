@@ -999,35 +999,21 @@ std::vector<int32_t> TissueForge::Dihedral_IdsForParticle(int32_t pid) {
 namespace TissueForge::io {
 
 
-    #define TF_DIHEDIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return error(MDCERR_io); \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_DIHEDIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return error(MDCERR_io);
-
     template <>
-    HRESULT toFile(const Dihedral &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Dihedral &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
+        TF_IOTOEASY(fileElement, metaData, "i", dataElement.i);
+        TF_IOTOEASY(fileElement, metaData, "j", dataElement.j);
+        TF_IOTOEASY(fileElement, metaData, "k", dataElement.k);
+        TF_IOTOEASY(fileElement, metaData, "l", dataElement.l);
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "creation_time", dataElement.creation_time);
+        TF_IOTOEASY(fileElement, metaData, "half_life", dataElement.half_life);
+        TF_IOTOEASY(fileElement, metaData, "dissociation_energy", dataElement.dissociation_energy);
+        TF_IOTOEASY(fileElement, metaData, "potential_energy", dataElement.potential_energy);
 
-        TF_DIHEDIOTOEASY(fe, "flags", dataElement.flags);
-        TF_DIHEDIOTOEASY(fe, "i", dataElement.i);
-        TF_DIHEDIOTOEASY(fe, "j", dataElement.j);
-        TF_DIHEDIOTOEASY(fe, "k", dataElement.k);
-        TF_DIHEDIOTOEASY(fe, "l", dataElement.l);
-        TF_DIHEDIOTOEASY(fe, "id", dataElement.id);
-        TF_DIHEDIOTOEASY(fe, "creation_time", dataElement.creation_time);
-        TF_DIHEDIOTOEASY(fe, "half_life", dataElement.half_life);
-        TF_DIHEDIOTOEASY(fe, "dissociation_energy", dataElement.dissociation_energy);
-        TF_DIHEDIOTOEASY(fe, "potential_energy", dataElement.potential_energy);
-
-        fileElement->type = "Dihedral";
+        fileElement.get()->type = "Dihedral";
         
         return S_OK;
     }
@@ -1035,18 +1021,16 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Dihedral *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "flags", &dataElement->flags);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "i", &dataElement->i);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "j", &dataElement->j);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "k", &dataElement->k);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "l", &dataElement->l);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "creation_time", &dataElement->creation_time);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "half_life", &dataElement->half_life);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "dissociation_energy", &dataElement->dissociation_energy);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "potential_energy", &dataElement->potential_energy);
+        TF_IOFROMEASY(fileElement, metaData, "flags", &dataElement->flags);
+        TF_IOFROMEASY(fileElement, metaData, "i", &dataElement->i);
+        TF_IOFROMEASY(fileElement, metaData, "j", &dataElement->j);
+        TF_IOFROMEASY(fileElement, metaData, "k", &dataElement->k);
+        TF_IOFROMEASY(fileElement, metaData, "l", &dataElement->l);
+        TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
+        TF_IOFROMEASY(fileElement, metaData, "creation_time", &dataElement->creation_time);
+        TF_IOFROMEASY(fileElement, metaData, "half_life", &dataElement->half_life);
+        TF_IOFROMEASY(fileElement, metaData, "dissociation_energy", &dataElement->dissociation_energy);
+        TF_IOFROMEASY(fileElement, metaData, "potential_energy", &dataElement->potential_energy);
 
         return S_OK;
     }

@@ -29,23 +29,97 @@
 #include <set>
 #include <unordered_set>
 #include <string>
+#include <memory>
+
+
+#define TF_IOTOEASY(fileElement, metaData, key, member) {\
+    ::TissueForge::io::IOElement _fe = ::TissueForge::io::IOElement::create(); \
+    if(::TissueForge::io::toFile(member, metaData, _fe) != S_OK)  \
+        return E_FAIL; \
+    fileElement.addChild(_fe, key);}
+
+#define TF_IOFROMEASY(fileElement, metaData, key, member_p) {\
+    ::TissueForge::io::IOChildMap _children = ::TissueForge::io::IOElement::children(fileElement); \
+    ::TissueForge::io::IOChildMap::const_iterator _feItr = _children.find(key); \
+    if(_feItr == _children.end() || ::TissueForge::io::fromFile(_feItr->second, metaData, member_p) != S_OK) \
+        return E_FAIL; \
+    }
 
 
 namespace TissueForge::io {
 
-
-    using IOChildMap = std::unordered_map<std::string, struct IOElement*>;
 
     /**
      * @brief Intermediate I/O class for reading/writing 
      * Tissue Forge objects to/from file/string. 
      * 
      */
-    struct IOElement {
+    template <typename T> 
+    struct _IOElementT {
         std::string type;
         std::string value;
-        IOElement *parent = NULL;
-        IOChildMap children;
+        T parent;
+        std::unordered_map<std::string, T> children;
+    };
+    using _IOElement = _IOElementT<struct IOElement>;
+    using IOChildMap = std::unordered_map<std::string, struct IOElement>;
+
+    /**
+     * @brief Container for _IOElement. 
+     * 
+     */
+    struct IOElement {
+        std::weak_ptr<_IOElement> el;
+
+        IOElement() {}
+        IOElement(const IOElement &other) {
+            el = other.el;
+        }
+        
+        static IOElement create() {
+            IOElement result;
+            result._init();
+            return result;
+        }
+
+        IOElement clone() {
+            IOElement result = IOElement::create();
+            result._el = this->_el;
+            result.el = this->_el;
+            return result;
+        }
+
+        std::shared_ptr<_IOElement> get() { 
+            if(el.expired()) 
+                _init();
+            return el.lock();
+        }
+
+        void addChild(IOElement &child, const std::string &key) {
+            get()->children[key] = IOElement(child);
+            child.get()->parent = IOElement(*this);
+        }
+
+        void reset() {
+            _init();
+        }
+
+        bool isEmpty() { return get()->type.size() == 0; }
+
+        static std::string type(const IOElement &_e) { return const_cast<IOElement&>(_e).get()->type; };
+        static std::string value(const IOElement &_e) { return const_cast<IOElement&>(_e).get()->value; };
+        static IOElement parent(const IOElement &_e) { return const_cast<IOElement&>(_e).get()->parent; };
+        static std::unordered_map<std::string, IOElement> children(const IOElement &_e) { return const_cast<IOElement&>(_e).get()->children; };
+
+    private:
+
+        void _init() {
+            _el = std::make_shared<_IOElement>();
+            el = _el;
+        }
+        
+        std::shared_ptr<_IOElement> _el;
+
     };
 
     /**
@@ -70,7 +144,7 @@ namespace TissueForge::io {
      * @return HRESULT 
      */
     template <typename T>
-    HRESULT toFile(const T &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const T &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     /**
      * @brief Convert an object to an intermediate I/O object
@@ -82,7 +156,7 @@ namespace TissueForge::io {
      * @return HRESULT 
      */
     template <typename T>
-    HRESULT toFile(T *dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(T *dataElement, const MetaData &metaData, IOElement &fileElement);
 
     /**
      * @brief Instantiate an object from an intermediate I/O object
@@ -103,7 +177,7 @@ namespace TissueForge::io {
     // MetaData
 
     template <>
-    HRESULT toFile(const MetaData &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const MetaData &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, MetaData *dataElement);
@@ -111,19 +185,11 @@ namespace TissueForge::io {
     // TissueForge::types::TVector2<T>
 
     template <typename T>
-    HRESULT toFile(const TissueForge::types::TVector2<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const TissueForge::types::TVector2<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        fileElement->type = "Vector2";
-        IOElement *xfe = new IOElement();
-        IOElement *yfe = new IOElement();
-
-        if(toFile(dataElement.x(), metaData, xfe) != S_OK || toFile(dataElement.y(), metaData, yfe) != S_OK) 
-            return E_FAIL;
-        
-        xfe->parent = fileElement;
-        yfe->parent = fileElement;
-        fileElement->children["x"] = xfe;
-        fileElement->children["y"] = yfe;
+        fileElement.get()->type = "Vector2";
+        TF_IOTOEASY(fileElement, metaData, "x", dataElement.x());
+        TF_IOTOEASY(fileElement, metaData, "y", dataElement.y());
 
         return S_OK;
     }
@@ -132,16 +198,11 @@ namespace TissueForge::io {
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::types::TVector2<T> *dataElement) {
 
         T de;
-        auto feItr = fileElement.children.find("x");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
         
+        TF_IOFROMEASY(fileElement, metaData, "x", &de);
         (*dataElement)[0] = de;
 
-        feItr = fileElement.children.find("y");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+        TF_IOFROMEASY(fileElement, metaData, "y", &de);
         (*dataElement)[1] = de;
         
         return S_OK;
@@ -150,24 +211,12 @@ namespace TissueForge::io {
     // TissueForge::types::TVector3<T>
 
     template <typename T>
-    HRESULT toFile(const TissueForge::types::TVector3<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const TissueForge::types::TVector3<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        fileElement->type = "Vector3";
-        IOElement *xfe = new IOElement();
-        IOElement *yfe = new IOElement();
-        IOElement *zfe = new IOElement();
-
-        if(toFile(dataElement.x(), metaData, xfe) != S_OK || 
-        toFile(dataElement.y(), metaData, yfe) != S_OK || 
-        toFile(dataElement.z(), metaData, zfe) != S_OK) 
-            return E_FAIL;
-        
-        xfe->parent = fileElement;
-        yfe->parent = fileElement;
-        zfe->parent = fileElement;
-        fileElement->children["x"] = xfe;
-        fileElement->children["y"] = yfe;
-        fileElement->children["z"] = zfe;
+        fileElement.get()->type = "Vector3";
+        TF_IOTOEASY(fileElement, metaData, "x", dataElement.x());
+        TF_IOTOEASY(fileElement, metaData, "y", dataElement.y());
+        TF_IOTOEASY(fileElement, metaData, "z", dataElement.z());
 
         return S_OK;
     }
@@ -176,22 +225,14 @@ namespace TissueForge::io {
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::types::TVector3<T> *dataElement) {
 
         T de;
-        auto feItr = fileElement.children.find("x");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+
+        TF_IOFROMEASY(fileElement, metaData, "x", &de);
         (*dataElement)[0] = de;
 
-        feItr = fileElement.children.find("y");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+        TF_IOFROMEASY(fileElement, metaData, "y", &de);
         (*dataElement)[1] = de;
 
-        feItr = fileElement.children.find("z");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+        TF_IOFROMEASY(fileElement, metaData, "z", &de);
         (*dataElement)[2] = de;
         
         return S_OK;
@@ -200,28 +241,13 @@ namespace TissueForge::io {
     // TissueForge::types::TVector4<T>
 
     template <typename T>
-    HRESULT toFile(const TissueForge::types::TVector4<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const TissueForge::types::TVector4<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        fileElement->type = "Vector4";
-        IOElement *xfe = new IOElement();
-        IOElement *yfe = new IOElement();
-        IOElement *zfe = new IOElement();
-        IOElement *wfe = new IOElement();
-
-        if(toFile(dataElement.x(), metaData, xfe) != S_OK || 
-        toFile(dataElement.y(), metaData, yfe) != S_OK || 
-        toFile(dataElement.z(), metaData, zfe) != S_OK || 
-        toFile(dataElement.w(), metaData, zfe) != S_OK) 
-            return E_FAIL;
-        
-        xfe->parent = fileElement;
-        yfe->parent = fileElement;
-        zfe->parent = fileElement;
-        wfe->parent = fileElement;
-        fileElement->children["x"] = xfe;
-        fileElement->children["y"] = yfe;
-        fileElement->children["z"] = zfe;
-        fileElement->children["w"] = wfe;
+        fileElement.get()->type = "Vector4";
+        TF_IOTOEASY(fileElement, metaData, "x", dataElement.x());
+        TF_IOTOEASY(fileElement, metaData, "y", dataElement.y());
+        TF_IOTOEASY(fileElement, metaData, "z", dataElement.z());
+        TF_IOTOEASY(fileElement, metaData, "w", dataElement.w());
 
         return S_OK;
     }
@@ -230,28 +256,17 @@ namespace TissueForge::io {
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::types::TVector4<T> *dataElement) {
 
         T de;
-        auto feItr = fileElement.children.find("x");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+
+        TF_IOFROMEASY(fileElement, metaData, "x", &de);
         (*dataElement)[0] = de;
 
-        feItr = fileElement.children.find("y");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+        TF_IOFROMEASY(fileElement, metaData, "y", &de);
         (*dataElement)[1] = de;
 
-        feItr = fileElement.children.find("z");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+        TF_IOFROMEASY(fileElement, metaData, "z", &de);
         (*dataElement)[2] = de;
 
-        feItr = fileElement.children.find("w");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-            return E_FAIL;
-        
+        TF_IOFROMEASY(fileElement, metaData, "w", &de);
         (*dataElement)[3] = de;
         
         return S_OK;
@@ -260,18 +275,14 @@ namespace TissueForge::io {
     // TissueForge::types::TMatrix3<T>
 
     template <typename T>
-    HRESULT toFile(const TissueForge::types::TMatrix3<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const TissueForge::types::TMatrix3<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        fileElement->type = "Matrix3";
+        fileElement.get()->type = "Matrix3";
 
         for(unsigned int i = 0; i < 3; i++) {
             for (unsigned int j = 0; j < 3; j++) { 
                 std::string key = std::to_string(i) + std::to_string(j);
-                IOElement *fe = new IOElement();
-                if(toFile(dataElement[i][j], metaData, fe) != S_OK) 
-                    return E_FAIL;
-                fe->parent = fileElement;
-                fileElement->children[key] = fe;
+                TF_IOTOEASY(fileElement, metaData, key, dataElement[i][j]);
             }
         }
 
@@ -286,9 +297,7 @@ namespace TissueForge::io {
         for(unsigned int i = 0; i < 3; i++) {
             for(unsigned int j = 0; j < 3; j++) { 
                 std::string key = std::to_string(i) + std::to_string(j);
-                auto feItr = fileElement.children.find(key);
-                if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-                    return E_FAIL;
+                TF_IOFROMEASY(fileElement, metaData, key, &de);
                 (*dataElement)[i][j] = de;
             }
         }
@@ -299,18 +308,14 @@ namespace TissueForge::io {
     // TissueForge::types::TMatrix4<T>
 
     template <typename T>
-    HRESULT toFile(const TissueForge::types::TMatrix4<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const TissueForge::types::TMatrix4<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        fileElement->type = "Matrix4";
+        fileElement.get()->type = "Matrix4";
 
         for(unsigned int i = 0; i < 4; i++) {
             for (unsigned int j = 0; j < 4; j++) { 
                 std::string key = std::to_string(i) + std::to_string(j);
-                IOElement *fe = new IOElement();
-                if(toFile(dataElement[i][j], metaData, fe) != S_OK) 
-                    return E_FAIL;
-                fe->parent = fileElement;
-                fileElement->children[key] = fe;
+                TF_IOTOEASY(fileElement, metaData, key, dataElement[i][j]);
             }
         }
 
@@ -325,9 +330,7 @@ namespace TissueForge::io {
         for(unsigned int i = 0; i < 4; i++) {
             for(unsigned int j = 0; j < 4; j++) { 
                 std::string key = std::to_string(i) + std::to_string(j);
-                auto feItr = fileElement.children.find(key);
-                if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &de) != S_OK) 
-                    return E_FAIL;
+                TF_IOFROMEASY(fileElement, metaData, key, &de);
                 (*dataElement)[i][j] = de;
             }
         }
@@ -338,19 +341,11 @@ namespace TissueForge::io {
     // TissueForge::types::TQuaternion<T>
 
     template <typename T>
-    HRESULT toFile(const TissueForge::types::TQuaternion<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const TissueForge::types::TQuaternion<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        fileElement->type = "Quaternion";
-        IOElement *vfe = new IOElement();
-        IOElement *sfe = new IOElement();
-        
-        if(toFile(dataElement.vector(), metaData, vfe) != S_OK || toFile(dataElement.scalar(), metaData, sfe) != S_OK) 
-            return E_FAIL;
-
-        vfe->parent = fileElement;
-        sfe->parent = fileElement;
-        fileElement->children["vector"] = vfe;
-        fileElement->children["scalar"] = sfe;
+        fileElement.get()->type = "Quaternion";
+        TF_IOTOEASY(fileElement, metaData, "vector", dataElement.vector());
+        TF_IOTOEASY(fileElement, metaData, "scalar", dataElement.scalar());
 
         return S_OK;
     }
@@ -361,15 +356,8 @@ namespace TissueForge::io {
         std::vector<T> vde;
         T sde;
 
-        auto feItr = fileElement.children.find("vector");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &vde) != S_OK) 
-            return E_FAIL;
-        dataElement->vector() = vde;
-
-        feItr = fileElement.children.find("scalar");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &sde) != S_OK) 
-            return E_FAIL;
-        dataElement->scalar() = sde;
+        TF_IOFROMEASY(fileElement, metaData, "vector", &dataElement->vector());
+        TF_IOFROMEASY(fileElement, metaData, "scalar", &dataElement->scalar());
 
         return S_OK;
     }
@@ -381,7 +369,7 @@ namespace TissueForge::io {
     // char
 
     template <>
-    HRESULT toFile(const char &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const char &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, char *dataElement);
@@ -389,7 +377,7 @@ namespace TissueForge::io {
     // signed char
 
     template <>
-    HRESULT toFile(const signed char &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const signed char &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, signed char *dataElement);
@@ -397,7 +385,7 @@ namespace TissueForge::io {
     // unsigned char
 
     template <>
-    HRESULT toFile(const unsigned char &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const unsigned char &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned char *dataElement);
@@ -405,7 +393,7 @@ namespace TissueForge::io {
     // short
 
     template <>
-    HRESULT toFile(const short &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const short &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, short *dataElement);
@@ -413,7 +401,7 @@ namespace TissueForge::io {
     // unsigned short
 
     template <>
-    HRESULT toFile(const unsigned short &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const unsigned short &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned short *dataElement);
@@ -421,7 +409,7 @@ namespace TissueForge::io {
     // int
 
     template <>
-    HRESULT toFile(const int &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const int &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, int *dataElement);
@@ -429,7 +417,7 @@ namespace TissueForge::io {
     // unsigned int
 
     template <>
-    HRESULT toFile(const unsigned int &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const unsigned int &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned int *dataElement);
@@ -437,7 +425,7 @@ namespace TissueForge::io {
     // bool
 
     template <>
-    HRESULT toFile(const bool &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const bool &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, bool *dataElement);
@@ -445,7 +433,7 @@ namespace TissueForge::io {
     // long
 
     template <>
-    HRESULT toFile(const long &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const long &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, long *dataElement);
@@ -453,7 +441,7 @@ namespace TissueForge::io {
     // unsigned long
 
     template <>
-    HRESULT toFile(const unsigned long &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const unsigned long &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned long *dataElement);
@@ -461,7 +449,7 @@ namespace TissueForge::io {
     // long long
 
     template <>
-    HRESULT toFile(const long long &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const long long &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, long long *dataElement);
@@ -469,7 +457,7 @@ namespace TissueForge::io {
     // unsigned long long
 
     template <>
-    HRESULT toFile(const unsigned long long &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const unsigned long long &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, unsigned long long *dataElement);
@@ -477,7 +465,7 @@ namespace TissueForge::io {
     // float
 
     template <>
-    HRESULT toFile(const float &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const float &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, float *dataElement);
@@ -485,7 +473,7 @@ namespace TissueForge::io {
     // double
 
     template <>
-    HRESULT toFile(const double &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const double &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, double *dataElement);
@@ -493,7 +481,7 @@ namespace TissueForge::io {
     // string
 
     template <>
-    HRESULT toFile(const std::string &dataElement, const MetaData &metaData, IOElement *fileElement);
+    HRESULT toFile(const std::string &dataElement, const MetaData &metaData, IOElement &fileElement);
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::string *dataElement);
@@ -503,17 +491,12 @@ namespace TissueForge::io {
     // set
 
     template <typename T>
-    HRESULT toFile(const std::set<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        fileElement->type = "set";
-        fileElement->children.reserve(dataElement.size());
+    HRESULT toFile(const std::set<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        fileElement.get()->type = "set";
+        fileElement.get()->children.reserve(dataElement.size());
         unsigned int i = 0;
         for(auto de : dataElement) {
-            IOElement *fe = new IOElement();
-            if(toFile(de, metaData, fe) != S_OK) 
-                return E_FAIL;
-            
-            fe->parent = fileElement;
-            fileElement->children[std::to_string(i)] = fe;
+            TF_IOTOEASY(fileElement, metaData, std::to_string(i), de);
             i++;
         }
         return S_OK;
@@ -521,14 +504,10 @@ namespace TissueForge::io {
 
     template <typename T>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::set<T> *dataElement) {
-        unsigned int numEls = fileElement.children.size();
+        unsigned int numEls = IOElement::children(fileElement).size();
         for(unsigned int i = 0; i < numEls; i++) {
             T de;
-            auto itr = fileElement.children.find(std::to_string(i));
-            if(itr == fileElement.children.end()) 
-                return E_FAIL;
-            if(fromFile(*itr->second, metaData, &de) != S_OK) 
-                return E_FAIL;
+            TF_IOFROMEASY(fileElement, metaData, std::to_string(i), &de);
             dataElement->insert(de);
         }
         return S_OK;
@@ -537,17 +516,12 @@ namespace TissueForge::io {
     // unordered_set
 
     template <typename T>
-    HRESULT toFile(const std::unordered_set<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        fileElement->type = "unordered_set";
-        fileElement->children.reserve(dataElement.size());
+    HRESULT toFile(const std::unordered_set<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        fileElement.get()->type = "unordered_set";
+        fileElement.get()->children.reserve(dataElement.size());
         unsigned int i = 0;
         for(auto de : dataElement) {
-            IOElement *fe = new IOElement();
-            if(toFile(de, metaData, fe) != S_OK) 
-                return E_FAIL;
-            
-            fe->parent = fileElement;
-            fileElement->children[std::to_string(i)] = fe;
+            TF_IOTOEASY(fileElement, metaData, std::to_string(i), de);
             i++;
         }
         return S_OK;
@@ -555,14 +529,10 @@ namespace TissueForge::io {
 
     template <typename T>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::unordered_set<T> *dataElement) {
-        unsigned int numEls = fileElement.children.size();
+        unsigned int numEls = IOElement::children(fileElement).size();
         for(unsigned int i = 0; i < numEls; i++) {
             T de;
-            auto itr = fileElement.children.find(std::to_string(i));
-            if(itr == fileElement.children.end()) 
-                return E_FAIL;
-            if(fromFile(*itr->second, metaData, &de) != S_OK) 
-                return E_FAIL;
+            TF_IOFROMEASY(fileElement, metaData, std::to_string(i), &de);
             dataElement->insert(de);
         }
         return S_OK;
@@ -571,46 +541,32 @@ namespace TissueForge::io {
     // vector
 
     template <typename T>
-    HRESULT toFile(const std::vector<T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        fileElement->type = "vector";
-        fileElement->children.reserve(dataElement.size());
+    HRESULT toFile(const std::vector<T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        fileElement.get()->type = "vector";
+        fileElement.get()->children.reserve(dataElement.size());
         for(unsigned int i = 0; i < dataElement.size(); i++) {
-            IOElement *fe = new IOElement();
-            if(toFile(dataElement[i], metaData, fe) != S_OK) 
-                return E_FAIL;
-            
-            fe->parent = fileElement;
-            fileElement->children[std::to_string(i)] = fe;
+            TF_IOTOEASY(fileElement, metaData, std::to_string(i), dataElement[i]);
         }
         return S_OK;
     }
 
     template <typename T>
-    HRESULT toFile(std::vector<T*> dataElement, const MetaData &metaData, IOElement *fileElement) {
-        fileElement->type = "vector";
-        fileElement->children.reserve(dataElement.size());
+    HRESULT toFile(std::vector<T*> dataElement, const MetaData &metaData, IOElement &fileElement) {
+        fileElement.get()->type = "vector";
+        fileElement.get()->children.reserve(dataElement.size());
         for(unsigned int i = 0; i < dataElement.size(); i++) {
-            IOElement *fe = new IOElement();
-            if(toFile<T>(dataElement[i], metaData, fe) != S_OK) 
-                return E_FAIL;
-            
-            fe->parent = fileElement;
-            fileElement->children[std::to_string(i)] = fe;
+            TF_IOTOEASY(fileElement, metaData, std::to_string(i), dataElement[i]);
         }
         return S_OK;
     }
 
     template <typename T>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::vector<T> *dataElement) {
-        unsigned int numEls = fileElement.children.size();
+        unsigned int numEls = IOElement::children(fileElement).size();
         dataElement->reserve(numEls);
         for(unsigned int i = 0; i < numEls; i++) {
             T de;
-            auto itr = fileElement.children.find(std::to_string(i));
-            if(itr == fileElement.children.end()) 
-                return E_FAIL;
-            if(fromFile(*itr->second, metaData, &de) != S_OK) 
-                return E_FAIL;
+            TF_IOFROMEASY(fileElement, metaData, std::to_string(i), &de);
             dataElement->push_back(de);
         }
         return S_OK;
@@ -619,8 +575,8 @@ namespace TissueForge::io {
     // map
 
     template <typename S, typename T>
-    HRESULT toFile(const std::map<S, T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        fileElement->type = "map";
+    HRESULT toFile(const std::map<S, T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        fileElement.get()->type = "map";
         
         std::vector<S> keysde;
         std::vector<T> valsde;
@@ -630,15 +586,8 @@ namespace TissueForge::io {
             valsde.push_back(de->second);
         }
 
-        IOElement *keysfe = new IOElement();
-        IOElement *valsfe = new IOElement();
-        if(toFile(keysde, metaData, keysfe) != S_OK || toFile(valsde, metaData, valsfe) != S_OK) 
-            return E_FAIL;
-        
-        keysfe->parent = fileElement;
-        valsfe->parent = fileElement;
-        fileElement->children["keys"] = keysfe;
-        fileElement->children["values"] = valsfe;
+        TF_IOTOEASY(fileElement, metaData, "keys", keysde);
+        TF_IOTOEASY(fileElement, metaData, "vals", valsde);
 
         return S_OK;
     }
@@ -646,21 +595,12 @@ namespace TissueForge::io {
     template <typename S, typename T>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::map<S, T> *dataElement) {
         
-        auto keysfeItr = fileElement.children.find("keys");
-        if(keysfeItr == fileElement.children.end())
-            return E_FAIL;
-        IOElement *keysfe = keysfeItr->second;
-
-        auto valsfeItr = fileElement.children.find("values");
-        if(valsfeItr == fileElement.children.end())
-            return E_FAIL;
-        IOElement *valsfe = valsfeItr->second;
-
         std::vector<S> keysde;
         std::vector<T> valsde;
-        if(fromFile(*keysfe, metaData, &keysde) != S_OK || fromFile(*valsfe, metaData, &valsde) != S_OK) 
-            return E_FAIL;
-        
+
+        TF_IOFROMEASY(fileElement, metaData, "keys", &keysde);
+        TF_IOFROMEASY(fileElement, metaData, "vals", &valsde);
+
         for(unsigned int i = 0; i < keysde.size(); i++) {
             (*dataElement)[keysde[i]] = valsde[i];
         }
@@ -671,8 +611,8 @@ namespace TissueForge::io {
     // unordered_map
 
     template <typename S, typename T>
-    HRESULT toFile(const std::unordered_map<S, T> &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        fileElement->type = "unordered_map";
+    HRESULT toFile(const std::unordered_map<S, T> &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        fileElement.get()->type = "unordered_map";
         
         std::vector<S> keysde;
         std::vector<T> valsde;
@@ -682,15 +622,8 @@ namespace TissueForge::io {
             valsde.push_back(de->second);
         }
 
-        IOElement *keysfe = new IOElement();
-        IOElement *valsfe = new IOElement();
-        if(toFile(keysde, metaData, keysfe) != S_OK || toFile(valsde, metaData, valsfe) != S_OK) 
-            return E_FAIL;
-        
-        keysfe->parent = fileElement;
-        valsfe->parent = fileElement;
-        fileElement->children["keys"] = keysfe;
-        fileElement->children["values"] = valsfe;
+        TF_IOTOEASY(fileElement, metaData, "keys", keysde);
+        TF_IOTOEASY(fileElement, metaData, "vals", valsde);
 
         return S_OK;
     }
@@ -698,20 +631,11 @@ namespace TissueForge::io {
     template <typename S, typename T>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::unordered_map<S, T> *dataElement) {
         
-        auto keysfeItr = fileElement.children.find("keys");
-        if(keysfeItr == fileElement.children.end())
-            return E_FAIL;
-        IOElement *keysfe = keysfeItr->second;
-
-        auto valsfeItr = fileElement.children.find("values");
-        if(valsfeItr == fileElement.children.end())
-            return E_FAIL;
-        IOElement *valsfe = valsfeItr->second;
-
         std::vector<S> keysde;
         std::vector<T> valsde;
-        if(fromFile(*keysfe, metaData, &keysde) != S_OK || fromFile(*valsfe, metaData, &valsde) != S_OK) 
-            return E_FAIL;
+
+        TF_IOFROMEASY(fileElement, metaData, "keys", &keysde);
+        TF_IOFROMEASY(fileElement, metaData, "vals", &valsde);
         
         for(unsigned int i = 0; i < keysde.size(); i++) {
             (*dataElement)[keysde[i]] = valsde[i];

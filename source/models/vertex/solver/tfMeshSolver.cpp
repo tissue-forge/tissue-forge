@@ -128,7 +128,7 @@ HRESULT MeshSolver::init() {
     _solver = new MeshSolver();
     _solver->mesh = new Mesh();
 
-    if(TissueForge::io::FIO::currentRootElement) 
+    if(TissueForge::io::FIO::hasImport()) 
         _ioModule->load();
 
     _solver->_bufferSize = 1;

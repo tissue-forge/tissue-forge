@@ -70,7 +70,7 @@ namespace TissueForge {
 
 
         template <>
-        HRESULT toFile(const py::CustomForcePy &dataElement, const MetaData &metaData, IOElement *fileElement);
+        HRESULT toFile(const py::CustomForcePy &dataElement, const MetaData &metaData, IOElement &fileElement);
 
         template <>
         HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, py::CustomForcePy *dataElement);

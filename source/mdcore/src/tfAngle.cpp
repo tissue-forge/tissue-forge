@@ -946,34 +946,20 @@ std::vector<int32_t> TissueForge::Angle_IdsForParticle(int32_t pid) {
 namespace TissueForge::io {
 
 
-    #define TF_ANGLEIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return error(MDCERR_io); \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_ANGLEIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return error(MDCERR_io);
-
     template <>
-    HRESULT toFile(const Angle &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Angle &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
+        TF_IOTOEASY(fileElement, metaData, "i", dataElement.i);
+        TF_IOTOEASY(fileElement, metaData, "j", dataElement.j);
+        TF_IOTOEASY(fileElement, metaData, "k", dataElement.k);
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "creation_time", dataElement.creation_time);
+        TF_IOTOEASY(fileElement, metaData, "half_life", dataElement.half_life);
+        TF_IOTOEASY(fileElement, metaData, "dissociation_energy", dataElement.dissociation_energy);
+        TF_IOTOEASY(fileElement, metaData, "potential_energy", dataElement.potential_energy);
 
-        TF_ANGLEIOTOEASY(fe, "flags", dataElement.flags);
-        TF_ANGLEIOTOEASY(fe, "i", dataElement.i);
-        TF_ANGLEIOTOEASY(fe, "j", dataElement.j);
-        TF_ANGLEIOTOEASY(fe, "k", dataElement.k);
-        TF_ANGLEIOTOEASY(fe, "id", dataElement.id);
-        TF_ANGLEIOTOEASY(fe, "creation_time", dataElement.creation_time);
-        TF_ANGLEIOTOEASY(fe, "half_life", dataElement.half_life);
-        TF_ANGLEIOTOEASY(fe, "dissociation_energy", dataElement.dissociation_energy);
-        TF_ANGLEIOTOEASY(fe, "potential_energy", dataElement.potential_energy);
-
-        fileElement->type = "Angle";
+        fileElement.get()->type = "Angle";
         
         return S_OK;
     }
@@ -981,17 +967,15 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Angle *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "flags", &dataElement->flags);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "i", &dataElement->i);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "j", &dataElement->j);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "k", &dataElement->k);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "creation_time", &dataElement->creation_time);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "half_life", &dataElement->half_life);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "dissociation_energy", &dataElement->dissociation_energy);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "potential_energy", &dataElement->potential_energy);
+        TF_IOFROMEASY(fileElement, metaData, "flags", &dataElement->flags);
+        TF_IOFROMEASY(fileElement, metaData, "i", &dataElement->i);
+        TF_IOFROMEASY(fileElement, metaData, "j", &dataElement->j);
+        TF_IOFROMEASY(fileElement, metaData, "k", &dataElement->k);
+        TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
+        TF_IOFROMEASY(fileElement, metaData, "creation_time", &dataElement->creation_time);
+        TF_IOFROMEASY(fileElement, metaData, "half_life", &dataElement->half_life);
+        TF_IOFROMEASY(fileElement, metaData, "dissociation_energy", &dataElement->dissociation_energy);
+        TF_IOFROMEASY(fileElement, metaData, "potential_energy", &dataElement->potential_energy);
 
         return S_OK;
     }
