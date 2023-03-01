@@ -166,6 +166,15 @@ CAPI_FUNC(HRESULT) tfSimulatorConfig_setWindowless(struct tfSimulatorConfigHandl
 CAPI_FUNC(HRESULT) tfSimulatorConfig_getImportDataFilePath(struct tfSimulatorConfigHandle *handle, char **filePath, unsigned int *numChars);
 
 /**
+ * @brief Set the imported data file path during initialization, if any.
+ * 
+ * @param handle populated handle
+ * @param filePath file path
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulatorConfig_setImportDataFilePath(struct tfSimulatorConfigHandle *handle, char *filePath);
+
+/**
  * @brief Get the current clip planes
  * 
  * @param handle populated handle

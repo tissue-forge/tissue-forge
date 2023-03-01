@@ -65,7 +65,7 @@ namespace TissueForge {
 
     HRESULT init(const std::vector<std::string> &argv) { return Simulator_init(argv); }
 
-    HRESULT init(const Simulator::Config &conf, const std::vector<std::string> &appArgv) { return Simulator_init(conf, appArgv); }
+    HRESULT init(Simulator::Config &conf, const std::vector<std::string> &appArgv) { return Simulator_init(conf, appArgv); }
 
     HRESULT step(const FloatP_t &until, const FloatP_t &dt) { return Universe::step(until, dt); }
 

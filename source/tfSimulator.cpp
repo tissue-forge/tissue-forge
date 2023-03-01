@@ -156,34 +156,32 @@ struct ArgumentsWrapper  {
     int argsIntReference;
 };
 
-HRESULT TissueForge::initSimConfigFromFile(const std::string &loadFilePath, Simulator::Config &conf) {
+HRESULT TissueForge::initSimConfigFromFile(Simulator::Config &conf) {
 
     if(io::FIO::hasImport()) {
-        tf_error(E_FAIL, "Cannot load from multiple files");
-        return E_FAIL;
+        return tf_error(E_FAIL, "Cannot load from multiple files");
+    }
+
+    if(!conf.importDataFilePath()) {
+        return tf_error(E_FAIL, "No file specified");;
     }
 
     io::IOElement fe;
-    if(io::FIO::fromFile(loadFilePath, fe) != S_OK) {
-        tf_error(E_FAIL, "Error loading file");
-        return E_FAIL;
+    if(io::FIO::fromFile(*conf.importDataFilePath(), fe) != S_OK) {
+        return tf_error(E_FAIL, "Error loading file");
     }
 
     io::MetaData metaData, metaDataFile;
 
     auto feItr = fe.get()->children.find(io::FIO::KEY_METADATA);
     if(feItr == fe.get()->children.end() || io::fromFile(feItr->second, metaData, &metaDataFile) != S_OK) {
-        tf_error(E_FAIL, "Error loading metadata");
-        return E_FAIL;
+        return tf_error(E_FAIL, "Error loading metadata");
     }
 
     feItr = fe.get()->children.find(io::FIO::KEY_SIMULATOR);
     if(feItr == fe.get()->children.end() || io::fromFile(feItr->second, metaDataFile, &conf) != S_OK) {
-        tf_error(E_FAIL, "Error loading simulator");
-        return E_FAIL;
+        return tf_error(E_FAIL, "Error loading simulator");
     }
-
-    conf.importDataFilePath = new std::string(loadFilePath);
 
     return S_OK;
 }
@@ -261,8 +259,9 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
         s = parse::kwargVal(kwargs, "load_file");
 
         TF_Log(LOG_INFORMATION) << "got load file: " << s;
-        
-        if(initSimConfigFromFile(s, conf) != S_OK) 
+
+        conf.setImportDataFilePath(s);
+        if(initSimConfigFromFile(conf) != S_OK) 
             return;
     }
 
@@ -714,10 +713,14 @@ HRESULT Simulator::run(FloatP_t et)
     return _Simulator->app->run((double)et);
 }
 
-HRESULT TissueForge::Simulator_init(const Simulator::Config &conf, const std::vector<std::string> &appArgv) {
+HRESULT TissueForge::Simulator_init(Simulator::Config &conf, const std::vector<std::string> &appArgv) {
 
     std::thread::id id = std::this_thread::get_id();
     TF_Log(LOG_INFORMATION) << "thread id: " << id;
+
+    // Last check for import from file
+    if(conf.importDataFilePath() && !io::FIO::hasImport()) 
+        initSimConfigFromFile(conf);
 
     if(_Simulator) 
         return tf_error(E_FAIL, "Error, Simulator is already initialized");

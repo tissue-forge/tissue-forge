@@ -127,7 +127,7 @@ namespace TissueForge {
     /**
      * main simulator init method
      */
-    CPPAPI_FUNC(HRESULT) init(const Simulator::Config &conf, const std::vector<std::string> &appArgv=std::vector<std::string>());
+    CPPAPI_FUNC(HRESULT) init(Simulator::Config &conf, const std::vector<std::string> &appArgv=std::vector<std::string>());
 
     /**
      * @brief Performs a single time step ``dt`` of the universe if no arguments are 

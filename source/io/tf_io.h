@@ -96,7 +96,7 @@ namespace TissueForge::io {
         }
 
         void addChild(IOElement &child, const std::string &key) {
-            get()->children[key] = IOElement(child);
+            get()->children[key] = child.clone();
             child.get()->parent = IOElement(*this);
         }
 
