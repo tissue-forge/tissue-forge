@@ -846,7 +846,7 @@ namespace TissueForge::io {
         bcRestores[side] = restore; \
         if((BoundaryConditionKind)kind & BOUNDARY_VELOCITY) { \
             TF_IOFROMEASY(fe, metaData, "velocity", &velocity); \
-            bcVels["velocity"] = velocity; \
+            bcVels[side] = velocity; \
         }
 
     template <>
