@@ -34,7 +34,7 @@ namespace TissueForge::io {
      * @param metaData meta data of target installation
      * @return std::string 
      */
-    std::string toStr(IOElement &fileElement, const MetaData &metaData);
+    CPPAPI_FUNC(std::string) toStr(IOElement &fileElement, const MetaData &metaData);
 
     /**
      * @brief Generate a JSON string representation of an intermediate I/O object. 
@@ -44,7 +44,7 @@ namespace TissueForge::io {
      * @param fileElement object to convert
      * @return std::string 
      */
-    std::string toStr(IOElement &fileElement);
+    CPPAPI_FUNC(std::string) toStr(IOElement &fileElement);
 
     /**
      * @brief Generate an intermediate I/O object from a JSON string. 
@@ -53,7 +53,7 @@ namespace TissueForge::io {
      * @param metaData meta data of target installation
      * @return IOElement 
      */
-    IOElement fromStr(const std::string &str, const MetaData &metaData);
+    CPPAPI_FUNC(IOElement) fromStr(const std::string &str, const MetaData &metaData);
 
     /**
      * @brief Generate an intermediate I/O object from a JSON string. 
@@ -63,7 +63,7 @@ namespace TissueForge::io {
      * @param str JSON string
      * @return IOElement 
      */
-    IOElement fromStr(const std::string &str);
+    CPPAPI_FUNC(IOElement) fromStr(const std::string &str);
 
     /**
      * @brief Generate a JSON string representation of an object. 
@@ -206,6 +206,9 @@ namespace TissueForge::io {
 
         /** Key for basic element value storage */
         static const std::string KEY_VALUE;
+
+        /** Key for simulation root storage */
+        static const std::string KEY_ROOT;
 
         /** Key for simulation metadata storage */
         static const std::string KEY_METADATA;

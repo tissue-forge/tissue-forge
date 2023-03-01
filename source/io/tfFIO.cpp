@@ -39,6 +39,7 @@ namespace TissueForge::io {
     const std::string FIO::KEY_TYPE = "IOType";
     const std::string FIO::KEY_VALUE = "IOValue";
 
+    const std::string FIO::KEY_ROOT = "Root";
     const std::string FIO::KEY_METADATA = "MetaData";
     const std::string FIO::KEY_SIMULATOR = "Simulator";
     const std::string FIO::KEY_UNIVERSE = "Universe";
@@ -111,19 +112,14 @@ namespace TissueForge::io {
             tf_exp(std::runtime_error("Could not translate meta data"));
 
         jroot[FIO::KEY_METADATA] = jmetadata;
-
-        json jvalue;
         
-        if(fromFile(fileElement, metaData, &jvalue) != S_OK) 
+        if(fromFile(fileElement, metaData, &jroot) != S_OK) 
             tf_exp(std::runtime_error("Could not translate data"));
-
-        jroot[FIO::KEY_VALUE] = jvalue;
 
         std::string result = jroot.dump(4);
 
         jroot.clear();
         jmetadata.clear();
-        jvalue.clear();
 
         return result;
     }
@@ -149,25 +145,7 @@ namespace TissueForge::io {
     }
 
     IOElement fromStr(const std::string &str) {
-
-        json jroot = json::parse(str);
-
-        IOElement fevalue = IOElement::create();
-        IOElement femetadata = IOElement::create();
-        MetaData strMetaData, metaData;
-
-        if(toFile(jroot[FIO::KEY_METADATA], metaData, femetadata) != S_OK) 
-            tf_exp(std::runtime_error("Could not parse meta data"));
-        
-        if(fromFile(femetadata, metaData, &strMetaData) != S_OK) 
-            tf_exp(std::runtime_error("Could not translate meta data"));
-
-        if(toFile(jroot[FIO::KEY_VALUE], strMetaData, fevalue) != S_OK) 
-            tf_exp(std::runtime_error("Could not translate data"));
-
-        jroot.clear();
-
-        return fevalue;
+        return fromStr(str, MetaData());
     }
 
 
@@ -241,6 +219,7 @@ namespace TissueForge::io {
         FIO::releaseIORootElement();
 
         IOElement tfData = IOElement::create();
+        tfData.get()->type = FIO::KEY_ROOT;
 
         // Add metadata
 
@@ -412,7 +391,7 @@ namespace TissueForge::io {
     }
 
     bool FIO::hasImport() {
-        return FIO::importSummary != NULL;
+        return _hasCurrentRootElement;
     }
 
 };

@@ -136,13 +136,13 @@ static void parse_kwargs(PyObject *kwargs, Simulator::Config &conf) {
 
     PyObject *o;
 
-    std::string loadPath;
     if((o = PyDict_GetItemString(kwargs, "load_file"))) {
-        loadPath = cast<PyObject, std::string>(o);
+        std::string loadPath = cast<PyObject, std::string>(o);
 
         TF_Log(LOG_INFORMATION) << "got load file: " << loadPath;
         
-        if(initSimConfigFromFile(loadPath, conf) != S_OK) 
+        conf.setImportDataFilePath(loadPath);
+        if(initSimConfigFromFile(conf) != S_OK) 
             return;
     }
 
