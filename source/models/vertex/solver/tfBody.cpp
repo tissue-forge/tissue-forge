@@ -125,10 +125,10 @@ BodyHandle Body::create(const std::vector<SurfaceHandle> &_surfaces) {
 };
 
 BodyHandle Body::create(TissueForge::io::ThreeDFMeshData *ioMesh) {
-    Body_GETMESH(mesh, NULL);
+    Body_GETMESH(mesh, BodyHandle());
     if(mesh->ensureAvailableSurfaces(ioMesh->faces.size()) != S_OK) {
         TF_Log(LOG_ERROR);
-        return NULL;
+        return BodyHandle();
     }
 
     std::vector<SurfaceHandle> _surfaces;
@@ -148,7 +148,7 @@ BodyHandle Body::create(TissueForge::io::ThreeDFMeshData *ioMesh) {
         for(auto &s : _surfaces) {
             s.destroy();
         }
-        return NULL;
+        return BodyHandle();
     }
 
     return create(_surfaces);
@@ -1023,7 +1023,7 @@ static BodyHandle BodyType_fromSurfaces(BodyType *btype, const std::vector<Surfa
     // Verify that at least 4 surfaces are given
     if(surfaces.size() < 4) {
         TF_Log(LOG_ERROR) << "A body requires at least 4 surfaces";
-        return NULL;
+        return BodyHandle();
     }
     // Verify that every parent vertex is in at least two surfaces
     // todo: current vertex condition is necessary for body construction, but is it sufficient?
@@ -1031,14 +1031,14 @@ static BodyHandle BodyType_fromSurfaces(BodyType *btype, const std::vector<Surfa
         for(auto &v : s.getVertices()) 
             if(v.getSurfaces().size() < 2) {
                 TF_Log(LOG_ERROR) << "Detected insufficient connectivity";
-                return NULL;
+                return BodyHandle();
             }
 
     BodyHandle b = Body::create(surfaces);
     Body *_b = b.body();
     if(!_b || btype->add(b) != S_OK) {
         TF_Log(LOG_ERROR) << "Failed to create instance";
-        return NULL;
+        return BodyHandle();
     }
     _b->setDensity(btype->density);
     _b->updateInternals();
@@ -1156,16 +1156,16 @@ BodyHandle BodyType::operator() (TissueForge::io::ThreeDFMeshData* ioMesh, Surfa
     for(auto &si : surfaces) 
         for(auto &sj : surfaces) 
             if(si != sj && Surface::sew(si, sj) != S_OK) 
-                return NULL;
+                return BodyHandle();
     return BodyType_fromSurfaces(this, surfaces);
 }
 
 BodyHandle BodyType::extend(const SurfaceHandle &base, const FVector3 &pos) {
-    Body_GETMESH(mesh, NULL);
+    Body_GETMESH(mesh, BodyHandle());
     std::vector<VertexHandle> base_vertices = base.getVertices();
     if(mesh->ensureAvailableSurfaces(base_vertices.size()) != S_OK) {
         TF_Log(LOG_ERROR);
-        return NULL;
+        return BodyHandle();
     }
 
     // For every pair of vertices, construct a surface with a new vertex at the given position
@@ -1179,14 +1179,14 @@ BodyHandle BodyType::extend(const SurfaceHandle &base, const FVector3 &pos) {
             vNew
         });
         if(!s) 
-            return NULL;
+            return BodyHandle();
         surfaces.push_back(s);
     }
 
     // Construct a body from the surfaces
     BodyHandle b = (*this)(surfaces);
     if(!b) {
-        return NULL;
+        return BodyHandle();
     }
 
     if(!Mesh::get()->qualityWorking()) 
@@ -1200,7 +1200,7 @@ BodyHandle BodyType::extend(const SurfaceHandle &base, const FVector3 &pos) {
 HRESULT Body_surfaceOutwardNormal(Surface *s, Body *b1, Body *b2, FVector3 &onorm) {
     if(b1 && b2) { 
         TF_Log(LOG_ERROR) << "Surface is twice-connected";
-        return NULL;
+        return E_FAIL;
     } 
     else if(b1) {
         onorm = s->getNormal();
@@ -1215,13 +1215,13 @@ HRESULT Body_surfaceOutwardNormal(Surface *s, Body *b1, Body *b2, FVector3 &onor
 }
 
 BodyHandle BodyType::extrude(const SurfaceHandle &base, const FloatP_t &normLen) {
-    Body_GETMESH(mesh, NULL);
+    Body_GETMESH(mesh, BodyHandle());
     std::vector<VertexHandle> base_vertices = base.getVertices();
     if(mesh->ensureAvailableVertices(base_vertices.size()) != S_OK || 
         mesh->ensureAvailableSurfaces(base_vertices.size() + 1) != S_OK || 
         mesh->ensureAvailableBodies(1) != S_OK) {
         TF_Log(LOG_ERROR);
-        return NULL;
+        return BodyHandle();
     }
 
     unsigned int i, j;
@@ -1231,7 +1231,7 @@ BodyHandle BodyType::extrude(const SurfaceHandle &base, const FloatP_t &normLen)
     Surface *_base = base.surface();
     _base->refreshBodies();
     if(Body_surfaceOutwardNormal(_base, _base->b1, _base->b2, normal) != S_OK) 
-        return NULL;
+        return BodyHandle();
 
     std::vector<VertexHandle> newVertices;
     newVertices.reserve(base_vertices.size());
@@ -1251,7 +1251,7 @@ BodyHandle BodyType::extrude(const SurfaceHandle &base, const FloatP_t &normLen)
             newVertices[i]
         });
         if(!s) 
-            return NULL;
+            return BodyHandle();
         newSurfaces.push_back(s);
     }
     newSurfaces.push_back(base);
@@ -1259,7 +1259,7 @@ BodyHandle BodyType::extrude(const SurfaceHandle &base, const FloatP_t &normLen)
 
     BodyHandle b = (*this)(newSurfaces);
     if(!b) {
-        return NULL;
+        return BodyHandle();
     }
 
     if(!Mesh::get()->qualityWorking()) 

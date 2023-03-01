@@ -267,11 +267,11 @@ void rendering::ArrowRenderer::setShininess(float shininess) {
 }
 
 void rendering::ArrowRenderer::setLightDirection(const fVector3& lightDir) {
-    _shader.setLightPosition(lightDir);
+    _shader.setLightPositions({fVector4{lightDir, 0}});
 }
 
 void rendering::ArrowRenderer::setLightColor(const Magnum::Color3 &color) {
-    _shader.setLightColor(color);
+    _shader.setLightColor(Magnum::Color4(color));
 }
 
 int rendering::ArrowRenderer::nextDataId() {

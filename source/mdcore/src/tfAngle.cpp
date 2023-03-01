@@ -756,7 +756,8 @@ Angle *TissueForge::AngleHandle::get() {
         error(MDCERR_id);
         return NULL;
     }
-    return &_Engine.angles[this->id];
+    Angle *r = &_Engine.angles[this->id];
+    return r && r->flags & BOND_ACTIVE ? r : NULL;
 }
 
 static std::string AngleHandle_str(const AngleHandle *h) {
@@ -764,10 +765,9 @@ static std::string AngleHandle_str(const AngleHandle *h) {
 
     ss << "AngleHandle(id=" << h->id;
     if(h->id >= 0) {
-        AngleHandle _h(h->id);
-        const Angle &o = *_h.get();
-        if(o.flags & ANGLE_ACTIVE) 
-            ss << ", i=" << o.i << ", j=" << o.j << ", k=" << o.k;
+        const Angle *o = AngleHandle(h->id).get();
+        if(o->flags & ANGLE_ACTIVE) 
+            ss << ", i=" << o->i << ", j=" << o->j << ", k=" << o->k;
     }
     ss << ")";
     
@@ -788,7 +788,8 @@ HRESULT TissueForge::AngleHandle::destroy() {
         cuda::engine_cuda_finalize_angle(this->id);
     #endif
 
-    return Angle_Destroy(this->get());
+    Angle *o = this->get();
+    return o ? Angle_Destroy(o) : error(MDCERR_null);
 }
 
 std::vector<AngleHandle> TissueForge::AngleHandle::items() {
@@ -832,7 +833,7 @@ bool TissueForge::AngleHandle::has(ParticleHandle *part) {
 FloatP_t TissueForge::AngleHandle::getAngle() {
     FloatP_t result = 0;
     Angle *a = this->get();
-    if(a && a->flags && ANGLE_ACTIVE) { 
+    if(a) { 
         ParticleHandle pi(a->i), pj(a->j), pk(a->k);
         FVector3 ri = pi.getPosition();
         FVector3 rj = pj.getPosition();
@@ -846,7 +847,12 @@ FloatP_t TissueForge::AngleHandle::getAngle() {
 
 FPTYPE TissueForge::AngleHandle::getEnergy() {
 
-    Angle angles[] = {*this->get()};
+    Angle *a = this->get();
+    if(!a) {
+        error(MDCERR_null);
+        return 0;
+    }
+    Angle angles[] = {*a};
     FPTYPE f[] = {0.0, 0.0, 0.0};
     FPTYPE epot_out = 0.0;
     angle_evalf(angles, 1, &_Engine, f, &epot_out);
@@ -856,7 +862,7 @@ FPTYPE TissueForge::AngleHandle::getEnergy() {
 std::vector<int32_t> TissueForge::AngleHandle::getParts() {
     std::vector<int32_t> result;
     Angle *a = this->get();
-    if(a && a->flags & ANGLE_ACTIVE) {
+    if(a) {
         result = std::vector<int32_t>{a->i, a->j, a->k};
     }
     return result;
@@ -865,7 +871,7 @@ std::vector<int32_t> TissueForge::AngleHandle::getParts() {
 ParticleList TissueForge::AngleHandle::getPartList() {
     ParticleList result;
     Angle *a = this->get();
-    if(a && a->flags & ANGLE_ACTIVE) {
+    if(a) {
         result.insert(a->i);
         result.insert(a->j);
         result.insert(a->k);
@@ -875,7 +881,7 @@ ParticleList TissueForge::AngleHandle::getPartList() {
 
 Potential *TissueForge::AngleHandle::getPotential() {
     Angle *a = this->get();
-    if(a && a->flags & ANGLE_ACTIVE) {
+    if(a) {
         return a->potential;
     }
     return NULL;
@@ -887,8 +893,7 @@ uint32_t TissueForge::AngleHandle::getId() {
 
 FPTYPE TissueForge::AngleHandle::getDissociationEnergy() {
     auto *a = this->get();
-    if (a) return a->dissociation_energy;
-    return NULL;
+    return a ? a->dissociation_energy : FPTYPE_ZERO;
 }
 
 void TissueForge::AngleHandle::setDissociationEnergy(const FPTYPE &dissociation_energy) {
@@ -898,8 +903,7 @@ void TissueForge::AngleHandle::setDissociationEnergy(const FPTYPE &dissociation_
 
 FPTYPE TissueForge::AngleHandle::getHalfLife() {
     auto *a = this->get();
-    if (a) return a->half_life;
-    return NULL;
+    return a ? a->half_life : FPTYPE_ZERO;
 }
 
 void TissueForge::AngleHandle::setHalfLife(const FPTYPE &half_life) {
@@ -907,16 +911,9 @@ void TissueForge::AngleHandle::setHalfLife(const FPTYPE &half_life) {
     if (a) a->half_life = half_life;
 }
 
-bool TissueForge::AngleHandle::getActive() {
-    auto *a = this->get();
-    if (a) return (bool)(a->flags & ANGLE_ACTIVE);
-    return false;
-}
-
 rendering::Style *TissueForge::AngleHandle::getStyle() {
     auto *a = this->get();
-    if (a) return a->style;
-    return NULL;
+    return a ? a->style : NULL;
 }
 
 void TissueForge::AngleHandle::setStyle(rendering::Style *style) {
@@ -926,8 +923,7 @@ void TissueForge::AngleHandle::setStyle(rendering::Style *style) {
 
 FPTYPE TissueForge::AngleHandle::getAge() {
     auto *a = this->get();
-    if (a) return (_Engine.time - a->creation_time) * _Engine.dt;
-    return 0;
+    return a ? (_Engine.time - a->creation_time) * _Engine.dt : 0;
 }
 
 std::vector<int32_t> TissueForge::Angle_IdsForParticle(int32_t pid) {

@@ -301,9 +301,6 @@ namespace TissueForge {
         /** Set the half life */
         void setHalfLife(const FPTYPE &half_life);
 
-        /** Test whether the underlying bond is active */
-        bool getActive();
-
         /** Get the style */
         rendering::Style *getStyle();
 

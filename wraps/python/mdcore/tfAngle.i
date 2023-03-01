@@ -122,11 +122,6 @@
             self.setHalfLife(half_life)
 
         @property
-        def active(self):
-            """active flag"""
-            return self.getActive()
-
-        @property
         def style(self):
             """angle style"""
             return self.getStyle()

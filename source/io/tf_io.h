@@ -353,9 +353,6 @@ namespace TissueForge::io {
     template <typename T>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, TissueForge::types::TQuaternion<T> *dataElement) { 
 
-        std::vector<T> vde;
-        T sde;
-
         TF_IOFROMEASY(fileElement, metaData, "vector", &dataElement->vector());
         TF_IOFROMEASY(fileElement, metaData, "scalar", &dataElement->scalar());
 

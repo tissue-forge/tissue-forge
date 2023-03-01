@@ -514,6 +514,7 @@ HRESULT tfVertexSolverBodyHandle_sharedVertices(
     for(size_t i = 0; i < _objs.size(); i++) 
         if(tfVertexSolverVertexHandle_init(&(*objs)[i], _objs[i].id) != S_OK) 
             return E_FAIL;
+    return S_OK;
 }
 
 HRESULT tfVertexSolverBodyHandle_isOutside(

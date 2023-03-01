@@ -123,7 +123,7 @@ int32_t TissueForge::ParticleList::operator[](const size_t &i) {
     else {
         throw std::runtime_error("index out of range");
     }
-    return NULL;
+    return -1;
 }
 
 std::vector<int32_t> TissueForge::ParticleList::vector() {

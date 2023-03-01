@@ -126,11 +126,6 @@
             return self.setHalfLife(half_life)
 
         @property
-        def active(self):
-            """active flag"""
-            return self.getActive()
-
-        @property
         def style(self):
             """bond style"""
             return self.getStyle()

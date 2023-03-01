@@ -259,11 +259,11 @@ void rendering::OrientationRenderer::setShininess(float shininess) {
 }
 
 void rendering::OrientationRenderer::setLightDirection(const fVector3& lightDir) {
-    _shader.setLightPosition(lightDir);
+    _shader.setLightPositions({fVector4{lightDir, 0}});
 }
 
 void rendering::OrientationRenderer::setLightColor(const Magnum::Color3 &color) {
-    _shader.setLightColor(color);
+    _shader.setLightColor(Magnum::Color4(color));
 }
 
 rendering::OrientationRenderer *rendering::OrientationRenderer::get() {

@@ -90,7 +90,7 @@ HRESULT TissueForge::Secrete_AmountWithinDistance(struct state::SpeciesValue *sp
 FPTYPE TissueForge::SecreteUptake::secrete(state::SpeciesValue *species, const FPTYPE &amount, const ParticleList &to) {
     FPTYPE secreted = 0;
     try{
-        if(FAILED(Secrete_AmountToParticles(species, amount, to.nr_parts, to.parts, &secreted))) return NULL;
+        if(FAILED(Secrete_AmountToParticles(species, amount, to.nr_parts, to.parts, &secreted))) return FPTYPE_ZERO;
     }
     catch(const std::exception &e) {
         
@@ -111,7 +111,7 @@ FPTYPE TissueForge::SecreteUptake::secrete(state::SpeciesValue *species, const F
         // take into account the radius of this particle.
         FPTYPE radius = (FPTYPE)part->radius + distance;
         std::set<short int> ids = (std::set<short int>)ParticleType::particleTypeIds();
-        if(FAILED(Secrete_AmountWithinDistance(species, amount, radius, &ids, &secreted))) return NULL;
+        if(FAILED(Secrete_AmountWithinDistance(species, amount, radius, &ids, &secreted))) return FPTYPE_ZERO;
     }
     catch(const std::exception &e) {
         

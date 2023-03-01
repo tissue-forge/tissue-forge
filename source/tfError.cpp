@@ -35,7 +35,7 @@ static std::vector<std::shared_ptr<Error> > error_registry;
 static std::unordered_map<unsigned int, ErrorCallback&> cb_registry;
 
 
-const unsigned int TissueForge::addErrorCallback(ErrorCallback &cb) {
+unsigned int TissueForge::addErrorCallback(ErrorCallback &cb) {
 	unsigned int result = cb_registry.size();
 	for(unsigned int i = 0; i < cb_registry.size(); i++) 
 		if(cb_registry.find(i) == cb_registry.end()) {
