@@ -662,7 +662,12 @@ Bond *TissueForge::Bond::fromString(const std::string &str) {
 }
 
 Bond *TissueForge::BondHandle::get() { 
-    return &_Engine.bonds[this->id];
+    if(id < 0 || id >= _Engine.bonds_size) {
+        error(MDCERR_id);
+        return NULL;
+    }
+    Bond *r = &_Engine.bonds[this->id];
+    return r && r->flags & BOND_ACTIVE ? r : NULL;
 };
 
 TissueForge::BondHandle::BondHandle(int id) {
@@ -708,10 +713,9 @@ static std::string BondHandle_str(const BondHandle *h) {
 
     ss << "BondHandle(id=" << h->id;
     if(h->id >= 0) {
-        BondHandle _h(h->id);
-        const Bond &o = *_h.get();
-        if(o.flags & BOND_ACTIVE) 
-            ss << ", i=" << o.i << ", j=" << o.j;
+        const Bond *o = BondHandle(h->id).get();
+        if(o) 
+            ss << ", i=" << o->i << ", j=" << o->j;
     }
     ss << ")";
     
@@ -729,7 +733,7 @@ bool TissueForge::BondHandle::check() {
 FloatP_t TissueForge::BondHandle::getLength() {
     FloatP_t result = 0;
     Bond *b = this->get();
-    if(b && b->flags && BOND_ACTIVE) { 
+    if(b) { 
         ParticleHandle pi(b->i), pj(b->j);
         FVector3 ri = pi.getPosition();
         FVector3 rj = pj.getPosition();
@@ -745,6 +749,11 @@ FPTYPE TissueForge::BondHandle::getEnergy()
     
     Bond *bond = this->get();
     FPTYPE energy = 0;
+
+    if(!bond) {
+        error(MDCERR_null);
+        return energy;
+    }
     
     Bond_Energy(bond, &energy);
     
@@ -754,7 +763,7 @@ FPTYPE TissueForge::BondHandle::getEnergy()
 std::vector<int32_t> TissueForge::BondHandle::getParts() {
     std::vector<int32_t> result;
     Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
+    if(bond) {
         result = std::vector<int32_t>{bond->i, bond->j};
     }
     return result;
@@ -763,7 +772,7 @@ std::vector<int32_t> TissueForge::BondHandle::getParts() {
 ParticleList TissueForge::BondHandle::getPartList() {
     ParticleList result;
     Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
+    if(bond) {
         result.insert(bond->i);
         result.insert(bond->j);
     }
@@ -772,25 +781,16 @@ ParticleList TissueForge::BondHandle::getPartList() {
 
 Potential *TissueForge::BondHandle::getPotential() {
     Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
-        return bond->potential;
-    }
-    return NULL;
+    return bond ? bond->potential : NULL;
 }
 
 uint32_t TissueForge::BondHandle::getId() {
-    Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
-        return bond->id;
-    }
-    return NULL;
+    return this->id;
 }
 
 FPTYPE TissueForge::BondHandle::getDissociationEnergy() {
-    FPTYPE result;
     Bond *bond = get();
-    if (bond) result = bond->dissociation_energy;
-    return result;
+    return bond ? bond->dissociation_energy : FPTYPE_ZERO;
 }
 
 void TissueForge::BondHandle::setDissociationEnergy(const FPTYPE &dissociation_energy) {
@@ -800,8 +800,7 @@ void TissueForge::BondHandle::setDissociationEnergy(const FPTYPE &dissociation_e
 
 FPTYPE TissueForge::BondHandle::getHalfLife() {
     Bond *bond = get();
-    if (bond) return bond->half_life;
-    return NULL;
+    return bond ? bond->half_life : FPTYPE_ZERO;
 }
 
 void TissueForge::BondHandle::setHalfLife(const FPTYPE &half_life) {
@@ -809,16 +808,9 @@ void TissueForge::BondHandle::setHalfLife(const FPTYPE &half_life) {
     if (bond) bond->half_life = half_life;
 }
 
-bool TissueForge::BondHandle::getActive() {
-    Bond *bond = get();
-    if (bond) return (bool)(bond->flags & BOND_ACTIVE);
-    return false;
-}
-
 rendering::Style *TissueForge::BondHandle::getStyle() {
     Bond *bond = get();
-    if (bond) return bond->style;
-    return NULL;
+    return bond ? bond->style : NULL;
 }
 
 void TissueForge::BondHandle::setStyle(rendering::Style *style) {
@@ -828,8 +820,7 @@ void TissueForge::BondHandle::setStyle(rendering::Style *style) {
 
 FPTYPE TissueForge::BondHandle::getAge() {
     Bond *bond = get();
-    if (bond) return (_Engine.time - bond->creation_time) * _Engine.dt;
-    return 0;
+    return bond ? (_Engine.time - bond->creation_time) * _Engine.dt : FPTYPE_ZERO;
 }
 
 static void make_pairlist(
@@ -944,9 +935,8 @@ std::vector<BondHandle> TissueForge::BondHandle::pairwise(
 
 HRESULT TissueForge::BondHandle::destroy()
 {
-    TF_Log(LOG_DEBUG);
-    
-    return Bond_Destroy(this->get());
+    Bond *o = this->get();
+    return o ? Bond_Destroy(this->get()) : error(MDCERR_null);
 }
 
 std::vector<BondHandle> TissueForge::BondHandle::items() {

@@ -506,7 +506,7 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::setShininess(float shi
 }
 
 rendering::UniverseRenderer& rendering::UniverseRenderer::setLightDirection(const fVector3& lightDir) {
-    sphereShader.setLightPosition(lightDir);
+    sphereShader.setLightPositions({fVector4{lightDir, 0}});
 
     for(auto &s : subRenderers) 
         s->setLightDirection(lightDir);
@@ -516,7 +516,7 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::setLightDirection(cons
 }
 
 rendering::UniverseRenderer& rendering::UniverseRenderer::setLightColor(const Color3 &color) {
-    sphereShader.setLightColor(color);
+    sphereShader.setLightColor(Magnum::Color4(color));
 
     for(auto &s : subRenderers) 
         s->setLightColor(color);

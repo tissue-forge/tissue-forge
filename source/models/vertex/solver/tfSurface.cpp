@@ -187,11 +187,11 @@ static HRESULT Surface_order3DFFaceVertices(TissueForge::io::ThreeDFFaceData *fa
 
 SurfaceHandle Surface::create(TissueForge::io::ThreeDFFaceData *face) {
     std::vector<TissueForge::io::ThreeDFVertexData*> vverts;
-    Surface_GETMESH(mesh, NULL);
+    Surface_GETMESH(mesh, SurfaceHandle());
     bool failed = false;
     if(Surface_order3DFFaceVertices(face, vverts) != S_OK || mesh->ensureAvailableVertices(vverts.size()) != S_OK) {
         TF_Log(LOG_ERROR);
-        return NULL;
+        return SurfaceHandle();
     }
 
     std::vector<VertexHandle> _vertices;
@@ -211,7 +211,7 @@ SurfaceHandle Surface::create(TissueForge::io::ThreeDFFaceData *face) {
             Vertex *v = _vertices[i].vertex();
             v->destroy();
         }
-        return NULL;
+        return SurfaceHandle();
     }
 
     return create(_vertices);
@@ -1533,7 +1533,7 @@ VertexHandle SurfaceHandle::findVertex(const FVector3 &dir) const {
 }
 
 BodyHandle SurfaceHandle::findBody(const FVector3 &dir) const {
-    SurfaceHandle_GETOBJ(o, NULL);
+    SurfaceHandle_GETOBJ(o, BodyHandle());
     Body *_b = o->findBody(dir);
     return _b ? BodyHandle(_b->objectId()) : BodyHandle();
 }
@@ -1998,10 +1998,10 @@ SurfaceHandle SurfaceType::operator() (const std::vector<VertexHandle> &_vertice
 }
 
 SurfaceHandle SurfaceType::operator() (const std::vector<FVector3> &_positions) {
-    Surface_GETMESH(mesh, NULL);
+    Surface_GETMESH(mesh, SurfaceHandle());
     if(mesh->ensureAvailableVertices(_positions.size()) != S_OK) {
         TF_Log(LOG_ERROR);
-        return NULL;
+        return SurfaceHandle();
     }
 
     std::vector<VertexHandle> _vertices;
@@ -2020,7 +2020,7 @@ SurfaceHandle SurfaceType::operator() (const std::vector<FVector3> &_positions) 
         for(auto &v : _vertices) {
             v.vertex()->destroy();
         }
-        return NULL;
+        return SurfaceHandle();
     }
     
     TF_Log(LOG_DEBUG) << "Created " << _vertices.size() << " vertices";

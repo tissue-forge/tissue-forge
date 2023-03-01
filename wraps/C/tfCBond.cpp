@@ -162,15 +162,6 @@ namespace TissueForge {
             return S_OK;
         }
 
-        template <typename O, typename H> 
-        HRESULT getBondActive(H *handle, bool *flag) {
-            O *bhandle = castC<O, H>(handle);
-            TFC_PTRCHECK(bhandle);
-            TFC_PTRCHECK(flag);
-            *flag = bhandle->getActive();
-            return S_OK;
-        }
-
         template <typename O, typename H, typename B> 
         HRESULT setBondActive(H *handle, const bool &flag, const unsigned int &activeFlag) {
             O *bhandle = castC<O, H>(handle);
@@ -387,10 +378,6 @@ HRESULT tfBondHandle_setHalfLife(struct tfBondHandleHandle *handle, tfFloatP_t v
     return TissueForge::capi::setBondHalfLife<BondHandle, tfBondHandleHandle>(handle, value);
 }
 
-HRESULT tfBondHandle_getActive(struct tfBondHandleHandle *handle, bool *flag) {
-    return TissueForge::capi::getBondActive<BondHandle, tfBondHandleHandle>(handle, flag);
-}
-
 HRESULT tfBondHandle_setActive(struct tfBondHandleHandle *handle, bool flag) {
     return TissueForge::capi::setBondActive<BondHandle, tfBondHandleHandle, Bond>(handle, flag, BOND_ACTIVE);
 }
@@ -546,10 +533,6 @@ HRESULT tfAngleHandle_getHalfLife(struct tfAngleHandleHandle *handle, tfFloatP_t
 
 HRESULT tfAngleHandle_setHalfLife(struct tfAngleHandleHandle *handle, tfFloatP_t value) {
     return TissueForge::capi::setBondHalfLife<AngleHandle, tfAngleHandleHandle>(handle, value);
-}
-
-HRESULT tfAngleHandle_getActive(struct tfAngleHandleHandle *handle, bool *flag) {
-    return TissueForge::capi::getBondActive<AngleHandle, tfAngleHandleHandle>(handle, flag);
 }
 
 HRESULT tfAngleHandle_setActive(struct tfAngleHandleHandle *handle, bool flag) {
@@ -713,10 +696,6 @@ HRESULT tfDihedralHandle_getHalfLife(struct tfDihedralHandleHandle *handle, tfFl
 
 HRESULT tfDihedralHandle_setHalfLife(struct tfDihedralHandleHandle *handle, tfFloatP_t value) {
     return TissueForge::capi::setBondHalfLife<DihedralHandle, tfDihedralHandleHandle>(handle, value);
-}
-
-HRESULT tfDihedralHandle_getActive(struct tfDihedralHandleHandle *handle, bool *flag) {
-    return TissueForge::capi::getBondActive<DihedralHandle, tfDihedralHandleHandle>(handle, flag);
 }
 
 HRESULT tfDihedralHandle_setActive(struct tfDihedralHandleHandle *handle, bool flag) {

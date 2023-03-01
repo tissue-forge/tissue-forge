@@ -226,15 +226,6 @@ CAPI_FUNC(HRESULT) tfBondHandle_getHalfLife(struct tfBondHandleHandle *handle, t
 CAPI_FUNC(HRESULT) tfBondHandle_setHalfLife(struct tfBondHandleHandle *handle, tfFloatP_t value);
 
 /**
- * @brief Test whether a bond is active
- * 
- * @param handle populated handle
- * @param flag true when active
- * @return S_OK on success 
- */
-CAPI_FUNC(HRESULT) tfBondHandle_getActive(struct tfBondHandleHandle *handle, bool *flag);
-
-/**
  * @brief Set whether a bond is active
  * 
  * @param handle populated handle
@@ -474,15 +465,6 @@ CAPI_FUNC(HRESULT) tfAngleHandle_getHalfLife(struct tfAngleHandleHandle *handle,
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfAngleHandle_setHalfLife(struct tfAngleHandleHandle *handle, tfFloatP_t value);
-
-/**
- * @brief Test whether a angle is active
- * 
- * @param handle populated handle
- * @param flag true when active
- * @return S_OK on success 
- */
-CAPI_FUNC(HRESULT) tfAngleHandle_getActive(struct tfAngleHandleHandle *handle, bool *flag);
 
 /**
  * @brief Set whether a angle is active
@@ -726,15 +708,6 @@ CAPI_FUNC(HRESULT) tfDihedralHandle_getHalfLife(struct tfDihedralHandleHandle *h
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfDihedralHandle_setHalfLife(struct tfDihedralHandleHandle *handle, tfFloatP_t value);
-
-/**
- * @brief Test whether a dihedral is active
- * 
- * @param handle populated handle
- * @param flag true when active
- * @return S_OK on success 
- */
-CAPI_FUNC(HRESULT) tfDihedralHandle_getActive(struct tfDihedralHandleHandle *handle, bool *flag);
 
 /**
  * @brief Set whether a dihedral is active

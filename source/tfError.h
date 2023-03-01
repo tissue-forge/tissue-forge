@@ -61,7 +61,7 @@ namespace TissueForge {
      * @param cb callback to register
      * @return id of callback in registry
      */
-    CPPAPI_FUNC(const unsigned int) addErrorCallback(ErrorCallback &cb);
+    CPPAPI_FUNC(unsigned int) addErrorCallback(ErrorCallback &cb);
 
     /**
      * @brief Remove an error callback from the registry

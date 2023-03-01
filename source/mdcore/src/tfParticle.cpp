@@ -1104,7 +1104,7 @@ HRESULT TissueForge::Particle_Become(Particle *part, ParticleType *type) {
 }
 
 HRESULT TissueForge::ParticleHandle::become(ParticleType *type) {
-    TF_PARTICLE_SELFW(this, NULL)
+    TF_PARTICLE_SELFW(this, E_FAIL)
     return Particle_Become(self, type);
 }
 
@@ -1313,7 +1313,7 @@ std::vector<int32_t> TissueForge::ParticleType::getPartIds() {
 }
 
 FPTYPE TissueForge::ParticleHandle::distance(ParticleHandle *_other) {
-    TF_PARTICLE_SELF(this)
+    TF_PARTICLE_SELFW(this, FPTYPE_ZERO)
     auto other = particleSelf(_other);
     
     if(other == NULL) 

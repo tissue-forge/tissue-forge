@@ -82,7 +82,8 @@ ParticleList metrics::neighborhoodParticles(const FVector3 &position, const Floa
 
     FPTYPE pos[] = {position[0], position[1], position[2]};    
     if((cid = space_get_cellids_for_pos(&_Engine.s, pos, ijk)) < 0) {
-        return E_FAIL;
+        tf_error(E_FAIL, "Could not identify cell");
+        return ParticleList();
     }
     
     // the current cell

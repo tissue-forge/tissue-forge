@@ -163,7 +163,6 @@ extern "C" HRESULT cuda::engine_cuda_load_fluxes(struct engine *e) {
     int nr_devices = e->nr_devices;
     int *fxind = (int*)malloc(sizeof(int) * e->max_type * e->max_type);
     struct TissueForge::Fluxes **fluxes = (TissueForge::Fluxes**)malloc(sizeof(Fluxes*) * e->nr_types * (e->nr_types + 1) / 2 + 1);
-    float cutoff = e->s.cutoff;
     
     // Start by identifying the unique fluxes in the engine
     nr_fluxes = 1;
