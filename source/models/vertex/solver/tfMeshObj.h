@@ -125,23 +125,6 @@ namespace TissueForge::models::vertex {
         }
 
         /**
-         * @brief Get a list of actors bound to a mesh object type
-         * 
-         * @tparam T type of actor
-         * @param objType mesh object type
-         */
-        template <typename T> 
-        static std::vector<T*> get(struct MeshObjType *objType) {
-            std::vector<T*> result;
-            if(!objType) 
-                return result;
-            for(auto &a : objType->actors) 
-                if(strcmp(a->name().c_str(), T::actorName().c_str()) == 0) 
-                    result.push_back((T*)a);
-            return result;
-        }
-
-        /**
          * @brief Get a JSON string representation
          */
         virtual std::string toString();

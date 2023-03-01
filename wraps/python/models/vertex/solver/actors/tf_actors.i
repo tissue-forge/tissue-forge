@@ -29,7 +29,11 @@ static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solve
     return TissueForge::models::vertex::MeshObjActor::get<TissueForge::models::vertex:: ## baseName ##>(obj);
 }
 
-static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solver_MeshObjActor_get ## baseName(TissueForge::models::vertex::MeshObjType *objType) {
+static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solver_MeshObjActor_get ## baseName(TissueForge::models::vertex::SurfaceType *objType) {
+    return TissueForge::models::vertex::MeshObjActor::get<TissueForge::models::vertex:: ## baseName ##>(objType);
+}
+
+static std::vector<TissueForge::models::vertex:: ## baseName ## *> _vertex_solver_MeshObjActor_get ## baseName(TissueForge::models::vertex::BodyType *objType) {
     return TissueForge::models::vertex::MeshObjActor::get<TissueForge::models::vertex:: ## baseName ##>(objType);
 }
 
