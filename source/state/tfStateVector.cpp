@@ -182,6 +182,8 @@ namespace TissueForge::io {
             TF_IOTOEASY(fileElement, metaData, "species_flags", species_flags);
         }
 
+        fileElement.get()->type = "StateVector";
+
         return S_OK;
     }
 

@@ -132,6 +132,8 @@ namespace TissueForge::io {
 
         TF_IOTOEASY(fileElement, metaData, "species", species);
 
+        fileElement.get()->type = "SpeciesList";
+
         return S_OK;
     }
 

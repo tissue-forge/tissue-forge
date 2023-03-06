@@ -261,6 +261,8 @@ namespace TissueForge::io {
             TF_IOTOEASY(fileElement, metaData, "colorMap", cMapName);
         }
 
+        fileElement.get()->type = "ColorMapper";
+
         return S_OK;
     }
 

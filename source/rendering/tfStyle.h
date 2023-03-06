@@ -51,7 +51,7 @@ namespace TissueForge {
              */
             struct ColorMapper *mapper = NULL;
             
-            ColorMapperFunc mapper_func;
+            ColorMapperFunc mapper_func = NULL;
 
             Style(const fVector3 *color=NULL, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
 

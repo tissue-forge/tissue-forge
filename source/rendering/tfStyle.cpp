@@ -141,6 +141,8 @@ namespace TissueForge::io {
             TF_IOTOEASY(fileElement, metaData, "mapper", *dataElement.mapper);
         }
 
+        fileElement.get()->type = "Style";
+
         return S_OK;
     }
 

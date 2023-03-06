@@ -525,6 +525,8 @@ namespace TissueForge::io {
         TF_IOTOEASY(fileElement, metaData, "constant", dataElement.getConstant());
         TF_IOTOEASY(fileElement, metaData, "conversionFactor", dataElement.getConversionFactor());
 
+        fileElement.get()->type = "Species";
+
         return S_OK;
     }
 
