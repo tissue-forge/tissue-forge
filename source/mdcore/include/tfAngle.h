@@ -224,7 +224,13 @@ namespace TissueForge {
         FPTYPE getAge();
 
         AngleHandle() : id(-1) {}
-        AngleHandle(const int &_id) : id(_id) {}
+
+        /**
+         * @brief Construct a new angle handle from an existing angle id
+         * 
+         * @param id id of existing angle
+         */
+        AngleHandle(const int &_id);
     };
 
     /**

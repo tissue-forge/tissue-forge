@@ -671,7 +671,7 @@ Bond *TissueForge::BondHandle::get() {
 };
 
 TissueForge::BondHandle::BondHandle(int id) {
-    if(id >= 0 && id < _Engine.nr_bonds) this->id = id;
+    if(id >= 0 && id < _Engine.bonds_size) this->id = id;
     else error(MDCERR_id);
 }
 

@@ -214,7 +214,13 @@ namespace TissueForge {
         FPTYPE getAge();
 
         DihedralHandle() : id(-1) {}
-        DihedralHandle(const int &_id) : id(_id) {}
+
+        /**
+         * @brief Construct a new dihedral handle from an existing dihedral id
+         * 
+         * @param id id of existing dihedral
+         */
+        DihedralHandle(const int &_id);
     };
 
     /**

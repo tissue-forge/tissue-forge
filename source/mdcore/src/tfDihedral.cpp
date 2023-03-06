@@ -974,6 +974,11 @@ FPTYPE TissueForge::DihedralHandle::getAge() {
     return d ? (_Engine.time - this->get()->creation_time) * _Engine.dt : FPTYPE_ZERO;
 }
 
+DihedralHandle::DihedralHandle(const int &_id) : id(_id) {
+    if(id >= 0 && id < _Engine.dihedrals_size) this->id = id;
+    else error(MDCERR_id);
+}
+
 HRESULT TissueForge::Dihedral_Destroy(Dihedral *d) {
     if(!d) return error(MDCERR_null);
 

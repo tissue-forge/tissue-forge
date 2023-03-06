@@ -926,6 +926,11 @@ FPTYPE TissueForge::AngleHandle::getAge() {
     return a ? (_Engine.time - a->creation_time) * _Engine.dt : 0;
 }
 
+AngleHandle::AngleHandle(const int &_id) : id(_id) {
+    if(id >= 0 && id < _Engine.angles_size) this->id = id;
+    else error(MDCERR_id);
+}
+
 std::vector<int32_t> TissueForge::Angle_IdsForParticle(int32_t pid) {
     std::vector<int32_t> angles;
     for (int i = 0; i < _Engine.nr_angles; ++i) {
