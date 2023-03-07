@@ -11,7 +11,7 @@ pr:
     - staging
 
 variables:
-  tf_version: '0.0.2.s'
+  tf_version: '0.1.0.s'
   tf_buildnum: 0
   tf_buildqual: 'staging'
 
