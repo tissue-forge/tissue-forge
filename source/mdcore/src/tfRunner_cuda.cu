@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2012 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -1009,31 +1009,31 @@ extern "C" HRESULT engine_cuda_boundary_conditions_load(struct engine *e) {
             cuda_safe_call(cudaMemcpy(pind_bcs_cuda[did][bi], pind.data(), sizeof(int) * pind.size(), cudaMemcpyHostToDevice));
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_alpha[did][bi], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
-            cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_alpha[did][bi], 0, 0, pot_alpha.data(), sizeof(float) * pot_alpha.size(), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_bcs_alpha[did][bi], 0, 0, pot_alpha.data(), sizeof(float) * pot_alpha.size(), sizeof(float) * pot_alpha.size(), 1, cudaMemcpyHostToDevice));
             cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_alpha[did][bi], cuda_pot_bcs_alpha[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_c[did][bi], &channelDesc_float, potential_chunk * max_coeffs, pot_c.size() / (potential_chunk * max_coeffs), 0));
-            cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_c[did][bi], 0, 0, pot_c.data(), sizeof(float) * pot_c.size(), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_bcs_c[did][bi], 0, 0, pot_c.data(), sizeof(float) * pot_c.size(), sizeof(float) * pot_c.size(), 1, cudaMemcpyHostToDevice));
             cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_c[did][bi], cuda_pot_bcs_c[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_dataf[did][bi], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
-            cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_dataf[did][bi], 0, 0, pot_dataf.data(), sizeof(float) * pot_dataf.size(), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_bcs_dataf[did][bi], 0, 0, pot_dataf.data(), sizeof(float) * pot_dataf.size(), sizeof(float) * pot_dataf.size(), 1, cudaMemcpyHostToDevice));
             cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_dataf[did][bi], cuda_pot_bcs_dataf[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_pot_bcs_datai[did][bi], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
-            cuda_safe_call(cudaMemcpyToArray(cuda_pot_bcs_datai[did][bi], 0, 0, pot_datai.data(), sizeof(int) * pot_datai.size(), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_bcs_datai[did][bi], 0, 0, pot_datai.data(), sizeof(int) * pot_datai.size(), sizeof(int) * pot_datai.size(), 1, cudaMemcpyHostToDevice));
             cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_bcs_datai[did][bi], cuda_pot_bcs_datai[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_dpd_bcs_cfs[did][bi], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
-            cuda_safe_call(cudaMemcpyToArray(cuda_dpd_bcs_cfs[did][bi], 0, 0, dpd_cf.data(), sizeof(float) * dpd_cf.size(), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_bcs_cfs[did][bi], 0, 0, dpd_cf.data(), sizeof(float) * dpd_cf.size(), sizeof(float) * dpd_cf.size(), 1, cudaMemcpyHostToDevice));
             cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_cfs[did][bi], cuda_dpd_bcs_cfs[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_dpd_bcs_dataf[did][bi], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
-            cuda_safe_call(cudaMemcpyToArray(cuda_dpd_bcs_dataf[did][bi], 0, 0, dpd_dataf.data(), sizeof(float) * dpd_dataf.size(), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_bcs_dataf[did][bi], 0, 0, dpd_dataf.data(), sizeof(float) * dpd_dataf.size(), sizeof(float) * dpd_dataf.size(), 1, cudaMemcpyHostToDevice));
             cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_dataf[did][bi], cuda_dpd_bcs_dataf[did][bi]), S_OK);
 
             cuda_safe_call(cudaMallocArray(&cuda_dpd_bcs_datai[did][bi], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
-            cuda_safe_call(cudaMemcpyToArray(cuda_dpd_bcs_datai[did][bi], 0, 0, dpd_datai.data(), sizeof(int) * dpd_datai.size(), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_bcs_datai[did][bi], 0, 0, dpd_datai.data(), sizeof(int) * dpd_datai.size(), sizeof(int) * dpd_datai.size(), 1, cudaMemcpyHostToDevice));
             cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_bcs_datai[did][bi], cuda_dpd_bcs_datai[did][bi]), S_OK);
 
         }
@@ -2954,13 +2954,12 @@ __global__ void runner_run_cuda(float *forces, float *fluxes, int *counts, int *
 
 extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
-    int k, cid, did, pid, fid, maxcount = 0;
+    int k, did, maxcount = 0;
     cudaStream_t stream;
     cudaEvent_t tic, toc_load, toc_run, toc_unload;
     float ms_load, ms_run, ms_unload;
-    struct Particle *p;
-    cuda::Particle *parts_cuda = (cuda::Particle*)e->parts_cuda_local, *buff_part;
-    float *part_states_cuda = (float *)e->part_states_cuda_local, *buff_part_states;
+    cuda::Particle *parts_cuda = (cuda::Particle*)e->parts_cuda_local;
+    float *part_states_cuda = (float *)e->part_states_cuda_local;
     struct space *s = &e->s;
     FPTYPE maxdist = s->cutoff + 2*s->maxdx;
     int *counts = e->counts_cuda_local[ 0 ], *inds = e->ind_cuda_local[ 0 ];
@@ -2977,7 +2976,7 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
          cudaEventCreate(&toc_load) != cudaSuccess ||
          cudaEventCreate(&toc_run) != cudaSuccess ||
          cudaEventCreate(&toc_unload) != cudaSuccess)
-        return cuda_error(E_FAIL);
+        return cuda_error();
     
     /* Start the clock on the first stream. */
     cuda_safe_call(cudaEventRecord(tic, (cudaStream_t)e->streams[e->nr_devices-1]));
@@ -3260,7 +3259,7 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     /* Stop the clock on the last stream. */
     if(cudaEventRecord(toc_unload, (cudaStream_t)e->streams[e->nr_devices-1]) != cudaSuccess ||
          cudaStreamSynchronize((cudaStream_t)e->streams[e->nr_devices-1]) != cudaSuccess)
-        return cuda_error(E_FAIL);
+        return cuda_error();
     
     /* Check for any missed CUDA errors. */
     cuda_safe_call(cudaPeekAtLastError());
@@ -3269,7 +3268,7 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     if(cudaEventElapsedTime(&ms_load, tic, toc_load) != cudaSuccess ||
          cudaEventElapsedTime(&ms_run, toc_load, toc_run) != cudaSuccess ||
          cudaEventElapsedTime(&ms_unload, toc_run, toc_unload) != cudaSuccess)
-        return cuda_error(E_FAIL);
+        return cuda_error();
     e->timers[ engine_timer_cuda_load ] += ms_load / 1000 * CPU_TPS;
     e->timers[ engine_timer_cuda_dopairs ] += ms_run / 1000 * CPU_TPS;
     e->timers[ engine_timer_cuda_unload ] += ms_unload / 1000 * CPU_TPS;
@@ -3281,7 +3280,7 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
 extern "C" HRESULT cuda::engine_cuda_load_parts(struct engine *e) {
     
-    int k, did, cid, pid, maxcount = 0;
+    int k, did, maxcount = 0;
     cuda::Particle *parts_cuda = (cuda::Particle*)e->parts_cuda_local;
     struct space *s = &e->s;
     FPTYPE maxdist = s->cutoff + 2*s->maxdx;
@@ -3549,8 +3548,7 @@ HRESULT cuda::engine_cuda_queues_finalize(struct engine *e) {
 }
 
 extern "C" HRESULT cuda::engine_cuda_load_pots(struct engine *e) {
-    int i, j, nr_pots, nr_pots_cluster;
-    int nr_devices = e->nr_devices;
+    int nr_pots, nr_pots_cluster;
     std::vector<int> pind, pind_cluster;
 
     // Pack the potentials
@@ -3600,72 +3598,72 @@ extern "C" HRESULT cuda::engine_cuda_load_pots(struct engine *e) {
         cuda_safe_call(cudaSetDevice(e->devices[did]));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_alpha[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_alpha[did], 0, 0, pot_alpha.data(), sizeof(float) * pot_alpha.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_alpha[did], 0, 0, pot_alpha.data(), sizeof(float) * pot_alpha.size(), sizeof(float) * pot_alpha.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_alpha[did], cuda_pot_alpha[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_alpha, &tex_pot_alpha[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_alpha[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha_cluster.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_alpha[did], 0, 0, pot_alpha_cluster.data(), sizeof(float) * pot_alpha_cluster.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_alpha[did], 0, 0, pot_alpha_cluster.data(), sizeof(float) * pot_alpha_cluster.size(), sizeof(float) * pot_alpha_cluster.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_alpha[did], cuda_pot_cluster_alpha[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_alpha, &tex_pot_cluster_alpha[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_c[did], &channelDesc_float, potential_chunk * max_coeffs, pot_c.size() / (potential_chunk * max_coeffs), 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_c[did], 0, 0, pot_c.data(), sizeof(float) * pot_c.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_c[did], 0, 0, pot_c.data(), sizeof(float) * pot_c.size(), sizeof(float) * pot_c.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_c[did], cuda_pot_c[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_c, &tex_pot_c[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_c[did], &channelDesc_float, potential_chunk * max_coeffs_cluster, pot_c_cluster.size() / (potential_chunk * max_coeffs_cluster), 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_c[did], 0, 0, pot_c_cluster.data(), sizeof(float) * pot_c_cluster.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_c[did], 0, 0, pot_c_cluster.data(), sizeof(float) * pot_c_cluster.size(), sizeof(float) * pot_c_cluster.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_c[did], cuda_pot_cluster_c[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_c, &tex_pot_cluster_c[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_dataf[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_dataf[did], 0, 0, pot_dataf.data(), sizeof(float) * pot_dataf.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_dataf[did], 0, 0, pot_dataf.data(), sizeof(float) * pot_dataf.size(), sizeof(float) * pot_dataf.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_dataf[did], cuda_pot_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_dataf, &tex_pot_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_dataf[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_dataf[did], 0, 0, pot_dataf_cluster.data(), sizeof(float) * pot_dataf_cluster.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_dataf[did], 0, 0, pot_dataf_cluster.data(), sizeof(float) * pot_dataf_cluster.size(), sizeof(float) * pot_dataf_cluster.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_dataf[did], cuda_pot_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_dataf, &tex_pot_cluster_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_datai[did], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_datai[did], 0, 0, pot_datai.data(), sizeof(int) * pot_datai.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_datai[did], 0, 0, pot_datai.data(), sizeof(int) * pot_datai.size(), sizeof(int) * pot_datai.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_datai[did], cuda_pot_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_datai, &tex_pot_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_datai[did], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_pot_cluster_datai[did], 0, 0, pot_datai_cluster.data(), sizeof(int) * pot_datai_cluster.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_datai[did], 0, 0, pot_datai_cluster.data(), sizeof(int) * pot_datai_cluster.size(), sizeof(int) * pot_datai_cluster.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_datai[did], cuda_pot_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_datai, &tex_pot_cluster_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cfs[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cfs[did], 0, 0, dpd_cf.data(), sizeof(float) * dpd_cf.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cfs[did], 0, 0, dpd_cf.data(), sizeof(float) * dpd_cf.size(), sizeof(float) * dpd_cf.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cfs[did], cuda_dpd_cfs[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cfs, &tex_dpd_cfs[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_cfs[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cluster_cfs[did], 0, 0, dpd_cf_cluster.data(), sizeof(float) * dpd_cf_cluster.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_cfs[did], 0, 0, dpd_cf_cluster.data(), sizeof(float) * dpd_cf_cluster.size(), sizeof(float) * dpd_cf_cluster.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_cfs[did], cuda_dpd_cluster_cfs[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_cfs, &tex_dpd_cluster_cfs[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_dataf[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_dpd_dataf[did], 0, 0, dpd_dataf.data(), sizeof(float) * dpd_dataf.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_dataf[did], 0, 0, dpd_dataf.data(), sizeof(float) * dpd_dataf.size(), sizeof(float) * dpd_dataf.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_dataf[did], cuda_dpd_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_dataf, &tex_dpd_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_dataf[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cluster_dataf[did], 0, 0, dpd_dataf_cluster.data(), sizeof(float) * dpd_dataf_cluster.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_dataf[did], 0, 0, dpd_dataf_cluster.data(), sizeof(float) * dpd_dataf_cluster.size(), sizeof(float) * dpd_dataf_cluster.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_dataf[did], cuda_dpd_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_dataf, &tex_dpd_cluster_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_datai[did], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_dpd_datai[did], 0, 0, dpd_datai.data(), sizeof(int) * dpd_datai.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_datai[did], 0, 0, dpd_datai.data(), sizeof(int) * dpd_datai.size(), sizeof(int) * dpd_datai.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_datai[did], cuda_dpd_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_datai, &tex_dpd_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_datai[did], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpyToArray(cuda_dpd_cluster_datai[did], 0, 0, dpd_datai_cluster.data(), sizeof(int) * dpd_datai_cluster.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_datai[did], 0, 0, dpd_datai_cluster.data(), sizeof(int) * dpd_datai_cluster.size(), sizeof(int) * dpd_datai_cluster.size(), 1, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_datai[did], cuda_dpd_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_datai, &tex_dpd_cluster_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
@@ -3815,10 +3813,10 @@ HRESULT engine_cuda_finalize_particles(struct engine *e) {
 extern "C" HRESULT cuda::engine_cuda_refresh_particles(struct engine *e) {
 
     if(engine_cuda_finalize_particles(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     if(engine_cuda_allocate_particles(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     bool is_stateful = e->nr_fluxes_cuda > 1;
 
@@ -3885,10 +3883,10 @@ extern "C" HRESULT cuda::engine_cuda_finalize_particle_states(struct engine *e) 
 
 extern "C" HRESULT cuda::engine_cuda_refresh_particle_states(struct engine *e) {
     if(engine_cuda_finalize_particle_states(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     if(engine_cuda_allocate_particle_states(e) < 0)
-        return cuda_error(E_FAIL);
+        return cuda_error();
 
     for(int did = 0; did < e->nr_devices; did++) {
 

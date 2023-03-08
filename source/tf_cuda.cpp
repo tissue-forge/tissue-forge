@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -116,9 +116,14 @@ void cuda::CUDARTProgram::compile(const char *src, const char *name, int numHead
     else _opts.push_back("--gpu-architecture=sm_" + std::to_string(this->arch));
 
     std::string _includeOpt = "--include-path=";
-    _opts.push_back(_includeOpt + cuda::CUDAIncludePath());
-    _opts.push_back(_includeOpt + tfIncludePath());
-    _opts.push_back(_includeOpt + tfPrivateIncludePath());
+    std::vector<std::string> includePaths = {
+        cuda::CUDAIncludePath(),
+        tfIncludePath(),
+        tfPrivateIncludePath()
+    };
+    for(auto &s : includePaths) 
+        if(s.length() > 0) 
+            _opts.push_back(_includeOpt + s);
     for(auto &s : this->includePaths) _opts.push_back(_includeOpt + s);
     
     #ifdef TF_CUDA_DEBUG
@@ -729,6 +734,8 @@ void cuda::test(const int &numBlocks, const int &numThreads, const int &numEls, 
 
 
 std::string cuda::tfIncludePath() {
+    if(_tfIncludePath.length() == 0) 
+        return "";
     auto p = std::filesystem::absolute(_tfIncludePath);
     return p.string();
 }
@@ -739,7 +746,10 @@ HRESULT cuda::setTfIncludePath(const std::string &_path) {
 }
 
 std::string cuda::tfPrivateIncludePath() {
-    auto p = std::filesystem::absolute(tfIncludePath());
+    std::string ip = tfIncludePath();
+    if(ip.length() == 0) 
+        return "";
+    auto p = std::filesystem::absolute(ip);
     p.append("private");
     return p.string();
 }
@@ -754,6 +764,8 @@ HRESULT cuda::setTfResourcePath(const std::string &_path) {
 }
 
 std::string cuda::CUDAPath() {
+    if(_tfResourcePath.length() == 0) 
+        return "";
     auto p = std::filesystem::absolute(_tfResourcePath);
     p.append("cuda");
     return p.string();
@@ -769,7 +781,10 @@ HRESULT cuda::setCUDAIncludePath(const std::string &_path) {
 }
 
 std::string cuda::CUDAResourcePath(const std::string &relativePath) {
-    auto p = std::filesystem::absolute(cuda::CUDAPath());
+    std::string cp = cuda::CUDAPath();
+    if(cp.length() == 0) 
+        return "";
+    auto p = std::filesystem::absolute(cp);
     p.append(relativePath);
     return p.string();
 }

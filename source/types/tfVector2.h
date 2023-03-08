@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -70,6 +70,12 @@ namespace TissueForge::types {
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             T distance(const TVector2<T> &lineStartPt, const TVector2<T> &lineEndPt) {
                 return Magnum::Math::Distance::lineSegmentPoint(lineStartPt, lineEndPt, *this);
+            }
+
+            template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
+            TVector2<T> lineShortestDisplacementTo(const TVector2<T> &lineStartPt, const TVector2<T> &lineEndPt) const {
+                const TVector2<T> lineDir = (lineEndPt - lineStartPt).normalized();
+                return lineStartPt + (*this - lineStartPt).dot(lineDir) * lineDir - *this;
             }
 
             /** Get the cross product with another vector */

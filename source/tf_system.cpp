@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -49,7 +49,8 @@ HRESULT system::screenshot(const std::string &filePath) {
         
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
+        return E_FAIL;
     }
 }
 
@@ -75,7 +76,8 @@ HRESULT system::screenshot(const std::string &filePath, const bool &decorate, co
         
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
+        return E_FAIL;
     }
 }
 
@@ -90,7 +92,8 @@ bool system::contextHasCurrent() {
         
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
+        return false;
     }
 }
 
@@ -136,6 +139,7 @@ bool system::cameraIsLagging() {
     }
     catch(const std::exception &e) {
         tf_exp(e);
+        return false;
     }
 }
 
@@ -197,6 +201,7 @@ float system::cameraGetLagging() {
     }
     catch(const std::exception &e) {
         tf_exp(e);
+        return 0;
     }
 }
 
@@ -839,7 +844,8 @@ FQuaternion system::cameraRotation() {
         return FQuaternion(ab->crotation());
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
+        return FQuaternion();
     }
 }
 
@@ -854,7 +860,8 @@ float system::cameraZoom() {
         return ab->czoom();
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
+        return 0;
     }
 }
 
@@ -971,6 +978,52 @@ void system::toggleRendering3DAll() {
     }
 }
 
+const FloatP_t system::getLineWidth() {
+    try {
+        return system::getRenderer()->lineWidth();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return -1;
+    }
+}
+
+HRESULT system::setLineWidth(const FloatP_t &lineWidth) {
+    if(lineWidth < system::getLineWidthMin() || lineWidth > system::getLineWidthMax()) {
+        return tf_error(E_FAIL, "Line width outside of permissible range");
+    }
+
+    try {
+        system::getRenderer()->setLineWidth(lineWidth);
+        
+        return S_OK;
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return E_FAIL;
+    }
+}
+
+const FloatP_t system::getLineWidthMin() {
+    try {
+        return system::getRenderer()->lineWidthMin();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return -1;
+    }
+}
+
+const FloatP_t system::getLineWidthMax() {
+    try {
+        return system::getRenderer()->lineWidthMax();
+    }
+    catch(const std::exception &e) {
+        tf_exp(e);
+        return -1;
+    }
+}
+
 FVector3 system::getAmbientColor() {
     try {
         return system::getRenderer()->ambientColor();
@@ -1078,7 +1131,8 @@ float system::getShininess() {
         return system::getRenderer()->shininess();
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
+        return 0;
     }
 }
 
@@ -1411,12 +1465,9 @@ std::vector<std::string> system::colorMapperNames() {
     return rendering::ColorMapper::getNames();
 }
 
-
-#define TF_SYSTEM_GETARROWRENDERER(renderer, __VA_ARGS__...) rendering::ArrowRenderer *renderer = rendering::ArrowRenderer::get(); if(!renderer) return __VA_ARGS__;
-
-
 int system::addRenderArrow(rendering::ArrowData *arrow) {
-    TF_SYSTEM_GETARROWRENDERER(renderer, -1);
+    rendering::ArrowRenderer *renderer = rendering::ArrowRenderer::get(); 
+    if(!renderer) return -1;
     return renderer->addArrow(arrow);
 }
 
@@ -1426,16 +1477,19 @@ std::pair<int, rendering::ArrowData*> system::addRenderArrow(
     const rendering::Style &style, 
     const float &scale) 
 {
-    TF_SYSTEM_GETARROWRENDERER(renderer, {-1, 0});
+    rendering::ArrowRenderer *renderer = rendering::ArrowRenderer::get(); 
+    if(!renderer) return {-1, 0};
     return renderer->addArrow(position, components, style, scale);
 }
 
 HRESULT system::removeRenderArrow(const int &arrowId) {
-    TF_SYSTEM_GETARROWRENDERER(renderer, E_FAIL);
+    rendering::ArrowRenderer *renderer = rendering::ArrowRenderer::get(); 
+    if(!renderer) return E_FAIL;
     return renderer->removeArrow(arrowId);
 }
 
 rendering::ArrowData *system::getRenderArrow(const int &arrowId) {
-    TF_SYSTEM_GETARROWRENDERER(renderer, 0);
+    rendering::ArrowRenderer *renderer = rendering::ArrowRenderer::get(); 
+    if(!renderer) return NULL;
     return renderer->getArrow(arrowId);
 }

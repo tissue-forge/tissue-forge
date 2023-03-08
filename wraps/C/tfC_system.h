@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -433,6 +433,18 @@ CAPI_FUNC(HRESULT) tfSystem_setRendering3DAll(bool flag);
 
 /** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
 CAPI_FUNC(HRESULT) tfSystem_toggleRendering3DAll();
+
+/** Get the line width */
+CAPI_FUNC(HRESULT) tfSystem_getLineWidth(tfFloatP_t *lineWidth);
+
+/** Set the line width */
+CAPI_FUNC(HRESULT) tfSystem_setLineWidth(tfFloatP_t lineWidth);
+
+/** Get the minimum line width */
+CAPI_FUNC(HRESULT) tfSystem_getLineWidthMin(tfFloatP_t *lineWidth);
+
+/** Get the maximum line width */
+CAPI_FUNC(HRESULT) tfSystem_getLineWidthMax(tfFloatP_t *lineWidth);
 
 /**
  * @brief Get the ambient color

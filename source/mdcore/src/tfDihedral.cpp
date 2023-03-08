@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -808,7 +808,8 @@ Dihedral *TissueForge::DihedralHandle::get() {
         error(MDCERR_id);
         return NULL;
     }
-    return &_Engine.dihedrals[this->id];
+    Dihedral *r = &_Engine.dihedrals[this->id];
+    return r && r->flags & DIHEDRAL_ACTIVE ? r : NULL;
 }
 
 static std::string DihedralHandle_str(const DihedralHandle *h) {
@@ -816,10 +817,9 @@ static std::string DihedralHandle_str(const DihedralHandle *h) {
 
     ss << "DihedralHandle(id=" << h->id;
     if(h->id >= 0) {
-        DihedralHandle _h(h->id);
-        const Dihedral &o = *_h.get();
-        if(o.flags & DIHEDRAL_ACTIVE) 
-            ss << ", i=" << o.i << ", j=" << o.j << ", k=" << o.k << ", l=" << o.l;
+        const Dihedral *o = DihedralHandle(h->id).get();
+        if(o) 
+            ss << ", i=" << o->i << ", j=" << o->j << ", k=" << o->k << ", l=" << o->l;
     }
     ss << ")";
     
@@ -835,7 +835,8 @@ bool TissueForge::DihedralHandle::check() {
 }
 
 HRESULT TissueForge::DihedralHandle::destroy() {
-    return Dihedral_Destroy(this->get());
+    Dihedral *o = this->get();
+    return o ? Dihedral_Destroy(o) : error(MDCERR_null);
 }
 
 std::vector<DihedralHandle> TissueForge::DihedralHandle::items() {
@@ -850,7 +851,8 @@ std::vector<DihedralHandle> TissueForge::DihedralHandle::items() {
 }
 
 bool TissueForge::DihedralHandle::decays() {
-    return Dihedral_decays(this->get());
+    Dihedral *o = this->get();
+    return o ? Dihedral_decays(o) : error(MDCERR_null);
 }
 
 ParticleHandle *TissueForge::DihedralHandle::operator[](unsigned int index) {
@@ -880,7 +882,7 @@ bool TissueForge::DihedralHandle::has(ParticleHandle *part) {
 FloatP_t TissueForge::DihedralHandle::getAngle() {
     FloatP_t result = 0;
     Dihedral *d = this->get();
-    if(d && d->flags && DIHEDRAL_ACTIVE) { 
+    if(d) { 
         ParticleHandle pi(d->i), pj(d->j), pk(d->k), pl(d->l);
         FVector3 ri = pi.getPosition();
         FVector3 rj = pj.getPosition();
@@ -895,7 +897,13 @@ FloatP_t TissueForge::DihedralHandle::getAngle() {
 
 FPTYPE TissueForge::DihedralHandle::getEnergy() {
 
-    Dihedral dihedrals[] = {*this->get()};
+    Dihedral *d = this->get();
+    if(!d) {
+        error(MDCERR_null);
+        return FPTYPE_ZERO;
+    }
+
+    Dihedral dihedrals[] = {*d};
     FPTYPE f[] = {0.0, 0.0, 0.0};
     FPTYPE epot_out = 0.0;
     dihedral_evalf(dihedrals, 1, &_Engine, f, &epot_out);
@@ -905,7 +913,7 @@ FPTYPE TissueForge::DihedralHandle::getEnergy() {
 std::vector<int32_t> TissueForge::DihedralHandle::getParts() {
     std::vector<int32_t> result;
     Dihedral *d = this->get();
-    if(d && d->flags & DIHEDRAL_ACTIVE) 
+    if(d) 
         result = std::vector<int32_t>{d->i, d->j, d->k, d->l};
     return result;
 }
@@ -913,7 +921,7 @@ std::vector<int32_t> TissueForge::DihedralHandle::getParts() {
 ParticleList TissueForge::DihedralHandle::getPartList() {
     ParticleList result;
     Dihedral *d = this->get();
-    if(d && d->flags & DIHEDRAL_ACTIVE) {
+    if(d) {
         result.insert(d->i);
         result.insert(d->j);
         result.insert(d->k);
@@ -923,7 +931,8 @@ ParticleList TissueForge::DihedralHandle::getPartList() {
 }
 
 Potential *TissueForge::DihedralHandle::getPotential() {
-    return this->get()->potential;
+    Dihedral *d = this->get();
+    return d ? d->potential : NULL;
 }
 
 uint32_t TissueForge::DihedralHandle::getId() {
@@ -931,40 +940,43 @@ uint32_t TissueForge::DihedralHandle::getId() {
 }
 
 FPTYPE TissueForge::DihedralHandle::getDissociationEnergy() {
-    return this->get()->dissociation_energy;
+    Dihedral *d = this->get();
+    return d ? d->dissociation_energy : FPTYPE_ZERO;
 }
 
 void TissueForge::DihedralHandle::setDissociationEnergy(const FPTYPE &dissociation_energy) {
     auto *d = this->get();
-    d->dissociation_energy = dissociation_energy;
+    if(d) d->dissociation_energy = dissociation_energy;
 }
 
 FPTYPE TissueForge::DihedralHandle::getHalfLife() {
-    return this->get()->half_life;
+    Dihedral *d = this->get();
+    return d ? d->half_life : FPTYPE_ZERO;
 }
 
 void TissueForge::DihedralHandle::setHalfLife(const FPTYPE &half_life) {
     auto *d = this->get();
-    d->half_life = half_life;
-}
-
-bool TissueForge::DihedralHandle::getActive() {
-    auto *d = this->get();
-    if (d) return (bool)(d->flags & DIHEDRAL_ACTIVE);
-    return false;
+    if(d) d->half_life = half_life;
 }
 
 rendering::Style *TissueForge::DihedralHandle::getStyle() {
-    return this->get()->style;
+    Dihedral *d = this->get();
+    return d ? d->style : NULL;
 }
 
 void TissueForge::DihedralHandle::setStyle(rendering::Style *style) {
     auto *d = this->get();
-    d->style = style;
+    if(d) d->style = style;
 }
 
 FPTYPE TissueForge::DihedralHandle::getAge() {
-    return (_Engine.time - this->get()->creation_time) * _Engine.dt;
+    Dihedral *d = this->get();
+    return d ? (_Engine.time - this->get()->creation_time) * _Engine.dt : FPTYPE_ZERO;
+}
+
+DihedralHandle::DihedralHandle(const int &_id) : id(_id) {
+    if(id >= 0 && id < _Engine.dihedrals_size) this->id = id;
+    else error(MDCERR_id);
 }
 
 HRESULT TissueForge::Dihedral_Destroy(Dihedral *d) {
@@ -999,35 +1011,21 @@ std::vector<int32_t> TissueForge::Dihedral_IdsForParticle(int32_t pid) {
 namespace TissueForge::io {
 
 
-    #define TF_DIHEDIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return error(MDCERR_io); \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_DIHEDIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return error(MDCERR_io);
-
     template <>
-    HRESULT toFile(const Dihedral &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Dihedral &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
+        TF_IOTOEASY(fileElement, metaData, "i", dataElement.i);
+        TF_IOTOEASY(fileElement, metaData, "j", dataElement.j);
+        TF_IOTOEASY(fileElement, metaData, "k", dataElement.k);
+        TF_IOTOEASY(fileElement, metaData, "l", dataElement.l);
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "creation_time", dataElement.creation_time);
+        TF_IOTOEASY(fileElement, metaData, "half_life", dataElement.half_life);
+        TF_IOTOEASY(fileElement, metaData, "dissociation_energy", dataElement.dissociation_energy);
+        TF_IOTOEASY(fileElement, metaData, "potential_energy", dataElement.potential_energy);
 
-        TF_DIHEDIOTOEASY(fe, "flags", dataElement.flags);
-        TF_DIHEDIOTOEASY(fe, "i", dataElement.i);
-        TF_DIHEDIOTOEASY(fe, "j", dataElement.j);
-        TF_DIHEDIOTOEASY(fe, "k", dataElement.k);
-        TF_DIHEDIOTOEASY(fe, "l", dataElement.l);
-        TF_DIHEDIOTOEASY(fe, "id", dataElement.id);
-        TF_DIHEDIOTOEASY(fe, "creation_time", dataElement.creation_time);
-        TF_DIHEDIOTOEASY(fe, "half_life", dataElement.half_life);
-        TF_DIHEDIOTOEASY(fe, "dissociation_energy", dataElement.dissociation_energy);
-        TF_DIHEDIOTOEASY(fe, "potential_energy", dataElement.potential_energy);
-
-        fileElement->type = "Dihedral";
+        fileElement.get()->type = "Dihedral";
         
         return S_OK;
     }
@@ -1035,18 +1033,16 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Dihedral *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "flags", &dataElement->flags);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "i", &dataElement->i);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "j", &dataElement->j);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "k", &dataElement->k);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "l", &dataElement->l);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "creation_time", &dataElement->creation_time);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "half_life", &dataElement->half_life);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "dissociation_energy", &dataElement->dissociation_energy);
-        TF_DIHEDIOFROMEASY(feItr, fileElement.children, metaData, "potential_energy", &dataElement->potential_energy);
+        TF_IOFROMEASY(fileElement, metaData, "flags", &dataElement->flags);
+        TF_IOFROMEASY(fileElement, metaData, "i", &dataElement->i);
+        TF_IOFROMEASY(fileElement, metaData, "j", &dataElement->j);
+        TF_IOFROMEASY(fileElement, metaData, "k", &dataElement->k);
+        TF_IOFROMEASY(fileElement, metaData, "l", &dataElement->l);
+        TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
+        TF_IOFROMEASY(fileElement, metaData, "creation_time", &dataElement->creation_time);
+        TF_IOFROMEASY(fileElement, metaData, "half_life", &dataElement->half_life);
+        TF_IOFROMEASY(fileElement, metaData, "dissociation_energy", &dataElement->dissociation_energy);
+        TF_IOFROMEASY(fileElement, metaData, "potential_energy", &dataElement->potential_energy);
 
         return S_OK;
     }

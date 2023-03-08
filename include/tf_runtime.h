@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -34,6 +34,7 @@
 #include <tfFlux.h>
 #include <event/tfParticleEventSingle.h>
 #include <event/tfParticleTimeEvent.h>
+#include <io/tfIO.h>
 #include <rendering/tfClipPlane.h>
 #include <rendering/tfKeyEvent.h>
 #include <rendering/tfColorMapper.h>
@@ -126,7 +127,7 @@ namespace TissueForge {
     /**
      * main simulator init method
      */
-    CPPAPI_FUNC(HRESULT) init(const Simulator::Config &conf, const std::vector<std::string> &appArgv=std::vector<std::string>());
+    CPPAPI_FUNC(HRESULT) init(Simulator::Config &conf, const std::vector<std::string> &appArgv=std::vector<std::string>());
 
     /**
      * @brief Performs a single time step ``dt`` of the universe if no arguments are 

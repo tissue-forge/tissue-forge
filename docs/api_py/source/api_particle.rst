@@ -79,7 +79,7 @@ Particles and Clusters
 
     .. automethod:: neighbors
 
-    .. automethod:: getBondedNeighbors
+    .. automethod:: bonded_neighbors
 
     .. automethod:: distance
 

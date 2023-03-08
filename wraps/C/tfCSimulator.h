@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -164,6 +164,15 @@ CAPI_FUNC(HRESULT) tfSimulatorConfig_setWindowless(struct tfSimulatorConfigHandl
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfSimulatorConfig_getImportDataFilePath(struct tfSimulatorConfigHandle *handle, char **filePath, unsigned int *numChars);
+
+/**
+ * @brief Set the imported data file path during initialization, if any.
+ * 
+ * @param handle populated handle
+ * @param filePath file path
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfSimulatorConfig_setImportDataFilePath(struct tfSimulatorConfigHandle *handle, char *filePath);
 
 /**
  * @brief Get the current clip planes

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -391,6 +391,18 @@ namespace TissueForge::system {
 
     /** Toggle whether bonds, angle and dihedrals are renderered with 3D objects */
     CPPAPI_FUNC(void) toggleRendering3DAll();
+
+    /** Get the line width */
+    CPPAPI_FUNC(const FloatP_t) getLineWidth();
+
+    /** Set the line width */
+    CPPAPI_FUNC(HRESULT) setLineWidth(const FloatP_t &lineWidth);
+
+    /** Get the minimum line width */
+    CPPAPI_FUNC(const FloatP_t) getLineWidthMin();
+
+    /** Get the maximum line width */
+    CPPAPI_FUNC(const FloatP_t) getLineWidthMax();
 
     /**
      * @brief Get the ambient color

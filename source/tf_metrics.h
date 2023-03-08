@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -47,6 +47,11 @@ namespace TissueForge::metrics {
      * @return FVector3 relative position with respect to the given origin
      */
     CPPAPI_FUNC(FVector3) relativePosition(const FVector3 &pos, const FVector3 &origin, const bool &comp_bc=true);
+
+    /**
+     * find all particles in a neighborhood defined by a point and distance
+     */
+    CPPAPI_FUNC(ParticleList) neighborhoodParticles(const FVector3 &position, const FloatP_t &dist, const bool &comp_bc=true);
 
     /**
      * @origin [in] origin of the sphere where we will comptute
@@ -134,6 +139,42 @@ namespace TissueForge::metrics {
     std::vector<std::vector<std::vector<ParticleList> > > particleGrid(const iVector3 &shape);
 
     CAPI_FUNC(HRESULT) particleGrid(const iVector3 &shape, ParticleList *result);
+
+    /**
+     * @brief Compute the eigenvalues of a 3x3 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues
+     */
+    CPPAPI_FUNC(FVector3) eigenVals(const FMatrix3 &mat, const bool &symmetric=false);
+
+    /**
+     * @brief Compute the eigenvalues of a 4x4 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues
+     */
+    CPPAPI_FUNC(FVector4) eigenVals(const FMatrix4 &mat, const bool &symmetric=false);
+
+    /**
+     * @brief Compute the eigenvectors and eigenvalues of a 3x3 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues, eigenvectors
+     */
+    CPPAPI_FUNC(std::pair<FVector3, FMatrix3>) eigenVecsVals(const FMatrix3 &mat, const bool &symmetric=false);
+
+    /**
+     * @brief Compute the eigenvectors and eigenvalues of a 4x4 matrix
+     * 
+     * @param mat the matrix
+     * @param symmetric flag signifying whether the matrix is symmetric
+     * @return eigenvalues, eigenvectors 
+     */
+    CPPAPI_FUNC(std::pair<FVector4, FMatrix4>) eigenVecsVals(const FMatrix4 &mat, const bool &symmetric=false);
 
 };
 

@@ -3,6 +3,21 @@
 History
 ========
 
+Version 0.1.0
+--------------
+* Added vertex solver module
+* Added rendered line width control
+* Reduced build warnings by more than 50%
+* Bug fixes
+
+  * Minor CUDA fixes on Linux
+  * Minor fixes to eigen deployment
+  * Fixed ParticleHandle getter for frozenX
+  * Fixed major I/O memory leak
+  * Minor fix to boundary conditions I/O
+  * Added missing import from file to C++ API
+  * Minor fixes to handle constructors
+
 Version 0.0.2
 --------------
 * Simplified particle handle construction

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -146,6 +146,11 @@ namespace TissueForge::types {
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             T distanceScaled(const TVector3<T> &point) const {
                 return Magnum::Math::Distance::pointPlaneScaled(point, *this);
+            }
+
+            template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
+            TVector3<T> shortestDisplacementFrom(const TVector3<T> &pt) const {
+                return - distance(pt) * xyz().normalized();
             }
 
             MAGNUM_BASE_VECTOR_CAST_METHODS(4, TVector4, Vector4Base)

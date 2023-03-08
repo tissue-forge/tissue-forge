@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -384,26 +384,12 @@ FVector3 Universe::getCenter() {
 namespace TissueForge::io {
 
 
-    #define TF_UNIVERSEIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_UNIVERSEIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(const Universe &dataElement, const MetaData &metaData, IOElement *fileElement) {
-
-        IOElement *fe;
+    HRESULT toFile(const Universe &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
         Universe *u = const_cast<Universe*>(&dataElement);
 
-        TF_UNIVERSEIOTOEASY(fe, "name", u->name);
+        TF_IOTOEASY(fileElement, metaData, "name", u->name);
         
         ParticleList pl = u->particles();
         if(pl.nr_parts > 0) {
@@ -417,7 +403,7 @@ namespace TissueForge::io {
                         particles.push_back(*p);
                 }
             }
-            TF_UNIVERSEIOTOEASY(fe, "particles", particles);
+            TF_IOTOEASY(fileElement, metaData, "particles", particles);
         }
 
         // Store bonds; potentials and styles are stored separately to reduce storage
@@ -471,11 +457,11 @@ namespace TissueForge::io {
                     bl.push_back(*b);
                 }
             }
-            TF_UNIVERSEIOTOEASY(fe, "bonds", bl);
-            TF_UNIVERSEIOTOEASY(fe, "bondPotentials", bondPotentials);
-            TF_UNIVERSEIOTOEASY(fe, "bondPotentialIdx", bondPotentialIdx);
-            TF_UNIVERSEIOTOEASY(fe, "bondStyles", bondStyles);
-            TF_UNIVERSEIOTOEASY(fe, "bondStyleIdx", bondStyleIdx);
+            TF_IOTOEASY(fileElement, metaData, "bonds", bl);
+            TF_IOTOEASY(fileElement, metaData, "bondPotentials", bondPotentials);
+            TF_IOTOEASY(fileElement, metaData, "bondPotentialIdx", bondPotentialIdx);
+            TF_IOTOEASY(fileElement, metaData, "bondStyles", bondStyles);
+            TF_IOTOEASY(fileElement, metaData, "bondStyleIdx", bondStyleIdx);
         }
 
         // Store angles; potentials and styles are stored separately to reduce storage
@@ -529,11 +515,11 @@ namespace TissueForge::io {
                     al.push_back(*a);
                 }
             }
-            TF_UNIVERSEIOTOEASY(fe, "angles", al);
-            TF_UNIVERSEIOTOEASY(fe, "anglePotentials", anglePotentials);
-            TF_UNIVERSEIOTOEASY(fe, "anglePotentialIdx", anglePotentialIdx);
-            TF_UNIVERSEIOTOEASY(fe, "angleStyles", angleStyles);
-            TF_UNIVERSEIOTOEASY(fe, "angleStyleIdx", angleStyleIdx);
+            TF_IOTOEASY(fileElement, metaData, "angles", al);
+            TF_IOTOEASY(fileElement, metaData, "anglePotentials", anglePotentials);
+            TF_IOTOEASY(fileElement, metaData, "anglePotentialIdx", anglePotentialIdx);
+            TF_IOTOEASY(fileElement, metaData, "angleStyles", angleStyles);
+            TF_IOTOEASY(fileElement, metaData, "angleStyleIdx", angleStyleIdx);
         }
 
         // Store dihedrals; potentials and styles are stored separately to reduce storage
@@ -587,22 +573,22 @@ namespace TissueForge::io {
                     dl.push_back(*d);
                 }
             }
-            TF_UNIVERSEIOTOEASY(fe, "dihedrals", dl);
-            TF_UNIVERSEIOTOEASY(fe, "dihedralPotentials", dihedralPotentials);
-            TF_UNIVERSEIOTOEASY(fe, "dihedralPotentialIdx", dihedralPotentialIdx);
-            TF_UNIVERSEIOTOEASY(fe, "dihedralStyles", dihedralStyles);
-            TF_UNIVERSEIOTOEASY(fe, "dihedralStyleIdx", dihedralStyleIdx);
+            TF_IOTOEASY(fileElement, metaData, "dihedrals", dl);
+            TF_IOTOEASY(fileElement, metaData, "dihedralPotentials", dihedralPotentials);
+            TF_IOTOEASY(fileElement, metaData, "dihedralPotentialIdx", dihedralPotentialIdx);
+            TF_IOTOEASY(fileElement, metaData, "dihedralStyles", dihedralStyles);
+            TF_IOTOEASY(fileElement, metaData, "dihedralStyleIdx", dihedralStyleIdx);
         }
         
-        TF_UNIVERSEIOTOEASY(fe, "temperature", u->getTemperature());
-        TF_UNIVERSEIOTOEASY(fe, "kineticEnergy", u->getKineticEnergy());
+        TF_IOTOEASY(fileElement, metaData, "temperature", u->getTemperature());
+        TF_IOTOEASY(fileElement, metaData, "kineticEnergy", u->getKineticEnergy());
 
         ParticleTypeList ptl = ParticleTypeList::all();
         std::vector<ParticleType> partTypes;
         partTypes.reserve(ptl.nr_parts);
         for(unsigned int i = 0; i < ptl.nr_parts; i++) 
             partTypes.push_back(*ptl.item(i));
-        TF_UNIVERSEIOTOEASY(fe, "particleTypes", partTypes);
+        TF_IOTOEASY(fileElement, metaData, "particleTypes", partTypes);
 
         Potential *p, *p_cluster;
         std::vector<Potential*> pV, pV_cluster;
@@ -625,14 +611,14 @@ namespace TissueForge::io {
             }
         }
         if(pV.size() > 0) {
-            TF_UNIVERSEIOTOEASY(fe, "potentials", pV);
-            TF_UNIVERSEIOTOEASY(fe, "potentialTypeA", pIdxA);
-            TF_UNIVERSEIOTOEASY(fe, "potentialTypeB", pIdxB);
+            TF_IOTOEASY(fileElement, metaData, "potentials", pV);
+            TF_IOTOEASY(fileElement, metaData, "potentialTypeA", pIdxA);
+            TF_IOTOEASY(fileElement, metaData, "potentialTypeB", pIdxB);
         }
         if(pV_cluster.size() > 0) {
-            TF_UNIVERSEIOTOEASY(fe, "potentialsCluster", pV_cluster);
-            TF_UNIVERSEIOTOEASY(fe, "potentialClusterTypeA", pIdxA_cluster);
-            TF_UNIVERSEIOTOEASY(fe, "potentialClusterTypeB", pIdxB_cluster);
+            TF_IOTOEASY(fileElement, metaData, "potentialsCluster", pV_cluster);
+            TF_IOTOEASY(fileElement, metaData, "potentialClusterTypeA", pIdxA_cluster);
+            TF_IOTOEASY(fileElement, metaData, "potentialClusterTypeB", pIdxB_cluster);
         }
 
         // save forces
@@ -656,11 +642,11 @@ namespace TissueForge::io {
             }
         }
         if(forces.size() > 0) {
-            TF_UNIVERSEIOTOEASY(fe, "forces", forces);
-            TF_UNIVERSEIOTOEASY(fe, "forceType", fIdx);
+            TF_IOTOEASY(fileElement, metaData, "forces", forces);
+            TF_IOTOEASY(fileElement, metaData, "forceType", fIdx);
         }
 
-        fileElement->type = "Universe";
+        fileElement.get()->type = "Universe";
 
         return S_OK;
     }
@@ -668,14 +654,14 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Universe *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
         FIO::importSummary = new FIOImportSummary();
 
         Universe *u = Universe::get();
 
-        TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "name", &u->name);
-        TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "temperature", &_Engine.temperature);
+        TF_IOFROMEASY(fileElement, metaData, "name", &u->name);
+        TF_IOFROMEASY(fileElement, metaData, "temperature", &_Engine.temperature);
+
+        IOChildMap fec = IOElement::children(fileElement);
 
         // Setup data should have already been intercepted by this stage, so populate universe
 
@@ -683,41 +669,42 @@ namespace TissueForge::io {
         //      Special handling here: export includes default types, 
         //      which must be skipped here to avoid duplicating imported defaults with those of installation
 
-        feItr = fileElement.children.find("particleTypes");
-        IOElement *fePartTypes = feItr->second;
-        for(unsigned int i = 0; i < fePartTypes->children.size(); i++) {
+        IOChildMap::const_iterator feItr = fec.find("particleTypes");
+        IOElement fePartTypes = feItr->second;
+        IOChildMap fePartTypes_children = IOElement::children(fePartTypes);
+        for(unsigned int i = 0; i < fePartTypes_children.size(); i++) {
             if(i < 2) { 
                 FIO::importSummary->particleTypeIdMap[i] = i;
             } 
             else {
-                IOElement *fePartType = fePartTypes->children[std::to_string(i)];
+                IOElement fePartType = fePartTypes_children[std::to_string(i)];
                 ParticleType partType;
                 auto typeId = partType.id;
-                fromFile(*fePartType, metaData, &_Engine.types[typeId]);
+                fromFile(fePartType, metaData, &_Engine.types[typeId]);
                 FIO::importSummary->particleTypeIdMap[i] = typeId;
             }
         }
 
         // load potentials
 
-        if(fileElement.children.find("potentials") != fileElement.children.end()) {
+        if(fec.find("potentials") != fec.end()) {
             std::vector<Potential*> pV;
             std::vector<unsigned int> pIdxA, pIdxB;
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "potentials", &pV);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "potentialTypeA", &pIdxA);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "potentialTypeB", &pIdxB);
+            TF_IOFROMEASY(fileElement, metaData, "potentials", &pV);
+            TF_IOFROMEASY(fileElement, metaData, "potentialTypeA", &pIdxA);
+            TF_IOFROMEASY(fileElement, metaData, "potentialTypeB", &pIdxB);
             for(unsigned int i = 0; i < pV.size(); i++) {
                 auto typeIdA = FIO::importSummary->particleTypeIdMap[pIdxA[i]];
                 auto typeIdB = FIO::importSummary->particleTypeIdMap[pIdxB[i]];
                 bind::types(pV[i], &_Engine.types[typeIdA], &_Engine.types[typeIdB]);
             }
         }
-        if(fileElement.children.find("potentialsCluster") != fileElement.children.end()) {
+        if(fec.find("potentialsCluster") != fec.end()) {
             std::vector<Potential*> pV_cluster;
             std::vector<unsigned int> pIdxA_cluster, pIdxB_cluster;
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "potentialsCluster", &pV_cluster);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "potentialClusterTypeA", &pIdxA_cluster);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "potentialClusterTypeB", &pIdxB_cluster);
+            TF_IOFROMEASY(fileElement, metaData, "potentialsCluster", &pV_cluster);
+            TF_IOFROMEASY(fileElement, metaData, "potentialClusterTypeA", &pIdxA_cluster);
+            TF_IOFROMEASY(fileElement, metaData, "potentialClusterTypeB", &pIdxB_cluster);
             for(unsigned int i = 0; i < pV_cluster.size(); i++) {
                 auto typeIdA = FIO::importSummary->particleTypeIdMap[pIdxA_cluster[i]];
                 auto typeIdB = FIO::importSummary->particleTypeIdMap[pIdxB_cluster[i]];
@@ -727,13 +714,13 @@ namespace TissueForge::io {
 
         // load forces
 
-        if(fileElement.children.find("forces") != fileElement.children.end()) {
+        if(fec.find("forces") != fec.end()) {
             std::vector<Force*> forces;
             std::vector<unsigned int> fIdx;
             int fSVIdx;
             
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "forces", &forces);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "forceType", &fIdx);
+            TF_IOFROMEASY(fileElement, metaData, "forces", &forces);
+            TF_IOFROMEASY(fileElement, metaData, "forceType", &fIdx);
             for(unsigned int i = 0; i < fIdx.size(); i++) { 
                 auto pType = &_Engine.types[FIO::importSummary->particleTypeIdMap[fIdx[i]]];
                 Force *f = forces[i];
@@ -743,11 +730,11 @@ namespace TissueForge::io {
         
         // load particles
 
-        if(fileElement.children.find("particles") != fileElement.children.end()) {
+        if(fec.find("particles") != fec.end()) {
 
             std::vector<Particle> particles;
             Particle *part;
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "particles", &particles);
+            TF_IOFROMEASY(fileElement, metaData, "particles", &particles);
             auto feParticles = feItr->second;
             for(unsigned int i = 0; i < particles.size(); i++) {
                 Particle &p = particles[i];
@@ -780,17 +767,17 @@ namespace TissueForge::io {
 
         // load bonds; potentials and styles are stored separately to reduce storage
 
-        if(fileElement.children.find("bonds") != fileElement.children.end()) {
+        if(fec.find("bonds") != fec.end()) {
             std::vector<Bond> bonds;
             std::vector<Potential*> bondPotentials;
             std::vector<std::vector<unsigned int> > bondPotentialIdx;
             std::vector<rendering::Style> bondStyles;
             std::vector<std::vector<unsigned int> > bondStyleIdx;
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "bonds", &bonds);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "bondPotentials", &bondPotentials);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "bondPotentialIdx", &bondPotentialIdx);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "bondStyles", &bondStyles);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "bondStyleIdx", &bondStyleIdx);
+            TF_IOFROMEASY(fileElement, metaData, "bonds", &bonds);
+            TF_IOFROMEASY(fileElement, metaData, "bondPotentials", &bondPotentials);
+            TF_IOFROMEASY(fileElement, metaData, "bondPotentialIdx", &bondPotentialIdx);
+            TF_IOFROMEASY(fileElement, metaData, "bondStyles", &bondStyles);
+            TF_IOFROMEASY(fileElement, metaData, "bondStyleIdx", &bondStyleIdx);
             std::vector<BondHandle> bondsCreated(bonds.size(), BondHandle());
 
             for(unsigned int i = 0; i < bondPotentialIdx.size(); i++) { 
@@ -824,17 +811,17 @@ namespace TissueForge::io {
 
         // load angles; potentials and styles are stored separately to reduce storage
         
-        if(fileElement.children.find("angles") != fileElement.children.end()) {
+        if(fec.find("angles") != fec.end()) {
             std::vector<Angle> angles;
             std::vector<Potential*> anglePotentials;
             std::vector<std::vector<unsigned int> > anglePotentialIdx;
             std::vector<rendering::Style> angleStyles;
             std::vector<std::vector<unsigned int> > angleStyleIdx;
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "angles", &angles);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "anglePotentials", &anglePotentials);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "anglePotentialIdx", &anglePotentialIdx);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "angleStyles", &angleStyles);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "angleStyleIdx", &angleStyleIdx);
+            TF_IOFROMEASY(fileElement, metaData, "angles", &angles);
+            TF_IOFROMEASY(fileElement, metaData, "anglePotentials", &anglePotentials);
+            TF_IOFROMEASY(fileElement, metaData, "anglePotentialIdx", &anglePotentialIdx);
+            TF_IOFROMEASY(fileElement, metaData, "angleStyles", &angleStyles);
+            TF_IOFROMEASY(fileElement, metaData, "angleStyleIdx", &angleStyleIdx);
             std::vector<AngleHandle*> anglesCreated(angles.size(), 0);
 
             for(unsigned int i = 0; i < anglePotentialIdx.size(); i++) { 
@@ -869,17 +856,17 @@ namespace TissueForge::io {
 
         // load dihedrals; potentials and styles are stored separately to reduce storage
         
-        if(fileElement.children.find("dihedrals") != fileElement.children.end()) {
+        if(fec.find("dihedrals") != fec.end()) {
             std::vector<Dihedral> dihedrals;
             std::vector<Potential*> dihedralPotentials;
             std::vector<std::vector<unsigned int> > dihedralPotentialIdx;
             std::vector<rendering::Style> dihedralStyles;
             std::vector<std::vector<unsigned int> > dihedralStyleIdx;
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "dihedrals", &dihedrals);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "dihedralPotentials", &dihedralPotentials);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "dihedralPotentialIdx", &dihedralPotentialIdx);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "dihedralStyles", &dihedralStyles);
-            TF_UNIVERSEIOFROMEASY(feItr, fileElement.children, metaData, "dihedralStyleIdx", &dihedralStyleIdx);
+            TF_IOFROMEASY(fileElement, metaData, "dihedrals", &dihedrals);
+            TF_IOFROMEASY(fileElement, metaData, "dihedralPotentials", &dihedralPotentials);
+            TF_IOFROMEASY(fileElement, metaData, "dihedralPotentialIdx", &dihedralPotentialIdx);
+            TF_IOFROMEASY(fileElement, metaData, "dihedralStyles", &dihedralStyles);
+            TF_IOFROMEASY(fileElement, metaData, "dihedralStyleIdx", &dihedralStyleIdx);
             std::vector<DihedralHandle*> dihedralsCreated(dihedrals.size(), 0);
 
             for(unsigned int i = 0; i < dihedralPotentialIdx.size(); i++) { 

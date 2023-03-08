@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -123,7 +123,7 @@ int32_t TissueForge::ParticleList::operator[](const size_t &i) {
     else {
         throw std::runtime_error("index out of range");
     }
-    return NULL;
+    return -1;
 }
 
 std::vector<int32_t> TissueForge::ParticleList::vector() {
@@ -389,20 +389,14 @@ namespace TissueForge::io {
 
 
     template <>
-    HRESULT toFile(const ParticleList &dataElement, const MetaData &metaData, IOElement *fileElement) { 
-
-        IOElement *fe;
+    HRESULT toFile(const ParticleList &dataElement, const MetaData &metaData, IOElement &fileElement) { 
 
         std::vector<int32_t> parts;
         for(unsigned int i = 0; i < dataElement.nr_parts; i++) 
             parts.push_back(dataElement.parts[i]);
-        fe = new IOElement();
-        if(toFile(parts, metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["parts"] = fe;
+        TF_IOTOEASY(fileElement, metaData, "parts", parts);
 
-        fileElement->type = "ParticleList";
+        fileElement.get()->type = "ParticleList";
 
         return S_OK;
     }
@@ -410,12 +404,9 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, ParticleList *dataElement) { 
 
-        IOChildMap::const_iterator feItr;
         std::vector<int32_t> parts;
 
-        feItr = fileElement.children.find("parts");
-        if(feItr == fileElement.children.end() || fromFile(*feItr->second, metaData, &parts) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "parts", &parts);
 
         for(unsigned int i = 0; i < parts.size(); i++) 
             dataElement->insert(parts[i]);

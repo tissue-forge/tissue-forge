@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -243,7 +243,7 @@ void TissueForge::ParticleType::setFrozen(const bool &frozen) {
 }
 
 bool TissueForge::ParticleType::getFrozenX() {
-    return particle_flags & PARTICLE_FROZEN;
+    return particle_flags & PARTICLE_FROZEN_X;
 }
 
 void TissueForge::ParticleType::setFrozenX(const bool &frozen) {
@@ -1104,7 +1104,7 @@ HRESULT TissueForge::Particle_Become(Particle *part, ParticleType *type) {
 }
 
 HRESULT TissueForge::ParticleHandle::become(ParticleType *type) {
-    TF_PARTICLE_SELFW(this, NULL)
+    TF_PARTICLE_SELFW(this, E_FAIL)
     return Particle_Become(self, type);
 }
 
@@ -1313,7 +1313,7 @@ std::vector<int32_t> TissueForge::ParticleType::getPartIds() {
 }
 
 FPTYPE TissueForge::ParticleHandle::distance(ParticleHandle *_other) {
-    TF_PARTICLE_SELF(this)
+    TF_PARTICLE_SELFW(this, FPTYPE_ZERO)
     auto other = particleSelf(_other);
     
     if(other == NULL) 
@@ -1496,64 +1496,50 @@ HRESULT TissueForge::Particle_Verify() {
 namespace TissueForge::io { 
 
 
-    #define TF_PARTICLEIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return error(MDCERR_io); \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_PARTICLEIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return error(MDCERR_io);
-
     template <>
-    HRESULT toFile(const Particle &dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(const Particle &dataElement, const MetaData &metaData, IOElement &fileElement) { 
 
-        IOElement *fe;
-
-        TF_PARTICLEIOTOEASY(fe, "force", dataElement.force);
-        TF_PARTICLEIOTOEASY(fe, "force_i", dataElement.force_i);
-        TF_PARTICLEIOTOEASY(fe, "number_density", dataElement.number_density);
-        TF_PARTICLEIOTOEASY(fe, "velocity", dataElement.velocity);
-        TF_PARTICLEIOTOEASY(fe, "position", ParticleHandle(dataElement.id).getPosition());
-        TF_PARTICLEIOTOEASY(fe, "creation_time", dataElement.creation_time);
-        TF_PARTICLEIOTOEASY(fe, "persistent_force", dataElement.persistent_force);
-        TF_PARTICLEIOTOEASY(fe, "radius", dataElement.radius);
-        TF_PARTICLEIOTOEASY(fe, "mass", dataElement.mass);
-        TF_PARTICLEIOTOEASY(fe, "q", dataElement.q);
-        TF_PARTICLEIOTOEASY(fe, "p0", dataElement.p0);
-        TF_PARTICLEIOTOEASY(fe, "v0", dataElement.v0);
-        TF_PARTICLEIOTOEASY(fe, "xk0", dataElement.xk[0]);
-        TF_PARTICLEIOTOEASY(fe, "xk1", dataElement.xk[1]);
-        TF_PARTICLEIOTOEASY(fe, "xk2", dataElement.xk[2]);
-        TF_PARTICLEIOTOEASY(fe, "xk3", dataElement.xk[3]);
-        TF_PARTICLEIOTOEASY(fe, "vk0", dataElement.vk[0]);
-        TF_PARTICLEIOTOEASY(fe, "vk1", dataElement.vk[1]);
-        TF_PARTICLEIOTOEASY(fe, "vk2", dataElement.vk[2]);
-        TF_PARTICLEIOTOEASY(fe, "vk3", dataElement.vk[3]);
-        TF_PARTICLEIOTOEASY(fe, "id", dataElement.id);
-        TF_PARTICLEIOTOEASY(fe, "vid", dataElement.vid);
-        TF_PARTICLEIOTOEASY(fe, "typeId", dataElement.typeId);
-        TF_PARTICLEIOTOEASY(fe, "clusterId", dataElement.clusterId);
-        TF_PARTICLEIOTOEASY(fe, "flags", dataElement.flags);
+        TF_IOTOEASY(fileElement, metaData, "force", dataElement.force);
+        TF_IOTOEASY(fileElement, metaData, "force_i", dataElement.force_i);
+        TF_IOTOEASY(fileElement, metaData, "number_density", dataElement.number_density);
+        TF_IOTOEASY(fileElement, metaData, "velocity", dataElement.velocity);
+        TF_IOTOEASY(fileElement, metaData, "position", ParticleHandle(dataElement.id).getPosition());
+        TF_IOTOEASY(fileElement, metaData, "creation_time", dataElement.creation_time);
+        TF_IOTOEASY(fileElement, metaData, "persistent_force", dataElement.persistent_force);
+        TF_IOTOEASY(fileElement, metaData, "radius", dataElement.radius);
+        TF_IOTOEASY(fileElement, metaData, "mass", dataElement.mass);
+        TF_IOTOEASY(fileElement, metaData, "q", dataElement.q);
+        TF_IOTOEASY(fileElement, metaData, "p0", dataElement.p0);
+        TF_IOTOEASY(fileElement, metaData, "v0", dataElement.v0);
+        TF_IOTOEASY(fileElement, metaData, "xk0", dataElement.xk[0]);
+        TF_IOTOEASY(fileElement, metaData, "xk1", dataElement.xk[1]);
+        TF_IOTOEASY(fileElement, metaData, "xk2", dataElement.xk[2]);
+        TF_IOTOEASY(fileElement, metaData, "xk3", dataElement.xk[3]);
+        TF_IOTOEASY(fileElement, metaData, "vk0", dataElement.vk[0]);
+        TF_IOTOEASY(fileElement, metaData, "vk1", dataElement.vk[1]);
+        TF_IOTOEASY(fileElement, metaData, "vk2", dataElement.vk[2]);
+        TF_IOTOEASY(fileElement, metaData, "vk3", dataElement.vk[3]);
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "vid", dataElement.vid);
+        TF_IOTOEASY(fileElement, metaData, "typeId", dataElement.typeId);
+        TF_IOTOEASY(fileElement, metaData, "clusterId", dataElement.clusterId);
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
         
         if(dataElement.nr_parts > 0) {
             std::vector<int32_t> parts;
             for(unsigned int i = 0; i < dataElement.nr_parts; i++) 
                 parts.push_back(dataElement.parts[i]);
-            TF_PARTICLEIOTOEASY(fe, "parts", parts);
+            TF_IOTOEASY(fileElement, metaData, "parts", parts);
         }
         
         if(dataElement.style != NULL) {
-            TF_PARTICLEIOTOEASY(fe, "style", *dataElement.style);
+            TF_IOTOEASY(fileElement, metaData, "style", *dataElement.style);
         }
         if(dataElement.state_vector != NULL) {
-            TF_PARTICLEIOTOEASY(fe, "state_vector", *dataElement.state_vector);
+            TF_IOTOEASY(fileElement, metaData, "state_vector", *dataElement.state_vector);
         }
 
-        fileElement->type = "Particle";
+        fileElement.get()->type = "Particle";
 
         return S_OK;
     }
@@ -1561,51 +1547,51 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Particle *dataElement) { 
 
-        IOChildMap::const_iterator feItr;
-
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "force", &dataElement->force);
+        TF_IOFROMEASY(fileElement, metaData, "force", &dataElement->force);
         if(metaData.versionMajor > 0 || metaData.versionMinor > 31 || (metaData.versionMinor == 31 && metaData.versionPatch > 0)) 
-            TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "force_i", &dataElement->force_i);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "velocity", &dataElement->velocity);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "number_density", &dataElement->number_density);
+            TF_IOFROMEASY(fileElement, metaData, "force_i", &dataElement->force_i);
+        TF_IOFROMEASY(fileElement, metaData, "velocity", &dataElement->velocity);
+        TF_IOFROMEASY(fileElement, metaData, "number_density", &dataElement->number_density);
         dataElement->inv_number_density = 1.f / dataElement->number_density;
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "position", &dataElement->position);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "creation_time", &dataElement->creation_time);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "persistent_force", &dataElement->persistent_force);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "radius", &dataElement->radius);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "mass", &dataElement->mass);
+        TF_IOFROMEASY(fileElement, metaData, "position", &dataElement->position);
+        TF_IOFROMEASY(fileElement, metaData, "creation_time", &dataElement->creation_time);
+        TF_IOFROMEASY(fileElement, metaData, "persistent_force", &dataElement->persistent_force);
+        TF_IOFROMEASY(fileElement, metaData, "radius", &dataElement->radius);
+        TF_IOFROMEASY(fileElement, metaData, "mass", &dataElement->mass);
         dataElement->imass = dataElement->mass > 0 ? 1.f / dataElement->mass : 0;
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "q", &dataElement->q);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "p0", &dataElement->p0);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "v0", &dataElement->v0);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "xk0", &dataElement->xk[0]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "xk1", &dataElement->xk[1]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "xk2", &dataElement->xk[2]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "xk3", &dataElement->xk[3]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "vk0", &dataElement->vk[0]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "vk1", &dataElement->vk[1]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "vk2", &dataElement->vk[2]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "vk3", &dataElement->vk[3]);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "vid", &dataElement->vid);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "typeId", &dataElement->typeId);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "clusterId", &dataElement->clusterId);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "flags", &dataElement->flags);
+        TF_IOFROMEASY(fileElement, metaData, "q", &dataElement->q);
+        TF_IOFROMEASY(fileElement, metaData, "p0", &dataElement->p0);
+        TF_IOFROMEASY(fileElement, metaData, "v0", &dataElement->v0);
+        TF_IOFROMEASY(fileElement, metaData, "xk0", &dataElement->xk[0]);
+        TF_IOFROMEASY(fileElement, metaData, "xk1", &dataElement->xk[1]);
+        TF_IOFROMEASY(fileElement, metaData, "xk2", &dataElement->xk[2]);
+        TF_IOFROMEASY(fileElement, metaData, "xk3", &dataElement->xk[3]);
+        TF_IOFROMEASY(fileElement, metaData, "vk0", &dataElement->vk[0]);
+        TF_IOFROMEASY(fileElement, metaData, "vk1", &dataElement->vk[1]);
+        TF_IOFROMEASY(fileElement, metaData, "vk2", &dataElement->vk[2]);
+        TF_IOFROMEASY(fileElement, metaData, "vk3", &dataElement->vk[3]);
+        TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
+        TF_IOFROMEASY(fileElement, metaData, "vid", &dataElement->vid);
+        TF_IOFROMEASY(fileElement, metaData, "typeId", &dataElement->typeId);
+        TF_IOFROMEASY(fileElement, metaData, "clusterId", &dataElement->clusterId);
+        TF_IOFROMEASY(fileElement, metaData, "flags", &dataElement->flags);
         
         // Skipping importing constituent particles; deduced from clusterId during import
+
+        IOChildMap fec = IOElement::children(fileElement);
         
-        feItr = fileElement.children.find("style");
-        if(feItr != fileElement.children.end()) {
+        IOChildMap::const_iterator feItr = fec.find("style");
+        if(feItr != fec.end()) {
             dataElement->style = new rendering::Style();
-            if(fromFile(*feItr->second, metaData, dataElement->style) != S_OK) 
+            if(fromFile(feItr->second, metaData, dataElement->style) != S_OK) 
                 return error(MDCERR_io);
         } 
         else dataElement->style = NULL;
         
-        feItr = fileElement.children.find("state_vector");
-        if(feItr != fileElement.children.end()) {
+        feItr = fec.find("state_vector");
+        if(feItr != fec.end()) {
             dataElement->state_vector = NULL;
-            if(fromFile(*feItr->second, metaData, &dataElement->state_vector) != S_OK) 
+            if(fromFile(feItr->second, metaData, &dataElement->state_vector) != S_OK) 
                 return error(MDCERR_io);
             dataElement->state_vector->owner = dataElement;
         }
@@ -1615,37 +1601,35 @@ namespace TissueForge::io {
     }
 
     template <>
-    HRESULT toFile(const ParticleType &dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(const ParticleType &dataElement, const MetaData &metaData, IOElement &fileElement) { 
 
-        IOElement *fe;
-
-        TF_PARTICLEIOTOEASY(fe, "id", dataElement.id);
-        TF_PARTICLEIOTOEASY(fe, "type_flags", dataElement.type_flags);
-        TF_PARTICLEIOTOEASY(fe, "particle_flags", dataElement.particle_flags);
-        TF_PARTICLEIOTOEASY(fe, "mass", dataElement.mass);
-        TF_PARTICLEIOTOEASY(fe, "charge", dataElement.charge);
-        TF_PARTICLEIOTOEASY(fe, "radius", dataElement.radius);
-        TF_PARTICLEIOTOEASY(fe, "kinetic_energy", dataElement.kinetic_energy);
-        TF_PARTICLEIOTOEASY(fe, "potential_energy", dataElement.potential_energy);
-        TF_PARTICLEIOTOEASY(fe, "target_energy", dataElement.target_energy);
-        TF_PARTICLEIOTOEASY(fe, "minimum_radius", dataElement.minimum_radius);
-        TF_PARTICLEIOTOEASY(fe, "eps", dataElement.eps);
-        TF_PARTICLEIOTOEASY(fe, "rmin", dataElement.rmin);
-        TF_PARTICLEIOTOEASY(fe, "dynamics", (unsigned int)dataElement.dynamics);
-        TF_PARTICLEIOTOEASY(fe, "name", std::string(dataElement.name));
-        TF_PARTICLEIOTOEASY(fe, "name2", std::string(dataElement.name2));
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "type_flags", dataElement.type_flags);
+        TF_IOTOEASY(fileElement, metaData, "particle_flags", dataElement.particle_flags);
+        TF_IOTOEASY(fileElement, metaData, "mass", dataElement.mass);
+        TF_IOTOEASY(fileElement, metaData, "charge", dataElement.charge);
+        TF_IOTOEASY(fileElement, metaData, "radius", dataElement.radius);
+        TF_IOTOEASY(fileElement, metaData, "kinetic_energy", dataElement.kinetic_energy);
+        TF_IOTOEASY(fileElement, metaData, "potential_energy", dataElement.potential_energy);
+        TF_IOTOEASY(fileElement, metaData, "target_energy", dataElement.target_energy);
+        TF_IOTOEASY(fileElement, metaData, "minimum_radius", dataElement.minimum_radius);
+        TF_IOTOEASY(fileElement, metaData, "eps", dataElement.eps);
+        TF_IOTOEASY(fileElement, metaData, "rmin", dataElement.rmin);
+        TF_IOTOEASY(fileElement, metaData, "dynamics", (unsigned int)dataElement.dynamics);
+        TF_IOTOEASY(fileElement, metaData, "name", std::string(dataElement.name));
+        TF_IOTOEASY(fileElement, metaData, "name2", std::string(dataElement.name2));
         if(dataElement.parts.nr_parts > 0) 
-            TF_PARTICLEIOTOEASY(fe, "parts", dataElement.parts);
+            TF_IOTOEASY(fileElement, metaData, "parts", dataElement.parts);
         if(dataElement.types.nr_parts > 0) 
-            TF_PARTICLEIOTOEASY(fe, "types", dataElement.types);
+            TF_IOTOEASY(fileElement, metaData, "types", dataElement.types);
         if(dataElement.style != NULL) {
-            TF_PARTICLEIOTOEASY(fe, "style", *dataElement.style);
+            TF_IOTOEASY(fileElement, metaData, "style", *dataElement.style);
         }
         if(dataElement.species != NULL) {
-            TF_PARTICLEIOTOEASY(fe, "species", *dataElement.species);
+            TF_IOTOEASY(fileElement, metaData, "species", *dataElement.species);
         }
 
-        fileElement->type = "ParticleType";
+        fileElement.get()->type = "ParticleType";
 
         return S_OK;
     }
@@ -1656,43 +1640,45 @@ namespace TissueForge::io {
         IOChildMap::const_iterator feItr;
 
         // Id set during registration: type ids are not preserved during import
-        // TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
+        // TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
 
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "type_flags", &dataElement->type_flags);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "particle_flags", &dataElement->particle_flags);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "mass", &dataElement->mass);
+        TF_IOFROMEASY(fileElement, metaData, "type_flags", &dataElement->type_flags);
+        TF_IOFROMEASY(fileElement, metaData, "particle_flags", &dataElement->particle_flags);
+        TF_IOFROMEASY(fileElement, metaData, "mass", &dataElement->mass);
         dataElement->imass = 1.f / dataElement->mass;
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "charge", &dataElement->charge);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "radius", &dataElement->radius);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "kinetic_energy", &dataElement->kinetic_energy);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "potential_energy", &dataElement->potential_energy);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "target_energy", &dataElement->target_energy);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "minimum_radius", &dataElement->minimum_radius);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "eps", &dataElement->eps);
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "rmin", &dataElement->rmin);
+        TF_IOFROMEASY(fileElement, metaData, "charge", &dataElement->charge);
+        TF_IOFROMEASY(fileElement, metaData, "radius", &dataElement->radius);
+        TF_IOFROMEASY(fileElement, metaData, "kinetic_energy", &dataElement->kinetic_energy);
+        TF_IOFROMEASY(fileElement, metaData, "potential_energy", &dataElement->potential_energy);
+        TF_IOFROMEASY(fileElement, metaData, "target_energy", &dataElement->target_energy);
+        TF_IOFROMEASY(fileElement, metaData, "minimum_radius", &dataElement->minimum_radius);
+        TF_IOFROMEASY(fileElement, metaData, "eps", &dataElement->eps);
+        TF_IOFROMEASY(fileElement, metaData, "rmin", &dataElement->rmin);
         
         unsigned int dynamics;
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "dynamics", &dynamics);
+        TF_IOFROMEASY(fileElement, metaData, "dynamics", &dynamics);
         dataElement->dynamics = dynamics;
         
         std::string name;
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "name", &name);
+        TF_IOFROMEASY(fileElement, metaData, "name", &name);
         std::strncpy(dataElement->name, std::string(name).c_str(), ParticleType::MAX_NAME);
         
         std::string name2;
-        TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "name2", &name2);
+        TF_IOFROMEASY(fileElement, metaData, "name2", &name2);
         std::strncpy(dataElement->name2, std::string(name2).c_str(), ParticleType::MAX_NAME);
         
         // Parts must be manually added, since part ids are not preserved during import
-        // TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "parts", &dataElement->parts);
+        // TF_IOFROMEASY(fileElement, metaData, "parts", &dataElement->parts);
+
+        IOChildMap fec = IOElement::children(fileElement);
         
-        if(fileElement.children.find("types") != fileElement.children.end()) 
-            TF_PARTICLEIOFROMEASY(feItr, fileElement.children, metaData, "types", &dataElement->types);
+        if(fec.find("types") != fec.end()) 
+            TF_IOFROMEASY(fileElement, metaData, "types", &dataElement->types);
         
-        feItr = fileElement.children.find("style");
-        if(feItr != fileElement.children.end()) { 
+        feItr = fec.find("style");
+        if(feItr != fec.end()) { 
             dataElement->style = new rendering::Style();
-            if(fromFile(*feItr->second, metaData, dataElement->style) != S_OK) 
+            if(fromFile(feItr->second, metaData, dataElement->style) != S_OK) 
                 return error(MDCERR_io);
         } 
         else {
@@ -1700,10 +1686,10 @@ namespace TissueForge::io {
             dataElement->style = new rendering::Style(&c);
         }
         
-        feItr = fileElement.children.find("species");
-        if(feItr != fileElement.children.end()) {
+        feItr = fec.find("species");
+        if(feItr != fec.end()) {
             dataElement->species = new state::SpeciesList();
-            if(fromFile(*feItr->second, metaData, dataElement->species) != S_OK) 
+            if(fromFile(feItr->second, metaData, dataElement->species) != S_OK) 
                 return error(MDCERR_io);
         } 
         else dataElement->species = NULL;

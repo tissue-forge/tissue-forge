@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -157,7 +157,7 @@ Force& Force::operator+(const Force& rhs) {
 }
 
 std::string Force::toString() {
-    io::IOElement *fe = new io::IOElement();
+    io::IOElement fe = io::IOElement::create();
     io::MetaData metaData;
 
     if(io::toFile(this, metaData, fe) != S_OK) 
@@ -315,23 +315,11 @@ Friction *Friction::fromForce(Force *f) {
 namespace TissueForge { namespace io {
 
 
-    #define TFC_FORCEIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TFC_FORCEIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(const FORCE_TYPE &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const FORCE_TYPE &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        fileElement->type = "FORCE_TYPE";
-        fileElement->value = std::to_string((unsigned int)dataElement);
+        fileElement.get()->type = "FORCE_TYPE";
+        fileElement.get()->value = std::to_string((unsigned int)dataElement);
 
         return S_OK;
     }
@@ -349,17 +337,15 @@ namespace TissueForge { namespace io {
     }
 
     template <>
-    HRESULT toFile(const CustomForce &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const CustomForce &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "type", dataElement.type);
+        TF_IOTOEASY(fileElement, metaData, "stateVectorIndex", dataElement.stateVectorIndex);
+        TF_IOTOEASY(fileElement, metaData, "updateInterval", dataElement.updateInterval);
+        TF_IOTOEASY(fileElement, metaData, "lastUpdate", dataElement.lastUpdate);
+        TF_IOTOEASY(fileElement, metaData, "force", dataElement.force);
 
-        TFC_FORCEIOTOEASY(fe, "type", dataElement.type);
-        TFC_FORCEIOTOEASY(fe, "stateVectorIndex", dataElement.stateVectorIndex);
-        TFC_FORCEIOTOEASY(fe, "updateInterval", dataElement.updateInterval);
-        TFC_FORCEIOTOEASY(fe, "lastUpdate", dataElement.lastUpdate);
-        TFC_FORCEIOTOEASY(fe, "force", dataElement.force);
-
-        fileElement->type = "CustomForce";
+        fileElement.get()->type = "CustomForce";
 
         return S_OK;
     }
@@ -367,32 +353,28 @@ namespace TissueForge { namespace io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, CustomForce *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "type", &dataElement->type);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "updateInterval", &dataElement->updateInterval);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "lastUpdate", &dataElement->lastUpdate);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "force", &dataElement->force);
+        TF_IOFROMEASY(fileElement, metaData, "type", &dataElement->type);
+        TF_IOFROMEASY(fileElement, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
+        TF_IOFROMEASY(fileElement, metaData, "updateInterval", &dataElement->updateInterval);
+        TF_IOFROMEASY(fileElement, metaData, "lastUpdate", &dataElement->lastUpdate);
+        TF_IOFROMEASY(fileElement, metaData, "force", &dataElement->force);
         dataElement->userFunc = NULL;
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const ForceSum &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const ForceSum &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
-
-        TFC_FORCEIOTOEASY(fe, "type", dataElement.type);
-        TFC_FORCEIOTOEASY(fe, "stateVectorIndex", dataElement.stateVectorIndex);
+        TF_IOTOEASY(fileElement, metaData, "type", dataElement.type);
+        TF_IOTOEASY(fileElement, metaData, "stateVectorIndex", dataElement.stateVectorIndex);
 
         if(dataElement.f1 != NULL) 
-            TFC_FORCEIOTOEASY(fe, "Force1", dataElement.f1);
+            TF_IOTOEASY(fileElement, metaData, "Force1", dataElement.f1);
         if(dataElement.f2 != NULL) 
-            TFC_FORCEIOTOEASY(fe, "Force2", dataElement.f2);
+            TF_IOTOEASY(fileElement, metaData, "Force2", dataElement.f2);
 
-        fileElement->type = "SumForce";
+        fileElement.get()->type = "SumForce";
         
         return S_OK;
     }
@@ -400,22 +382,22 @@ namespace TissueForge { namespace io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, ForceSum *dataElement) {
 
-        IOChildMap::const_iterator feItr;
+        TF_IOFROMEASY(fileElement, metaData, "type", &dataElement->type);
+        TF_IOFROMEASY(fileElement, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
 
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "type", &dataElement->type);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
+        IOChildMap fec = IOElement::children(fileElement);
         
-        feItr = fileElement.children.find("Force1");
-        if(feItr != fileElement.children.end()) {
+        IOChildMap::const_iterator feItr = fec.find("Force1");
+        if(feItr != fec.end()) {
             dataElement->f1 = NULL;
-            if(fromFile(*feItr->second, metaData, &dataElement->f1) != S_OK) 
+            if(fromFile(feItr->second, metaData, &dataElement->f1) != S_OK) 
                 return E_FAIL;
         }
 
-        feItr = fileElement.children.find("Force2");
-        if(feItr != fileElement.children.end()) {
+        feItr = fec.find("Force2");
+        if(feItr != fec.end()) {
             dataElement->f2 = NULL;
-            if(fromFile(*feItr->second, metaData, &dataElement->f2) != S_OK) 
+            if(fromFile(feItr->second, metaData, &dataElement->f2) != S_OK) 
                 return E_FAIL;
         }
 
@@ -423,15 +405,13 @@ namespace TissueForge { namespace io {
     }
 
     template <>
-    HRESULT toFile(const Berendsen &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Berendsen &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "type", dataElement.type);
+        TF_IOTOEASY(fileElement, metaData, "stateVectorIndex", dataElement.stateVectorIndex);
+        TF_IOTOEASY(fileElement, metaData, "itau", dataElement.itau);
 
-        TFC_FORCEIOTOEASY(fe, "type", dataElement.type);
-        TFC_FORCEIOTOEASY(fe, "stateVectorIndex", dataElement.stateVectorIndex);
-        TFC_FORCEIOTOEASY(fe, "itau", dataElement.itau);
-
-        fileElement->type = "BerendsenForce";
+        fileElement.get()->type = "BerendsenForce";
         
         return S_OK;
     }
@@ -439,28 +419,24 @@ namespace TissueForge { namespace io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Berendsen *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "type", &dataElement->type);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "itau", &dataElement->itau);
+        TF_IOFROMEASY(fileElement, metaData, "type", &dataElement->type);
+        TF_IOFROMEASY(fileElement, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
+        TF_IOFROMEASY(fileElement, metaData, "itau", &dataElement->itau);
         dataElement->func = (Force_EvalFcn)berendsen_force;
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const Gaussian &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Gaussian &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
-
-        TFC_FORCEIOTOEASY(fe, "type", dataElement.type);
-        TFC_FORCEIOTOEASY(fe, "stateVectorIndex", dataElement.stateVectorIndex);
-        TFC_FORCEIOTOEASY(fe, "std", dataElement.std);
-        TFC_FORCEIOTOEASY(fe, "mean", dataElement.mean);
-        TFC_FORCEIOTOEASY(fe, "durration_steps", dataElement.durration_steps);
+        TF_IOTOEASY(fileElement, metaData, "type", dataElement.type);
+        TF_IOTOEASY(fileElement, metaData, "stateVectorIndex", dataElement.stateVectorIndex);
+        TF_IOTOEASY(fileElement, metaData, "std", dataElement.std);
+        TF_IOTOEASY(fileElement, metaData, "mean", dataElement.mean);
+        TF_IOTOEASY(fileElement, metaData, "durration_steps", dataElement.durration_steps);
         
-        fileElement->type = "GaussianForce";
+        fileElement.get()->type = "GaussianForce";
         
         return S_OK;
     }
@@ -468,28 +444,24 @@ namespace TissueForge { namespace io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Gaussian *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "type", &dataElement->type);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "std", &dataElement->std);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "mean", &dataElement->mean);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "durration_steps", &dataElement->durration_steps);
+        TF_IOFROMEASY(fileElement, metaData, "type", &dataElement->type);
+        TF_IOFROMEASY(fileElement, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
+        TF_IOFROMEASY(fileElement, metaData, "std", &dataElement->std);
+        TF_IOFROMEASY(fileElement, metaData, "mean", &dataElement->mean);
+        TF_IOFROMEASY(fileElement, metaData, "durration_steps", &dataElement->durration_steps);
         dataElement->func = (Force_EvalFcn)gaussian_force;
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const Friction &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Friction &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "type", dataElement.type);
+        TF_IOTOEASY(fileElement, metaData, "stateVectorIndex", dataElement.stateVectorIndex);
+        TF_IOTOEASY(fileElement, metaData, "coef", dataElement.coef);
 
-        TFC_FORCEIOTOEASY(fe, "type", dataElement.type);
-        TFC_FORCEIOTOEASY(fe, "stateVectorIndex", dataElement.stateVectorIndex);
-        TFC_FORCEIOTOEASY(fe, "coef", dataElement.coef);
-
-        fileElement->type = "FrictionForce";
+        fileElement.get()->type = "FrictionForce";
         
         return S_OK;
     }
@@ -497,18 +469,16 @@ namespace TissueForge { namespace io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Friction *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "type", &dataElement->type);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "coef", &dataElement->coef);
+        TF_IOFROMEASY(fileElement, metaData, "type", &dataElement->type);
+        TF_IOFROMEASY(fileElement, metaData, "stateVectorIndex", &dataElement->stateVectorIndex);
+        TF_IOFROMEASY(fileElement, metaData, "coef", &dataElement->coef);
         dataElement->func = (Force_EvalFcn)friction_force;
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(Force *dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(Force *dataElement, const MetaData &metaData, IOElement &fileElement) { 
 
         if(dataElement->type & FORCE_BERENDSEN) 
             return toFile(*(Berendsen*)dataElement, metaData, fileElement);
@@ -521,12 +491,10 @@ namespace TissueForge { namespace io {
         else if(dataElement->type & FORCE_SUM) 
             return toFile(*(ForceSum*)dataElement, metaData, fileElement);
         
-        IOElement *fe;
-
-        TFC_FORCEIOTOEASY(fe, "type", dataElement->type);
-        TFC_FORCEIOTOEASY(fe, "stateVectorIndex", dataElement->stateVectorIndex);
+        TF_IOTOEASY(fileElement, metaData, "type", dataElement->type);
+        TF_IOTOEASY(fileElement, metaData, "stateVectorIndex", dataElement->stateVectorIndex);
         
-        fileElement->type = "Force";
+        fileElement.get()->type = "Force";
 
         return S_OK;
     }
@@ -534,10 +502,8 @@ namespace TissueForge { namespace io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Force **dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
         FORCE_TYPE fType;
-        TFC_FORCEIOFROMEASY(feItr, fileElement.children, metaData, "type", &fType);
+        TF_IOFROMEASY(fileElement, metaData, "type", &fType);
 
         if(fType & FORCE_BERENDSEN) {
             Berendsen *f = new Berendsen();
@@ -580,14 +546,16 @@ namespace TissueForge { namespace io {
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, std::vector<Force*> *dataElement) {
-        unsigned int numEls = fileElement.children.size();
+
+        IOChildMap fec = IOElement::children(fileElement);
+        unsigned int numEls = fec.size();
         dataElement->reserve(numEls);
         for(unsigned int i = 0; i < numEls; i++) {
             Force *de = NULL;
-            auto itr = fileElement.children.find(std::to_string(i));
-            if(itr == fileElement.children.end()) 
+            auto itr = fec.find(std::to_string(i));
+            if(itr == fec.end()) 
                 return E_FAIL;
-            if(fromFile(*itr->second, metaData, &de) != S_OK) 
+            if(fromFile(itr->second, metaData, &de) != S_OK) 
                 return E_FAIL;
             dataElement->push_back(de);
         }

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -34,7 +34,7 @@ namespace TissueForge::io {
      * @param metaData meta data of target installation
      * @return std::string 
      */
-    std::string toStr(IOElement *fileElement, const MetaData &metaData);
+    CPPAPI_FUNC(std::string) toStr(IOElement &fileElement, const MetaData &metaData);
 
     /**
      * @brief Generate a JSON string representation of an intermediate I/O object. 
@@ -44,16 +44,16 @@ namespace TissueForge::io {
      * @param fileElement object to convert
      * @return std::string 
      */
-    std::string toStr(IOElement *fileElement);
+    CPPAPI_FUNC(std::string) toStr(IOElement &fileElement);
 
     /**
      * @brief Generate an intermediate I/O object from a JSON string. 
      * 
      * @param str JSON string
      * @param metaData meta data of target installation
-     * @return IOElement* 
+     * @return IOElement 
      */
-    IOElement *fromStr(const std::string &str, const MetaData &metaData);
+    CPPAPI_FUNC(IOElement) fromStr(const std::string &str, const MetaData &metaData);
 
     /**
      * @brief Generate an intermediate I/O object from a JSON string. 
@@ -61,9 +61,9 @@ namespace TissueForge::io {
      * Installation during string export is target installation.
      * 
      * @param str JSON string
-     * @return IOElement* 
+     * @return IOElement 
      */
-    IOElement *fromStr(const std::string &str);
+    CPPAPI_FUNC(IOElement) fromStr(const std::string &str);
 
     /**
      * @brief Generate a JSON string representation of an object. 
@@ -75,7 +75,7 @@ namespace TissueForge::io {
      */
     template <typename T>
     std::string toString(const T &dataElement, const MetaData &metaData) {
-        IOElement *fe = new IOElement();
+        IOElement fe = IOElement::create();
         if(toFile<T>(dataElement, metaData, fe) != S_OK) 
             return "";
         return toStr(fe, metaData);
@@ -105,9 +105,9 @@ namespace TissueForge::io {
      */
     template <typename T>
     T fromString(const std::string &str, const MetaData &metaData) { 
-        IOElement *fe = fromStr(str, metaData);
+        IOElement fe = fromStr(str, metaData);
         T de;
-        fromFile<T>(*fe, metaData, &de);
+        fromFile<T>(fe, metaData, &de);
         return de;
     }
 
@@ -124,14 +124,6 @@ namespace TissueForge::io {
     T fromString(const std::string &str) {
         return fromString<T>(str, MetaData());
     }
-
-    /**
-     * @brief Delete a file element and all child elements
-     * 
-     * @param fileElement file element to delete; pointer is set to 0
-     * @return HRESULT 
-     */
-    HRESULT deleteElement(IOElement **fileElement);
 
     /**
      * @brief Tissue Forge data import summary. 
@@ -172,7 +164,7 @@ namespace TissueForge::io {
          * @param fileElement container to store serialized data
          * @return HRESULT 
          */
-        virtual HRESULT toFile(const MetaData &metaData, IOElement *fileElement) = 0;
+        virtual HRESULT toFile(const MetaData &metaData, IOElement &fileElement) = 0;
 
         /**
          * @brief Import module data. 
@@ -215,6 +207,9 @@ namespace TissueForge::io {
         /** Key for basic element value storage */
         static const std::string KEY_VALUE;
 
+        /** Key for simulation root storage */
+        static const std::string KEY_ROOT;
+
         /** Key for simulation metadata storage */
         static const std::string KEY_METADATA;
 
@@ -227,18 +222,15 @@ namespace TissueForge::io {
         /** Key for module i/o storage */
         static const std::string KEY_MODULES;
 
-        /** Current root element, if any */
-        inline static IOElement *currentRootElement = NULL;
-
         /** Import summary of most recent import */
         inline static FIOImportSummary *importSummary = NULL;
 
         /**
         * @brief Generate root element from current simulation state
         * 
-        * @return IOElement* 
+        * @return IOElement 
         */
-        static IOElement *generateIORootElement();
+        static IOElement generateIORootElement();
 
         /**
         * @brief Release current root element
@@ -248,12 +240,29 @@ namespace TissueForge::io {
         static HRESULT releaseIORootElement();
 
         /**
+        * @brief Get the current root element, if any
+        * 
+        * @param el root element
+        * @return HRESULT 
+        */
+        static HRESULT getCurrentIORootElement(IOElement *el);
+
+        /**
         * @brief Load a simulation from file
         * 
         * @param loadFilePath absolute path to file
-        * @return IOElement* 
+        * @return IOElement 
         */
-        static IOElement *fromFile(const std::string &loadFilePath);
+        static IOElement fromFile(const std::string &loadFilePath);
+
+        /**
+        * @brief Load a simulation from file
+        * 
+        * @param loadFilePath absolute path to file
+        * @param el resulting file element
+        * @return HRESULT 
+        */
+        static HRESULT fromFile(const std::string &loadFilePath, IOElement &el);
 
         /**
         * @brief Save a simulation to file

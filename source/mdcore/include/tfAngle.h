@@ -2,7 +2,7 @@
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
  * Coypright (c) 2017 Andy Somogyi (somogyie at indiana dot edu)
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -214,9 +214,6 @@ namespace TissueForge {
         /** Set the half life */
         void setHalfLife(const FPTYPE &half_life);
 
-        /** Test whether the underlying angle is active */
-        bool getActive();
-
         /** Get the style */
         rendering::Style *getStyle();
 
@@ -227,7 +224,13 @@ namespace TissueForge {
         FPTYPE getAge();
 
         AngleHandle() : id(-1) {}
-        AngleHandle(const int &_id) : id(_id) {}
+
+        /**
+         * @brief Construct a new angle handle from an existing angle id
+         * 
+         * @param id id of existing angle
+         */
+        AngleHandle(const int &_id);
     };
 
     /**

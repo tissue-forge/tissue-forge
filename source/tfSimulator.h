@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -363,7 +363,7 @@ namespace TissueForge {
     /**
      * main simulator init method
      */
-    CPPAPI_FUNC(HRESULT) Simulator_init(const Simulator::Config &conf, const std::vector<std::string> &appArgv=std::vector<std::string>());
+    CPPAPI_FUNC(HRESULT) Simulator_init(Simulator::Config &conf, const std::vector<std::string> &appArgv=std::vector<std::string>());
 
     struct CAPI_EXPORT Simulator::Config {
 
@@ -507,6 +507,30 @@ namespace TissueForge {
             _throwingExceptions = throwingExceptions;
         }
 
+        /** Imported data file path during initialization, if any */
+        std::string *importDataFilePath() {
+            return _importDataFilePath;
+        }
+
+        /** Check whether there is a data file path */
+        bool hasImportDataFilePath() const { 
+            return _importDataFilePath;
+        }
+
+        /** Clear the imported data file path */
+        void clearImportDataFilePath() {
+            if(_importDataFilePath) {
+                delete _importDataFilePath;
+                _importDataFilePath = NULL;
+            }
+        }
+
+        void setImportDataFilePath(const std::string &_path) {
+            clearImportDataFilePath();
+            _importDataFilePath = new std::string();
+            *_importDataFilePath = _path;
+        }
+
         /** Universe configuration */
         UniverseConfig universeConfig;
 
@@ -515,9 +539,6 @@ namespace TissueForge {
         int argc = 0;
 
         char** argv = NULL;
-        
-        std::string *importDataFilePath = NULL;
-        /* Imported data file path during initialization, if any */
         
         /** Clip planes to implement in visualization */
         std::vector<FVector4> clipPlanes;
@@ -531,6 +552,7 @@ namespace TissueForge {
         bool _windowless;
         unsigned int *_seed = NULL;
         bool _throwingExceptions = false;
+        std::string *_importDataFilePath = NULL;
     };
 
     /**
@@ -734,7 +756,7 @@ namespace TissueForge {
         bool _srgbCapable;
     };
 
-    HRESULT initSimConfigFromFile(const std::string &loadFilePath, Simulator::Config &conf);
+    HRESULT initSimConfigFromFile(Simulator::Config &conf);
 
     CAPI_FUNC(HRESULT) universe_init(const UniverseConfig &conf);
 
@@ -744,7 +766,7 @@ namespace TissueForge {
     namespace io {
 
         template <>
-        HRESULT toFile(const Simulator &dataElement, const MetaData &metaData, IOElement *fileElement);
+        HRESULT toFile(const Simulator &dataElement, const MetaData &metaData, IOElement &fileElement);
 
         template <>
         HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Simulator::Config *dataElement);

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -51,7 +51,7 @@ namespace TissueForge {
              */
             struct ColorMapper *mapper = NULL;
             
-            ColorMapperFunc mapper_func;
+            ColorMapperFunc mapper_func = NULL;
 
             Style(const fVector3 *color=NULL, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
 
@@ -126,7 +126,7 @@ namespace TissueForge {
     namespace io {
 
         template <>
-        HRESULT toFile(const rendering::Style &dataElement, const MetaData &metaData, IOElement *fileElement);
+        HRESULT toFile(const rendering::Style &dataElement, const MetaData &metaData, IOElement &fileElement);
 
         template <>
         HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, rendering::Style *dataElement);

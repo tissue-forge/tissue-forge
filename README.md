@@ -19,8 +19,6 @@ Python APIs and additional support for interactive model and simulation specific
 an IPython console and a Jupyter Notebook. 
 Tissue Forge currently supports installations on 64-bit Windows, Linux and MacOS systems. 
 
-To get the latest version of Tissue Forge, [![Anaconda-Server Badge](https://anaconda.org/tissue-forge/tissue-forge/badges/version.svg)](https://anaconda.org/tissue-forge/tissue-forge)
-
 ## Build Status ##
 
 ### Binaries ###

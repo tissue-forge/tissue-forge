@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -29,7 +29,7 @@
 %rename(_bind_types) TissueForge::py::types;
 %rename(_bind_boundary_conditions) TissueForge::py::boundary_conditions;
 %rename(_bind_boundary_condition) TissueForge::py::boundary_condition;
-%rename(_bind_force) force;
+%rename(_bind_force) TissueForge::py::force;
 
 #include <tfBond.h>
 #include <tfParticle.h>

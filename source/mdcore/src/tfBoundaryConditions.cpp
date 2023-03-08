@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -715,31 +715,17 @@ BoundaryConditions *BoundaryConditions::fromString(const std::string &str) {
 namespace TissueForge::io {
 
 
-    #define TF_BOUNDARYCONDIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return E_FAIL; \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_BOUNDARYCONDIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return E_FAIL;
-
     template <>
-    HRESULT toFile(const BoundaryCondition &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const BoundaryCondition &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
-
-        TF_BOUNDARYCONDIOTOEASY(fe, "kind", (int)dataElement.kind);
-        TF_BOUNDARYCONDIOTOEASY(fe, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "kind", (int)dataElement.kind);
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
         if(dataElement.kind & BOUNDARY_VELOCITY) {
-            TF_BOUNDARYCONDIOTOEASY(fe, "velocity", dataElement.velocity);
+            TF_IOTOEASY(fileElement, metaData, "velocity", dataElement.velocity);
         }
-        TF_BOUNDARYCONDIOTOEASY(fe, "restore", dataElement.restore);
-        TF_BOUNDARYCONDIOTOEASY(fe, "name", std::string(dataElement.name));
-        TF_BOUNDARYCONDIOTOEASY(fe, "normal", dataElement.normal);
+        TF_IOTOEASY(fileElement, metaData, "restore", dataElement.restore);
+        TF_IOTOEASY(fileElement, metaData, "name", std::string(dataElement.name));
+        TF_IOTOEASY(fileElement, metaData, "normal", dataElement.normal);
 
         std::vector<unsigned int> potentialIndices;
         std::vector<Potential*> potentials;
@@ -752,13 +738,13 @@ namespace TissueForge::io {
             }
         }
         if(potentialIndices.size() > 0) {
-            TF_BOUNDARYCONDIOTOEASY(fe, "potentialIndices", potentialIndices);
-            TF_BOUNDARYCONDIOTOEASY(fe, "potentials", potentials);
+            TF_IOTOEASY(fileElement, metaData, "potentialIndices", potentialIndices);
+            TF_IOTOEASY(fileElement, metaData, "potentials", potentials);
         }
 
-        TF_BOUNDARYCONDIOTOEASY(fe, "radius", dataElement.radius);
+        TF_IOTOEASY(fileElement, metaData, "radius", dataElement.radius);
 
-        fileElement->type = "boundaryCondition";
+        fileElement.get()->type = "boundaryCondition";
 
         return S_OK;
     }
@@ -766,36 +752,36 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, BoundaryCondition *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
         unsigned int kind;
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "kind", &kind);
+        TF_IOFROMEASY(fileElement, metaData, "kind", &kind);
         dataElement->kind = (BoundaryConditionKind)kind;
 
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
+        TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
 
-        if(fileElement.children.find("velocity") != fileElement.children.end()) {
+        IOChildMap fec = IOElement::children(fileElement);
+
+        if(fec.find("velocity") != fec.end()) {
             FVector3 velocity;
-            TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "velocity", &velocity);
+            TF_IOFROMEASY(fileElement, metaData, "velocity", &velocity);
             dataElement->velocity = velocity;
         }
 
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "restore", &dataElement->restore);
+        TF_IOFROMEASY(fileElement, metaData, "restore", &dataElement->restore);
 
         std::string name;
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "name", &name);
+        TF_IOFROMEASY(fileElement, metaData, "name", &name);
         char *cname = new char[name.size() + 1];
         std::strcpy(cname, name.c_str());
         dataElement->name = cname;
 
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "normal", &dataElement->normal);
+        TF_IOFROMEASY(fileElement, metaData, "normal", &dataElement->normal);
 
-        if(fileElement.children.find("potentials") != fileElement.children.end()) {
+        if(fec.find("potentials") != fec.end()) {
 
             std::vector<unsigned int> potentialIndices;
             std::vector<Potential*> potentials;
-            TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "potentialIndices", &potentialIndices);
-            TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "potentials", &potentials);
+            TF_IOFROMEASY(fileElement, metaData, "potentialIndices", &potentialIndices);
+            TF_IOFROMEASY(fileElement, metaData, "potentials", &potentials);
 
             if(potentials.size() > 0) 
                 for(unsigned int i = 0; i < potentials.size(); i++) 
@@ -803,32 +789,28 @@ namespace TissueForge::io {
 
         }
 
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "radius", &dataElement->radius);
+        TF_IOFROMEASY(fileElement, metaData, "radius", &dataElement->radius);
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const BoundaryConditions &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const BoundaryConditions &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "top", dataElement.top);
+        TF_IOTOEASY(fileElement, metaData, "bottom", dataElement.bottom);
+        TF_IOTOEASY(fileElement, metaData, "left", dataElement.left);
+        TF_IOTOEASY(fileElement, metaData, "right", dataElement.right);
+        TF_IOTOEASY(fileElement, metaData, "front", dataElement.front);
+        TF_IOTOEASY(fileElement, metaData, "back", dataElement.back);
 
-        TF_BOUNDARYCONDIOTOEASY(fe, "top", dataElement.top);
-        TF_BOUNDARYCONDIOTOEASY(fe, "bottom", dataElement.bottom);
-        TF_BOUNDARYCONDIOTOEASY(fe, "left", dataElement.left);
-        TF_BOUNDARYCONDIOTOEASY(fe, "right", dataElement.right);
-        TF_BOUNDARYCONDIOTOEASY(fe, "front", dataElement.front);
-        TF_BOUNDARYCONDIOTOEASY(fe, "back", dataElement.back);
-
-        fileElement->type = "boundaryConditions";
+        fileElement.get()->type = "boundaryConditions";
         
         return S_OK;
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, BoundaryConditions *dataElement) {
-
-        IOChildMap::const_iterator feItr;
 
         // Initialize potential arrays
         // todo: implement automatic initialization of potential arrays in boundary conditions under all circumstances
@@ -843,50 +825,51 @@ namespace TissueForge::io {
         dataElement->top.potenntials =    &dataElement->potenntials[4 * engine::max_type];
         dataElement->bottom.potenntials = &dataElement->potenntials[5 * engine::max_type];
 
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "top",    &dataElement->top);
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "bottom", &dataElement->bottom);
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "left",   &dataElement->left);
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "right",  &dataElement->right);
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "front",  &dataElement->front);
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fileElement.children, metaData, "back",   &dataElement->back);
+        TF_IOFROMEASY(fileElement, metaData, "top",    &dataElement->top);
+        TF_IOFROMEASY(fileElement, metaData, "bottom", &dataElement->bottom);
+        TF_IOFROMEASY(fileElement, metaData, "left",   &dataElement->left);
+        TF_IOFROMEASY(fileElement, metaData, "right",  &dataElement->right);
+        TF_IOFROMEASY(fileElement, metaData, "front",  &dataElement->front);
+        TF_IOFROMEASY(fileElement, metaData, "back",   &dataElement->back);
 
         return S_OK;
     }
 
-    #define TF_BOUNDARYCONDARGSIOFROMEASY(side) \
-        feItr = fileElement.children.find(side); \
-        if(feItr == fileElement.children.end())  \
+    #define TF_MDCARGSIOFROMEASY(side) \
+        feItr = fec.find(side); \
+        if(feItr == fec.end())  \
             return E_FAIL; \
         fe = feItr->second; \
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fe->children, metaData, "kind", &kind); \
+        TF_IOFROMEASY(fe, metaData, "kind", &kind); \
         bcVals[side] = kind; \
-        TF_BOUNDARYCONDIOFROMEASY(feItr, fe->children, metaData, "restore", &restore); \
+        TF_IOFROMEASY(fe, metaData, "restore", &restore); \
         bcRestores[side] = restore; \
         if((BoundaryConditionKind)kind & BOUNDARY_VELOCITY) { \
-            TF_BOUNDARYCONDIOFROMEASY(feItr, fe->children, metaData, "velocity", &velocity); \
-            bcVels["velocity"] = velocity; \
+            TF_IOFROMEASY(fe, metaData, "velocity", &velocity); \
+            bcVels[side] = velocity; \
         }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, BoundaryConditionsArgsContainer *dataElement) {
 
         IOChildMap::const_iterator feItr;
-        IOElement *fe;
+        IOElement fe;
         unsigned int kind;
         std::string side;
         FVector3 velocity;
         FPTYPE restore;
+        IOChildMap fec = IOElement::children(fileElement);
 
         std::unordered_map<std::string, unsigned int> bcVals; 
         std::unordered_map<std::string, FVector3> bcVels; 
         std::unordered_map<std::string, FPTYPE> bcRestores;
 
-        TF_BOUNDARYCONDARGSIOFROMEASY("top");
-        TF_BOUNDARYCONDARGSIOFROMEASY("bottom");
-        TF_BOUNDARYCONDARGSIOFROMEASY("left");
-        TF_BOUNDARYCONDARGSIOFROMEASY("right");
-        TF_BOUNDARYCONDARGSIOFROMEASY("front");
-        TF_BOUNDARYCONDARGSIOFROMEASY("back");
+        TF_MDCARGSIOFROMEASY("top");
+        TF_MDCARGSIOFROMEASY("bottom");
+        TF_MDCARGSIOFROMEASY("left");
+        TF_MDCARGSIOFROMEASY("right");
+        TF_MDCARGSIOFROMEASY("front");
+        TF_MDCARGSIOFROMEASY("back");
 
         dataElement = new BoundaryConditionsArgsContainer(0, &bcVals, &bcVels, &bcRestores);
 

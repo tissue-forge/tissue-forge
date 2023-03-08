@@ -1,6 +1,6 @@
 # ******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022 T.J. Sego
+# Copyright (c) 2022, 2023 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -76,6 +76,10 @@ from tissue_forge.tissue_forge import _system_set_rendering_3d_dihedrals as set_
 from tissue_forge.tissue_forge import _system_toggle_rendering_3d_dihedrals as toggle_rendering_3d_dihedrals
 from tissue_forge.tissue_forge import _system_set_rendering_3d_all as set_rendering_3d_all
 from tissue_forge.tissue_forge import _system_toggle_rendering_3d_all as toggle_rendering_3d_all
+from tissue_forge.tissue_forge import _system_get_line_width as get_line_width
+from tissue_forge.tissue_forge import _system_set_line_width as set_line_width
+from tissue_forge.tissue_forge import _system_get_line_width_min as get_line_width_min
+from tissue_forge.tissue_forge import _system_get_line_width_max as get_line_width_max
 from tissue_forge.tissue_forge import _system_get_ambient_color as get_ambient_color
 from tissue_forge.tissue_forge import _system_set_ambient_color as set_ambient_color
 from tissue_forge.tissue_forge import _system_get_diffuse_color as get_diffuse_color

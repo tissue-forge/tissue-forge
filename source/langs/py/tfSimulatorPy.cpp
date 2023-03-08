@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -136,13 +136,13 @@ static void parse_kwargs(PyObject *kwargs, Simulator::Config &conf) {
 
     PyObject *o;
 
-    std::string loadPath;
     if((o = PyDict_GetItemString(kwargs, "load_file"))) {
-        loadPath = cast<PyObject, std::string>(o);
+        std::string loadPath = cast<PyObject, std::string>(o);
 
         TF_Log(LOG_INFORMATION) << "got load file: " << loadPath;
         
-        if(initSimConfigFromFile(loadPath, conf) != S_OK) 
+        conf.setImportDataFilePath(loadPath);
+        if(initSimConfigFromFile(conf) != S_OK) 
             return;
     }
 
@@ -483,7 +483,6 @@ PyObject *py::SimulatorPy_init(PyObject *args, PyObject *kwargs) {
 
         #ifdef TF_WITHCUDA
         cuda::init();
-        cuda::setGLDevice(0);
         sim->makeCUDAConfigCurrent(new cuda::SimulatorConfig());
         #endif
 

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -61,7 +61,7 @@ namespace TissueForge {
      * @param cb callback to register
      * @return id of callback in registry
      */
-    CPPAPI_FUNC(const unsigned int) addErrorCallback(ErrorCallback &cb);
+    CPPAPI_FUNC(unsigned int) addErrorCallback(ErrorCallback &cb);
 
     /**
      * @brief Remove an error callback from the registry

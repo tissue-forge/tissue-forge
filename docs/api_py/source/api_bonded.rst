@@ -29,8 +29,6 @@ Bonds
 
     .. autoproperty:: half_life
 
-    .. autoproperty:: active
-
     .. autoproperty:: style
 
     .. autoproperty:: age
@@ -92,8 +90,6 @@ Bonds
 
     .. autoproperty:: half_life
 
-    .. autoproperty:: active
-
     .. autoproperty:: style
 
     .. autoproperty:: age
@@ -152,8 +148,6 @@ Bonds
     .. autoproperty:: dissociation_energy
 
     .. autoproperty:: half_life
-
-    .. autoproperty:: active
 
     .. autoproperty:: style
 

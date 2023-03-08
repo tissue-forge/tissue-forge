@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -44,7 +44,7 @@ namespace TissueForge::io {
 
         std::string moduleName() { return "CenterCellPolarity"; }
 
-        HRESULT toFile(const io::MetaData &metaData, io::IOElement *fileElement);
+        HRESULT toFile(const io::MetaData &metaData, io::IOElement &fileElement);
 
         HRESULT fromFile(const io::MetaData &metaData, const io::IOElement &fileElement);
     };
@@ -824,32 +824,17 @@ static bool recursiveForceCompare(PersistentForce *pf, Force *f) {
 }
 
 
-#define TF_CENTERCELLPOLARITYIOTOEASY(fe, key, member) \
-    fe = new io::IOElement(); \
-    if(io::toFile(member, metaData, fe) != S_OK)  \
-        return E_FAIL; \
-    fe->parent = fileElement; \
-    fileElement->children[key] = fe;
-
-#define TF_CENTERCELLPOLARITYIOFROMEASY(feItr, children, metaData, key, member_p) \
-    feItr = children.find(key); \
-    if(feItr == children.end() || io::fromFile(*feItr->second, metaData, member_p) != S_OK) \
-        return E_FAIL;
-
-
 namespace TissueForge::io {
 
 
     template <>
-    HRESULT toFile(const CPMod::PolarityModelParams &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const CPMod::PolarityModelParams &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "initMode", dataElement.initMode);
+        TF_IOTOEASY(fileElement, metaData, "initPolarAB", dataElement.initPolarAB);
+        TF_IOTOEASY(fileElement, metaData, "initPolarPCP", dataElement.initPolarPCP);
 
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "initMode", dataElement.initMode);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "initPolarAB", dataElement.initPolarAB);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "initPolarPCP", dataElement.initPolarPCP);
-
-        fileElement->type = "PolarityParameters";
+        fileElement.get()->type = "PolarityParameters";
 
         return S_OK;
     }
@@ -857,28 +842,24 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, CPMod::PolarityModelParams *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "initMode", &dataElement->initMode);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "initPolarAB", &dataElement->initPolarAB);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "initPolarPCP", &dataElement->initPolarPCP);
+        TF_IOFROMEASY(fileElement, metaData, "initMode", &dataElement->initMode);
+        TF_IOFROMEASY(fileElement, metaData, "initPolarAB", &dataElement->initPolarAB);
+        TF_IOFROMEASY(fileElement, metaData, "initPolarPCP", &dataElement->initPolarPCP);
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const CPMod::PolarityVecsPack &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const CPMod::PolarityVecsPack &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "v0", dataElement.v[0]);
+        TF_IOTOEASY(fileElement, metaData, "v1", dataElement.v[1]);
+        TF_IOTOEASY(fileElement, metaData, "v2", dataElement.v[2]);
+        TF_IOTOEASY(fileElement, metaData, "v3", dataElement.v[3]);
+        TF_IOTOEASY(fileElement, metaData, "v4", dataElement.v[4]);
+        TF_IOTOEASY(fileElement, metaData, "v5", dataElement.v[5]);
 
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "v0", dataElement.v[0]);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "v1", dataElement.v[1]);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "v2", dataElement.v[2]);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "v3", dataElement.v[3]);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "v4", dataElement.v[4]);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "v5", dataElement.v[5]);
-
-        fileElement->type = "PolarityVecs";
+        fileElement.get()->type = "PolarityVecs";
 
         return S_OK;
     }
@@ -886,26 +867,22 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, CPMod::PolarityVecsPack *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "v0", &dataElement->v[0]);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "v1", &dataElement->v[1]);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "v2", &dataElement->v[2]);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "v3", &dataElement->v[3]);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "v4", &dataElement->v[4]);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "v5", &dataElement->v[5]);
+        TF_IOFROMEASY(fileElement, metaData, "v0", &dataElement->v[0]);
+        TF_IOFROMEASY(fileElement, metaData, "v1", &dataElement->v[1]);
+        TF_IOFROMEASY(fileElement, metaData, "v2", &dataElement->v[2]);
+        TF_IOFROMEASY(fileElement, metaData, "v3", &dataElement->v[3]);
+        TF_IOFROMEASY(fileElement, metaData, "v4", &dataElement->v[4]);
+        TF_IOFROMEASY(fileElement, metaData, "v5", &dataElement->v[5]);
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const CPMod::ParticlePolarityPack &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const CPMod::ParticlePolarityPack &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
-
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "polarityVectors", dataElement.v);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "particleId", dataElement.pId);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "showing", dataElement.showing);
+        TF_IOTOEASY(fileElement, metaData, "polarityVectors", dataElement.v);
+        TF_IOTOEASY(fileElement, metaData, "particleId", dataElement.pId);
+        TF_IOTOEASY(fileElement, metaData, "showing", dataElement.showing);
 
         return S_OK;
     }
@@ -913,24 +890,20 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, CPMod::ParticlePolarityPack *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "polarityVectors", &dataElement->v);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "particleId", &dataElement->pId);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "showing", &dataElement->showing);
+        TF_IOFROMEASY(fileElement, metaData, "polarityVectors", &dataElement->v);
+        TF_IOFROMEASY(fileElement, metaData, "particleId", &dataElement->pId);
+        TF_IOFROMEASY(fileElement, metaData, "showing", &dataElement->showing);
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const CPMod::PersistentForce &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const CPMod::PersistentForce &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "sensAB", dataElement.sensAB);
+        TF_IOTOEASY(fileElement, metaData, "sensPCP", dataElement.sensPCP);
 
-        TF_CENTERCELLPOLARITYIOTOEASY(fileElement, "sensAB", dataElement.sensAB);
-        TF_CENTERCELLPOLARITYIOTOEASY(fileElement, "sensPCP", dataElement.sensPCP);
-
-        fileElement->type = "PersistentForce";
+        fileElement.get()->type = "PersistentForce";
 
         return S_OK;
     }
@@ -938,12 +911,10 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, CPMod::PersistentForce **dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
         FloatP_t sensAB, sensPCP;
 
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "sensAB", &sensAB);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "sensPCP", &sensPCP);
+        TF_IOFROMEASY(fileElement, metaData, "sensAB", &sensAB);
+        TF_IOFROMEASY(fileElement, metaData, "sensPCP", &sensPCP);
 
         *dataElement = CPMod::createPersistentForce(sensAB, sensPCP);
 
@@ -951,21 +922,19 @@ namespace TissueForge::io {
     }
 
     template <>
-    HRESULT toFile(const CPMod::ContactPotential &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const CPMod::ContactPotential &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "cutoff", dataElement.b);
+        TF_IOTOEASY(fileElement, metaData, "couplingFlat", dataElement.couplingFlat);
+        TF_IOTOEASY(fileElement, metaData, "couplingOrtho", dataElement.couplingOrtho);
+        TF_IOTOEASY(fileElement, metaData, "couplingLateral", dataElement.couplingLateral);
+        TF_IOTOEASY(fileElement, metaData, "distanceCoeff", dataElement.distanceCoeff);
+        TF_IOTOEASY(fileElement, metaData, "cType", (unsigned int)dataElement.cType);
+        TF_IOTOEASY(fileElement, metaData, "mag", dataElement.mag);
+        TF_IOTOEASY(fileElement, metaData, "rate", dataElement.rate);
+        TF_IOTOEASY(fileElement, metaData, "bendingCoeff", dataElement.bendingCoeff);
 
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "cutoff", dataElement.b);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "couplingFlat", dataElement.couplingFlat);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "couplingOrtho", dataElement.couplingOrtho);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "couplingLateral", dataElement.couplingLateral);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "distanceCoeff", dataElement.distanceCoeff);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "cType", (unsigned int)dataElement.cType);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "mag", dataElement.mag);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "rate", dataElement.rate);
-        TF_CENTERCELLPOLARITYIOTOEASY(fe, "bendingCoeff", dataElement.bendingCoeff);
-
-        fileElement->type = "ContactPotential";
+        fileElement.get()->type = "ContactPotential";
 
         return S_OK;
     }
@@ -973,35 +942,31 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, CPMod::ContactPotential **dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
         FloatP_t cutoff, couplingFlat, couplingOrtho, couplingLateral, distanceCoeff, mag, rate, bendingCoeff;
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "cutoff", &cutoff);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "couplingFlat", &couplingFlat);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "couplingOrtho", &couplingOrtho);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "couplingLateral", &couplingLateral);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "distanceCoeff", &distanceCoeff);
+        TF_IOFROMEASY(fileElement, metaData, "cutoff", &cutoff);
+        TF_IOFROMEASY(fileElement, metaData, "couplingFlat", &couplingFlat);
+        TF_IOFROMEASY(fileElement, metaData, "couplingOrtho", &couplingOrtho);
+        TF_IOFROMEASY(fileElement, metaData, "couplingLateral", &couplingLateral);
+        TF_IOFROMEASY(fileElement, metaData, "distanceCoeff", &distanceCoeff);
         
         unsigned int cTypeUI;
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "cType", &cTypeUI);
+        TF_IOFROMEASY(fileElement, metaData, "cType", &cTypeUI);
         CPMod::PolarContactType cType = (CPMod::PolarContactType)cTypeUI;
         std::string cTypeName = "regular";
         for(auto &cTypePair : CPMod::polarContactTypeMap) 
             if(cTypePair.second == cType) 
                 cTypeName = cTypePair.first;
 
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "mag", &mag);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "rate", &rate);
-        TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "bendingCoeff", &bendingCoeff);
+        TF_IOFROMEASY(fileElement, metaData, "mag", &mag);
+        TF_IOFROMEASY(fileElement, metaData, "rate", &rate);
+        TF_IOFROMEASY(fileElement, metaData, "bendingCoeff", &bendingCoeff);
 
         *dataElement = CPMod::createContactPotential(cutoff, mag, rate, distanceCoeff, couplingFlat, couplingOrtho, couplingLateral, cTypeName, bendingCoeff);
 
         return S_OK;
     }
 
-    HRESULT CellPolarityFIOModule::toFile(const MetaData &metaData, IOElement *fileElement) {
-
-        IOElement *fe;
+    HRESULT CellPolarityFIOModule::toFile(const MetaData &metaData, IOElement &fileElement) {
 
         // Store registered types
 
@@ -1016,8 +981,8 @@ namespace TissueForge::io {
             }
 
             if(polarityParams.size() > 0) {
-                TF_CENTERCELLPOLARITYIOTOEASY(fe, "polarTypes", polarTypes);
-                TF_CENTERCELLPOLARITYIOTOEASY(fe, "polarityParams", polarityParams);
+                TF_IOTOEASY(fileElement, metaData, "polarTypes", polarTypes);
+                TF_IOTOEASY(fileElement, metaData, "polarityParams", polarityParams);
             }
         }
 
@@ -1054,11 +1019,11 @@ namespace TissueForge::io {
                 }
             }
 
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "potentials", potentials);
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "potentialTypesA", potentialTypesA);
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "potentialTypesB", potentialTypesB);
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "potentialTypesClusterA", potentialTypesClusterA);
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "potentialTypesClusterB", potentialTypesClusterB);
+            TF_IOTOEASY(fileElement, metaData, "potentials", potentials);
+            TF_IOTOEASY(fileElement, metaData, "potentialTypesA", potentialTypesA);
+            TF_IOTOEASY(fileElement, metaData, "potentialTypesB", potentialTypesB);
+            TF_IOTOEASY(fileElement, metaData, "potentialTypesClusterA", potentialTypesClusterA);
+            TF_IOTOEASY(fileElement, metaData, "potentialTypesClusterB", potentialTypesClusterB);
 
         }
 
@@ -1076,8 +1041,8 @@ namespace TissueForge::io {
                     if(CPMod::recursiveForceCompare((*CPMod::storedPersistentForces)[fi], _Engine.forces[i])) 
                         forceTypes[fi] = i;
 
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "forces", forces);
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "forceTypes", forceTypes);
+            TF_IOTOEASY(fileElement, metaData, "forces", forces);
+            TF_IOTOEASY(fileElement, metaData, "forceTypes", forceTypes);
         }
         
         // Store states of registered particles
@@ -1088,7 +1053,7 @@ namespace TissueForge::io {
                 if(pp) 
                     particles.push_back(*pp);
 
-            TF_CENTERCELLPOLARITYIOTOEASY(fe, "particles", particles);
+            TF_IOTOEASY(fileElement, metaData, "particles", particles);
         }
 
         return S_OK;
@@ -1096,17 +1061,17 @@ namespace TissueForge::io {
 
     HRESULT CellPolarityFIOModule::fromFile(const MetaData &metaData, const IOElement &fileElement) {
 
-        IOChildMap::const_iterator feItr;
+        IOChildMap fec = IOElement::children(fileElement);
 
         // Load registered types
 
-        if(fileElement.children.find("polarityParams") != fileElement.children.end()) {
+        if(fec.find("polarityParams") != fec.end()) {
         
             std::vector<CPMod::PolarityModelParams> polarityParams;
             std::vector<int32_t> polarTypes;
 
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "polarityParams", &polarityParams);
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "polarTypes", &polarTypes);
+            TF_IOFROMEASY(fileElement, metaData, "polarityParams", &polarityParams);
+            TF_IOFROMEASY(fileElement, metaData, "polarTypes", &polarTypes);
 
             for(unsigned int i = 0; i < polarTypes.size(); i++) {
                 unsigned int pTypeId = io::FIO::importSummary->particleTypeIdMap[polarTypes[i]];
@@ -1124,16 +1089,16 @@ namespace TissueForge::io {
 
         // Load potentials
 
-        if(fileElement.children.find("potentials") != fileElement.children.end()) {
+        if(fec.find("potentials") != fec.end()) {
 
             std::vector<CPMod::ContactPotential*> potentials;
             std::vector<std::vector<unsigned int> > potentialTypesA, potentialTypesB, potentialTypesClusterA, potentialTypesClusterB;
 
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "potentials", &potentials);
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "potentialTypesA", &potentialTypesA);
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "potentialTypesB", &potentialTypesB);
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "potentialTypesClusterA", &potentialTypesClusterA);
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "potentialTypesClusterB", &potentialTypesClusterB);
+            TF_IOFROMEASY(fileElement, metaData, "potentials", &potentials);
+            TF_IOFROMEASY(fileElement, metaData, "potentialTypesA", &potentialTypesA);
+            TF_IOFROMEASY(fileElement, metaData, "potentialTypesB", &potentialTypesB);
+            TF_IOFROMEASY(fileElement, metaData, "potentialTypesClusterA", &potentialTypesClusterA);
+            TF_IOFROMEASY(fileElement, metaData, "potentialTypesClusterB", &potentialTypesClusterB);
 
             for(unsigned int i = 0; i < potentials.size(); i++) {
                 auto p = potentials[i];
@@ -1167,13 +1132,13 @@ namespace TissueForge::io {
 
         // Load forces
 
-        if(fileElement.children.find("forces") != fileElement.children.end()) {
+        if(fec.find("forces") != fec.end()) {
 
             std::vector<CPMod::PersistentForce*> forces;
             std::vector<int16_t> forceTypes;
 
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "forces", &forces);
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "forceTypes", &forceTypes);
+            TF_IOFROMEASY(fileElement, metaData, "forces", &forces);
+            TF_IOFROMEASY(fileElement, metaData, "forceTypes", &forceTypes);
 
             for(unsigned int i = 0; i < forces.size(); i++) {
                 auto pTypeIdImport = forceTypes[i];
@@ -1195,11 +1160,11 @@ namespace TissueForge::io {
         
         // Load states of registered particles
 
-        if(fileElement.children.find("particles") != fileElement.children.end()) {
+        if(fec.find("particles") != fec.end()) {
 
             std::vector<CPMod::ParticlePolarityPack> particles;
 
-            TF_CENTERCELLPOLARITYIOFROMEASY(feItr, fileElement.children, metaData, "particles", &particles);
+            TF_IOFROMEASY(fileElement, metaData, "particles", &particles);
 
             for(unsigned int i = 0; i < particles.size(); i++) {
                 auto ppp = particles[i];

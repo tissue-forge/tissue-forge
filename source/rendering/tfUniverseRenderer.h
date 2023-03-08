@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -134,6 +134,14 @@ namespace TissueForge {
                 _colorMode = colorMode;
                 return *this;
             }
+
+            const Float lineWidth();
+
+            UniverseRenderer& setLineWidth(const Float &lw);
+
+            const Float lineWidthMin();
+
+            const Float lineWidthMax();
 
             Color3& ambientColor() { return _ambientColor; }
 

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -300,6 +300,28 @@ HRESULT tfSystem_setRendering3DAll(bool flag) {
 
 HRESULT tfSystem_toggleRendering3DAll() {
     system::toggleRendering3DAll();
+    return S_OK;
+}
+
+HRESULT tfSystem_getLineWidth(tfFloatP_t *lineWidth) {
+    TFC_PTRCHECK(lineWidth);
+    *lineWidth = system::getLineWidth();
+    return S_OK;
+}
+
+HRESULT tfSystem_setLineWidth(tfFloatP_t lineWidth) {
+    return system::setLineWidth(lineWidth);
+}
+
+HRESULT tfSystem_getLineWidthMin(tfFloatP_t *lineWidth) {
+    TFC_PTRCHECK(lineWidth);
+    *lineWidth = system::getLineWidthMin();
+    return S_OK;
+}
+
+HRESULT tfSystem_getLineWidthMax(tfFloatP_t *lineWidth) {
+    TFC_PTRCHECK(lineWidth);
+    *lineWidth = system::getLineWidthMax();
     return S_OK;
 }
 

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -142,6 +142,14 @@ void py::toggle_rendering_3d_dihedrals() { return system::toggleRendering3DDihed
 void py::set_rendering_3d_all(const bool &_flag) { return system::setRendering3DAll(_flag); }
 
 void py::toggle_rendering_3d_all() { return system::toggleRendering3DAll(); }
+
+FloatP_t py::get_line_width() { return system::getLineWidth(); }
+
+HRESULT py::set_line_width(const FloatP_t &lineWidth) { return system::setLineWidth(lineWidth); }
+
+FloatP_t py::get_line_width_min() { return system::getLineWidthMin(); }
+
+FloatP_t py::get_line_width_max() { return system::getLineWidthMax(); }
 
 FVector3 py::get_ambient_color() { return system::getAmbientColor(); }
 

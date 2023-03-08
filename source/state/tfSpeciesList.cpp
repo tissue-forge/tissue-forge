@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -121,7 +121,7 @@ namespace TissueForge::io {
 
 
     template <>
-    HRESULT toFile(const state::SpeciesList &dataElement, const MetaData &metaData, IOElement *fileElement) { 
+    HRESULT toFile(const state::SpeciesList &dataElement, const MetaData &metaData, IOElement &fileElement) { 
         state::SpeciesList *sList = const_cast<state::SpeciesList*>(&dataElement);
         
         auto numSpecies = sList->size();
@@ -130,27 +130,17 @@ namespace TissueForge::io {
         for(unsigned int i = 0; i < numSpecies; i++) 
             species.push_back(*sList->item(i));
 
-        IOElement *fe = new IOElement();
-        if(toFile(species, metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["species"] = fe;
+        TF_IOTOEASY(fileElement, metaData, "species", species);
+
+        fileElement.get()->type = "SpeciesList";
 
         return S_OK;
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, state::SpeciesList *dataElement) {
-        IOElement *fe;
-
         std::vector<state::Species> species;
-        
-        auto feItr = fileElement.children.find("species");
-        if(feItr == fileElement.children.end()) 
-            return E_FAIL;
-
-        if(fromFile(*feItr->second, metaData, &species) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "species", &species);
 
         for(auto s : species) 
             dataElement->insert(new state::Species(s));

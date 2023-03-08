@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -115,6 +115,12 @@ namespace TissueForge::types {
              * @param periodic_y flag for whether to apply periodic boundary conditions along the Y- (second-) direction
              * @param periodic_z flag for whether to apply periodic boundary conditions along the Z- (third-) direction
              */
+            template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
+            TVector3<T> lineShortestDisplacementTo(const TVector3<T> &lineStartPt, const TVector3<T> &lineEndPt) const {
+                const TVector3<T> lineDir = (lineEndPt - lineStartPt).normalized();
+                return lineStartPt + (*this - lineStartPt).dot(lineDir) * lineDir - *this;
+            }
+
             template<class U = T, typename std::enable_if<std::is_floating_point<U>::value, bool>::type = true>
             TVector3<T> relativeTo(const TVector3<T> &origin, const TVector3<T> &dim, const bool &periodic_x, const bool &periodic_y, const bool &periodic_z) {
                 TVector3<T> result = *this - origin;

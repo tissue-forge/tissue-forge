@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -756,7 +756,8 @@ Angle *TissueForge::AngleHandle::get() {
         error(MDCERR_id);
         return NULL;
     }
-    return &_Engine.angles[this->id];
+    Angle *r = &_Engine.angles[this->id];
+    return r && r->flags & BOND_ACTIVE ? r : NULL;
 }
 
 static std::string AngleHandle_str(const AngleHandle *h) {
@@ -764,10 +765,9 @@ static std::string AngleHandle_str(const AngleHandle *h) {
 
     ss << "AngleHandle(id=" << h->id;
     if(h->id >= 0) {
-        AngleHandle _h(h->id);
-        const Angle &o = *_h.get();
-        if(o.flags & ANGLE_ACTIVE) 
-            ss << ", i=" << o.i << ", j=" << o.j << ", k=" << o.k;
+        const Angle *o = AngleHandle(h->id).get();
+        if(o->flags & ANGLE_ACTIVE) 
+            ss << ", i=" << o->i << ", j=" << o->j << ", k=" << o->k;
     }
     ss << ")";
     
@@ -788,7 +788,8 @@ HRESULT TissueForge::AngleHandle::destroy() {
         cuda::engine_cuda_finalize_angle(this->id);
     #endif
 
-    return Angle_Destroy(this->get());
+    Angle *o = this->get();
+    return o ? Angle_Destroy(o) : error(MDCERR_null);
 }
 
 std::vector<AngleHandle> TissueForge::AngleHandle::items() {
@@ -832,7 +833,7 @@ bool TissueForge::AngleHandle::has(ParticleHandle *part) {
 FloatP_t TissueForge::AngleHandle::getAngle() {
     FloatP_t result = 0;
     Angle *a = this->get();
-    if(a && a->flags && ANGLE_ACTIVE) { 
+    if(a) { 
         ParticleHandle pi(a->i), pj(a->j), pk(a->k);
         FVector3 ri = pi.getPosition();
         FVector3 rj = pj.getPosition();
@@ -846,7 +847,12 @@ FloatP_t TissueForge::AngleHandle::getAngle() {
 
 FPTYPE TissueForge::AngleHandle::getEnergy() {
 
-    Angle angles[] = {*this->get()};
+    Angle *a = this->get();
+    if(!a) {
+        error(MDCERR_null);
+        return 0;
+    }
+    Angle angles[] = {*a};
     FPTYPE f[] = {0.0, 0.0, 0.0};
     FPTYPE epot_out = 0.0;
     angle_evalf(angles, 1, &_Engine, f, &epot_out);
@@ -856,7 +862,7 @@ FPTYPE TissueForge::AngleHandle::getEnergy() {
 std::vector<int32_t> TissueForge::AngleHandle::getParts() {
     std::vector<int32_t> result;
     Angle *a = this->get();
-    if(a && a->flags & ANGLE_ACTIVE) {
+    if(a) {
         result = std::vector<int32_t>{a->i, a->j, a->k};
     }
     return result;
@@ -865,7 +871,7 @@ std::vector<int32_t> TissueForge::AngleHandle::getParts() {
 ParticleList TissueForge::AngleHandle::getPartList() {
     ParticleList result;
     Angle *a = this->get();
-    if(a && a->flags & ANGLE_ACTIVE) {
+    if(a) {
         result.insert(a->i);
         result.insert(a->j);
         result.insert(a->k);
@@ -875,7 +881,7 @@ ParticleList TissueForge::AngleHandle::getPartList() {
 
 Potential *TissueForge::AngleHandle::getPotential() {
     Angle *a = this->get();
-    if(a && a->flags & ANGLE_ACTIVE) {
+    if(a) {
         return a->potential;
     }
     return NULL;
@@ -887,8 +893,7 @@ uint32_t TissueForge::AngleHandle::getId() {
 
 FPTYPE TissueForge::AngleHandle::getDissociationEnergy() {
     auto *a = this->get();
-    if (a) return a->dissociation_energy;
-    return NULL;
+    return a ? a->dissociation_energy : FPTYPE_ZERO;
 }
 
 void TissueForge::AngleHandle::setDissociationEnergy(const FPTYPE &dissociation_energy) {
@@ -898,8 +903,7 @@ void TissueForge::AngleHandle::setDissociationEnergy(const FPTYPE &dissociation_
 
 FPTYPE TissueForge::AngleHandle::getHalfLife() {
     auto *a = this->get();
-    if (a) return a->half_life;
-    return NULL;
+    return a ? a->half_life : FPTYPE_ZERO;
 }
 
 void TissueForge::AngleHandle::setHalfLife(const FPTYPE &half_life) {
@@ -907,16 +911,9 @@ void TissueForge::AngleHandle::setHalfLife(const FPTYPE &half_life) {
     if (a) a->half_life = half_life;
 }
 
-bool TissueForge::AngleHandle::getActive() {
-    auto *a = this->get();
-    if (a) return (bool)(a->flags & ANGLE_ACTIVE);
-    return false;
-}
-
 rendering::Style *TissueForge::AngleHandle::getStyle() {
     auto *a = this->get();
-    if (a) return a->style;
-    return NULL;
+    return a ? a->style : NULL;
 }
 
 void TissueForge::AngleHandle::setStyle(rendering::Style *style) {
@@ -926,8 +923,12 @@ void TissueForge::AngleHandle::setStyle(rendering::Style *style) {
 
 FPTYPE TissueForge::AngleHandle::getAge() {
     auto *a = this->get();
-    if (a) return (_Engine.time - a->creation_time) * _Engine.dt;
-    return 0;
+    return a ? (_Engine.time - a->creation_time) * _Engine.dt : 0;
+}
+
+AngleHandle::AngleHandle(const int &_id) : id(_id) {
+    if(id >= 0 && id < _Engine.angles_size) this->id = id;
+    else error(MDCERR_id);
 }
 
 std::vector<int32_t> TissueForge::Angle_IdsForParticle(int32_t pid) {
@@ -946,34 +947,20 @@ std::vector<int32_t> TissueForge::Angle_IdsForParticle(int32_t pid) {
 namespace TissueForge::io {
 
 
-    #define TF_ANGLEIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return error(MDCERR_io); \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_ANGLEIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return error(MDCERR_io);
-
     template <>
-    HRESULT toFile(const Angle &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Angle &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
+        TF_IOTOEASY(fileElement, metaData, "i", dataElement.i);
+        TF_IOTOEASY(fileElement, metaData, "j", dataElement.j);
+        TF_IOTOEASY(fileElement, metaData, "k", dataElement.k);
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "creation_time", dataElement.creation_time);
+        TF_IOTOEASY(fileElement, metaData, "half_life", dataElement.half_life);
+        TF_IOTOEASY(fileElement, metaData, "dissociation_energy", dataElement.dissociation_energy);
+        TF_IOTOEASY(fileElement, metaData, "potential_energy", dataElement.potential_energy);
 
-        TF_ANGLEIOTOEASY(fe, "flags", dataElement.flags);
-        TF_ANGLEIOTOEASY(fe, "i", dataElement.i);
-        TF_ANGLEIOTOEASY(fe, "j", dataElement.j);
-        TF_ANGLEIOTOEASY(fe, "k", dataElement.k);
-        TF_ANGLEIOTOEASY(fe, "id", dataElement.id);
-        TF_ANGLEIOTOEASY(fe, "creation_time", dataElement.creation_time);
-        TF_ANGLEIOTOEASY(fe, "half_life", dataElement.half_life);
-        TF_ANGLEIOTOEASY(fe, "dissociation_energy", dataElement.dissociation_energy);
-        TF_ANGLEIOTOEASY(fe, "potential_energy", dataElement.potential_energy);
-
-        fileElement->type = "Angle";
+        fileElement.get()->type = "Angle";
         
         return S_OK;
     }
@@ -981,17 +968,15 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Angle *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "flags", &dataElement->flags);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "i", &dataElement->i);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "j", &dataElement->j);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "k", &dataElement->k);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "creation_time", &dataElement->creation_time);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "half_life", &dataElement->half_life);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "dissociation_energy", &dataElement->dissociation_energy);
-        TF_ANGLEIOFROMEASY(feItr, fileElement.children, metaData, "potential_energy", &dataElement->potential_energy);
+        TF_IOFROMEASY(fileElement, metaData, "flags", &dataElement->flags);
+        TF_IOFROMEASY(fileElement, metaData, "i", &dataElement->i);
+        TF_IOFROMEASY(fileElement, metaData, "j", &dataElement->j);
+        TF_IOFROMEASY(fileElement, metaData, "k", &dataElement->k);
+        TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
+        TF_IOFROMEASY(fileElement, metaData, "creation_time", &dataElement->creation_time);
+        TF_IOFROMEASY(fileElement, metaData, "half_life", &dataElement->half_life);
+        TF_IOFROMEASY(fileElement, metaData, "dissociation_energy", &dataElement->dissociation_energy);
+        TF_IOFROMEASY(fileElement, metaData, "potential_energy", &dataElement->potential_energy);
 
         return S_OK;
     }

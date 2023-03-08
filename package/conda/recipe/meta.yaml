@@ -30,6 +30,7 @@ requirements:
     - libxml2
     - assimp=5
     - nlohmann_json
+    - eigen
     - pthreads-win32 # [win]
     - vs2019_win-64<=19.28 # [win]
     - clang=12 # [win]
@@ -66,6 +67,7 @@ requirements:
     - matplotlib
     - assimp=5
     - nlohmann_json
+    - eigen
     - pthreads-win32 # [win]
 
 test:

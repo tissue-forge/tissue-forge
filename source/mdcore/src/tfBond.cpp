@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -662,11 +662,16 @@ Bond *TissueForge::Bond::fromString(const std::string &str) {
 }
 
 Bond *TissueForge::BondHandle::get() { 
-    return &_Engine.bonds[this->id];
+    if(id < 0 || id >= _Engine.bonds_size) {
+        error(MDCERR_id);
+        return NULL;
+    }
+    Bond *r = &_Engine.bonds[this->id];
+    return r && r->flags & BOND_ACTIVE ? r : NULL;
 };
 
 TissueForge::BondHandle::BondHandle(int id) {
-    if(id >= 0 && id < _Engine.nr_bonds) this->id = id;
+    if(id >= 0 && id < _Engine.bonds_size) this->id = id;
     else error(MDCERR_id);
 }
 
@@ -708,10 +713,9 @@ static std::string BondHandle_str(const BondHandle *h) {
 
     ss << "BondHandle(id=" << h->id;
     if(h->id >= 0) {
-        BondHandle _h(h->id);
-        const Bond &o = *_h.get();
-        if(o.flags & BOND_ACTIVE) 
-            ss << ", i=" << o.i << ", j=" << o.j;
+        const Bond *o = BondHandle(h->id).get();
+        if(o) 
+            ss << ", i=" << o->i << ", j=" << o->j;
     }
     ss << ")";
     
@@ -729,7 +733,7 @@ bool TissueForge::BondHandle::check() {
 FloatP_t TissueForge::BondHandle::getLength() {
     FloatP_t result = 0;
     Bond *b = this->get();
-    if(b && b->flags && BOND_ACTIVE) { 
+    if(b) { 
         ParticleHandle pi(b->i), pj(b->j);
         FVector3 ri = pi.getPosition();
         FVector3 rj = pj.getPosition();
@@ -745,6 +749,11 @@ FPTYPE TissueForge::BondHandle::getEnergy()
     
     Bond *bond = this->get();
     FPTYPE energy = 0;
+
+    if(!bond) {
+        error(MDCERR_null);
+        return energy;
+    }
     
     Bond_Energy(bond, &energy);
     
@@ -754,7 +763,7 @@ FPTYPE TissueForge::BondHandle::getEnergy()
 std::vector<int32_t> TissueForge::BondHandle::getParts() {
     std::vector<int32_t> result;
     Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
+    if(bond) {
         result = std::vector<int32_t>{bond->i, bond->j};
     }
     return result;
@@ -763,7 +772,7 @@ std::vector<int32_t> TissueForge::BondHandle::getParts() {
 ParticleList TissueForge::BondHandle::getPartList() {
     ParticleList result;
     Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
+    if(bond) {
         result.insert(bond->i);
         result.insert(bond->j);
     }
@@ -772,25 +781,16 @@ ParticleList TissueForge::BondHandle::getPartList() {
 
 Potential *TissueForge::BondHandle::getPotential() {
     Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
-        return bond->potential;
-    }
-    return NULL;
+    return bond ? bond->potential : NULL;
 }
 
 uint32_t TissueForge::BondHandle::getId() {
-    Bond *bond = get();
-    if(bond && bond->flags & BOND_ACTIVE) {
-        return bond->id;
-    }
-    return NULL;
+    return this->id;
 }
 
 FPTYPE TissueForge::BondHandle::getDissociationEnergy() {
-    FPTYPE result;
     Bond *bond = get();
-    if (bond) result = bond->dissociation_energy;
-    return result;
+    return bond ? bond->dissociation_energy : FPTYPE_ZERO;
 }
 
 void TissueForge::BondHandle::setDissociationEnergy(const FPTYPE &dissociation_energy) {
@@ -800,8 +800,7 @@ void TissueForge::BondHandle::setDissociationEnergy(const FPTYPE &dissociation_e
 
 FPTYPE TissueForge::BondHandle::getHalfLife() {
     Bond *bond = get();
-    if (bond) return bond->half_life;
-    return NULL;
+    return bond ? bond->half_life : FPTYPE_ZERO;
 }
 
 void TissueForge::BondHandle::setHalfLife(const FPTYPE &half_life) {
@@ -809,16 +808,9 @@ void TissueForge::BondHandle::setHalfLife(const FPTYPE &half_life) {
     if (bond) bond->half_life = half_life;
 }
 
-bool TissueForge::BondHandle::getActive() {
-    Bond *bond = get();
-    if (bond) return (bool)(bond->flags & BOND_ACTIVE);
-    return false;
-}
-
 rendering::Style *TissueForge::BondHandle::getStyle() {
     Bond *bond = get();
-    if (bond) return bond->style;
-    return NULL;
+    return bond ? bond->style : NULL;
 }
 
 void TissueForge::BondHandle::setStyle(rendering::Style *style) {
@@ -828,8 +820,7 @@ void TissueForge::BondHandle::setStyle(rendering::Style *style) {
 
 FPTYPE TissueForge::BondHandle::getAge() {
     Bond *bond = get();
-    if (bond) return (_Engine.time - bond->creation_time) * _Engine.dt;
-    return 0;
+    return bond ? (_Engine.time - bond->creation_time) * _Engine.dt : FPTYPE_ZERO;
 }
 
 static void make_pairlist(
@@ -944,9 +935,8 @@ std::vector<BondHandle> TissueForge::BondHandle::pairwise(
 
 HRESULT TissueForge::BondHandle::destroy()
 {
-    TF_Log(LOG_DEBUG);
-    
-    return Bond_Destroy(this->get());
+    Bond *o = this->get();
+    return o ? Bond_Destroy(this->get()) : error(MDCERR_null);
 }
 
 std::vector<BondHandle> TissueForge::BondHandle::items() {
@@ -1119,33 +1109,19 @@ int TissueForge::insert_bond(
 namespace TissueForge::io {
 
 
-    #define TF_BONDIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return error(MDCERR_io); \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TF_BONDIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return error(MDCERR_io);
-
     template <>
-    HRESULT toFile(const Bond &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Bond &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
+        TF_IOTOEASY(fileElement, metaData, "flags", dataElement.flags);
+        TF_IOTOEASY(fileElement, metaData, "i", dataElement.i);
+        TF_IOTOEASY(fileElement, metaData, "j", dataElement.j);
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.id);
+        TF_IOTOEASY(fileElement, metaData, "creation_time", dataElement.creation_time);
+        TF_IOTOEASY(fileElement, metaData, "half_life", dataElement.half_life);
+        TF_IOTOEASY(fileElement, metaData, "dissociation_energy", dataElement.dissociation_energy);
+        TF_IOTOEASY(fileElement, metaData, "potential_energy", dataElement.potential_energy);
 
-        TF_BONDIOTOEASY(fe, "flags", dataElement.flags);
-        TF_BONDIOTOEASY(fe, "i", dataElement.i);
-        TF_BONDIOTOEASY(fe, "j", dataElement.j);
-        TF_BONDIOTOEASY(fe, "id", dataElement.id);
-        TF_BONDIOTOEASY(fe, "creation_time", dataElement.creation_time);
-        TF_BONDIOTOEASY(fe, "half_life", dataElement.half_life);
-        TF_BONDIOTOEASY(fe, "dissociation_energy", dataElement.dissociation_energy);
-        TF_BONDIOTOEASY(fe, "potential_energy", dataElement.potential_energy);
-
-        fileElement->type = "Bond";
+        fileElement.get()->type = "Bond";
         
         return S_OK;
     }
@@ -1153,16 +1129,14 @@ namespace TissueForge::io {
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, Bond *dataElement) {
 
-        IOChildMap::const_iterator feItr;
-
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "flags", &dataElement->flags);
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "i", &dataElement->i);
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "j", &dataElement->j);
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "id", &dataElement->id);
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "creation_time", &dataElement->creation_time);
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "half_life", &dataElement->half_life);
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "dissociation_energy", &dataElement->dissociation_energy);
-        TF_BONDIOFROMEASY(feItr, fileElement.children, metaData, "potential_energy", &dataElement->potential_energy);
+        TF_IOFROMEASY(fileElement, metaData, "flags", &dataElement->flags);
+        TF_IOFROMEASY(fileElement, metaData, "i", &dataElement->i);
+        TF_IOFROMEASY(fileElement, metaData, "j", &dataElement->j);
+        TF_IOFROMEASY(fileElement, metaData, "id", &dataElement->id);
+        TF_IOFROMEASY(fileElement, metaData, "creation_time", &dataElement->creation_time);
+        TF_IOFROMEASY(fileElement, metaData, "half_life", &dataElement->half_life);
+        TF_IOFROMEASY(fileElement, metaData, "dissociation_energy", &dataElement->dissociation_energy);
+        TF_IOFROMEASY(fileElement, metaData, "potential_energy", &dataElement->potential_energy);
 
         return S_OK;
     }

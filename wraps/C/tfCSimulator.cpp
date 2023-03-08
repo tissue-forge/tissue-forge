@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -127,12 +127,18 @@ HRESULT tfSimulatorConfig_setWindowless(struct tfSimulatorConfigHandle *handle, 
 
 HRESULT tfSimulatorConfig_getImportDataFilePath(struct tfSimulatorConfigHandle *handle, char **filePath, unsigned int *numChars) {
     TFC_SIMCONFIG_GET(handle)
-    std::string *fp = conf->importDataFilePath;
+    std::string *fp = conf->importDataFilePath();
     if(!fp) {
         numChars = 0;
         return S_OK;
     }
     else return TissueForge::capi::str2Char(*fp, filePath, numChars);
+}
+
+HRESULT tfSimulatorConfig_setImportDataFilePath(struct tfSimulatorConfigHandle *handle, char *filePath) {
+    TFC_SIMCONFIG_GET(handle)
+    conf->setImportDataFilePath(filePath);
+    return S_OK;
 }
 
 HRESULT tfSimulatorConfig_getClipPlanes(struct tfSimulatorConfigHandle *handle, float **clipPlanes, unsigned int *numClipPlanes) {

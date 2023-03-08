@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -650,20 +650,8 @@ namespace TissueForge {
          */
         template <typename T>
         std::vector<T> unique(const std::vector<T> &vec) {
-            std::vector<T> result_vec;
-            std::unordered_set<T> result_us;
-
-            result_vec.reserve(vec.size());
-            
-            for(auto f : vec) {
-                if(result_us.find(f) == result_us.end()) {
-                    result_vec.push_back(f);
-                    result_us.insert(f);
-                }
-            }
-
-            result_vec.shrink_to_fit();
-            return result_vec;
+            std::unordered_set<T> result_us(vec.begin(), vec.end());
+            return std::vector<T>(result_us.begin(), result_us.end());
         }
 
 }};

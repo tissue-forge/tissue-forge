@@ -1,6 +1,6 @@
 #*******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022 T.J. Sego
+# Copyright (c) 2022, 2023 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -22,7 +22,15 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(CUDAToolkit)
 find_package(assimp REQUIRED)
 find_package(glfw3 REQUIRED)
-find_package(libsbml-static REQUIRED)
+if(UNIX OR CYGWIN)
+    find_package(sbml-static REQUIRED)
+else()
+  if(MINGW)
+    find_package(sbml-static REQUIRED)
+  else()
+    find_package(libsbml-static REQUIRED)
+  endif()
+endif()
 find_package(TissueForge REQUIRED COMPONENTS Shared)
 
 set(tfExamples_LIBS TissueForge::TissueForge_shared)

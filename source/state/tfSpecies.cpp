@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -509,203 +509,75 @@ state::Species *state::Species::fromString(const std::string &str) {
 namespace TissueForge::io { 
 
     template <>
-    HRESULT toFile(const state::Species &dataElement, const MetaData &metaData, IOElement *fileElement) {
-        IOElement *fe;
+    HRESULT toFile(const state::Species &dataElement, const MetaData &metaData, IOElement &fileElement) {
+        TF_IOTOEASY(fileElement, metaData, "id", dataElement.getId());
+        TF_IOTOEASY(fileElement, metaData, "name", dataElement.getName());
+        TF_IOTOEASY(fileElement, metaData, "speciesType", dataElement.getSpeciesType());
+        TF_IOTOEASY(fileElement, metaData, "compartment", dataElement.getCompartment());
+        TF_IOTOEASY(fileElement, metaData, "initialAmount", dataElement.getInitialAmount());
+        TF_IOTOEASY(fileElement, metaData, "initialConcentration", dataElement.getInitialConcentration());
+        TF_IOTOEASY(fileElement, metaData, "substanceUnits", dataElement.getSubstanceUnits());
+        TF_IOTOEASY(fileElement, metaData, "spatialSizeUnits", dataElement.getSpatialSizeUnits());
+        TF_IOTOEASY(fileElement, metaData, "units", dataElement.getUnits());
+        TF_IOTOEASY(fileElement, metaData, "hasOnlySubstanceUnits", dataElement.getHasOnlySubstanceUnits());
+        TF_IOTOEASY(fileElement, metaData, "boundaryCondition", dataElement.getBoundaryCondition());
+        TF_IOTOEASY(fileElement, metaData, "charge", dataElement.getCharge());
+        TF_IOTOEASY(fileElement, metaData, "constant", dataElement.getConstant());
+        TF_IOTOEASY(fileElement, metaData, "conversionFactor", dataElement.getConversionFactor());
 
-        fe = new IOElement();
-        if(toFile(dataElement.getId(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["id"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getName(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["name"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getSpeciesType(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["speciesType"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getCompartment(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["compartment"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getInitialAmount(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["initialAmount"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getInitialConcentration(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["initialConcentration"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getSubstanceUnits(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["substanceUnits"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getSpatialSizeUnits(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["spatialSizeUnits"] = fe;
-
-        fe = new IOElement();
-        if(toFile(dataElement.getUnits(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["units"] = fe;
-        
-        fe = new IOElement();
-        if(toFile(dataElement.getHasOnlySubstanceUnits(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["hasOnlySubstanceUnits"] = fe;
-        
-        fe = new IOElement();
-        if(toFile(dataElement.getBoundaryCondition(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["boundaryCondition"] = fe;
-        
-        fe = new IOElement();
-        if(toFile(dataElement.getCharge(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["charge"] = fe;
-        
-        fe = new IOElement();
-        if(toFile(dataElement.getConstant(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["constant"] = fe;
-        
-        fe = new IOElement();
-        if(toFile(dataElement.getConversionFactor(), metaData, fe) != S_OK) 
-            return E_FAIL;
-        fe->parent = fileElement;
-        fileElement->children["conversionFactor"] = fe;
+        fileElement.get()->type = "Species";
 
         return S_OK;
     }
 
     template <>
     HRESULT fromFile(const IOElement &fileElement, const MetaData &metaData, state::Species *dataElement) {
-        std::unordered_map<std::string, IOElement*>::const_iterator feItr;
-        auto &c = fileElement.children;
-        
         std::string s;
         FloatP_t d;
         int i;
 
         dataElement->species = new libsbml::Species(state::getSBMLNamespaces());
 
-        feItr = c.find("id");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "id", &s);
         dataElement->setId(s.c_str());
 
-        feItr = c.find("name");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "name", &s);
         dataElement->setName(s.c_str());
 
-        feItr = c.find("speciesType");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "speciesType", &s);
         dataElement->setSpeciesType(s.c_str());
 
-        feItr = c.find("compartment");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "compartment", &s);
         dataElement->setCompartment(s.c_str());
 
-        feItr = c.find("initialAmount");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &d) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "initialAmount", &d);
         dataElement->setInitialAmount(d);
 
-        feItr = c.find("initialConcentration");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &d) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "initialConcentration", &d);
         dataElement->setInitialConcentration(d);
 
-        feItr = c.find("substanceUnits");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "substanceUnits", &s);
         dataElement->setSubstanceUnits(s.c_str());
 
-        feItr = c.find("spatialSizeUnits");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "spatialSizeUnits", &s);
         dataElement->setSpatialSizeUnits(s.c_str());
 
-        feItr = c.find("units");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "units", &s);
         dataElement->setUnits(s.c_str());
 
-        feItr = c.find("hasOnlySubstanceUnits");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &i) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "hasOnlySubstanceUnits", &i);
         dataElement->setHasOnlySubstanceUnits(i);
 
-        feItr = c.find("boundaryCondition");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &i) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "boundaryCondition", &i);
         dataElement->setBoundaryCondition(i);
 
-        feItr = c.find("charge");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &i) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "charge", &i);
         dataElement->setCharge(i);
 
-        feItr = c.find("constant");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &i) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "constant", &i);
         dataElement->setConstant(i);
 
-        feItr = c.find("conversionFactor");
-        if(feItr == c.end()) 
-            return E_FAIL;
-        if(fromFile(*feItr->second, metaData, &s) != S_OK) 
-            return E_FAIL;
+        TF_IOFROMEASY(fileElement, metaData, "conversionFactor", &s);
         dataElement->setConversionFactor(s.c_str());
 
         return S_OK;

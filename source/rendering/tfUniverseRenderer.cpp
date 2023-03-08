@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -444,6 +444,27 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::draw(T& camera, const 
     return *this;
 }
 
+const Float rendering::UniverseRenderer::lineWidth() {
+    GLfloat lw;
+    glGetFloatv(GL_LINE_WIDTH, &lw);
+    return lw;
+}
+
+rendering::UniverseRenderer& rendering::UniverseRenderer::setLineWidth(const Float &lw) {
+    Magnum::GL::Renderer::setLineWidth(lw);
+    return *this;
+}
+
+const Float rendering::UniverseRenderer::lineWidthMin() {
+    auto lwr = Magnum::GL::Renderer::lineWidthRange();
+    return lwr.min();
+}
+
+const Float rendering::UniverseRenderer::lineWidthMax() {
+    auto lwr = Magnum::GL::Renderer::lineWidthRange();
+    return lwr.max();
+}
+
 rendering::UniverseRenderer& rendering::UniverseRenderer::setAmbientColor(const Color3& color) {
     sphereShader.setAmbientColor(color);
 
@@ -485,7 +506,7 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::setShininess(float shi
 }
 
 rendering::UniverseRenderer& rendering::UniverseRenderer::setLightDirection(const fVector3& lightDir) {
-    sphereShader.setLightPosition(lightDir);
+    sphereShader.setLightPositions({fVector4{lightDir, 0}});
 
     for(auto &s : subRenderers) 
         s->setLightDirection(lightDir);
@@ -495,7 +516,7 @@ rendering::UniverseRenderer& rendering::UniverseRenderer::setLightDirection(cons
 }
 
 rendering::UniverseRenderer& rendering::UniverseRenderer::setLightColor(const Color3 &color) {
-    sphereShader.setLightColor(color);
+    sphereShader.setLightColor(Magnum::Color4(color));
 
     for(auto &s : subRenderers) 
         s->setLightColor(color);

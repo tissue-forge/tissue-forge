@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022 T.J. Sego
+ * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -121,7 +121,7 @@ std::string TissueForge::Fluxes::toString() {
     
     // todo: fix type deduction for io::toString<Fluxes>
 
-    io::IOElement *fe = new io::IOElement();
+    io::IOElement fe = io::IOElement::create();
     io::MetaData metaData;
     if(io::toFile(*this, metaData, fe) != S_OK) 
         return "";
@@ -223,25 +223,11 @@ Fluxes* TissueForge::Fluxes::newFluxes(int32_t init_size) {
 namespace TissueForge::io {
 
 
-    #define TFC_FLUXIOTOEASY(fe, key, member) \
-        fe = new IOElement(); \
-        if(toFile(member, metaData, fe) != S_OK)  \
-            return error(MDCERR_io); \
-        fe->parent = fileElement; \
-        fileElement->children[key] = fe;
-
-    #define TFC_FLUXIOFROMEASY(feItr, children, metaData, key, member_p) \
-        feItr = children.find(key); \
-        if(feItr == children.end() || fromFile(*feItr->second, metaData, member_p) != S_OK) \
-            return error(MDCERR_io);
-
     template <>
-    HRESULT toFile(const TypeIdPair &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const TypeIdPair &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
-
-        TFC_FLUXIOTOEASY(fe, "a", dataElement.a);
-        TFC_FLUXIOTOEASY(fe, "b", dataElement.b);
+        TF_IOTOEASY(fileElement, metaData, "a", dataElement.a);
+        TF_IOTOEASY(fileElement, metaData, "b", dataElement.b);
 
         return S_OK;
     }
@@ -251,18 +237,16 @@ namespace TissueForge::io {
 
         IOChildMap::const_iterator feItr;
 
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "a", &dataElement->a);
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "b", &dataElement->b);
+        TF_IOFROMEASY(fileElement, metaData, "a", &dataElement->a);
+        TF_IOFROMEASY(fileElement, metaData, "b", &dataElement->b);
 
         return S_OK;
     }
 
     template <>
-    HRESULT toFile(const Flux &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Flux &dataElement, const MetaData &metaData, IOElement &fileElement) {
 
-        IOElement *fe;
-
-        TFC_FLUXIOTOEASY(fe, "size", dataElement.size);
+        TF_IOTOEASY(fileElement, metaData, "size", dataElement.size);
         std::vector<int8_t> kinds;
         std::vector<TypeIdPair> type_ids;
         std::vector<int32_t> indices_a;
@@ -281,15 +265,15 @@ namespace TissueForge::io {
             target.push_back(dataElement.target[i]);
         }
 
-        TFC_FLUXIOTOEASY(fe, "kinds", kinds);
-        TFC_FLUXIOTOEASY(fe, "type_ids", type_ids);
-        TFC_FLUXIOTOEASY(fe, "indices_a", indices_a);
-        TFC_FLUXIOTOEASY(fe, "indices_b", indices_b);
-        TFC_FLUXIOTOEASY(fe, "coef", coef);
-        TFC_FLUXIOTOEASY(fe, "decay_coef", decay_coef);
-        TFC_FLUXIOTOEASY(fe, "target", target);
+        TF_IOTOEASY(fileElement, metaData, "kinds", kinds);
+        TF_IOTOEASY(fileElement, metaData, "type_ids", type_ids);
+        TF_IOTOEASY(fileElement, metaData, "indices_a", indices_a);
+        TF_IOTOEASY(fileElement, metaData, "indices_b", indices_b);
+        TF_IOTOEASY(fileElement, metaData, "coef", coef);
+        TF_IOTOEASY(fileElement, metaData, "decay_coef", decay_coef);
+        TF_IOTOEASY(fileElement, metaData, "target", target);
 
-        fileElement->type = "Flux";
+        fileElement.get()->type = "Flux";
 
         return S_OK;
     }
@@ -299,28 +283,28 @@ namespace TissueForge::io {
 
         IOChildMap::const_iterator feItr;
 
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "size", &dataElement->size);
+        TF_IOFROMEASY(fileElement, metaData, "size", &dataElement->size);
         
         std::vector<int8_t> kinds;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "kinds", &kinds);
+        TF_IOFROMEASY(fileElement, metaData, "kinds", &kinds);
 
         std::vector<TypeIdPair> type_ids;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "type_ids", &type_ids);
+        TF_IOFROMEASY(fileElement, metaData, "type_ids", &type_ids);
         
         std::vector<int32_t> indices_a;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "indices_a", &indices_a);
+        TF_IOFROMEASY(fileElement, metaData, "indices_a", &indices_a);
         
         std::vector<int32_t> indices_b;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "indices_b", &indices_b);
+        TF_IOFROMEASY(fileElement, metaData, "indices_b", &indices_b);
         
         std::vector<FPTYPE> coef;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "coef", &coef);
+        TF_IOFROMEASY(fileElement, metaData, "coef", &coef);
         
         std::vector<FPTYPE> decay_coef;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "decay_coef", &decay_coef);
+        TF_IOFROMEASY(fileElement, metaData, "decay_coef", &decay_coef);
         
         std::vector<FPTYPE> target;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "target", &target);
+        TF_IOFROMEASY(fileElement, metaData, "target", &target);
 
         for(unsigned int i = 0; i < TF_SIMD_SIZE; i++) {
             
@@ -338,18 +322,16 @@ namespace TissueForge::io {
     }
 
     template <>
-    HRESULT toFile(const Fluxes &dataElement, const MetaData &metaData, IOElement *fileElement) {
+    HRESULT toFile(const Fluxes &dataElement, const MetaData &metaData, IOElement &fileElement) {
         
-        IOElement *fe;
-
-        TFC_FLUXIOTOEASY(fe, "fluxes_size", dataElement.fluxes_size);
+        TF_IOTOEASY(fileElement, metaData, "fluxes_size", dataElement.fluxes_size);
         
         std::vector<Flux> fluxes;
         for(unsigned int i = 0; i < dataElement.size; i++) 
             fluxes.push_back(dataElement.fluxes[i]);
-        TFC_FLUXIOTOEASY(fe, "fluxes", fluxes);
+        TF_IOTOEASY(fileElement, metaData, "fluxes", fluxes);
 
-        fileElement->type = "Fluxes";
+        fileElement.get()->type = "Fluxes";
 
         return S_OK;
     }
@@ -359,10 +341,10 @@ namespace TissueForge::io {
 
         IOChildMap::const_iterator feItr;
 
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "fluxes_size", &dataElement->fluxes_size);
+        TF_IOFROMEASY(fileElement, metaData, "fluxes_size", &dataElement->fluxes_size);
         
         std::vector<Flux> fluxes;
-        TFC_FLUXIOFROMEASY(feItr, fileElement.children, metaData, "fluxes", &fluxes);
+        TF_IOFROMEASY(fileElement, metaData, "fluxes", &fluxes);
         Flux flux = fluxes[0];
         for(unsigned int i = 0; i < fluxes.size(); i++) { 
             dataElement = Fluxes::addFlux((FluxKind)flux.kinds[i], 
