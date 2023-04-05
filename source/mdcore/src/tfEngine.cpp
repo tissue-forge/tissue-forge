@@ -1995,7 +1995,7 @@ int TissueForge::engine_next_partid(struct engine *e)
 }
 
 HRESULT TissueForge::engine_next_partids(struct engine *e, int nr_ids, int *ids) { 
-	int j = 0;
+	int j = e->pids_avail.size();
 	for(int i = 0; i < nr_ids; i++) {
 		if(!e->pids_avail.empty()) {
 			std::set<unsigned int>::iterator itr = e->pids_avail.begin();
