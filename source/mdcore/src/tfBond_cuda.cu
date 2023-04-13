@@ -39,12 +39,14 @@ __constant__ int3 *cuda_bonds_cloc;
 static unsigned int cuda_bonds_dev_constants = 0;
 
 // Partice list
-__constant__ cuda::Particle *cuda_bonds_parts;
+__constant__ float4* cuda_bonds_parts_pos;
+__constant__ int* cuda_bonds_parts_flags;
 __constant__ bool cuda_bonds_parts_from_engine;
 __constant__ unsigned int *cuda_bonds_parts_from_engine_key;
 static unsigned int *cuda_bonds_parts_from_engine_key_arr;
 static size_t cuda_bonds_parts_from_engine_key_size = 0;
-static cuda::Particle *cuda_bonds_parts_arr;
+static float4* cuda_bonds_parts_pos_arr;
+static int* cuda_bonds_parts_flags_arr;
 static unsigned int cuda_bonds_parts_counter = 0;
 static unsigned int cuda_bonds_parts_checkouts = 0;
 
@@ -183,11 +185,14 @@ int cuda_bonds_parts_release() {
 }
 
 __global__ 
-void cuda_bonds_generate_engine_parts_key(int nr_parts) {
+void cuda_bonds_load_from_engine(int4* part_datai, int nr_parts) {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     int stride = blockDim.x * gridDim.x;
-    for(int i = tid; i < nr_parts; i += stride) 
-        cuda_bonds_parts_from_engine_key[cuda_bonds_parts[i].w.x] = i;
+    for(int i = tid; i < nr_parts; i += stride) {
+        int4 pdatai = part_datai[i];
+        cuda_bonds_parts_from_engine_key[pdatai.x] = i;
+        cuda_bonds_parts_flags[i] = pdatai.z;
+    }
 }
 
 int cuda_bonds_parts_load(engine *e) { 
@@ -218,13 +223,13 @@ int cuda_bonds_parts_load(engine *e) {
 
         for(i = 0; i < e->nr_devices; i++) 
             if(e->devices[i] == cuda_bonds_device) { 
-                cuda_bonds_parts_arr = (cuda::Particle*)e->parts_cuda[i];
-                if(cudaMemcpyToSymbol(cuda_bonds_parts, &cuda_bonds_parts_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
+                cuda_bonds_parts_pos_arr = (float4*)e->parts_pos_cuda[i];
+                if(cudaMemcpyToSymbol(cuda_bonds_parts_pos, &cuda_bonds_parts_pos_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
                     return cuda_error();
                 
                 int nr_blocks, nr_threads;
                 cuda_bonds_module_dyn_specs(&nr_blocks, &nr_threads);
-                cuda_bonds_generate_engine_parts_key<<<nr_blocks, nr_threads>>>(e->s.nr_parts);
+                cuda_bonds_load_from_engine<<<nr_blocks, nr_threads>>>((int4*)e->parts_datai_cuda[i], e->s.nr_parts);
                 if(cudaPeekAtLastError() != cudaSuccess)
                     return cuda_error();
                 
@@ -235,16 +240,33 @@ int cuda_bonds_parts_load(engine *e) {
 
     } 
     else {
-        cuda::Particle *bonds_parts = (cuda::Particle*)malloc(e->s.nr_parts * sizeof(cuda::Particle));
-        for(i = 0; i < e->s.nr_parts; i++) 
-            bonds_parts[i] = cuda::Particle(e->s.partlist[i]);
-        if(cudaMalloc(&cuda_bonds_parts_arr, e->s.nr_parts * sizeof(cuda::Particle)) != cudaSuccess) 
+        float3* bonds_parts_pos = (float3*)malloc(e->s.size_parts * sizeof(float3));
+        float* bonds_parts_radius = (float*)malloc(e->s.size_parts * sizeof(float));
+        int* bonds_parts_flags = (int*)malloc(e->s.size_parts * sizeof(int));
+        for(i = 0; i < e->s.size_parts; i++) {
+            Particle* part = e->s.partlist[i];
+            if(part) {
+                bonds_parts_pos[part->id] = {part->x[0], part->x[1], part->x[2]};
+                bonds_parts_radius[part->id] = part->radius;
+                bonds_parts_flags[part->id] = part->flags;
+            }
+        }
+        if(cudaMalloc(&cuda_bonds_parts_pos_arr, e->s.size_parts * sizeof(float4)) != cudaSuccess) 
             return cuda_error();
-        if(cudaMemcpy(cuda_bonds_parts_arr, bonds_parts, e->s.nr_parts * sizeof(cuda::Particle), cudaMemcpyHostToDevice) != cudaSuccess) 
+        if(cudaMemcpy(cuda_bonds_parts_pos_arr, bonds_parts_pos, e->s.size_parts * sizeof(float4), cudaMemcpyHostToDevice) != cudaSuccess) 
             return cuda_error();
-        if(cudaMemcpyToSymbol(cuda_bonds_parts, &cuda_bonds_parts_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
+        if(cudaMemcpyToSymbol(cuda_bonds_parts_pos, &cuda_bonds_parts_pos_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
             return cuda_error();
-        free(bonds_parts);
+        if(cudaMalloc(&cuda_bonds_parts_flags_arr, e->s.size_parts * sizeof(int)) != cudaSuccess) 
+            return cuda_error();
+        if(cudaMemcpy(cuda_bonds_parts_flags_arr, bonds_parts_flags, e->s.size_parts * sizeof(int), cudaMemcpyHostToDevice) != cudaSuccess) 
+            return cuda_error();
+        if(cudaMemcpyToSymbol(cuda_bonds_parts_flags, &cuda_bonds_parts_flags_arr, sizeof(void*), 0, cudaMemcpyHostToDevice) != cudaSuccess) 
+            return cuda_error();
+
+        free(bonds_parts_pos);
+        free(bonds_parts_radius);
+        free(bonds_parts_flags);
     }
 
     return S_OK;
@@ -262,7 +284,9 @@ int cuda_bonds_parts_unload(engine *e) {
         return S_OK;
     } 
     else {
-        if(cudaFree(cuda_bonds_parts_arr) != cudaSuccess) 
+        if(cudaFree(cuda_bonds_parts_pos_arr) != cudaSuccess) 
+            return cuda_error();
+        if(cudaFree(cuda_bonds_parts_flags_arr) != cudaSuccess) 
             return cuda_error();
     }
 
@@ -880,11 +904,10 @@ void bond_eval_cuda(BondCUDAData *bonds, int nr_bonds, float *forces, float *epo
     int i, k;
     cuda::Bond *b;
     BondCUDAData *bu;
-    float dx[3], pix[3], r2, fix[3], epot = 0.f;
+    float dx[3], r2, fix[3], epot = 0.f;
     int shift[3];
     float rn;
     int3 cix, cjx;
-    cuda::Particle *pi, *pj;
     __shared__ unsigned int *parts_key;
 
     if(threadIdx.x == 0) {
@@ -898,10 +921,10 @@ void bond_eval_cuda(BondCUDAData *bonds, int nr_bonds, float *forces, float *epo
         bu = &bonds[i];
         b = &cuda_bonds[bu->id];
 
-        pi = &cuda_bonds_parts[parts_key == NULL ? b->pids.x : parts_key[b->pids.x]];
-        pj = &cuda_bonds_parts[parts_key == NULL ? b->pids.y : parts_key[b->pids.y]];
+        int pidi = parts_key == NULL ? b->pids.x : parts_key[b->pids.x];
+        int pidj = parts_key == NULL ? b->pids.y : parts_key[b->pids.y];
 
-        if(!(b->flags & BOND_ACTIVE) || (pi->w.w & PARTICLE_GHOST && pj->w.w & PARTICLE_GHOST)) {
+        if(!(b->flags & BOND_ACTIVE) || (cuda_bonds_parts_flags[pidi] & PARTICLE_GHOST && cuda_bonds_parts_flags[pidj] & PARTICLE_GHOST)) {
             forces[3 * i    ] = 0.f;
             forces[3 * i + 1] = 0.f;
             forces[3 * i + 2] = 0.f;
@@ -932,18 +955,20 @@ void bond_eval_cuda(BondCUDAData *bonds, int nr_bonds, float *forces, float *epo
             if(shift[k] > 1) shift[k] = -1;
             else if(shift[k] < -1) shift[k] = 1;
         }
-        pix[0] = pi->x.x + cuda_bonds_cell_edge_lens.x * shift[0];
-        pix[1] = pi->x.y + cuda_bonds_cell_edge_lens.y * shift[1];
-        pix[2] = pi->x.z + cuda_bonds_cell_edge_lens.z * shift[2];
+        float4 pix = cuda_bonds_parts_pos[pidi];
+        float4 pjx = cuda_bonds_parts_pos[pidj];
+        pix.x += cuda_bonds_cell_edge_lens.x * shift[0];
+        pix.y += cuda_bonds_cell_edge_lens.y * shift[1];
+        pix.z += cuda_bonds_cell_edge_lens.z * shift[2];
 
         r2 = 0.f;
-        dx[0] = pix[0] - pj->x.x; r2 += dx[0]*dx[0];
-        dx[1] = pix[1] - pj->x.y; r2 += dx[1]*dx[1];
-        dx[2] = pix[2] - pj->x.z; r2 += dx[2]*dx[2];
+        dx[0] = pix.x - pjx.x; r2 += dx[0]*dx[0];
+        dx[1] = pix.y - pjx.y; r2 += dx[1]*dx[1];
+        dx[2] = pix.z - pjx.z; r2 += dx[2]*dx[2];
 
         memset(fix, 0.f, 3 * sizeof(float));
 
-        bond_eval_single_cuda(&b->p, pi->v.w, pj->v.w, r2, dx, fix, &epot);
+        bond_eval_single_cuda(&b->p, pix.w, pjx.w, r2, dx, fix, &epot);
         forces[3 * i    ] = fix[0];
         forces[3 * i + 1] = fix[1];
         forces[3 * i + 2] = fix[2];
@@ -1693,7 +1718,6 @@ void angle_eval_cuda(AngleCUDAData *angles, int nr_angles, float *forces, float 
     float dprod, inji, injk;
     float3 x, vik;
     int3 cix, cjx, ckx;
-    cuda::Particle *pi, *pj, *pk;
     __shared__ unsigned int *parts_key;
 
     if(threadIdx.x == 0) {
@@ -1709,11 +1733,11 @@ void angle_eval_cuda(AngleCUDAData *angles, int nr_angles, float *forces, float 
         au = &angles[i];
         a = &cuda_angles[au->id];
 
-        pi = &cuda_bonds_parts[parts_key == NULL ? a->pids.x : parts_key[a->pids.x]];
-        pj = &cuda_bonds_parts[parts_key == NULL ? a->pids.y : parts_key[a->pids.y]];
-        pk = &cuda_bonds_parts[parts_key == NULL ? a->pids.z : parts_key[a->pids.z]];
+        int pidi = parts_key == NULL ? a->pids.x : parts_key[a->pids.x];
+        int pidj = parts_key == NULL ? a->pids.y : parts_key[a->pids.y];
+        int pidk = parts_key == NULL ? a->pids.z : parts_key[a->pids.z];
 
-        if(!(a->flags & ANGLE_ACTIVE) || (pi->w.w & PARTICLE_GHOST && pj->w.w & PARTICLE_GHOST && pk->w.w & PARTICLE_GHOST)) {
+        if(!(a->flags & ANGLE_ACTIVE) || (cuda_bonds_parts_flags[pidi] & PARTICLE_GHOST && cuda_bonds_parts_flags[pidj] & PARTICLE_GHOST && cuda_bonds_parts_flags[pidk] & PARTICLE_GHOST)) {
             forces[6 * i    ] = 0.f;
             forces[6 * i + 1] = 0.f;
             forces[6 * i + 2] = 0.f;
@@ -1746,39 +1770,43 @@ void angle_eval_cuda(AngleCUDAData *angles, int nr_angles, float *forces, float 
         cjx = cuda_bonds_cloc[au->cid.y];
         ckx = cuda_bonds_cloc[au->cid.z];
 
-        xj[0] = pj->x.x;
-        xj[1] = pj->x.y;
-        xj[2] = pj->x.z;
+        float4 pix = cuda_bonds_parts_pos[pidi];
+        float4 pjx = cuda_bonds_parts_pos[pidj];
+        float4 pkx = cuda_bonds_parts_pos[pidk];
+
+        xj[0] = pjx.x;
+        xj[1] = pjx.y;
+        xj[2] = pjx.z;
 
         k = cix.x - cjx.x;
         if(k > 1) k = -1;
         else if(k < -1) k = 1;
-        xi[0] = pi->x.x + k * cuda_bonds_cell_edge_lens.x;
+        xi[0] = pix.x + k * cuda_bonds_cell_edge_lens.x;
 
         k = cix.y - cjx.y;
         if(k > 1) k = -1;
         else if(k < -1) k = 1;
-        xi[1] = pi->x.y + k * cuda_bonds_cell_edge_lens.y;
+        xi[1] = pix.y + k * cuda_bonds_cell_edge_lens.y;
 
         k = cix.z - cjx.z;
         if(k > 1) k = -1;
         else if(k < -1) k = 1;
-        xi[2] = pi->x.z + k * cuda_bonds_cell_edge_lens.z;
+        xi[2] = pix.z + k * cuda_bonds_cell_edge_lens.z;
 
         k = ckx.x - cjx.x;
         if(k > 1) k = -1;
         else if(k < -1) k = 1;
-        xk[0] = pk->x.x + k * cuda_bonds_cell_edge_lens.x;
+        xk[0] = pkx.x + k * cuda_bonds_cell_edge_lens.x;
 
         k = ckx.y - cjx.y;
         if(k > 1) k = -1;
         else if(k < -1) k = 1;
-        xk[1] = pk->x.y + k * cuda_bonds_cell_edge_lens.y;
+        xk[1] = pkx.y + k * cuda_bonds_cell_edge_lens.y;
 
         k = ckx.z - cjx.z;
         if(k > 1) k = -1;
         else if(k < -1) k = 1;
-        xk[2] = pk->x.z + k * cuda_bonds_cell_edge_lens.z;
+        xk[2] = pkx.z + k * cuda_bonds_cell_edge_lens.z;
 
         dprod = 0.f;
         inji = 0.f;

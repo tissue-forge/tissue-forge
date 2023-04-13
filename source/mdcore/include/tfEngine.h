@@ -328,8 +328,14 @@ namespace TissueForge {
 		int nr_pots_cuda, nr_pots_cluster_cuda, *pind_cuda[ engine_maxgpu ], *pind_cluster_cuda[ engine_maxgpu ], *offsets_cuda[ engine_maxgpu ];
 		int nr_devices, devices[ engine_maxgpu ], nr_queues_cuda;
 		float *forces_cuda[ engine_maxgpu ];
-		void *parts_cuda[ engine_maxgpu ], *part_states_cuda[engine_maxgpu];
-		void *parts_cuda_local, *part_states_cuda_local;
+		void *parts_pos_cuda[engine_maxgpu];
+		void *parts_vel_cuda[engine_maxgpu];
+		void *parts_datai_cuda[engine_maxgpu];
+		void *part_states_cuda[engine_maxgpu];
+		void *parts_pos_cuda_local;
+		void *parts_vel_cuda_local;
+		void *parts_datai_cuda_local;
+		void *part_states_cuda_local;
 		int *cells_cuda_local[ engine_maxgpu];
 		int cells_cuda_nr[ engine_maxgpu ];
 		int *counts_cuda[ engine_maxgpu ], *counts_cuda_local[ engine_maxgpu ];
