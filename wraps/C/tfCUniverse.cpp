@@ -334,6 +334,19 @@ HRESULT tfUniverseConfig_setNumThreads(struct tfUniverseConfigHandle *handle, un
     return S_OK;
 }
 
+HRESULT tfUniverseConfig_getNumFluxSteps(struct tfUniverseConfigHandle *handle, unsigned int *numFluxSteps) {
+    TFC_UNIVERSECONFIG_GET(handle);
+    TFC_PTRCHECK(numFluxSteps);
+    *numFluxSteps = conf->nr_fluxsteps;
+    return S_OK;
+}
+
+HRESULT tfUniverseConfig_setNumFluxSteps(struct tfUniverseConfigHandle *handle, unsigned int numFluxSteps) {
+    TFC_UNIVERSECONFIG_GET(handle);
+    conf->nr_fluxsteps = numFluxSteps;
+    return S_OK;
+}
+
 HRESULT tfUniverseConfig_getIntegrator(struct tfUniverseConfigHandle *handle, unsigned int *integrator) {
     TFC_UNIVERSECONFIG_GET(handle)
     TFC_PTRCHECK(integrator);

@@ -210,6 +210,11 @@ namespace TissueForge {
          * @brief Get the global interaction cutoff distance
          */
         static FloatP_t getCutoff();
+
+        /**
+         * @brief Get the number of flux steps per simulation step
+        */
+        static unsigned int getNumFluxSteps();
     };
 
     /**
@@ -257,6 +262,9 @@ namespace TissueForge {
 
         /** Number of simulation threads */
         int threads;
+
+        /** Number of flux steps per simulation step */
+        unsigned int nr_fluxsteps;
 
         /** Type of integrator */
         EngineIntegrator integrator;

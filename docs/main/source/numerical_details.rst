@@ -67,3 +67,21 @@ are assumed to remain as not large particles.
 In general, model specifications that prescribe large particles can be adjusted using a number of
 mechanisms provided by Tissue Forge, including changing the size of the simulation domain, overall scale
 of particle sizes and cutoff distance.
+
+.. _flux_steps
+
+Flux Sub-stepping
+^^^^^^^^^^^^^^^^^^
+
+Excessively fast inter-particle :ref:`flux<flux>` transport can cause numerical instabilities. 
+Tissue Forge provides optional sub-stepping of inter-particle transport to support 
+fast, stable transport over a simulation step. 
+Flux sub-stepping breaks up the computations of inter-particle transport into equal, 
+smaller periods of simulation time over a simulation step. 
+For example, a simulation step period of 0.01 and ten flux sub-steps performs 
+ten flux sub-steps with period 0.001 for every simulation step. 
+Increase in computational cost is proportional to the number of flux sub-steps. 
+
+- In Python, the number of flux steps per simulation step can be set with the :func:`init` keyword argument ``flux_steps``.
+- In C++, the number of flux steps per simulation step can be set with the ``Universe::Config`` member ``nr_fluxsteps``.
+- In C, the number of flux steps per simulation step can be set with the ``tfUniverseConfigHandle`` method ``tfUniverseConfig_setNumFluxSteps``.

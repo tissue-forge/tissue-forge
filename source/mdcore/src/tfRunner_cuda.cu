@@ -2542,6 +2542,25 @@ __global__ void runner_run_cuda_do_self_kernel(
     atomicAdd(&cuda_epot, epot * 0.5f);
 }
 
+__global__ void runner_run_cuda_do_self_fluxonly_kernel(float* fluxes, unsigned int nr_states, int* counts, int* ind) {
+
+    for(int cid = blockIdx.x; cid < cuda_nr_cells; cid += gridDim.x) {
+
+        int indi = ind[cid];
+        int counti = counts[cid];
+
+        float4* parts_pos = &cuda_parts_pos[indi];
+        int4* parts_datai = &cuda_parts_datai[indi];
+        
+        float *fluxes_i = &fluxes[nr_states * indi];
+        float *states_j = &cuda_part_states[nr_states * indi];
+        runner_doself_state_cuda(indi, states_j, counti, parts_pos, parts_datai, fluxes_i, nr_states);
+
+        __syncthreads();
+    }
+
+}
+
 template<bool is_stateful> 
 __global__ void runner_run_cuda_do_pair_left_kernel(
     float* forces, float* fluxes, unsigned int nr_states, 
@@ -2642,6 +2661,88 @@ __global__ void runner_run_cuda_do_pair_left_kernel(
     }
 
     atomicAdd(&cuda_epot, epot * 0.5f);
+}
+
+__global__ void runner_run_cuda_do_pair_left_fluxonly_kernel(
+    float* fluxes, unsigned int nr_states, 
+    int* counts, int* ind, 
+    unsigned int cuda_nrparts
+) { 
+
+    __shared__ float shiftn[39];
+    __shared__ float shift[3];
+    __shared__ unsigned int dshift;
+    extern __shared__ unsigned int sort_arrs[];
+    unsigned int *sort_i = (unsigned int*)&sort_arrs[0];
+    unsigned int *sort_j = (unsigned int*)&sort_arrs[cuda_nrparts];
+
+    // Copy shifts to shared memory
+    for(int i = threadIdx.x; i < 39; i += blockDim.x) shiftn[i] = cuda_shiftn[i];
+    __syncthreads();
+
+    for(int cid = blockIdx.x; cid < cuda_nr_cells; cid += gridDim.x) {
+        int cellpair_count = cuda_cellpair_count_left[cid];
+        int cellpair_ind = cuda_cellpair_ind_left[cid];
+        int2* cellpair_list = &cuda_cellpair_list_left[cellpair_ind];
+        for(int j = 0; j < cellpair_count; j++) {
+            int2 cellpair = cellpair_list[j];
+            int cjd = cellpair.x;
+            int cflags = cellpair.y;
+
+            /* Get the shift and dshift vector for this pair. */
+            if(threadIdx.x == 0) {
+                #pragma unroll
+                for(int k = 0 ; k < 3 ; k++) {
+                    shift[k] = cuda_corig[3*cjd + k] - cuda_corig[3*cid + k];
+                    if(2*shift[k] > cuda_dim[k])
+                        shift[k] -= cuda_dim[k];
+                    else if(2*shift[k] < -cuda_dim[k])
+                        shift[k] += cuda_dim[k];
+                }
+                dshift = cuda_dscale *(
+                    shift[0]*shiftn[3 * cflags    ] +
+                    shift[1]*shiftn[3 * cflags + 1] +
+                    shift[2]*shiftn[3 * cflags + 2]
+                );
+            }
+            
+            /* Load the sorted indices. */
+
+            int indi = ind[cid];
+            int indj = ind[cjd];
+            int counti = counts[cid];
+            int countj = counts[cjd];
+
+            cuda_memcpy(sort_i, &cuda_sortlists[13*indi + counti*cflags], sizeof(int)*counti);
+            cuda_memcpy(sort_j, &cuda_sortlists[13*indj + countj*cflags], sizeof(int)*countj);
+            __syncthreads();
+
+            float4* parts_pos_i = &cuda_parts_pos[indi];
+            int4* parts_datai_i = &cuda_parts_datai[indi];
+            
+            float4* parts_pos_j = &cuda_parts_pos[indj];
+            int4* parts_datai_j = &cuda_parts_datai[indj];
+
+            float *states_i = &cuda_part_states[nr_states * indi];
+            float *states_j = &cuda_part_states[nr_states * indj];
+            float *fluxes_i = &fluxes[nr_states * indi];
+            
+            /*Set to left interaction*/
+            /* Compute the cell pair interactions. */
+            runner_dopair_state_left_cuda(
+                indi, states_i, counti,
+                indj, states_j, countj,
+                parts_pos_i, parts_datai_i, 
+                parts_pos_j, parts_datai_j, 
+                fluxes_i, 
+                sort_i, sort_j,
+                shift, dshift, nr_states
+            );
+
+            __syncthreads();
+        }
+    }
+
 }
 
 template<bool is_stateful> 
@@ -2746,6 +2847,99 @@ __global__ void runner_run_cuda_do_pair_right_kernel(
     atomicAdd(&cuda_epot, epot * 0.5f);
 }
 
+__global__ void runner_run_cuda_do_pair_right_fluxonly_kernel(
+    float* fluxes, unsigned int nr_states, 
+    int* counts, int* ind, 
+    unsigned int cuda_nrparts
+) { 
+
+    __shared__ float shiftn[39];
+    __shared__ float shift[3];
+    __shared__ unsigned int dshift;
+    extern __shared__ unsigned int sort_arrs[];
+    unsigned int *sort_i = (unsigned int*)&sort_arrs[0];
+    unsigned int *sort_j = (unsigned int*)&sort_arrs[cuda_nrparts];
+
+    // Copy shifts to shared memory
+    for(int i = threadIdx.x; i < 39; i += blockDim.x) shiftn[i] = cuda_shiftn[i];
+    __syncthreads();
+
+    for(int cjd = blockIdx.x; cjd < cuda_nr_cells; cjd += gridDim.x) {
+        int cellpair_count = cuda_cellpair_count_right[cjd];
+        int cellpair_ind = cuda_cellpair_ind_right[cjd];
+        int2* cellpair_list = &cuda_cellpair_list_right[cellpair_ind];
+        for(int j = 0; j < cellpair_count; j++) {
+            int2 cellpair = cellpair_list[j];
+            int cid = cellpair.x;
+            int cflags = cellpair.y;
+
+            /* Get the shift and dshift vector for this pair. */
+            if(threadIdx.x == 0) {
+                #pragma unroll
+                for(int k = 0 ; k < 3 ; k++) {
+                    shift[k] = cuda_corig[3*cjd + k] - cuda_corig[3*cid + k];
+                    if(2*shift[k] > cuda_dim[k])
+                        shift[k] -= cuda_dim[k];
+                    else if(2*shift[k] < -cuda_dim[k])
+                        shift[k] += cuda_dim[k];
+                }
+                dshift = cuda_dscale * (
+                    shift[0]*shiftn[3 * cflags    ] +
+                    shift[1]*shiftn[3 * cflags + 1] +
+                    shift[2]*shiftn[3 * cflags + 2]
+                );
+            }
+            
+            /* Load the sorted indices. */
+
+            int indi = ind[cid];
+            int indj = ind[cjd];
+            int counti = counts[cid];
+            int countj = counts[cjd];
+
+            cuda_memcpy(sort_i, &cuda_sortlists[13*indi + counti*cflags], sizeof(int)*counti);
+            cuda_memcpy(sort_j, &cuda_sortlists[13*indj + countj*cflags], sizeof(int)*countj);
+            __syncthreads();
+            
+            float4* parts_pos_i = &cuda_parts_pos[indi];
+            int4* parts_datai_i = &cuda_parts_datai[indi];
+            
+            float4* parts_pos_j = &cuda_parts_pos[indj];
+            int4* parts_datai_j = &cuda_parts_datai[indj];
+            
+            float *states_i = &cuda_part_states[nr_states * indi];
+            float *states_j = &cuda_part_states[nr_states * indj];
+            float *fluxes_j = &fluxes[nr_states * indj];
+
+            /*Set to right interaction*/
+            /* Compute the cell pair interactions. */
+            runner_dopair_state_right_cuda(
+                indj, states_j, countj,
+                indi, states_i, counti,
+                parts_pos_j, parts_datai_j, 
+                parts_pos_i, parts_datai_i, 
+                fluxes_j, 
+                sort_j, sort_i,
+                shift, dshift, nr_states
+            );
+
+            __syncthreads();
+        }
+    }
+
+}
+
+__global__ void runner_run_cuda_integrate_state_kernel(float* fluxes, int* species_flags, unsigned int nr_fluxes, float dt_flux) {
+    int stride = blockDim.x * gridDim.x;
+
+    for(int i = blockDim.x * blockIdx.x + threadIdx.x; i < nr_fluxes; i += stride) {
+        float state = cuda_part_states[i];
+        float flux = fluxes[i] * (1.0 - float(species_flags[i] & state::SpeciesFlags::SPECIES_KONSTANT));
+        cuda_part_states[i] = state + dt_flux * flux;
+        fluxes[i] = 0.0;
+    }
+}
+
 extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
     int k, did, maxcount = 0;
@@ -2756,10 +2950,11 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     float3* parts_vel_cuda = (float3*)e->parts_vel_cuda_local;
     int4* parts_datai_cuda = (int4*)e->parts_datai_cuda_local;
     float *part_states_cuda = (float *)e->part_states_cuda_local;
+    int *part_species_flags_cuda = e->part_species_flags_cuda_local;
     struct space *s = &e->s;
     FPTYPE maxdist = s->cutoff + 2*s->maxdx;
     int *counts = e->counts_cuda_local[ 0 ], *inds = e->ind_cuda_local[ 0 ];
-    float *forces_cuda[ engine_maxgpu ], *fluxes_next_cuda[engine_maxgpu], epot[ engine_maxgpu ];
+    float *forces_cuda[ engine_maxgpu ], *fluxes_next_cuda[engine_maxgpu], epot[ engine_maxgpu ], *part_states_next_cuda[engine_maxgpu];
     float epot_init = 0.f;
     unsigned int nr_states = e->nr_fluxes_cuda - 1;
     #ifdef TIMERS
@@ -2826,28 +3021,57 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         auto _cells_cuda_local = e->cells_cuda_local[did];
 
         if(nr_states > 0) {
-            auto func = [&](int k) -> void {
+            if(e->nr_fluxsteps > 1) {
+                auto func = [&](int k) -> void {
 
-                /* Get the cell id. */
-                auto cid = _cells_cuda_local[k];
+                    /* Get the cell id. */
+                    auto cid = _cells_cuda_local[k];
 
-                /* Copy the particle data to the device. */
-                auto buff_parts_pos_cuda = &parts_pos_cuda[inds[cid]];
-                auto buff_parts_vel_cuda = &parts_vel_cuda[inds[cid]];
-                auto buff_parts_datai_cuda = &parts_datai_cuda[inds[cid]];
-                auto buff_part_states = &part_states_cuda[nr_states * inds[cid]];
-                for(int pid = 0 ; pid < counts[cid] ; pid++) {
-                    TissueForge::Particle *part = &cell_parts[cid][pid];
-                    buff_parts_pos_cuda[pid] = {part->x[0], part->x[1], part->x[2], part->radius};
-                    buff_parts_vel_cuda[pid] = {part->v[0], part->v[1], part->v[2]};
-                    buff_parts_datai_cuda[pid] = {part->id, part->typeId, part->flags, part->clusterId};
-                    for(int ks = 0; ks < nr_states; ks++) 
-                        buff_part_states[nr_states * pid + ks] = part->state_vector->fvec[ks];
-                }
+                    /* Copy the particle data to the device. */
+                    auto buff_parts_pos_cuda = &parts_pos_cuda[inds[cid]];
+                    auto buff_parts_vel_cuda = &parts_vel_cuda[inds[cid]];
+                    auto buff_parts_datai_cuda = &parts_datai_cuda[inds[cid]];
+                    auto buff_part_states = &part_states_cuda[nr_states * inds[cid]];
+                    auto buff_part_species_flags = &part_species_flags_cuda[nr_states * inds[cid]];
+                    for(int pid = 0 ; pid < counts[cid] ; pid++) {
+                        TissueForge::Particle *part = &cell_parts[cid][pid];
+                        buff_parts_pos_cuda[pid] = {part->x[0], part->x[1], part->x[2], part->radius};
+                        buff_parts_vel_cuda[pid] = {part->v[0], part->v[1], part->v[2]};
+                        buff_parts_datai_cuda[pid] = {part->id, part->typeId, part->flags, part->clusterId};
+                        for(int ks = 0; ks < nr_states; ks++) {
+                            buff_part_states[nr_states * pid + ks] = part->state_vector->fvec[ks];
+                            buff_part_species_flags[nr_states * pid + ks] = part->state_vector->species_flags[ks];
+                        }
+                    }
 
-            };
+                };
 
-            parallel_for(e->cells_cuda_nr[did], func);
+                parallel_for(e->cells_cuda_nr[did], func);
+            } 
+            else {
+                auto func = [&](int k) -> void {
+
+                    /* Get the cell id. */
+                    auto cid = _cells_cuda_local[k];
+
+                    /* Copy the particle data to the device. */
+                    auto buff_parts_pos_cuda = &parts_pos_cuda[inds[cid]];
+                    auto buff_parts_vel_cuda = &parts_vel_cuda[inds[cid]];
+                    auto buff_parts_datai_cuda = &parts_datai_cuda[inds[cid]];
+                    auto buff_part_states = &part_states_cuda[nr_states * inds[cid]];
+                    for(int pid = 0 ; pid < counts[cid] ; pid++) {
+                        TissueForge::Particle *part = &cell_parts[cid][pid];
+                        buff_parts_pos_cuda[pid] = {part->x[0], part->x[1], part->x[2], part->radius};
+                        buff_parts_vel_cuda[pid] = {part->v[0], part->v[1], part->v[2]};
+                        buff_parts_datai_cuda[pid] = {part->id, part->typeId, part->flags, part->clusterId};
+                        for(int ks = 0; ks < nr_states; ks++) 
+                            buff_part_states[nr_states * pid + ks] = part->state_vector->fvec[ks];
+                    }
+
+                };
+
+                parallel_for(e->cells_cuda_nr[did], func);
+            }
         } 
         else {
             auto func = [&](int k) -> void {
@@ -2888,6 +3112,9 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         if(nr_states > 0) {
             /* Bind the particle states. */
             cuda_safe_call(cudaMemcpyAsync(e->part_states_cuda[did], part_states_cuda, sizeof(float) * s->nr_parts * nr_states, cudaMemcpyHostToDevice, stream));
+            if(e->nr_fluxsteps > 1) {
+                cuda_safe_call(cudaMemcpyAsync(e->part_species_flags_cuda[did], part_species_flags_cuda, sizeof(int) * s->nr_parts * nr_states, cudaMemcpyHostToDevice, stream));
+            }
         }
 
     /* Start the clock. */
@@ -2916,6 +3143,15 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
         if(e->s.verlet_rebuild)
             runner_run_cuda_do_sort_kernel<<<nr_blocks, nr_threads, maxcount * sizeof(unsigned int), stream>>>(e->counts_cuda[did], e->ind_cuda[did]);
+
+        /* Do flux sub-steps if requested. */
+        if(nr_states > 0 && e->nr_fluxsteps > 1) 
+            for(e->step_flux = 0; e->step_flux < e->nr_fluxsteps - 1; e->step_flux++) {
+                runner_run_cuda_do_self_fluxonly_kernel<<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did]);
+                runner_run_cuda_do_pair_left_fluxonly_kernel<<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
+                runner_run_cuda_do_pair_right_fluxonly_kernel<<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
+                runner_run_cuda_integrate_state_kernel<<<nr_blocks, nr_threads, 0, stream>>>(e->fluxes_next_cuda[did], e->part_species_flags_cuda[did], nr_states * s->nr_parts, e->dt_flux);
+            }
         
         /* Start the appropriate kernel. */
         if(nr_states > 0) {
@@ -2935,9 +3171,12 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     for(did = 0; did < e->nr_devices ; did ++) {
         if((forces_cuda[did] = (float *)malloc(sizeof(float) * 4 * s->nr_parts)) == NULL)
             return error(MDCERR_malloc);
-        if(nr_states > 0) 
+        if(nr_states > 0) {
             if((fluxes_next_cuda[did] = (float *)malloc(sizeof(float) * nr_states * s->nr_parts)) == NULL)
                 return error(MDCERR_malloc);
+            if(e->nr_fluxsteps > 1 && (part_states_next_cuda[did] = (float *)malloc(sizeof(float) * nr_states * s->nr_parts)) == NULL)
+                return error(MDCERR_malloc);
+            }
     }
 
 	for(did = 0; did < e->nr_devices ; did ++) {
@@ -2957,6 +3196,9 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         if(nr_states > 0) {
             // Get the flux data
             cuda_safe_call(cudaMemcpyAsync(fluxes_next_cuda[did], e->fluxes_next_cuda[did], sizeof(float) * nr_states * s->nr_parts, cudaMemcpyDeviceToHost, stream));
+            if(e->nr_fluxsteps > 1) {
+                cuda_safe_call(cudaMemcpyAsync(part_states_next_cuda[did], e->part_states_cuda[did], sizeof(float) * nr_states * s->nr_parts, cudaMemcpyDeviceToHost, stream));
+            }
         }
         
     }
@@ -3002,29 +3244,61 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         if(nr_states > 0) {
             auto _fluxes_next_cuda = fluxes_next_cuda[did];
 
-            auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, nr_states, &_fluxes_next_cuda, &cell_counts, &cell_parts](int k) -> void {
+            if(e->nr_fluxsteps > 1) {
+                auto _part_states_next_cuda = part_states_next_cuda[did];
 
-                /* Get the cell id. */
-                int cid = _cells_cuda_local[k];
+                auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, nr_states, &_fluxes_next_cuda, &_part_states_next_cuda, &cell_counts, &cell_parts](int k) -> void {
 
-                /* Copy the particle data from the device. */
-                auto buff_force = &_forces_cuda[ 4*_ind_cuda_local[cid] ];
-                auto buff_flux = &_fluxes_next_cuda[nr_states * _ind_cuda_local[cid] ];
+                    /* Get the cell id. */
+                    int cid = _cells_cuda_local[k];
 
-                for(int pid = 0 ; pid < cell_counts[cid] ; pid++) {
-                    auto p = &cell_parts[cid][pid];
-                    p->f[0] += buff_force[ 4*pid ];
-                    p->f[1] += buff_force[ 4*pid + 1 ];
-                    p->f[2] += buff_force[ 4*pid + 2 ];
-                    p->f[3] += buff_force[ 4*pid + 3 ];
+                    /* Copy the particle data from the device. */
+                    auto buff_force = &_forces_cuda[ 4*_ind_cuda_local[cid] ];
+                    auto buff_flux = &_fluxes_next_cuda[nr_states * _ind_cuda_local[cid] ];
+                    auto buff_state = &_part_states_next_cuda[nr_states * _ind_cuda_local[cid]];
 
-                    for(int fid = 0; fid < nr_states; fid++) 
-                        p->state_vector->q[fid] += buff_flux[nr_states * pid + fid];
-                }
+                    for(int pid = 0 ; pid < cell_counts[cid] ; pid++) {
+                        auto p = &cell_parts[cid][pid];
+                        p->f[0] += buff_force[ 4*pid ];
+                        p->f[1] += buff_force[ 4*pid + 1 ];
+                        p->f[2] += buff_force[ 4*pid + 2 ];
+                        p->f[3] += buff_force[ 4*pid + 3 ];
 
-            };
+                        for(int fid = 0; fid < p->state_vector->size; fid++) {
+                            p->state_vector->q[fid] += buff_flux[nr_states * pid + fid];
+                            p->state_vector->fvec[fid] = buff_state[nr_states * pid + fid];
+                        }
+                    }
 
-            parallel_for(e->cells_cuda_nr[did], func);
+                };
+
+                parallel_for(e->cells_cuda_nr[did], func);
+            } 
+            else {
+                auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, nr_states, &_fluxes_next_cuda, &cell_counts, &cell_parts](int k) -> void {
+
+                    /* Get the cell id. */
+                    int cid = _cells_cuda_local[k];
+
+                    /* Copy the particle data from the device. */
+                    auto buff_force = &_forces_cuda[ 4*_ind_cuda_local[cid] ];
+                    auto buff_flux = &_fluxes_next_cuda[nr_states * _ind_cuda_local[cid] ];
+
+                    for(int pid = 0 ; pid < cell_counts[cid] ; pid++) {
+                        auto p = &cell_parts[cid][pid];
+                        p->f[0] += buff_force[ 4*pid ];
+                        p->f[1] += buff_force[ 4*pid + 1 ];
+                        p->f[2] += buff_force[ 4*pid + 2 ];
+                        p->f[3] += buff_force[ 4*pid + 3 ];
+
+                        for(int fid = 0; fid < p->state_vector->size; fid++) 
+                            p->state_vector->q[fid] += buff_flux[nr_states * pid + fid];
+                    }
+
+                };
+
+                parallel_for(e->cells_cuda_nr[did], func);
+            }
         } 
         else {
             auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, &cell_counts, &cell_parts](int k) -> void {
@@ -3049,8 +3323,11 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
         /* Deallocate the parts array and counts array. */
         free(forces_cuda[did]);
-        if(nr_states > 0)
+        if(nr_states > 0) {
             free(fluxes_next_cuda[did]);
+            if(e->nr_fluxsteps > 1) 
+                free(part_states_next_cuda[did]);
+        }
         
     }
         
@@ -3540,6 +3817,8 @@ extern "C" HRESULT cuda::engine_cuda_allocate_particle_states(struct engine *e) 
     
     if((e->part_states_cuda_local = (float*)malloc(sizeof(float) * e->s.size_parts * nr_states)) == NULL)
         return error(MDCERR_malloc);
+    if(e->nr_fluxsteps > 1 && (e->part_species_flags_cuda_local = (int*)malloc(sizeof(int) * e->s.size_parts * nr_states)) == NULL) 
+        return error(MDCERR_malloc);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3547,6 +3826,9 @@ extern "C" HRESULT cuda::engine_cuda_allocate_particle_states(struct engine *e) 
         
         cuda_safe_call (cudaMemcpyToSymbol(cuda_part_states, &e->part_states_cuda[did], sizeof(float *), 0, cudaMemcpyHostToDevice));
 
+        if(e->nr_fluxsteps > 1) {
+            cuda_safe_call(cudaMalloc(&e->part_species_flags_cuda[did], sizeof(int) * e->s.size_parts * nr_states));
+        }
     }
 
     engine_cuda_nr_states = nr_states;
@@ -3564,11 +3846,17 @@ extern "C" HRESULT cuda::engine_cuda_finalize_particle_states(struct engine *e) 
 
         cuda_safe_call(::cudaFree(e->part_states_cuda[did]));
 
+        if(e->nr_fluxsteps > 1) {
+            cuda_safe_call(::cudaFree(e->part_species_flags_cuda[did]));
+        }
     }
 
     // Free the particle buffer
 
     free(e->part_states_cuda_local);
+
+    if(e->nr_fluxsteps > 1) 
+        free(e->part_species_flags_cuda_local);
 
     engine_cuda_nr_states = 0;
 

@@ -184,6 +184,14 @@ static void parse_kwargs(PyObject *kwargs, Simulator::Config &conf) {
     }
     else threads = NULL;
 
+    unsigned *nr_fluxsteps;
+    if((o = PyDict_GetItemString(kwargs, "flux_steps"))) {
+        nr_fluxsteps = new unsigned(cast<PyObject, unsigned>(o));
+
+        TF_Log(LOG_INFORMATION) << "got flux steps: " << std::to_string(*nr_fluxsteps);
+    } 
+    else nr_fluxsteps = NULL;
+
     int *integrator;
     if((o = PyDict_GetItemString(kwargs, "integrator"))) {
         integrator = new int(cast<PyObject, int>(o));
@@ -304,12 +312,11 @@ static void parse_kwargs(PyObject *kwargs, Simulator::Config &conf) {
     }
     else clip_planes = NULL;
 
-    if(dim)
-
     if(dim) conf.universeConfig.dim = *dim;
     if(cutoff) conf.universeConfig.cutoff = *cutoff;
     if(cells) conf.universeConfig.spaceGridSize = *cells;
     if(threads) conf.universeConfig.threads = *threads;
+    if(nr_fluxsteps) conf.universeConfig.nr_fluxsteps = *nr_fluxsteps;
     if(integrator) {
         int kind = *integrator;
         switch (kind) {

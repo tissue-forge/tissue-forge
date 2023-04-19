@@ -23,7 +23,6 @@
 int main(int argc, char** argv) {
     tfFloatP_t dim[] = {15.0, 6.0, 6.0};
     int cells[] = {9, 3, 3};
-    tfFloatP_t cutoff = 3.0;
     
     struct tfBoundaryConditionKindHandle bcKindEnum;
     TFC_TEST_CHECK(tfBoundaryConditionKind_init(&bcKindEnum));
@@ -41,6 +40,7 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfUniverseConfig_setDim(&uconfig, dim));
     TFC_TEST_CHECK(tfUniverseConfig_setDt(&uconfig, 0.1));
     TFC_TEST_CHECK(tfUniverseConfig_setCutoff(&uconfig, 3.0));
+    TFC_TEST_CHECK(tfUniverseConfig_setNumFluxSteps(&uconfig, 2));
     TFC_TEST_CHECK(tfUniverseConfig_setBoundaryConditions(&uconfig, &bargs));
     TFC_TEST_CHECK(tfInitC(&config, NULL, 0));
 

@@ -134,22 +134,6 @@ namespace TissueForge {
 	/* associated functions */
 
 	/**
-	 * @brief Compute the pairwise interactions for the given pair.
-	 *
-	 * @param r The #runner computing the pair.
-	 * @param cell_i The first cell.
-	 * @param cell_j The second cell.
-	 * @param shift A pointer to an array of three floating point values containing
-	 *      the vector separating the centers of @c cell_i and @c cell_j.
-	 *
-	 * Computes the interactions between all the particles in @c cell_i and all
-	 * the paritcles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
-	 *
-	 * @sa #runner_sortedpair.
-	 */
-	HRESULT runner_dopair_unsorted(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j);
-
-	/**
 	 * @brief Initialize the runner associated to the given engine.
 	 * 
 	 * @param r The #runner to be initialized.
@@ -233,11 +217,27 @@ namespace TissueForge {
 	 *      the vector separating the centers of @c cell_i and @c cell_j.
 	 *
 	 * Computes the interactions between all the particles in @c cell_i and all
-	 * the paritcles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
+	 * the particles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
 	 *
 	 * @sa #runner_sortedpair.
 	 */
 	HRESULT runner_dopair(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, int sid);
+
+	/**
+	 * @brief Compute the pairwise fluxes for the given pair.
+	 *
+	 * @param r The #runner computing the pair.
+	 * @param cell_i The first cell.
+	 * @param cell_j The second cell.
+	 * @param shift A pointer to an array of three floating point values containing
+	 *      the vector separating the centers of @c cell_i and @c cell_j.
+	 *
+	 * Computes the fluxes between all the particles in @c cell_i and all
+	 * the particles in @c cell_j. @c cell_i and @c cell_j may be the same cell.
+	 *
+	 * @sa #runner_sortedpair.
+	 */
+	HRESULT runner_dopair_fluxonly(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, int sid);
 
 	/**
 	 * @brief Compute the self-interactions for the given cell.
@@ -246,6 +246,14 @@ namespace TissueForge {
 	 * @param cell_i The first cell.
 	 */
 	HRESULT runner_doself(struct runner *r, struct space_cell *cell_i);
+
+	/**
+	 * @brief Compute the self-fluxes for the given cell.
+	 *
+	 * @param r The #runner computing the pair.
+	 * @param cell_i The first cell.
+	 */
+	HRESULT runner_doself_fluxonly(struct runner *r, struct space_cell *cell_i);
 
 };
 

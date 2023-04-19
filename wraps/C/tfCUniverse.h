@@ -406,6 +406,24 @@ CAPI_FUNC(HRESULT) tfUniverseConfig_getNumThreads(struct tfUniverseConfigHandle 
 CAPI_FUNC(HRESULT) tfUniverseConfig_setNumThreads(struct tfUniverseConfigHandle *handle, unsigned int numThreads);
 
 /**
+ * @brief Get the number of flux steps per simulation step.
+ * 
+ * @param handle populated handle
+ * @param numFluxSteps number of flux steps per simulation step
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverseConfig_getNumFluxSteps(struct tfUniverseConfigHandle *handle, unsigned int *numFluxSteps);
+
+/**
+ * @brief Set the number of flux steps per simulation step.
+ * 
+ * @param handle populated handle
+ * @param numFluxSteps number of flux steps per simulation step
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverseConfig_setNumFluxSteps(struct tfUniverseConfigHandle *handle, unsigned int numFluxSteps);
+
+/**
  * @brief Get the engine integrator enum.
  * 
  * @param handle populated handle

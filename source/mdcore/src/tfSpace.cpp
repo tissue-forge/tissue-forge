@@ -152,6 +152,18 @@ HRESULT TissueForge::space_flush(struct space *s) {
 
 }
 
+HRESULT TissueForge::space_prepare_tasks(struct space *s) {
+    if(s == NULL) 
+        return error(MDCERR_null);
+
+    /* Run through the tasks and set the waits. */
+    for(int k = 0 ; k < s->nr_tasks ; k++)
+        for(int j = 0 ; j < s->tasks[k].nr_unlock ; j++)
+            s->tasks[k].unlock[j]->wait += 1;
+
+    return S_OK;
+}
+
 HRESULT TissueForge::space_prepare(struct space *s) {
 
     int pid, cid, j, k;
@@ -169,9 +181,8 @@ HRESULT TissueForge::space_prepare(struct space *s) {
     const FPTYPE self_number_density = W(0, s->cutoff);
 
     /* Run through the tasks and set the waits. */
-    for(k = 0 ; k < s->nr_tasks ; k++)
-        for(j = 0 ; j < s->tasks[k].nr_unlock ; j++)
-            s->tasks[k].unlock[j]->wait += 1;
+    if(space_prepare_tasks(s) != S_OK) 
+        return error(MDCERR_space);
 
     auto func_reset_cells = [&, self_number_density](int j) {
         int cid = s->cid_marked[j];
