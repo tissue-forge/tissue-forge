@@ -192,6 +192,7 @@ static void parse_kwargs(
     FloatP_t *cutoff=NULL, 
     TissueForge::iVector3 *cells=NULL, 
     unsigned *threads=NULL, 
+    unsigned *nr_fluxsteps=NULL,
     int *integrator=NULL, 
     FloatP_t *dt=NULL, 
     int *bcValue=NULL, 
@@ -213,6 +214,7 @@ static void parse_kwargs(
     if(cutoff) conf.universeConfig.cutoff = *cutoff;
     if(cells) conf.universeConfig.spaceGridSize = *cells;
     if(threads) conf.universeConfig.threads = *threads;
+    if(nr_fluxsteps) conf.universeConfig.nr_fluxsteps = *nr_fluxsteps;
     if(integrator) {
         int kind = *integrator;
         switch (kind) {
@@ -306,6 +308,15 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
         TF_Log(LOG_INFORMATION) << "got threads: " << std::to_string(*threads);
     }
     else threads = NULL;
+
+    unsigned *nr_fluxsteps;
+    if(parse::has_kwarg(kwargs, "flux_steps")) {
+        s = parse::kwargVal(kwargs, "flux_steps");
+        nr_fluxsteps = new unsigned(TissueForge::cast<std::string, unsigned>(s));
+
+        TF_Log(LOG_INFORMATION) << "got flux steps: " << std::to_string(*nr_fluxsteps);
+    } 
+    else nr_fluxsteps = NULL;
 
     int *integrator;
     if(parse::has_kwarg(kwargs, "integrator")) {
@@ -480,6 +491,7 @@ static void parse_kwargs(const std::vector<std::string> &kwargs, Simulator::Conf
         cutoff, 
         cells, 
         threads, 
+        nr_fluxsteps, 
         integrator, 
         dt, 
         NULL, NULL, NULL, NULL, 
@@ -634,10 +646,11 @@ HRESULT TissueForge::universe_init(const UniverseConfig &conf ) {
     TF_Log(LOG_INFORMATION) << "main: initializing the engine... ";
     
     if ( engine_init( &_Engine , _origin , _dim , cells.data() , cutoff , conf.boundaryConditionsPtr ,
-            conf.maxTypes , engine_flag_none ) != S_OK ) 
+            conf.maxTypes , engine_flag_none, conf.nr_fluxsteps ) != S_OK ) 
         return tf_error(E_FAIL, errs_err_msg[MDCERR_engine]);
 
     _Engine.dt = conf.dt;
+    _Engine.dt_flux = conf.dt / conf.nr_fluxsteps;
     _Engine.time = conf.start_step;
     _Engine.temperature = conf.temp;
     _Engine.integrator = conf.integrator;
@@ -938,6 +951,7 @@ namespace TissueForge::io {
         TF_IOTOEASY(fileElement, metaData, "boundary_conditions", _Engine.boundary_conditions);
         TF_IOTOEASY(fileElement, metaData, "max_distance", _Engine.particle_max_dist_fraction * _Engine.s.h[0]);
         TF_IOTOEASY(fileElement, metaData, "seed", getSeed());
+        TF_IOTOEASY(fileElement, metaData, "nr_fluxsteps", _Engine.nr_fluxsteps);
         
         if(dataElement.app != NULL) {
             auto renderer = dataElement.app->getRenderer();
@@ -999,6 +1013,12 @@ namespace TissueForge::io {
         dataElement->setSeed(seed);
 
         IOChildMap fec = IOElement::children(fileElement);
+
+        if(fec.find("nr_fluxsteps") != fec.end()) {
+            unsigned int nr_fluxsteps;
+            TF_IOFROMEASY(fileElement, metaData, "nr_fluxsteps", &nr_fluxsteps);
+            dataElement->universeConfig.nr_fluxsteps = nr_fluxsteps;
+        }
         
         if(fec.find("clipPlaneNormals") != fec.end()) {
             std::vector<fVector3> normals, points;

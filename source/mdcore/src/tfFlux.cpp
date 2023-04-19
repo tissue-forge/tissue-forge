@@ -142,7 +142,7 @@ static void integrate_statevector(state::StateVector *s, FPTYPE dt) {
 }
 
 static void integrate_statevector(state::StateVector *s) {
-    return integrate_statevector(s, _Engine.dt);
+    return integrate_statevector(s, _Engine.dt_flux);
 }
 
 HRESULT TissueForge::Fluxes_integrate(space_cell *c, FPTYPE dt) {

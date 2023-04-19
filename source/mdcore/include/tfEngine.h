@@ -76,15 +76,14 @@ namespace TissueForge {
 		engine_flag_affinity             = 1 << 6,
 		engine_flag_prefetch             = 1 << 7,
 		engine_flag_verlet_pseudo        = 1 << 8,
-		engine_flag_unsorted             = 1 << 9,
-		engine_flag_shake                = 1 << 10,
-		engine_flag_mpi                  = 1 << 11,
-		engine_flag_parbonded            = 1 << 12,
-		engine_flag_async                = 1 << 13,
-		engine_flag_sets                 = 1 << 14,
-		engine_flag_nullpart             = 1 << 15,
-		engine_flag_initialized          = 1 << 16,
-		engine_flag_velocity_clamp       = 1 << 17,
+		engine_flag_shake                = 1 << 9,
+		engine_flag_mpi                  = 1 << 10,
+		engine_flag_parbonded            = 1 << 11,
+		engine_flag_async                = 1 << 12,
+		engine_flag_sets                 = 1 << 13,
+		engine_flag_nullpart             = 1 << 14,
+		engine_flag_initialized          = 1 << 15,
+		engine_flag_velocity_clamp       = 1 << 16,
 	};
 
 	enum EngineIntegrator {
@@ -150,7 +149,10 @@ namespace TissueForge {
 		// update values now. Otherwise, the integrator is
 		// probably in a multi-step and should use the saved
 		// value
-		INTEGRATOR_UPDATE_PERSISTENTFORCE    = 1 << 0
+		INTEGRATOR_UPDATE_PERSISTENTFORCE    = 1 << 0, 
+
+		// intermediate flux values are being calculated between time steps
+		INTEGRATOR_FLUX_SUBSTEP 			 = 1 << 1
 	};
 
 
@@ -208,6 +210,10 @@ namespace TissueForge {
 		 * potential matrix p.
 		 */
 		struct Fluxes **fluxes;
+
+		int nr_fluxsteps = 1;
+		int step_flux = 0;
+		FPTYPE dt_flux;
 
 		/** Mutexes, conditions and counters for the barrier */
 		pthread_mutex_t barrier_mutex;
@@ -332,10 +338,12 @@ namespace TissueForge {
 		void *parts_vel_cuda[engine_maxgpu];
 		void *parts_datai_cuda[engine_maxgpu];
 		void *part_states_cuda[engine_maxgpu];
+		int *part_species_flags_cuda[engine_maxgpu];
 		void *parts_pos_cuda_local;
 		void *parts_vel_cuda_local;
 		void *parts_datai_cuda_local;
 		void *part_states_cuda_local;
+		int *part_species_flags_cuda_local;
 		int *cells_cuda_local[ engine_maxgpu];
 		int cells_cuda_nr[ engine_maxgpu ];
 		int *counts_cuda[ engine_maxgpu ], *counts_cuda_local[ engine_maxgpu ];
@@ -704,6 +712,7 @@ namespace TissueForge {
 	 * @param boundaryConditions boundary conditions argument container
 	 * @param max_type The maximum number of particle types that will be used by this engine.
 	 * @param flags Bit-mask containing the flags for this engine.
+	 * @param nr_fluxsteps Number of flux steps
 	 */
 	CAPI_FUNC(HRESULT) engine_init(
 		struct engine *e, 
@@ -713,7 +722,8 @@ namespace TissueForge {
 		FPTYPE cutoff, 
 		BoundaryConditionsArgsContainer *boundaryConditions, 
 		int max_type, 
-		unsigned int flags
+		unsigned int flags, 
+		unsigned int nr_fluxsteps
 	);
 
 	/**
@@ -784,6 +794,17 @@ namespace TissueForge {
 	 * and waits for them to finnish.
 	 */
 	CAPI_FUNC(HRESULT) engine_nonbond_eval(struct engine *e);
+
+	/**
+	 * @brief Compute the flux interaction only in the current step.
+	 *
+	 * @param e The #engine on which to run.
+	 *
+	 * This routine sets the integrator flag for flux-only calculations, 
+	 * releases the #runner's associated with the #engine
+	 * and waits for them to finish.
+	 */
+	CAPI_FUNC(HRESULT) engine_fluxonly_eval(struct engine* e);
 
 	/**
 	 * @brief Add a rigid constraint to the engine.

@@ -107,6 +107,7 @@ UniverseConfig::UniverseConfig() :
     temp{1},
     nParticles{100},
     threads{ThreadPool::hardwareThreadSize()},
+    nr_fluxsteps{1},
     integrator{EngineIntegrator::FORWARD_EULER},
     boundaryConditionsPtr{new BoundaryConditionsArgsContainer()},
     max_distance{-1},
@@ -304,6 +305,12 @@ int Universe::getNumTypes() {
 FloatP_t Universe::getCutoff() {
     TF_UNIVERSE_TRY();
     return _Engine.s.cutoff;
+    TF_UNIVERSE_FINALLY(0);
+}
+
+unsigned int Universe::getNumFluxSteps() {
+    TF_UNIVERSE_TRY();
+    return _Engine.nr_fluxsteps;
     TF_UNIVERSE_FINALLY(0);
 }
 

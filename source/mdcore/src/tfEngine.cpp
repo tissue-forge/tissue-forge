@@ -1353,6 +1353,26 @@ HRESULT TissueForge::engine_nonbond_eval(struct engine *e) {
 
 }
 
+HRESULT TissueForge::engine_fluxonly_eval(struct engine* e) {
+
+	TF_Log(LOG_TRACE);
+
+	e->integrator_flags |= INTEGRATOR_FLUX_SUBSTEP;
+
+	if(engine_nonbond_eval(e) != S_OK) {
+		e->integrator_flags &= ~INTEGRATOR_FLUX_SUBSTEP;
+		return error(MDCERR_engine);
+	}
+
+	e->integrator_flags &= ~INTEGRATOR_FLUX_SUBSTEP;
+
+	/** Reset tasks for future calls in this step */
+    if(space_prepare_tasks(&e->s) != S_OK) 
+		return error(MDCERR_engine);
+
+	return S_OK;
+}
+
 HRESULT TissueForge::engine_step(struct engine *e) {
 
 	TF_Log(LOG_TRACE);
@@ -1409,6 +1429,8 @@ HRESULT TissueForge::engine_step(struct engine *e) {
 HRESULT TissueForge::engine_force_prep(struct engine *e) {
 
 	TF_Log(LOG_TRACE);
+
+	e->step_flux = 0;
 
     ticks tic = getticks();
 	
@@ -1676,7 +1698,7 @@ HRESULT TissueForge::engine_finalize(struct engine *e) {
 }
 
 HRESULT TissueForge::engine_init(struct engine *e, const FPTYPE *origin, const FPTYPE *dim, int *cells,
-        FPTYPE cutoff, BoundaryConditionsArgsContainer *boundaryConditions, int max_type, unsigned int flags) {
+        FPTYPE cutoff, BoundaryConditionsArgsContainer *boundaryConditions, int max_type, unsigned int flags, unsigned int nr_fluxsteps) {
 
     int cid;
     
@@ -1684,11 +1706,12 @@ HRESULT TissueForge::engine_init(struct engine *e, const FPTYPE *origin, const F
     init_types = engine::nr_types;
 
     /* make sure the inputs are ok */
-    if(e == NULL || origin == NULL || dim == NULL || cells == NULL) {
+    if(e == NULL || origin == NULL || dim == NULL || cells == NULL || nr_fluxsteps < 1) {
 		if(!e) 		{ TF_Log(LOG_CRITICAL) << "no engine"; }
 		if(!origin) { TF_Log(LOG_CRITICAL) << "no origin"; }
 		if(!dim) 	{ TF_Log(LOG_CRITICAL) << "no dim"; }
 		if(!cells) 	{ TF_Log(LOG_CRITICAL) << "no cells"; }
+		if(nr_fluxsteps < 1) { TF_Log(LOG_CRITICAL) << "no flux steps"; }
 
         return error(MDCERR_null);
 	}
@@ -1707,11 +1730,14 @@ HRESULT TissueForge::engine_init(struct engine *e, const FPTYPE *origin, const F
     TF_Log(LOG_INFORMATION) << "engine: requesting dimensions = [" << dim[0] << ", " << dim[1] << ", " << dim[2]  << "]";
     TF_Log(LOG_INFORMATION) << "engine: requesting cell size = [" << L[0] << ", " << L[1] << ", " << L[2] << "]";
     TF_Log(LOG_INFORMATION) << "engine: requesting cutoff = " << cutoff;
+	TF_Log(LOG_INFORMATION) << "engine: requesting flux steps = " << nr_fluxsteps;
 
     /* default Boltzmann constant to 1 */
     e->K = 1.0;
 
     e->integrator_flags = 0;
+
+	e->nr_fluxsteps = nr_fluxsteps;
 
     /* init the space with the given parameters */
     if(space_init(&(e->s), origin, dim, L.data(), cutoff, &e->boundary_conditions) != S_OK)

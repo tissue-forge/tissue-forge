@@ -188,6 +188,8 @@
 
                 threads: (int) number of threads; default is hardware maximum
 
+                flux_steps: (int) number of flux steps per simulation step; default is 1
+
                 integrator: (int) simulation integrator; default is FORWARD_EULER
 
                 dt: (float) time discretization; default is 0.01
