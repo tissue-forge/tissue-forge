@@ -74,7 +74,7 @@ void rendering::Style::setVisible(const bool &visible) {
 }
 
 std::string rendering::Style::getColorMap() const {
-    return mapper->getColorMapName();
+    return mapper ? mapper->getColorMapName() : "";
 }
 
 rendering::ColorMapper *rendering::Style::getColorMapper() const {
@@ -82,12 +82,9 @@ rendering::ColorMapper *rendering::Style::getColorMapper() const {
 }
 
 void rendering::Style::setColorMap(const std::string &colorMap) {
-    try {
+    if(mapper) {
         mapper->set_colormap(colorMap);
         mapper_func = mapper->map;
-    }
-    catch(const std::exception &e) {
-        tf_exp(e);
     }
 }
 
