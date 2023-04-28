@@ -31,19 +31,33 @@
 using namespace TissueForge;
 
 
-void TissueForge::ParticleList::free()
-{
+#define PARTLIST_IMMUTABLE_ERR tf_error(E_FAIL, "List is immutable")
+#define PARTLIST_IMMUTABLE_CHECK_HRESULT(list) { if(!(list->flags & PARTICLELIST_MUTABLE)) return PARTLIST_IMMUTABLE_ERR; }
+#define PARTLIST_IMMUTABLE_CHECK_LISTSZ(list) { if(!(list->flags & PARTICLELIST_MUTABLE)) { PARTLIST_IMMUTABLE_ERR; return list->nr_parts; } }
+
+
+void TissueForge::ParticleList::free() {
+    if(this->flags & PARTICLELIST_OWNDATA && size_parts > 0 && this->parts) {
+        ::free(this->parts);
+    }
+    this->parts = 0;
+    this->nr_parts = 0;
+    this->size_parts = 0;
 }
 
 HRESULT TissueForge::ParticleList::reserve(size_t _nr_parts) {
+    PARTLIST_IMMUTABLE_CHECK_HRESULT(this)
+
     if(size_parts < _nr_parts) {
         size_parts = _nr_parts;
         int32_t* temp = NULL;
         if ((temp = (int32_t*)malloc(sizeof(int32_t) * size_parts)) == NULL) {
             return tf_error(E_FAIL, "could not allocate space for type particles");
         }
-        memcpy(temp, parts, sizeof(int32_t) * nr_parts);
-        ::free(parts);
+        if(parts) {
+            memcpy(temp, parts, sizeof(int32_t) * nr_parts);
+            ::free(parts);
+        }
         parts = temp;
     }
     return S_OK;
@@ -51,6 +65,7 @@ HRESULT TissueForge::ParticleList::reserve(size_t _nr_parts) {
 
 uint16_t TissueForge::ParticleList::insert(int32_t id)
 {
+    PARTLIST_IMMUTABLE_CHECK_LISTSZ(this)
 
     if(nr_parts == size_parts) 
         reserve(size_parts + space_partlist_incr);
@@ -61,14 +76,18 @@ uint16_t TissueForge::ParticleList::insert(int32_t id)
 }
 
 uint16_t TissueForge::ParticleList::insert(const ParticleHandle *particle) {
+    PARTLIST_IMMUTABLE_CHECK_LISTSZ(this)
+
     if(particle) return insert(particle->id);
 
     tf_error(E_FAIL, "cannot insert a NULL particle");
-    return 0;
+    return this->nr_parts;
 }
 
 uint16_t TissueForge::ParticleList::remove(int32_t id)
 {
+    PARTLIST_IMMUTABLE_CHECK_LISTSZ(this)
+
     int i = 0;
     for(; i < nr_parts; i++) {
         if(parts[i] == id)
@@ -76,7 +95,8 @@ uint16_t TissueForge::ParticleList::remove(int32_t id)
     }
     
     if(i == nr_parts) {
-        return tf_error(E_FAIL, "type does not contain particle id");
+        tf_error(E_FAIL, "type does not contain particle id");
+        return this->nr_parts;
     }
     
     nr_parts--;
@@ -87,9 +107,12 @@ uint16_t TissueForge::ParticleList::remove(int32_t id)
     return i;
 }
 
-void TissueForge::ParticleList::extend(const ParticleList &other) {
+uint16_t TissueForge::ParticleList::extend(const ParticleList &other) {
+    PARTLIST_IMMUTABLE_CHECK_LISTSZ(this)
+
     if(other.nr_parts > size_parts) reserve(other.nr_parts);
     for(int i = 0; i < other.nr_parts; ++i) this->insert(other.parts[i]);
+    return this->nr_parts;
 }
 
 bool TissueForge::ParticleList::has(const int32_t &pid) {
@@ -111,7 +134,7 @@ ParticleHandle *TissueForge::ParticleList::item(const int32_t &i) {
         }
     }
     else {
-        throw std::runtime_error("index out of range");
+        tf_error(E_FAIL, "index out of range");
     }
     return NULL;
 }
@@ -121,7 +144,7 @@ int32_t TissueForge::ParticleList::operator[](const size_t &i) {
         return this->parts[i];
     }
     else {
-        throw std::runtime_error("index out of range");
+        tf_error(E_FAIL, "index out of range");
     }
     return -1;
 }
@@ -135,65 +158,70 @@ std::vector<int32_t> TissueForge::ParticleList::vector() {
 }
 
 TissueForge::ParticleList::ParticleList() : 
-    flags(PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF), 
+    flags(PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE), 
     size_parts(0), 
-    nr_parts(0)
-{
-    this->parts = (int32_t*)malloc(this->size_parts * sizeof(int32_t));
-}
+    nr_parts(0),
+    parts(0)
+{}
 
-TissueForge::ParticleList::ParticleList(uint16_t init_size, uint16_t flags) : ParticleList() {
-    this->flags = flags;
-    this->size_parts = init_size;
-    ::free(this->parts);
-    this->parts = (int32_t*)malloc(init_size * sizeof(int32_t));
+TissueForge::ParticleList::ParticleList(uint16_t init_size, uint16_t _flags) : ParticleList() {
+    this->flags = _flags;
+    reserve(init_size);
 }
 
 TissueForge::ParticleList::ParticleList(ParticleHandle *part) : 
-    ParticleList(1, PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
+    ParticleList(1, PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE)
 {
-    if(!part) throw std::runtime_error("Cannot instance a list from NULL handle");
-    
-    Particle *p = part->part();
-    if(!p) throw std::runtime_error("Cannot instance a list from NULL particle");
-
-    this->nr_parts = 1;
-    this->parts[0] = p->id;
+    if(!part) {
+        tf_error(E_FAIL, "Cannot instance a list from NULL handle");
+    } 
+    else {
+        Particle *p = part->part();
+        if(!p) {
+            tf_error(E_FAIL, "Cannot instance a list from NULL particle");
+        } 
+        else {
+            this->nr_parts = 1;
+            this->parts[0] = p->id;
+        }
+    }
 }
 
 TissueForge::ParticleList::ParticleList(std::vector<ParticleHandle> particles) : 
-    ParticleList(particles.size(), PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
+    ParticleList(particles.size(), PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE)
 {
     this->nr_parts = particles.size();
     
     for(int i = 0; i < nr_parts; ++i) {
         Particle *p = particles[i].part();
         if(!p) {
-            throw std::runtime_error("Cannot initialize a list with a NULL particle");
-        }
-        this->parts[i] = p->id;
+            tf_error(E_FAIL, "Cannot initialize a list with a NULL particle");
+        } 
+        else 
+            this->parts[i] = p->id;
     }
 }
 
 TissueForge::ParticleList::ParticleList(std::vector<ParticleHandle*> particles) : 
-    ParticleList(particles.size(), PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
+    ParticleList(particles.size(), PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE)
 {
     this->nr_parts = particles.size();
     
     for(int i = 0; i < nr_parts; ++i) {
         Particle *p = particles[i]->part();
         if(!p) {
-            throw std::runtime_error("Cannot initialize a list with a NULL particle");
+            tf_error(E_FAIL, "Cannot initialize a list with a NULL particle");
         }
-        this->parts[i] = p->id;
+        else 
+            this->parts[i] = p->id;
     }
 }
 
-TissueForge::ParticleList::ParticleList(uint16_t nr_parts, int32_t *parts) : 
-    ParticleList(nr_parts, PARTICLELIST_OWNDATA | PARTICLELIST_OWNSELF)
+TissueForge::ParticleList::ParticleList(uint16_t _nr_parts, int32_t *_parts) : 
+    ParticleList(_nr_parts, PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE)
 {
-    this->nr_parts = nr_parts;
-    memcpy(this->parts, parts, nr_parts * sizeof(int32_t));
+    this->nr_parts = _nr_parts;
+    memcpy(this->parts, _parts, _nr_parts * sizeof(int32_t));
 }
 
 TissueForge::ParticleList::ParticleList(const ParticleList &other) : 
@@ -201,7 +229,7 @@ TissueForge::ParticleList::ParticleList(const ParticleList &other) :
 {}
 
 TissueForge::ParticleList::ParticleList(const std::vector<int32_t> &pids) : 
-    ParticleList(pids.size(), PARTICLELIST_OWNSELF | PARTICLELIST_OWNDATA)
+    ParticleList(pids.size(), PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE)
 {
     this->nr_parts = pids.size();
     for(size_t i = 0; i < pids.size(); i++) 
@@ -209,9 +237,7 @@ TissueForge::ParticleList::ParticleList(const std::vector<int32_t> &pids) :
 }
 
 TissueForge::ParticleList::~ParticleList() {
-    if(this->flags & PARTICLELIST_OWNDATA && size_parts > 0) {
-        ::free(this->parts);
-    }
+    free();
 }
 
 // TODO: in universe.bind, check keywords are correct, and no extra keyworkds
@@ -357,8 +383,26 @@ std::vector<FVector3> TissueForge::ParticleList::sphericalPositions(FVector3 *or
     return result;
 }
 
+bool TissueForge::ParticleList::getOwnsData() const {
+    return this->flags & PARTICLELIST_OWNDATA;
+}
+
+void TissueForge::ParticleList::setOwnsData(const bool &_flag) {
+    if(_flag) this->flags |= PARTICLELIST_OWNDATA;
+    else this->flags &= ~PARTICLELIST_OWNDATA;
+}
+
+bool TissueForge::ParticleList::getMutable() const {
+    return this->flags & PARTICLELIST_MUTABLE;
+}
+
+void TissueForge::ParticleList::setMutable(const bool &_flag) {
+    if(_flag) this->flags |= PARTICLELIST_MUTABLE;
+    else this->flags &= ~PARTICLELIST_MUTABLE;
+}
+
 ParticleList TissueForge::ParticleList::all() {
-    ParticleList list(_Engine.s.nr_parts);
+    ParticleList list(_Engine.s.nr_parts, PARTICLELIST_MUTABLE);
     
     for (int cid = 0 ; cid < _Engine.s.nr_cells ; cid++) {
         space_cell *cell = &_Engine.s.cells[cid];
@@ -411,7 +455,7 @@ namespace TissueForge::io {
         for(unsigned int i = 0; i < parts.size(); i++) 
             dataElement->insert(parts[i]);
 
-        dataElement->flags = PARTICLELIST_OWNDATA |PARTICLELIST_MUTABLE | PARTICLELIST_OWNSELF;
+        dataElement->flags = PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE;
 
         return S_OK;
     }

@@ -17,6 +17,11 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfParticleTypeList.h
+ * 
+ */
+
 #ifndef _MDCORE_INCLUDE_TFPARTICLETYPELIST_H_
 #define _MDCORE_INCLUDE_TFPARTICLETYPELIST_H_
 
@@ -74,7 +79,7 @@ namespace TissueForge {
          * 
          * @param other another list
          */
-        void extend(const ParticleTypeList &other);
+        uint16_t extend(const ParticleTypeList &other);
 
         /** Test whether the list has an id */
         bool has(const int32_t &pid);
@@ -130,8 +135,32 @@ namespace TissueForge {
          */
         std::vector<FVector3> sphericalPositions(FVector3 *origin=NULL);
 
+        /**
+         * @brief Get whether the list owns its data
+        */
+        bool getOwnsData() const;
+
+        /**
+         * @brief Set whether the list owns its data
+         * 
+         * @param flag flag signifying whether the list owns its data
+        */
+        void setOwnsData(const bool &_flag);
+
+        /**
+         * @brief Get whether the list is mutable
+        */
+        bool getMutable() const;
+
+        /**
+         * @brief Set whether the list is mutable
+         * 
+         * @param flag flag signifying whether the list is mutable
+        */
+        void setMutable(const bool &_flag);
+
         ParticleTypeList();
-        ParticleTypeList(uint16_t init_size, uint16_t flags = PARTICLELIST_OWNDATA |PARTICLELIST_MUTABLE | PARTICLELIST_OWNSELF);
+        ParticleTypeList(uint16_t init_size, uint16_t flags = PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE);
         ParticleTypeList(ParticleType *ptype);
         ParticleTypeList(std::vector<ParticleType> ptypes);
         ParticleTypeList(std::vector<ParticleType*> ptypes);
