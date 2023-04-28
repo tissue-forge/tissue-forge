@@ -33,7 +33,6 @@
 %ignore TissueForge::rendering::Style::mapper_func;
 %ignore TissueForge::rendering::Style::setFlag;
 %ignore TissueForge::rendering::Style::map_color;
-%ignore TissueForge::rendering::Style::getColorMap;
 %ignore TissueForge::rendering::Style::Style(const std::string &, const bool &, uint32_t, TissueForge::rendering::ColorMapper*);
 %ignore TissueForge::rendering::Style::init;
 %ignore TissueForge::rendering::Style::setColorMapper;

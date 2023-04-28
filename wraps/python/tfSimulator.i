@@ -85,6 +85,9 @@
 
         @staticmethod
         def close():
+            """
+            Closes the main window, while the application / simulation continues to run.
+            """
             return _SimulatorPy.close()
 
         @staticmethod
@@ -93,6 +96,9 @@
 
         @staticmethod
         def redraw():
+            """
+            Redraw the scene
+            """
             return _SimulatorPy.redraw()
 
         @property
