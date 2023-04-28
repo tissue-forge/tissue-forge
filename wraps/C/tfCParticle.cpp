@@ -1250,6 +1250,32 @@ HRESULT tfParticleList_sphericalPositionsO(struct tfParticleListHandle *handle, 
     return TissueForge::capi::copyVecVecs3_2Arr(plist->sphericalPositions(&_origin), coordinates);
 }
 
+HRESULT tfParticleList_getOwnsData(struct tfParticleListHandle *handle, bool* result) {
+    TFC_PARTICLELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = plist->getOwnsData();
+    return S_OK;
+}
+
+HRESULT tfParticleList_setOwnsData(struct tfParticleListHandle *handle, bool flag) {
+    TFC_PARTICLELIST_GET(handle);
+    plist->setOwnsData(flag);
+    return S_OK;
+}
+
+HRESULT tfParticleList_getMutable(struct tfParticleListHandle *handle, bool* result) {
+    TFC_PARTICLELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = plist->getMutable();
+    return S_OK;
+}
+
+HRESULT tfParticleList_setMutable(struct tfParticleListHandle *handle, bool flag) {
+    TFC_PARTICLELIST_GET(handle);
+    plist->setMutable(flag);
+    return S_OK;
+}
+
 HRESULT tfParticleList_toString(struct tfParticleListHandle *handle, char **str, unsigned int *numChars) {
     TFC_PARTICLELIST_GET(handle);
     return TissueForge::capi::str2Char(plist->toString(), str, numChars);
@@ -1457,6 +1483,32 @@ HRESULT tfParticleTypeList_sphericalPositionsO(struct tfParticleTypeListHandle *
     TFC_PTRCHECK(origin);
     FVector3 _origin = FVector3::from(origin);
     return TissueForge::capi::copyVecVecs3_2Arr(ptlist->sphericalPositions(&_origin), coordinates);
+}
+
+HRESULT tfParticleTypeList_getOwnsData(struct tfParticleTypeListHandle *handle, bool* result) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = ptlist->getOwnsData();
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_setOwnsData(struct tfParticleTypeListHandle *handle, bool flag) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    ptlist->setOwnsData(flag);
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_getMutable(struct tfParticleTypeListHandle *handle, bool* result) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = ptlist->getMutable();
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_setMutable(struct tfParticleTypeListHandle *handle, bool flag) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    ptlist->setMutable(flag);
+    return S_OK;
 }
 
 HRESULT tfParticleTypeList_getParticles(struct tfParticleTypeListHandle *handle, struct tfParticleListHandle *plist) {

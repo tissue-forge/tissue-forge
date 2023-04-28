@@ -1311,6 +1311,38 @@ CAPI_FUNC(HRESULT) tfParticleList_sphericalPositions(struct tfParticleListHandle
 CAPI_FUNC(HRESULT) tfParticleList_sphericalPositionsO(struct tfParticleListHandle *handle, tfFloatP_t *origin, tfFloatP_t **coordinates);
 
 /**
+ * @brief Get whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleList_getOwnsData(struct tfParticleListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleList_setOwnsData(struct tfParticleListHandle *handle, bool flag);
+
+/**
+ * @brief Get whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleList_getMutable(struct tfParticleListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleList_setMutable(struct tfParticleListHandle *handle, bool flag);
+
+/**
  * @brief Get a JSON string representation
  * 
  * @param handle populated handle
@@ -1580,6 +1612,38 @@ CAPI_FUNC(HRESULT) tfParticleTypeList_sphericalPositions(struct tfParticleTypeLi
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleTypeList_sphericalPositionsO(struct tfParticleTypeListHandle *handle, tfFloatP_t *origin, tfFloatP_t **coordinates);
+
+/**
+ * @brief Get whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_getOwnsData(struct tfParticleTypeListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_setOwnsData(struct tfParticleTypeListHandle *handle, bool flag);
+
+/**
+ * @brief Get whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_getMutable(struct tfParticleTypeListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_setMutable(struct tfParticleTypeListHandle *handle, bool flag);
 
 /**
  * @brief Get a particle list populated with particles of all current particle types
