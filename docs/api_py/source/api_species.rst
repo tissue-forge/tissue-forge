@@ -52,6 +52,8 @@ Reactions and Species
 
     .. autoproperty:: constant
 
+    .. autoproperty:: value
+
     .. automethod:: secrete
 
 

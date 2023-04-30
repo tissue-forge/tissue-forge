@@ -535,10 +535,10 @@ HRESULT tfStateSpeciesList_fromString(struct tfStateSpeciesListHandle *handle, c
 /////////////////////////
 
 
-HRESULT tfStateSpeciesValue_init(struct tfStateSpeciesValueHandle *handle, tfFloatP_t value, struct tfStateStateVectorHandle *state_vector, unsigned int index) {
+HRESULT tfStateSpeciesValue_init(struct tfStateSpeciesValueHandle *handle, struct tfStateStateVectorHandle *state_vector, unsigned int index) {
     TFC_PTRCHECK(handle);
     TFC_PTRCHECK(state_vector); TFC_PTRCHECK(state_vector->tfObj);
-    state::SpeciesValue *sval = new state::SpeciesValue(value, (state::StateVector*)state_vector->tfObj, index);
+    state::SpeciesValue *sval = new state::SpeciesValue((state::StateVector*)state_vector->tfObj, index);
     handle->tfObj = (void*)sval;
     return S_OK;
 }
@@ -546,13 +546,13 @@ HRESULT tfStateSpeciesValue_init(struct tfStateSpeciesValueHandle *handle, tfFlo
 HRESULT tfStateSpeciesValue_getValue(struct tfStateSpeciesValueHandle *handle, tfFloatP_t *value) {
     TFC_SPECIESVALUE_GET(handle, sval);
     TFC_PTRCHECK(value);
-    *value = sval->value;
+    *value = sval->getValue();
     return S_OK;
 }
 
 HRESULT tfStateSpeciesValue_setValue(struct tfStateSpeciesValueHandle *handle, tfFloatP_t value) {
     TFC_SPECIESVALUE_GET(handle, sval);
-    sval->value = value;
+    sval->setValue(value);
     return S_OK;
 }
 
