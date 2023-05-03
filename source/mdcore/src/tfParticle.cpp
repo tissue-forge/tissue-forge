@@ -654,6 +654,8 @@ ParticleHandle *TissueForge::ParticleType::operator()(const std::string &str, in
     }
     p->vid = dummy->vid;
     p->flags = dummy->flags;
+    if(dummy->state_vector) 
+        p->state_vector = dummy->state_vector;
 
     delete dummy;
 
@@ -752,6 +754,7 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
     if(part.radius > _Engine.s.cutoff) {
         part.flags |= PARTICLE_LARGE;
     }
+    if(self->state_vector) part.state_vector = new state::StateVector(*self->state_vector);
 
     std::uniform_real_distribution<FPTYPE> x(-1, 1);
 
