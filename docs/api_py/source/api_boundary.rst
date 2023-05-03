@@ -30,6 +30,8 @@ Boundary Conditions
 
    .. autoattribute:: top
 
+   .. automethod:: bounded_position
+
    .. automethod:: toString
 
    .. automethod:: fromString

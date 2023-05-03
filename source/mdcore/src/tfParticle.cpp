@@ -374,6 +374,7 @@ FVector3 TissueForge::ParticleHandle::getPosition() {
 
 void TissueForge::ParticleHandle::setPosition(FVector3 position) {
     TF_PARTICLE_SELFW(this,)
+    BoundaryConditions::boundedPosition(position);
     self->set_global_position(position);
 }
 
@@ -771,30 +772,11 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
         return NULL;
     }
 
-    // Double-check boundaries
-    const BoundaryConditions &bc = _Engine.boundary_conditions;
-    std::vector<bool> periodicFlags {
-        bool(bc.periodic & space_periodic_x), 
-        bool(bc.periodic & space_periodic_y), 
-        bool(bc.periodic & space_periodic_z)
-    };
-
     // Calculate new positions; account for boundaries
     FVector3 posParent = vec + sep;
     FVector3 posChild = FVector3(vec - sep);
-
-    for(unsigned int i = 0; i < 3; i++) {
-        FPTYPE dim_i = _Engine.s.dim[i];
-        FPTYPE origin_i = _Engine.s.origin[i];
-
-        if(periodicFlags[i]) {
-            while(posChild[i] >= dim_i + origin_i) 
-                posChild[i] -= dim_i;
-
-            while(posChild[i] < origin_i) 
-                posChild[i] += dim_i;
-        }
-    }
+    BoundaryConditions::boundedPosition(posParent);
+    BoundaryConditions::boundedPosition(posChild);
 
     if(engine_addpart(&_Engine, &part, posChild.data(), &p) != S_OK) {
         TF_Log(LOG_CRITICAL) << part.typeId << ", " << _Engine.nr_types;
@@ -807,12 +789,13 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
     
     // pointers after engine_addpart could change...
     space_setpos(&_Engine.s, self_id, posParent.data());
+    space_setpos(&_Engine.s, part.id, posChild.data());
     self = _Engine.s.partlist[self_id];
+    p = _Engine.s.partlist[part.id];
     TF_Log(LOG_DEBUG) << self->position << ", " << p->position;
     
     // all is good, set the new radii
-    self->radius = r2;
-    p->radius = r2;
+    self->radius = p->radius = r2;
     self->mass = p->mass = self->mass / 2.;
     self->imass = p->imass = self->mass > 0 ? 1. / self->mass : 0;
 
@@ -844,6 +827,19 @@ ParticleHandle* TissueForge::ParticleHandle::fission()
 }
 
 ParticleHandle *TissueForge::ParticleHandle::split() { return fission(); }
+
+ParticleHandle* TissueForge::ParticleHandle::split(const FVector3& direction) {
+    const FVector3 currentPosition = this->getPosition();
+    ParticleHandle* newPart = split();
+    if(!newPart) {
+        TF_Log(LOG_DEBUG);
+        return newPart;
+    }
+    const FVector3 disp = direction * this->getRadius();
+    this->setPosition(currentPosition + disp);
+    newPart->setPosition(currentPosition - disp);
+    return newPart;
+}
 
 Particle* TissueForge::Particle_Get(ParticleHandle *pypart) {
     return _Engine.s.partlist[pypart->id];
