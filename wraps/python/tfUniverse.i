@@ -92,6 +92,13 @@
             return _tfUniverse.getCutoff()
 
         @property
+        def flux_steps(self) -> int:
+            """
+            Number of flux steps per simulation step
+            """
+            return _tfUniverse.getNumFluxSteps()
+
+        @property
         def dim(self) -> fVector3:
             """
             Universe dimensions

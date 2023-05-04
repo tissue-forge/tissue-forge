@@ -19,7 +19,7 @@
 
 import tissue_forge as tf
 
-tf.init(dt=0.1, dim=[15, 6, 6], cells=[9, 3, 3], bc={'x': ('periodic', 'reset')}, cutoff=3, windowless=True)
+tf.init(dt=0.1, dim=[15, 6, 6], cells=[9, 3, 3], bc={'x': ('periodic', 'reset')}, cutoff=3, flux_steps=2, windowless=True)
 
 
 class AType(tf.ParticleTypeSpec):

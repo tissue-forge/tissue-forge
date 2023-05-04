@@ -86,5 +86,13 @@
         @constant.setter
         def constant(self, value: int):
             self.setConstant(value)
+
+        @property
+        def value(self) -> float:
+            return self.getValue()
+
+        @value.setter
+        def value(self, _value: float):
+            self.setValue(_value)
     %}
 }

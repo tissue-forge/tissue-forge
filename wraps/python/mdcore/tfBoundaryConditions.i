@@ -25,6 +25,8 @@
 %}
 
 
+%rename(bounded_position) TissueForge::BoundaryConditions::boundedPosition;
+
 %ignore apply_boundary_particle_crossing;
 
 %include <tfBoundaryConditions.h>

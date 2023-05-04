@@ -306,6 +306,18 @@ HRESULT engine_advance_forward_euler(struct engine *e) {
 
     TF_Log(LOG_TRACE);
 
+    // do flux substeps, if any
+    if(!(e->flags & engine_flag_cuda) && e->nr_fluxsteps > 1) {
+        auto func = [](int cid) -> void { Fluxes_integrate(&_Engine.s.cells[cid], _Engine.dt_flux); };
+        for(e->step_flux = 0; e->step_flux < e->nr_fluxsteps - 1; e->step_flux++) {
+            if(engine_fluxonly_eval(e) != S_OK) 
+                return error(MDCERR_engine);
+            parallel_for(e->s.nr_real, func);
+        }
+
+        TF_Log(LOG_TRACE);
+    }
+
     // set the integrator flag to set any persistent forces
     // forward euler is a single step, so alwasy set this flag
     e->integrator_flags |= INTEGRATOR_UPDATE_PERSISTENTFORCE;
@@ -424,16 +436,7 @@ HRESULT engine_advance_forward_euler(struct engine *e) {
         auto func = [dt, &h, &h2, &maxv, &maxv2, &maxx, &maxx2](int cid) -> void {
             int _cid = staggered_ids[cid];
             cell_advance_forward_euler(dt, h, h2, maxv, maxv2, maxx, maxx2, _cid);
-            
-            // Patching a strange bug here. 
-            // When built with CUDA support, space_cell alignment is off in Fluxes_integrate when retrieved from static engine. 
-            // TODO: determine and fix space cell alignment issue when built with vs. without CUDA
-            #ifdef HAVE_CUDA
-            Fluxes_integrate(&_Engine.s.cells[_cid], _Engine.dt);
-            #else
-            // Fluxes_integrate(_cid);                             // Now this shows alignment issue, when previously it worked
-            Fluxes_integrate(&_Engine.s.cells[_cid], _Engine.dt);  // Now this works like when built with CUDA, when previously it showed alignment issue
-            #endif
+            Fluxes_integrate(&_Engine.s.cells[_cid], _Engine.dt_flux);
         };
         
         parallel_for(s->nr_real, func);

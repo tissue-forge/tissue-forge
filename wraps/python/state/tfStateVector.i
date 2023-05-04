@@ -47,8 +47,7 @@
             sl = _tissue_forge._state_StateVector_species_get(self)
             idx = sl.index_of(item)
             if idx >= 0:
-                value = _tissue_forge._state_StateVector_item(self, idx)
-                return _state_SpeciesValue(value, self, idx)
+                return _state_SpeciesValue(self, idx)
             raise AttributeError
 
         def __setattr__(self, item: str, value: float) -> None:

@@ -147,7 +147,7 @@ Each species in a :py:class:`state.SpeciesList` instance can be accessed using t
 Spatial Transport
 ^^^^^^^^^^^^^^^^^^
 
-Recall that the DPD-like particles in Tissue Forge (and in general) represent a
+Recall that the DPD-like particles in Tissue Forge represent a
 parcel of fluid. Tissue Forge tDPD modeling provides a natural way of modeling
 *advection* by the mere motion of particles carrying species. Furthermore,
 Tissue Forge also provides the ability to model the tendency of dissolved
@@ -197,6 +197,11 @@ types. ::
 Likewise, decay can also be assigned as an optional fourth argument. ::
 
     tf.Fluxes.flux(B, B, 'S2', 7.5, 0.005)
+
+.. note::
+
+    It's possible to specify parameters that generate numerically unstable species transport. 
+    To handle such cases, use :ref:`flux sub-stepping<flux_steps>`.
 
 Production and Consumption
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

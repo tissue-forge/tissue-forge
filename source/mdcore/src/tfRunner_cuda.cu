@@ -31,6 +31,7 @@
 #include <float.h>
 #include <string.h>
 #include <limits.h>
+#include <unordered_map>
 
 /* Include headers for overloaded vector functions. */
 #include "cutil_math.h"
@@ -89,7 +90,9 @@ using namespace TissueForge;
 #define cuda_safe_call_e(f, _ret_ok)        { if(f != _ret_ok) return cuda_error(); }
 
 /* The parts (non-texture access). */
-__constant__ cuda::Particle *cuda_parts;
+__constant__ float4* cuda_parts_pos; // x, y, z, radius
+__constant__ float3* cuda_parts_vel;
+__constant__ int4* cuda_parts_datai; // id, type, flags, clusterId
 __constant__ float *cuda_part_states;
 static unsigned int engine_cuda_nr_states = 0;
 
@@ -102,30 +105,13 @@ __constant__ int *cuda_pind;
 __constant__ int *cuda_pind_cluster;
 __constant__ int *cuda_pind_bcs[6];
 
-/* The mutex for accessing the cell pair list. */
-__device__ int cuda_cell_mutex = 0;
-__device__ int cuda_barrier = 0;
-__device__ volatile int NAMD_barrier = 0;
-
-/* The index of the next free cell pair. */
-__device__ int cuda_pair_next = 0;
-
-/* The list of cell pairs. */
-
-__device__ int *cuda_taboo;
-#ifdef TASK_TIMERS
-/*x = block y = type z = start w = end*/
-__device__ int4 NAMD_timers[26*10000];
-#endif
-
 /* The list of tasks. */
-__constant__ struct cuda::task_cuda *cuda_tasks;
-__constant__ int cuda_nr_tasks = 0;
-
-/* The per-SM task queues. */
-__device__ struct cuda::queue_cuda cuda_queues[ cuda_maxqueues ];
-__device__ struct cuda::queue_cuda cuda_sorts[ cuda_maxqueues ];
-__constant__ int cuda_queue_size;
+__constant__ int2* cuda_cellpair_list_left;
+__constant__ int* cuda_cellpair_ind_left;
+__constant__ int* cuda_cellpair_count_left;
+__constant__ int2* cuda_cellpair_list_right;
+__constant__ int* cuda_cellpair_ind_right;
+__constant__ int* cuda_cellpair_count_right;
 
 /* Some constants. */
 __constant__ float cuda_dt = 0.0f;
@@ -133,7 +119,9 @@ __constant__ float cuda_cutoff2 = 0.0f;
 __constant__ float cuda_cutoff = 0.0f;
 __constant__ float cuda_dscale = 0.0f;
 __constant__ float cuda_maxdist = 0.0f;
+__constant__ unsigned int cuda_dmaxdist = 0;
 __constant__ int cuda_maxtype = 0;
+__constant__ unsigned int cuda_nr_cells = 0;
 
 /* Sortlists for the Verlet algorithm. */
 __device__ unsigned int *cuda_sortlists = NULL;
@@ -148,7 +136,7 @@ __constant__ float3 *cuda_cdims;
 __constant__ unsigned int *cuda_cflags;
 
 /* Potential energy. */
-__device__ float cuda_epot = 0.0f, cuda_epot_out;
+__device__ float cuda_epot = 0.0f;
 
 /* Timers. */
 __device__ float cuda_timers[ tid_count ];
@@ -234,272 +222,7 @@ __constant__ float cuda_shift[13*3] = {
 /* The cell edge lengths and space dimensions. */
 __constant__ float cuda_h[3];
 __constant__ float cuda_dim[3];
-    
-    
-/**
- * @brief Lock a device mutex.
- *
- * @param m The mutex.
- *
- * Loops until the mutex can be set. Note that only one thread
- * can do this at a time, so to synchronize blocks, only a single thread of
- * each block should call it.
- */
 
-__device__ void cuda_mutex_lock(int *m) {
-    TIMER_TIC
-    while(atomicCAS(m, 0, 1) != 0);
-    TIMER_TOC(tid_mutex)
-}
-
-
-/**
- * @brief Attempt to lock a device mutex.
- *
- * @param m The mutex.
- *
- * Try to grab the mutex. Note that only one thread
- * can do this at a time, so to synchronize blocks, only a single thread of
- * each block should call it.
- */
-
-__device__ int cuda_mutex_trylock(int *m) {
-    TIMER_TIC
-    int res = atomicCAS(m, 0, 1) == 0;
-    TIMER_TOC(tid_mutex)
-    return res;
-}
-
-
-/**
- * @brief Lock a device mutex with an additional condition.
- *
- * @param m The mutex.
- * @param c the condition
- *
- * @return @c 1 if the mutex could be locked or zero if the condition @c c
- * was reached first.
- *
- * Loops until the mutex can be set or until @c *c is non-zero.
- * Note that only one thread
- * can do this at a time, so to synchronize blocks, only a single thread of
- * each block should call it.
- */
-
-__device__ int cuda_mutex_lock_cond(int *m, int *c) {
-    TIMER_TIC
-    while(atomicCAS(c, 0, 0) == 0)
-        if(atomicCAS(m, 0, 1) == 0) {
-            TIMER_TOC(tid_mutex)
-            return 1;
-            }
-    TIMER_TOC(tid_mutex)
-    return 0;
-}
-
-
-/**
- * @brief Unlock a device mutex.
- *
- * @param m The mutex.
- *
- * Does not check if the mutex had been locked.
- */
-
-__device__ void cuda_mutex_unlock(int *m) {
-    TIMER_TIC
-    atomicExch(m, 0);
-    TIMER_TOC(tid_mutex)
-}
-    
-    
-/**
- * @brief Get a task ID from the given queue.
- *
- */
- 
-__device__ int cuda_queue_gettask(struct cuda::queue_cuda *q) {
-
-    int ind, tid = -1;
-    
-    /* Don't even try... */
-    if(q->rec_count == q->count)
-        return -1;
-
-    /* Get the index of the next task. */
-    ind = atomicAdd(&q->first, 1);
-        
-    /* Wrap the index. */
-    ind %= cuda_queue_size; 
-
-    /* Loop until there is a valid task at that index. */
-    while(q->rec_count < q->count &&(tid = q->data[ind]) < 0);
-    
-    /* Scratch the task from the queue */
-    if(tid >= 0)
-        q->data[ind] = -1;
-
-    /* Return the acquired task ID. */
-    return tid;
-    
-}
-
-
-/**
- * @brief Put a task onto the given queue.
- *
- * @param tid The task ID to add to the end of the queue.
- */
- 
-__device__ void cuda_queue_puttask(struct cuda::queue_cuda *q, int tid) {
-
-    int ind;
-
-    /* Get the index of the next task. */
-    ind = atomicAdd(&q->last, 1) % cuda_queue_size;
-    
-    /* Wait for the slot in the queue to be empty. */
-    while(q->data[ind] != -1);
-
-    /* Write the task back to the queue. */
-    q->data[ind] = tid;
-    
-}
-    
-    
-/**
- * @brief Get the ID of the block's SM.
- */
- 
-__noinline__ __device__ uint get_smid(void) {
-    uint ret;
-    asm("mov.u32 %0, %smid;" : "=r"(ret));
-    return ret;
-}
-
-
-/**
- * @brief Get a task from the given task queue.
- *
- * Picks tasks from the queue sequentially and checks if they
- * can be computed. If not, they are returned to the queue.
- *
- * This routine blocks until a valid task is picked up, or the
- * specified queue is empty.
- */
- 
-__device__ int runner_cuda_gettask(struct cuda::queue_cuda *q, int steal) {
-
-    int tid = -1;
-    int cid, cjd;
-    
-    TIMER_TIC
-    
-    /* Main loop. */
-    while((tid = cuda_queue_gettask(q)) >= 0) {
-    
-        /* If this task is not even free, don't even bother. */
-        if(!cuda_tasks[tid].wait) {
-    
-            /* Dfferent options for different tasks. */
-            if(cuda_tasks[tid].type == task_type_sort) {
-            
-                /* No locking needed. */
-                break;
-            
-            }
-            else if(cuda_tasks[tid].type == task_type_self) {
-            
-                /* Decode this task. */
-                cid = cuda_tasks[tid].i;
-
-                /* Lock down this task? */
-                if(cuda_mutex_trylock(&cuda_taboo[ cid ]))
-                    break;
-                        
-            }
-            else if(cuda_tasks[tid].type == task_type_pair) {
-            
-                /* Decode this task. */
-                cid = cuda_tasks[tid].i;
-                cjd = cuda_tasks[tid].j;
-
-                /* Lock down this task? */
-                if(cuda_mutex_trylock(&cuda_taboo[ cid ]))
-                    if(cuda_mutex_trylock(&cuda_taboo[ cjd ])) 
-                        break;
-                    else
-                        cuda_mutex_unlock(&cuda_taboo[ cid ]);
-                        
-            }
-
-        }
-                
-        /* Put this task back into the queue. */
-        cuda_queue_puttask(q, tid);
-    
-    }
-        
-    /* Put this task into the recycling queue, if needed. */
-    if(tid >= 0) {
-        if(steal)
-            atomicSub((int *)&q->count, 1);
-        else
-            q->rec_data[ atomicAdd((int *)&q->rec_count, 1) ] = tid;
-    }
-        
-    TIMER_TOC(tid_queue);
-        
-    /* Return whatever we got. */
-    return tid;
-
-}
-
-__device__ int runner_cuda_gettask_nolock(struct cuda::queue_cuda *q, int steal) {
-
-    int tid = -1/*,cid,cjd*/;
-    
-    TIMER_TIC
-    
-    /* Main loop. */
-    while((tid = cuda_queue_gettask(q)) >= 0) {
-    
-        /* If this task is not even free, don't even bother. */
-        if(!cuda_tasks[tid].wait) {
-    
-            break;
-
-        }
-        /*if(cuda_tasks[tid].type == task_type_pair)
-        {
-	       	cid = cuda_tasks[tid].i;
-	       	cjd = cuda_tasks[tid].j;
-	       	if(!(cuda_taboo[cid] || cuda_taboo[cjd]))
-	       		break;
-       	}else{
-       		break;
-       	}*/
-       	
-                
-        /* Put this task back into the queue. */
-        cuda_queue_puttask(q, tid);
-    
-    }
-        
-    /* Put this task into the recycling queue, if needed. */
-    if(tid >= 0) {
-        if(steal)
-            atomicSub((int *)&q->count, 1);
-        else
-            q->rec_data[ atomicAdd((int *)&q->rec_count, 1) ] = tid;
-    }
-        
-    TIMER_TOC(tid_queue);
-        
-    /* Return whatever we got. */
-    return tid;
-
-}
 
 __device__ inline void w_cubic_spline_cuda(float r2, float h, float *result) {
     float r = rsqrt(r2);
@@ -549,11 +272,11 @@ __device__ inline void w_cubic_spline_cuda_nr(float r2, float h, float *result) 
     
     if(x < 1.f) {
         float x2 = x * x;
-        y = 1.f - (3.f / 2.f) * x2 + (3.f / 4.f) * x2 * x;
+        y = 1.f - 1.5f * x2 + 0.75f * x2 * x;
     }
     else if(x >= 1.f && x < 2.f) {
         float arg = 2.f - x;
-        y = (1.f / 4.f) * arg * arg * arg;
+        y = 0.25f * arg * arg * arg;
     }
     else {
         y = 0.f;
@@ -561,7 +284,7 @@ __device__ inline void w_cubic_spline_cuda_nr(float r2, float h, float *result) 
     
     *result = y / (M_PI * h * h * h);
 }
-    
+
 /**
  * @brief Copy bulk memory in a strided way.
  *
@@ -587,63 +310,7 @@ __device__ inline void cuda_memcpy(void *dest, void *source, int count) {
         
 }
 
-
-    
-__device__ inline void cuda_memcpy_old(void *dest, void *source, int count) {
-
-    int k;
-    volatile int *idest = (int *)dest, *isource = (int *)source;
-    
-    TIMER_TIC
-    
-    /* Copy the data in chunks of sizeof(int). */
-    for(k = 0 + threadIdx.x ; k < count/sizeof(int) ; k += cuda_frame)
-        idest[k] = isource[k];
-        
-    TIMER_TOC(tid_memcpy)
-        
-}
-
-
 /**
- * @brief Sum two vectors in a strided way.
- *
- * @param a Pointer to destination memory.
- * @param b Pointer to source memory.
- * @param count Number of floats to sum.
- *
- * Computes @c a[k] += b[k] for k=1..count.
- */
- 
-__device__ inline void cuda_sum(float *a, float *b, int count) {
-
-    int i, j, k, icount = count / cuda_frame / cuda_sum_chunk;
-    float chunk[cuda_memcpy_chunk];
-    int threadID = threadIdx.x;
-    
-    TIMER_TIC
-    
-    /* Copy the data in chunks of sizeof(int). */
-    for(k = 0 ; k < icount ; k += 1) {
-        #pragma unroll
-        for(j = 0 ; j < cuda_sum_chunk ; j++) {
-            i = (cuda_sum_chunk*k+j)*cuda_frame + threadID;
-            chunk[j] = a[i] + b[i];
-        }
-        #pragma unroll
-        for(j = 0 ; j < cuda_sum_chunk ; j++)
-            a[ (cuda_sum_chunk*k+j)*cuda_frame + threadID ] = chunk[j];
-    }
-    for(k = cuda_sum_chunk*cuda_frame*icount + threadID ; k < count ; k += cuda_frame)
-        a[k] += b[k];
-        
-    TIMER_TOC(tid_update)
-        
-}
-    
-    
-    
-    /**
  * @brief Sort the given data w.r.t. the lowest 16 bits in decending order.
  *
  * @param a The array to sort.
@@ -696,80 +363,6 @@ __device__ inline void cuda_sort_descending(unsigned int *a, int count) {
         
     TIMER_TOC(tid_sort)
 
-        
-}
-
-    
-
-
-    
-/**
- * @brief Sort the given data w.r.t. the lowest 16 bits in ascending order.
- *
- * @param a The array to sort.
- * @param count The number of elements.
- */
- 
-__device__ void cuda_sort_ascending(unsigned int *a, int count) {
-
-    int i, j, k, threadID = threadIdx.x;
-    int hi[2], lo[2], ind[2], jnd[2];
-    unsigned int swap_i[2], swap_j[2];
-
-    TIMER_TIC
-
-    /* Sort using normalized bitonic sort. */
-    for(k = 1 ; k < count ; k *= 2) {
-    
-        /* First step. */
-        for(i = threadID ;  i < count ; i += 2*cuda_frame) {
-            hi[0] = i & ~(k-1); lo[0] = i & (k-1);
-            hi[1] = (i + cuda_frame) & ~(k-1); lo[1] = (i + cuda_frame) & (k-1);
-            ind[0] = i + hi[0]; jnd[0] = 2*(hi[0]+k) - lo[0] - 1;
-            ind[1] = i + cuda_frame + hi[1]; jnd[1] = 2*(hi[1]+k) - lo[1] - 1;
-            swap_i[0] =(jnd[0] < count) ? a[ind[0]] : 0;
-            swap_i[1] =(jnd[1] < count) ? a[ind[1]] : 0;
-            swap_j[0] =(jnd[0] < count) ? a[jnd[0]] : 0;
-            swap_j[1] =(jnd[1] < count) ? a[jnd[1]] : 0;
-            if ((swap_i[0] & 0xffff) >(swap_j[0] & 0xffff)) {
-                a[ind[0]] = swap_j[0];
-                a[jnd[0]] = swap_i[0];
-            }
-            if ((swap_i[1] & 0xffff) >(swap_j[1] & 0xffff)) {
-                a[ind[1]] = swap_j[1];
-                a[jnd[1]] = swap_i[1];
-            }
-        }
-            
-        /* Let that last step sink in. */
-        // __threadfence_block();
-    
-        /* Second step(s). */
-        for(j = k/2 ; j > 0 ; j /= 2) {
-            for(i = threadID ;  i < count ; i += 2*cuda_frame) {
-                hi[0] = i & ~(j-1);
-                hi[1] = (i + cuda_frame) & ~(j-1);
-                ind[0] = i + hi[0]; jnd[0] = ind[0] + j;
-                ind[1] = i + cuda_frame + hi[1]; jnd[1] = ind[1] + j;
-                swap_i[0] =(jnd[0] < count) ? a[ind[0]] : 0;
-                swap_i[1] =(jnd[1] < count) ? a[ind[1]] : 0;
-                swap_j[0] =(jnd[0] < count) ? a[jnd[0]] : 0;
-                swap_j[1] =(jnd[1] < count) ? a[jnd[1]] : 0;
-                if ((swap_i[0] & 0xffff) >(swap_j[0] & 0xffff)) {
-                    a[ind[0]] = swap_j[0];
-                    a[jnd[0]] = swap_i[0];
-                }
-                if ((swap_i[1] & 0xffff) >(swap_j[1] & 0xffff)) {
-                    a[ind[1]] = swap_j[1];
-                    a[jnd[1]] = swap_i[1];
-                }
-            }
-            // __threadfence_block();
-        }
-            
-    }
-        
-    TIMER_TOC(tid_sort)
         
 }
 
@@ -1565,14 +1158,14 @@ __device__ inline void potential_eval_ex_cuda (int pind, int bid, float ri, floa
 }
 
 
-__device__ inline void dpd_eval_cuda(cuda::DPDPotentialData pot, cuda::Particle pi, cuda::Particle pj, float3 dx, float r2, float *e, float *fi, float *fj) {
+__device__ inline void dpd_eval_cuda(cuda::DPDPotentialData pot, float ri, float rj, float3 pvi, float3 pvj, float3 dx, float r2, float *e, float *fi) {
 
     float delta = rsqrtf(cuda_dt);
     
     float r = sqrtf(r2);
     float ro = r < FLT_MIN ? FLT_MIN : r;
     
-    r = pot.flags & POTENTIAL_SHIFTED ? r - (pi.v.w + pj.v.w) : r;
+    r = pot.flags & POTENTIAL_SHIFTED ? r - (ri + rj) : r;
 
     if(r > pot.w.y) {
         *e = 0.f;
@@ -1582,8 +1175,8 @@ __device__ inline void dpd_eval_cuda(cuda::DPDPotentialData pot, cuda::Particle 
     
     // unit vector
     float3 unit_vec{dx.x / ro, dx.y / ro, dx.z / ro};
-    
-    float3 v{pi.v.x - pj.v.x, pi.v.y - pj.v.y, pi.v.z - pj.v.z};
+
+    float3 v{pvi.x - pvj.x, pvi.y - pvj.y, pvi.z - pvj.z};
     
     // conservative force
     float omega_c = r < 0.f ?  1.f : (1 - r / pot.w.y);
@@ -1602,16 +1195,13 @@ __device__ inline void dpd_eval_cuda(cuda::DPDPotentialData pot, cuda::Particle 
     fi[0] += f * unit_vec.x;
     fi[1] += f * unit_vec.y;
     fi[2] += f * unit_vec.z;
-    fj[0] -= f * unit_vec.x;
-    fj[1] -= f * unit_vec.y;
-    fj[2] -= f * unit_vec.z;
     
     // TODO: correct energy
     *e = 0;
 
 }
 
-__device__ inline void dpd_eval_cuda(int pind, bool iscluster, cuda::Particle pi, cuda::Particle pj, float3 dx, float r2, float *e, float *fi, float *fj) {
+__device__ inline void dpd_eval_cuda(int pind, bool iscluster, float ri, float rj, float3 pvi, float3 pvj, int pidi, int pidj, float3 dx, float r2, float *e, float *fi) {
 
     float delta = rsqrtf(cuda_dt);
     
@@ -1632,7 +1222,7 @@ __device__ inline void dpd_eval_cuda(int pind, bool iscluster, cuda::Particle pi
         b     = tex2D<float>(cuda_tex_dpd_dataf, 1, pind);
     }
     
-    r = flags & POTENTIAL_SHIFTED ? r - (pi.v.w + pj.v.w) : r;
+    r = flags & POTENTIAL_SHIFTED ? r - (ri + rj) : r;
 
     if(r > b) {
         *e = 0.f;
@@ -1656,7 +1246,7 @@ __device__ inline void dpd_eval_cuda(int pind, bool iscluster, cuda::Particle pi
     // unit vector
     float3 unit_vec{dx.x / ro, dx.y / ro, dx.z / ro};
     
-    float3 v{pi.v.x - pj.v.x, pi.v.y - pj.v.y, pi.v.z - pj.v.z};
+    float3 v{pvi.x - pvj.x, pvi.y - pvj.y, pvi.z - pvj.z};
     
     // conservative force
     float omega_c = r < 0.f ?  1.f : (1 - r / b);
@@ -1675,9 +1265,6 @@ __device__ inline void dpd_eval_cuda(int pind, bool iscluster, cuda::Particle pi
     fi[0] += f * unit_vec.x;
     fi[1] += f * unit_vec.y;
     fi[2] += f * unit_vec.z;
-    fj[0] -= f * unit_vec.x;
-    fj[1] -= f * unit_vec.y;
-    fj[2] -= f * unit_vec.z;
     
     // TODO: correct energy
     *e = 0;
@@ -1685,14 +1272,14 @@ __device__ inline void dpd_eval_cuda(int pind, bool iscluster, cuda::Particle pi
 }
 
 
-__device__ inline void dpd_boundary_eval_cuda(cuda::DPDPotentialData pot, cuda::Particle pi, float rj, float3 velocity, float3 dx, float r2, float *e, float *force) {
+__device__ inline void dpd_boundary_eval_cuda(cuda::DPDPotentialData pot, float ri, float rj, float3 piv, float3 velocity, float3 dx, float r2, float *e, float *force) {
 
     float delta = rsqrtf(cuda_dt);
     
     float r = sqrtf(r2);
     float ro = r < FLT_MIN ? FLT_MIN : r;
     
-    r = pot.flags & POTENTIAL_SHIFTED ? r - (pi.v.w + rj) : r;
+    r = pot.flags & POTENTIAL_SHIFTED ? r - (ri + rj) : r;
 
     if(r > pot.w.y) {
         *e = 0.f;
@@ -1703,7 +1290,7 @@ __device__ inline void dpd_boundary_eval_cuda(cuda::DPDPotentialData pot, cuda::
     // unit vector
     float3 unit_vec{dx.x / ro, dx.y / ro, dx.z / ro};
     
-    float3 v{pi.v.x - velocity.x, pi.v.y - velocity.y, pi.v.z - velocity.z};
+    float3 v{piv.x - velocity.x, piv.y - velocity.y, piv.z - velocity.z};
     
     // conservative force
     float omega_c = r < 0.f ?  1.f : (1 - r / pot.w.y);
@@ -1728,7 +1315,7 @@ __device__ inline void dpd_boundary_eval_cuda(cuda::DPDPotentialData pot, cuda::
 
 }
 
-__device__ inline void dpd_boundary_eval_cuda(int pind, int bid, cuda::Particle pi, float rj, float3 velocity, float3 dx, float r2, float *e, float *force) {
+__device__ inline void dpd_boundary_eval_cuda(int pind, int bid, float ri, float rj, float3 piv, float3 velocity, float3 dx, float r2, float *e, float *force) {
 
     float delta = rsqrtf(cuda_dt);
     
@@ -1739,7 +1326,7 @@ __device__ inline void dpd_boundary_eval_cuda(int pind, int bid, cuda::Particle 
     float a = tex2D<float>(cuda_tex_dpd_bcs_dataf[bid], 0, pind);
     float b = tex2D<float>(cuda_tex_dpd_bcs_dataf[bid], 1, pind);;
     
-    r = flags & POTENTIAL_SHIFTED ? r - (pi.v.w + rj) : r;
+    r = flags & POTENTIAL_SHIFTED ? r - (ri + rj) : r;
 
     if(r > b) {
         *e = 0.f;
@@ -1755,7 +1342,7 @@ __device__ inline void dpd_boundary_eval_cuda(int pind, int bid, cuda::Particle 
     // unit vector
     float3 unit_vec{dx.x / ro, dx.y / ro, dx.z / ro};
     
-    float3 v{pi.v.x - velocity.x, pi.v.y - velocity.y, pi.v.z - velocity.z};
+    float3 v{piv.x - velocity.x, piv.y - velocity.y, piv.z - velocity.z};
     
     // conservative force
     float omega_c = r < 0.f ?  1.f : (1 - r / b);
@@ -1784,13 +1371,14 @@ __device__ inline void dpd_boundary_eval_cuda(int pind, int bid, cuda::Particle 
 // Underlying evaluation call
 __device__ inline void _potential_eval_super_ex_cuda_p(int pind, 
                                                     bool iscluster, 
-                                                    cuda::Particle pi, 
-                                                    cuda::Particle pj, 
+                                                    float ri, 
+                                                    float rj, 
+                                                    int pidi, 
+                                                    int pidj, 
                                                     float3 dx, 
                                                     float r2, 
                                                     float *epot, 
-                                                    float *fi, 
-                                                    float *fj) 
+                                                    float *fi) 
 {
     int p_flags = tex2D<int>(iscluster ? cuda_tex_pot_cluster_datai : cuda_tex_pot_datai, 0, pind);
     if(p_flags & POTENTIAL_PERIODIC) {
@@ -1809,18 +1397,11 @@ __device__ inline void _potential_eval_super_ex_cuda_p(int pind,
     float e, f;
 
     /* update the forces if part in range */
-    potential_eval_ex_cuda(pind, iscluster, pi.v.w, pj.v.w, r2, &e, &f);
+    potential_eval_ex_cuda(pind, iscluster, ri, rj, r2, &e, &f);
 
-    float w;
-    w = f * dx.x;
-    fi[0] -= w;
-    fj[0] += w;
-    w = f * dx.y;
-    fi[1] -= w;
-    fj[1] += w;
-    w = f * dx.z;
-    fi[2] -= w;
-    fj[2] += w;
+    fi[0] -= f * dx.x;
+    fi[1] -= f * dx.y;
+    fi[2] -= f * dx.z;
     
     /* tabulate the energy */
     *epot += e;
@@ -1830,18 +1411,21 @@ __device__ inline void _potential_eval_super_ex_cuda_p(int pind,
 // Underlying evaluation call
 __device__ inline void _potential_eval_super_ex_cuda_d(int pind, 
                                                     bool iscluster,
-                                                    cuda::Particle pi, 
-                                                    cuda::Particle pj, 
+                                                    float ri, 
+                                                    float rj, 
+                                                    float3 vi, 
+                                                    float3 vj, 
+                                                    int pidi, 
+                                                    int pidj, 
                                                     float3 dx, 
                                                     float r2, 
                                                     float *epot, 
-                                                    float *fi, 
-                                                    float *fj) 
+                                                    float *fi) 
 {
     float e;
 
     /* update the forces if part in range */
-    dpd_eval_cuda(pind, iscluster, pi, pj, dx, r2, &e, fi, fj);
+    dpd_eval_cuda(pind, iscluster, ri, rj, vi, vj, pidi, pidj, dx, r2, &e, fi);
     
     *epot += e;
 }
@@ -1851,35 +1435,42 @@ __device__ inline
 void potential_eval_super_ex_cuda(int pind, 
                                   int nr_pots, 
                                   int nr_dpds, 
-                                  cuda::Particle pi, 
-                                  cuda::Particle pj, 
+                                  float ri, 
+                                  float rj, 
+                                  int pidi, 
+                                  int pidj, 
                                   float3 dx, 
                                   float r2, 
                                   float *epot, 
-                                  float *fi, 
-                                  float *fj) 
+                                  float *fi) 
 {
 
     if(iscluster) {
         int stride = cuda_dpds_cluster_max;
-        for(int i = 0; i < nr_dpds; i++) {
-            _potential_eval_super_ex_cuda_d(stride * pind + i, true, pi, pj, dx, r2, epot, fi, fj);
+        if(nr_dpds > 0) {
+            float3 vi = cuda_parts_vel[pidi];
+            float3 vj = cuda_parts_vel[pidj];
+            for(int i = 0; i < nr_dpds; i++) 
+                _potential_eval_super_ex_cuda_d(stride * pind + i, true, ri, rj, vi, vj, pidi, pidj, dx, r2, epot, fi);
         }
 
         stride = cuda_pots_cluster_max;
         for(int i = 0; i < nr_pots; i++) {
-            _potential_eval_super_ex_cuda_p(stride * pind + i, true, pi, pj, dx, r2, epot, fi, fj);
+            _potential_eval_super_ex_cuda_p(stride * pind + i, true, ri, rj, pidi, pidj, dx, r2, epot, fi);
         }
     } 
     else {
         int stride = cuda_dpds_max;
-        for(int i = 0; i < nr_dpds; i++) {
-            _potential_eval_super_ex_cuda_d(stride * pind + i, false, pi, pj, dx, r2, epot, fi, fj);
+        if(nr_dpds > 0) {
+            float3 vi = cuda_parts_vel[pidi];
+            float3 vj = cuda_parts_vel[pidj];
+            for(int i = 0; i < nr_dpds; i++) 
+                _potential_eval_super_ex_cuda_d(stride * pind + i, false, ri, rj, vi, vj, pidi, pidj, dx, r2, epot, fi);
         }
 
         stride = cuda_pots_max;
         for(int i = 0; i < nr_pots; i++) {
-            _potential_eval_super_ex_cuda_p(stride * pind + i, false, pi, pj, dx, r2, epot, fi, fj);
+            _potential_eval_super_ex_cuda_p(stride * pind + i, false, ri, rj, pidi, pidj, dx, r2, epot, fi);
         }
     }
 
@@ -1887,7 +1478,8 @@ void potential_eval_super_ex_cuda(int pind,
 
 __device__ inline void _boundary_eval_cuda_ex_cuda_p(int pind, 
                                                      int bid, 
-                                                     cuda::Particle part, 
+                                                     float ri, 
+                                                     int pid, 
                                                      cuda::BoundaryCondition bc, 
                                                      float3 dx, 
                                                      float r2, 
@@ -1897,7 +1489,7 @@ __device__ inline void _boundary_eval_cuda_ex_cuda_p(int pind,
     float e, f;
 
     /* update the forces if part in range */
-    potential_eval_ex_cuda(pind, bid, part.v.w, bc.radius, r2, &e, &f);
+    potential_eval_ex_cuda(pind, bid, ri, bc.radius, r2, &e, &f);
 
     force[0] -= f * dx.x;
     force[1] -= f * dx.y;
@@ -1911,7 +1503,9 @@ __device__ inline void _boundary_eval_cuda_ex_cuda_p(int pind,
 __device__ inline 
 void _boundary_eval_cuda_ex_cuda_d(int pind, 
                                    int bid, 
-                                   cuda::Particle part, 
+                                   float ri, 
+                                   float3 vi, 
+                                   int pid, 
                                    cuda::BoundaryCondition bc, 
                                    float3 dx, 
                                    float r2, 
@@ -1921,7 +1515,7 @@ void _boundary_eval_cuda_ex_cuda_d(int pind,
     float e;
     
     /* update the forces if part in range */
-    dpd_boundary_eval_cuda(pind, bid, part, bc.radius, bc.velocity, dx, r2, &e, force);
+    dpd_boundary_eval_cuda(pind, bid, ri, bc.radius, vi, bc.velocity, dx, r2, &e, force);
     
     *epot += e;
 }
@@ -1931,7 +1525,8 @@ void boundary_eval_cuda_ex_cuda(int pind,
                                 int nr_pots, 
                                 int nr_dpds, 
                                 int bid, 
-                                cuda::Particle part, 
+                                float ri, 
+                                int pid, 
                                 cuda::BoundaryCondition bc, 
                                 float3 dx, 
                                 float r, 
@@ -1940,84 +1535,89 @@ void boundary_eval_cuda_ex_cuda(int pind,
 {
     float r2 = r * r;
 
-    for(int i = 0; i < nr_dpds; i++) {
-        _boundary_eval_cuda_ex_cuda_d(cuda_dpds_bcs_max[bid] * pind + i, bid, part, bc, dx, r2, epot, force);
+    if(nr_dpds > 0) {
+        float3 vi = cuda_parts_vel[pid];
+        int stride = cuda_dpds_bcs_max[bid];
+        for(int i = 0; i < nr_dpds; i++) {
+            _boundary_eval_cuda_ex_cuda_d(stride * pind + i, bid, ri, vi, pid, bc, dx, r2, epot, force);
+        }
     }
 
+    int stride = cuda_pots_bcs_max[bid];
     for(int i = 0; i < nr_pots; i++) {
-        _boundary_eval_cuda_ex_cuda_p(cuda_pots_bcs_max[bid] * pind + i, bid, part, bc, dx, r2, epot, force);
+        _boundary_eval_cuda_ex_cuda_p(stride * pind + i, bid, ri, pid, bc, dx, r2, epot, force);
     }
 }
 
 __device__ 
-void boundary_eval_cuda(cuda::Particle part, float3 cell_dim, unsigned int cell_flags, float *force, float *epot) {
+void boundary_eval_cuda(float4 px, int pid, int typeId, float3 cell_dim, unsigned int cell_flags, float *force, float *epot) {
     
     float r;
     cuda::BoundaryCondition *bcs = cuda_bcs.bcs;
     
     if(cell_flags & cell_active_left) {
-        int pind    = cuda_pind_bcs[0][ENGINE_CUDA_PIND_WIDTH * part.w.y    ];
-        int nr_pots = cuda_pind_bcs[0][ENGINE_CUDA_PIND_WIDTH * part.w.y + 1];
-        int nr_dpds = cuda_pind_bcs[0][ENGINE_CUDA_PIND_WIDTH * part.w.y + 2];
+        int pind    = cuda_pind_bcs[0][ENGINE_CUDA_PIND_WIDTH * typeId    ];
+        int nr_pots = cuda_pind_bcs[0][ENGINE_CUDA_PIND_WIDTH * typeId + 1];
+        int nr_dpds = cuda_pind_bcs[0][ENGINE_CUDA_PIND_WIDTH * typeId + 2];
         if(nr_pots + nr_dpds > 0) {
-            r = part.x.x;
+            r = px.x;
             float3 dx{r, 0.f, 0.f};
-            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 0, part, bcs[0], dx, r, epot, force);
+            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 0, px.w, pid, bcs[0], dx, r, epot, force);
         }
     }
     
     if(cell_flags & cell_active_right) {
-        int pind    = cuda_pind_bcs[1][ENGINE_CUDA_PIND_WIDTH * part.w.y    ];
-        int nr_pots = cuda_pind_bcs[1][ENGINE_CUDA_PIND_WIDTH * part.w.y + 1];
-        int nr_dpds = cuda_pind_bcs[1][ENGINE_CUDA_PIND_WIDTH * part.w.y + 2];
+        int pind    = cuda_pind_bcs[1][ENGINE_CUDA_PIND_WIDTH * typeId    ];
+        int nr_pots = cuda_pind_bcs[1][ENGINE_CUDA_PIND_WIDTH * typeId + 1];
+        int nr_dpds = cuda_pind_bcs[1][ENGINE_CUDA_PIND_WIDTH * typeId + 2];
         if(nr_pots + nr_dpds > 0) {
-            r = cell_dim.x - part.x.x;
+            r = cell_dim.x - px.x;
             float3 dx{-r, 0.f, 0.f};
-            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 1, part, bcs[1], dx, r, epot, force);
+            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 1, px.w, pid, bcs[1], dx, r, epot, force);
         }
     }
     
     if(cell_flags & cell_active_front) {
-        int pind    = cuda_pind_bcs[2][ENGINE_CUDA_PIND_WIDTH * part.w.y    ];
-        int nr_pots = cuda_pind_bcs[2][ENGINE_CUDA_PIND_WIDTH * part.w.y + 1];
-        int nr_dpds = cuda_pind_bcs[2][ENGINE_CUDA_PIND_WIDTH * part.w.y + 2];
+        int pind    = cuda_pind_bcs[2][ENGINE_CUDA_PIND_WIDTH * typeId    ];
+        int nr_pots = cuda_pind_bcs[2][ENGINE_CUDA_PIND_WIDTH * typeId + 1];
+        int nr_dpds = cuda_pind_bcs[2][ENGINE_CUDA_PIND_WIDTH * typeId + 2];
         if(nr_pots + nr_dpds > 0) {
-            r = part.x.y;
+            r = px.y;
             float3 dx{0.f, r, 0.f};
-            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 2, part, bcs[2], dx, r, epot, force);
+            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 2, px.w, pid, bcs[2], dx, r, epot, force);
         }
     }
     
     if(cell_flags & cell_active_back) {
-        int pind    = cuda_pind_bcs[3][ENGINE_CUDA_PIND_WIDTH * part.w.y    ];
-        int nr_pots = cuda_pind_bcs[3][ENGINE_CUDA_PIND_WIDTH * part.w.y + 1];
-        int nr_dpds = cuda_pind_bcs[3][ENGINE_CUDA_PIND_WIDTH * part.w.y + 2];
+        int pind    = cuda_pind_bcs[3][ENGINE_CUDA_PIND_WIDTH * typeId    ];
+        int nr_pots = cuda_pind_bcs[3][ENGINE_CUDA_PIND_WIDTH * typeId + 1];
+        int nr_dpds = cuda_pind_bcs[3][ENGINE_CUDA_PIND_WIDTH * typeId + 2];
         if(nr_pots + nr_dpds > 0) {
-            r = cell_dim.y - part.x.y;
+            r = cell_dim.y - px.y;
             float3 dx{0.f, -r, 0.f};
-            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 3, part, bcs[3], dx, r, epot, force);
+            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 3, px.w, pid, bcs[3], dx, r, epot, force);
         }
     }
     
     if(cell_flags & cell_active_bottom) {
-        int pind    = cuda_pind_bcs[4][ENGINE_CUDA_PIND_WIDTH * part.w.y    ];
-        int nr_pots = cuda_pind_bcs[4][ENGINE_CUDA_PIND_WIDTH * part.w.y + 1];
-        int nr_dpds = cuda_pind_bcs[4][ENGINE_CUDA_PIND_WIDTH * part.w.y + 2];
+        int pind    = cuda_pind_bcs[4][ENGINE_CUDA_PIND_WIDTH * typeId    ];
+        int nr_pots = cuda_pind_bcs[4][ENGINE_CUDA_PIND_WIDTH * typeId + 1];
+        int nr_dpds = cuda_pind_bcs[4][ENGINE_CUDA_PIND_WIDTH * typeId + 2];
         if(nr_pots + nr_dpds > 0) {
-            r = part.x.z;
+            r = px.z;
             float3 dx{0.f, 0.f, r};
-            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 4, part, bcs[4], dx, r, epot, force);
+            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 4, px.w, pid, bcs[4], dx, r, epot, force);
         }
     }
     
     if(cell_flags & cell_active_top) {
-        int pind    = cuda_pind_bcs[5][ENGINE_CUDA_PIND_WIDTH * part.w.y    ];
-        int nr_pots = cuda_pind_bcs[5][ENGINE_CUDA_PIND_WIDTH * part.w.y + 1];
-        int nr_dpds = cuda_pind_bcs[5][ENGINE_CUDA_PIND_WIDTH * part.w.y + 2];
+        int pind    = cuda_pind_bcs[5][ENGINE_CUDA_PIND_WIDTH * typeId    ];
+        int nr_pots = cuda_pind_bcs[5][ENGINE_CUDA_PIND_WIDTH * typeId + 1];
+        int nr_dpds = cuda_pind_bcs[5][ENGINE_CUDA_PIND_WIDTH * typeId + 2];
         if(nr_pots + nr_dpds > 0) {
-            r = cell_dim.z - part.x.z;
+            r = cell_dim.z - px.z;
             float3 dx{0.f, 0.f, -r};
-            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 5, part, bcs[5], dx, r, epot, force);
+            boundary_eval_cuda_ex_cuda(pind, nr_pots, nr_dpds, 5, px.w, pid, bcs[5], dx, r, epot, force);
         }
     }
 
@@ -2159,7 +1759,7 @@ void flux_eval_ex_cuda(cuda::Fluxes fluxes, float r, float *states_i, float *sta
  *
  * @sa #runner_dopair.
  */
-__device__ inline void runner_dosort_cuda(cuda::Particle *parts_i, int count_i, unsigned int *sort_i, int sid) {
+__device__ inline void runner_dosort_cuda(float4* parts_pos, int count_i, unsigned int *sort_i, int sid) {
     
     TIMER_TIC
     
@@ -2177,7 +1777,7 @@ __device__ inline void runner_dosort_cuda(cuda::Particle *parts_i, int count_i, 
 
     /* Pack the parts into the sort arrays. */
     for(int k = threadIdx.x ; k < count_i ; k += blockDim.x) {
-        float4 pix = parts_i[ k ].x;
+        float4 pix = parts_pos[ k ];
         sort_i[k] =(k << 16) | (unsigned int)(cuda_dscale * (nshift + pix.x*shift[0] + pix.y*shift[1] + pix.z*shift[2]));
     }
 
@@ -2188,7 +1788,6 @@ __device__ inline void runner_dosort_cuda(cuda::Particle *parts_i, int count_i, 
 
 }
 
-
 /**
  * @brief Compute the pairwise interactions for the given pair on a CUDA device.
  *
@@ -2203,79 +1802,92 @@ __device__ inline void runner_dosort_cuda(cuda::Particle *parts_i, int count_i, 
  *
  * @sa #runner_dopair.
  */
-__device__  void runner_dopair_left_cuda(cuda::Particle * parts_i, int count_i, cuda::Particle *parts_j, int count_j, float *forces_i, unsigned int *sort_i, unsigned int *sort_j, float *shift, unsigned int dshift, float *epot_global) {
+ __device__ void runner_dopair_left_cuda(
+    int ind_i, int count_i, 
+    int ind_j, int count_j, 
+    float4* parts_pos_i, int4* parts_datai_i, 
+    float4* parts_pos_j, int4* parts_datai_j, 
+    float *forces_i, 
+    unsigned int *sort_i, unsigned int *sort_j, 
+    float *shift, unsigned int dshift, float *epot_global
+) {
     float epot = 0.0f;
     
     TIMER_TIC
-    
-    /* Pre-compute the inverse norm of the shift. */
-    unsigned int dmaxdist = 2 + cuda_dscale * cuda_maxdist - dshift;
-    
+
     for(int i = threadIdx.x ; i < count_i ;  i += blockDim.x) {
 
-        unsigned int di = (sort_i[i]&0xffff) + dmaxdist;
+        unsigned int di = (sort_i[i]&0xffff);
+
         /* Get a direct pointer on the pjdth part in cell_j. */
         int spid = sort_i[i] >> 16;
-        cuda::Particle pi = parts_i[ spid ];
-        float4 pix = float4(pi.x);
+        int pidi = ind_i + spid;
+        float4 pix = parts_pos_i[spid];
         pix.x -= shift[0]; pix.y -= shift[1]; pix.z -= shift[2];
+        int4 pdatai_i = parts_datai_i[spid];
+        int pioff = pdatai_i.y * cuda_maxtype;
+        int flagsi = pdatai_i.z;
+        int clusterIdi = pdatai_i.w;
         float pif[] = {0.0f, 0.0f, 0.0f, 0.0f};
 
         /* Loop over the particles in cell_j. */
-        for(int k = count_j-1 ; k >=0 && (sort_j[k]&0xffff) <= di ; k--) {
+        for(int k = count_j-1 ; k >= 0 && (sort_j[k]&0xffff) + dshift < cuda_dmaxdist + di ; k--) {
                  
             /* Get a handle on the wrapped particle pid in cell_i. */
 
-            cuda::Particle pj = parts_j[ sort_j[k] >> 16 ];
+            int spjd = sort_j[k] >> 16;
 
             /* Compute the radius between pi and pj. */
-            float3 dx{pix.x - pj.x.x, pix.y - pj.x.y, pix.z - pj.x.z};
+            float4 pjx = parts_pos_j[spjd];
+            float3 dx{pix.x - pjx.x, pix.y - pjx.y, pix.z - pjx.z};
             float r2 = dx.x * dx.x + dx.y * dx.y + dx.z * dx.z;
 
-            if(r2 >= cuda_cutoff2) {
-                continue;
+            if(r2 < cuda_cutoff2) {
+
+                float number_density;
+                
+                w_cubic_spline_cuda_nr(r2, cuda_cutoff, &number_density);
+
+                pif[3] += number_density;
+
+                int pind, nr_pots, nr_dpds;
+                int4 pdatai_j = parts_datai_j[spjd];
+                int pjoff = ENGINE_CUDA_PIND_WIDTH * (pioff + pdatai_j.y);
+                bool iscluster = flagsi & PARTICLE_BOUND && pdatai_j.z & PARTICLE_BOUND && clusterIdi == pdatai_j.w;
+
+                if(iscluster) {
+                    pind    = cuda_pind_cluster[pjoff    ];
+                    nr_pots = cuda_pind_cluster[pjoff + 1];
+                    nr_dpds = cuda_pind_cluster[pjoff + 2];
+                }
+                else {
+                    pind    = cuda_pind[pjoff    ];
+                    nr_pots = cuda_pind[pjoff + 1];
+                    nr_dpds = cuda_pind[pjoff + 2];
+                }
+
+                if(pind != 0) {
+
+                    float ee = 0.0f;
+                    int pidj = ind_j + spjd;
+
+                    /* Interact particles pi and pj. */
+                    if(iscluster) 
+                        potential_eval_super_ex_cuda<true>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+                    else 
+                        potential_eval_super_ex_cuda<false>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+
+                    /* Store the interaction energy. */
+                    epot += ee;
+                }
             }
-
-            float number_density;
-            
-            w_cubic_spline_cuda_nr(r2, cuda_cutoff, &number_density);
-
-            pif[3] += number_density;
-
-            int pind, nr_pots, nr_dpds;
-            bool iscluster = pi.w.w & PARTICLE_BOUND && pj.w.w & PARTICLE_BOUND && pi.w.z == pj.w.z;
-
-            if(iscluster) {
-                pind    = cuda_pind_cluster[ ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y)    ];
-                nr_pots = cuda_pind_cluster[ ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 1];
-                nr_dpds = cuda_pind_cluster[ ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 2];
-            }
-            else {
-                pind    = cuda_pind[ ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y)    ];
-                nr_pots = cuda_pind[ ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 1];
-                nr_dpds = cuda_pind[ ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 2];
-            }
-
-            if(pind == 0) 
-                continue;
-
-            float ee = 0.0f;
-            float pjf[4];
-
-            /* Interact particles pi and pj. */
-            if(iscluster) 
-                potential_eval_super_ex_cuda<true>(pind, nr_pots, nr_dpds, pi, pj, dx, r2, &ee, pif, pjf);
-            else 
-                potential_eval_super_ex_cuda<false>(pind, nr_pots, nr_dpds, pi, pj, dx, r2, &ee, pif, pjf);
-
-            /* Store the interaction energy. */
-            epot += ee;
 
         } /* loop over parts in cell_i. */
 
         /* Update the force on pj. */
+        #pragma unroll
         for(int k = 0 ; k < 4 ; k++)
-        	atomicAdd(&forces_i[ 4*spid + k], pif[k]);
+        	forces_i[4*spid + k] += pif[k];
         
     } /* loop over the particles in cell_j. */
         
@@ -2286,6 +1898,115 @@ __device__  void runner_dopair_left_cuda(cuda::Particle * parts_i, int count_i, 
     
 }
 
+/**
+ * @brief Compute the pairwise interactions for the given pair on a CUDA device.
+ *
+ * @param icid Array of parts in the first cell.
+ * @param count_i Number of parts in the first cell.
+ * @param icjd Array of parts in the second cell.
+ * @param count_j Number of parts in the second cell.
+ * @param pshift A pointer to an array of three floating point values containing
+ *      the vector separating the centers of @c cell_i and @c cell_j.
+ * @param cid Part buffer in local memory.
+ * @param cjd Part buffer in local memory.
+ *
+ * @sa #runner_dopair.
+ */
+ __device__ void runner_dopair_right_cuda(
+    int ind_i, int count_i, 
+    int ind_j, int count_j, 
+    float4* parts_pos_i, int4* parts_datai_i, 
+    float4* parts_pos_j, int4* parts_datai_j, 
+    float *forces_i, 
+    unsigned int *sort_i, unsigned int *sort_j, 
+    float *shift, unsigned int dshift, float *epot_global
+) {
+    float epot = 0.0f;
+    
+    TIMER_TIC
+
+    for(int i = threadIdx.x ; i < count_i ;  i += blockDim.x) {
+
+        unsigned int di = (sort_i[i]&0xffff);
+
+        /* Get a direct pointer on the pjdth part in cell_j. */
+        int spid = sort_i[i] >> 16;
+        int pidi = ind_i + spid;
+        float4 pix = parts_pos_i[spid];
+        pix.x += shift[0]; pix.y += shift[1]; pix.z += shift[2];
+        int4 pdatai_i = parts_datai_i[spid];
+        int pioff = pdatai_i.y * cuda_maxtype;
+        int flagsi = pdatai_i.z;
+        int clusterIdi = pdatai_i.w;
+        float pif[] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+        /* Loop over the particles in cell_j. */
+        for(int k = 0 ; k < count_j && di + dshift <= cuda_dmaxdist + (sort_j[k]&0xffff) ; k++) {
+                 
+            /* Get a handle on the wrapped particle pid in cell_i. */
+
+            int spjd = sort_j[k] >> 16;
+
+            /* Compute the radius between pi and pj. */
+            float4 pjx = parts_pos_j[spjd];
+            float3 dx{pix.x - pjx.x, pix.y - pjx.y, pix.z - pjx.z};
+            float r2 = dx.x * dx.x + dx.y * dx.y + dx.z * dx.z;
+
+            if(r2 < cuda_cutoff2) {
+
+                float number_density;
+                
+                w_cubic_spline_cuda_nr(r2, cuda_cutoff, &number_density);
+
+                pif[3] += number_density;
+
+                int pind, nr_pots, nr_dpds;
+                int4 pdatai_j = parts_datai_j[spjd];
+                int pjoff = ENGINE_CUDA_PIND_WIDTH * (pioff + pdatai_j.y);
+                bool iscluster = flagsi & PARTICLE_BOUND && pdatai_j.z & PARTICLE_BOUND && clusterIdi == pdatai_j.w;
+
+                if(iscluster) {
+                    pind    = cuda_pind_cluster[pjoff    ];
+                    nr_pots = cuda_pind_cluster[pjoff + 1];
+                    nr_dpds = cuda_pind_cluster[pjoff + 2];
+                }
+                else {
+                    pind    = cuda_pind[pjoff    ];
+                    nr_pots = cuda_pind[pjoff + 1];
+                    nr_dpds = cuda_pind[pjoff + 2];
+                }
+
+                if(pind != 0) {
+
+                    float ee = 0.0f;
+                    int pidj = ind_j + spjd;
+
+                    /* Interact particles pi and pj. */
+                    if(iscluster) 
+                        potential_eval_super_ex_cuda<true>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+                    else 
+                        potential_eval_super_ex_cuda<false>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+
+                    /* Store the interaction energy. */
+                    epot += ee;
+                }
+            }
+
+        } /* loop over parts in cell_i. */
+
+        /* Update the force on pj. */
+        #pragma unroll
+        for(int k = 0 ; k < 4 ; k++)
+        	forces_i[4*spid + k] += pif[k];
+        
+    } /* loop over the particles in cell_j. */
+        
+    /* Store the potential energy. */
+    *epot_global += epot;
+        
+    TIMER_TOC(tid_pair)
+    
+}
 
 /**
  * @brief Compute the pairwise interactions for the given pair on a CUDA device.
@@ -2301,62 +2022,66 @@ __device__  void runner_dopair_left_cuda(cuda::Particle * parts_i, int count_i, 
  *
  * @sa #runner_dopair.
  */
-__device__  void runner_dostate_left_cuda(cuda::Particle * parts_i, float *states_i, int count_i, cuda::Particle *parts_j, float *states_j, int count_j, float *fluxes_i, unsigned int *sort_i, unsigned int *sort_j, float *shift, unsigned int dshift, unsigned int nr_states) {
+__device__ void runner_dopair_state_left_cuda(
+    int ind_i, float *states_i, int count_i, 
+    int ind_j, float *states_j, int count_j, 
+    float4* parts_pos_i, int4* parts_datai_i, 
+    float4* parts_pos_j, int4* parts_datai_j, 
+    float *fluxes_i, 
+    unsigned int *sort_i, unsigned int *sort_j, 
+    float *shift, unsigned int dshift, unsigned int nr_states
+) {
     
     TIMER_TIC
     
-    /* Pre-compute the inverse norm of the shift. */
-    unsigned int dmaxdist = 2 + cuda_dscale * cuda_maxdist - dshift;
-    
     for(int i = threadIdx.x ; i < count_i ;  i += blockDim.x) {
 
-        unsigned int di = (sort_i[i]&0xffff) + dmaxdist;
+        unsigned int di = (sort_i[i]&0xffff);
         /* Get a direct pointer on the pjdth part in cell_j. */
         int spid = sort_i[i] >> 16;
-        cuda::Particle pi = parts_i[ spid ];
-        float4 pix = float4(pi.x);
+        float4 pix = parts_pos_i[spid];
         pix.x -= shift[0]; pix.y -= shift[1]; pix.z -= shift[2];
+        int typeIdi = parts_datai_i[spid].y;
+        int pioff = typeIdi * cuda_maxtype;
 
         float pifx[TF_SIMD_SIZE];
         memset(pifx, 0.f, nr_states * sizeof(float));
         float *pis = &states_i[nr_states * spid];
 
         /* Loop over the particles in cell_j. */
-        for(int k = count_j-1 ; k >=0 && (sort_j[k]&0xffff) <= di ; k--) {
+        for(int k = count_j-1 ; k >= 0 && (sort_j[k]&0xffff) + dshift < cuda_dmaxdist + di ; k--) {
                  
             /* Get a handle on the wrapped particle pid in cell_i. */
 
             int spjd = sort_j[k] >> 16;
-            cuda::Particle pj = parts_j[ spjd ];
 
             /* Compute the radius between pi and pj. */
+            float4 pjx = parts_pos_j[spjd];
             float r2 = 0.0f, dx;
-            dx = pix.x - pj.x.x; r2 += dx * dx;
-            dx = pix.y - pj.x.y; r2 += dx * dx;
-            dx = pix.z - pj.x.z; r2 += dx * dx;
+            dx = pix.x - pjx.x; r2 += dx * dx;
+            dx = pix.y - pjx.y; r2 += dx * dx;
+            dx = pix.z - pjx.z; r2 += dx * dx;
 
             if(r2 >= cuda_cutoff2) {
                 continue;
             }
 
-            int fxind = cuda_fxind[pi.w.y * cuda_maxtype + pj.w.y];
+            int typeIdj = parts_datai_j[spjd].y;
+            int fxind = cuda_fxind[pioff + typeIdj];
             if(fxind != 0) {
-                flux_eval_ex_cuda(cuda_fluxes[fxind], sqrtf(r2), pis, &states_j[nr_states * spjd], pi.w.y, pj.w.y, pifx);
+                flux_eval_ex_cuda(cuda_fluxes[fxind], sqrtf(r2), pis, &states_j[nr_states * spjd], typeIdi, typeIdj, pifx);
             }
 
         } /* loop over parts in cell_i. */
 
         for(int k = 0; k < nr_states; k++)
-            atomicAdd(&fluxes_i[nr_states * spid + k], pifx[k]);
+            fluxes_i[nr_states * spid + k] += pifx[k];
         
     } /* loop over the particles in cell_j. */
         
     TIMER_TOC(tid_pair)
     
 }
-
-
-
 
 /**
  * @brief Compute the pairwise interactions for the given pair on a CUDA device.
@@ -2372,153 +2097,63 @@ __device__  void runner_dostate_left_cuda(cuda::Particle * parts_i, float *state
  *
  * @sa #runner_dopair.
  */
-__device__ void runner_dopair_right_cuda(cuda::Particle *parts_i, int count_i, cuda::Particle *parts_j, int count_j, float *forces_i, unsigned int *sort_i, unsigned int *sort_j, float *shift, unsigned int dshift, float *epot_global) {
-    float epot = 0.0f;
+__device__ void runner_dopair_state_right_cuda(
+    int ind_i, float *states_i, int count_i, 
+    int ind_j, float *states_j, int count_j, 
+    float4* parts_pos_i, int4* parts_datai_i, 
+    float4* parts_pos_j, int4* parts_datai_j, 
+    float *fluxes_i, 
+    unsigned int *sort_i, unsigned int *sort_j, 
+    float *shift, unsigned int dshift, unsigned int nr_states
+) {
     
     TIMER_TIC
     
-    /* Pre-compute the inverse norm of the shift. */
-    unsigned int dmaxdist = 2 + cuda_dscale * cuda_maxdist - dshift;
-
     for(int i = threadIdx.x ; i < count_i ;  i += blockDim.x) {
 
-        unsigned int dj = (sort_i[i]&0xffff) - dmaxdist;
+        unsigned int di = (sort_i[i]&0xffff);
         /* Get a direct pointer on the pjdth part in cell_j. */
         int spid = sort_i[i] >> 16;
-        cuda::Particle pi = parts_i[ spid ];
-        float4 pix = float4(pi.x);
+        float4 pix = parts_pos_i[spid];
         pix.x += shift[0]; pix.y += shift[1]; pix.z += shift[2];
-        float pif[] = {0.0f, 0.0f, 0.0f, 0.0f};
-        
-        /* Loop over the particles in cell_j. */
-        for(int k = 0 ; k < count_j && dj <= (sort_j[k]&0xffff) ; k++) {
-
-            /* Get a handle on the wrapped particle pid in cell_i. */
-            cuda::Particle pj = parts_j[ sort_j[k] >> 16 ];
-
-            /* Compute the radius between pi and pj. */
-            float3 dx{pix.x - pj.x.x, pix.y - pj.x.y, pix.z - pj.x.z};
-            float r2 = dx.x * dx.x + dx.y * dx.y + dx.z * dx.z;
-            
-            if(r2 >= cuda_cutoff2) {
-                continue;
-            }
-
-            float number_density;
-
-            w_cubic_spline_cuda_nr(r2, cuda_cutoff, &number_density);
-
-            pif[3] += number_density;
-
-            int pind, nr_pots, nr_dpds;
-            bool iscluster = pi.w.w & PARTICLE_BOUND && pj.w.w & PARTICLE_BOUND && pi.w.z == pj.w.z;
-
-            if(iscluster) {
-                pind    = cuda_pind_cluster[ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y)    ];
-                nr_pots = cuda_pind_cluster[ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 1];
-                nr_dpds = cuda_pind_cluster[ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 2];
-            }
-            else {
-                pind    = cuda_pind[ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y)    ];
-                nr_pots = cuda_pind[ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 1];
-                nr_dpds = cuda_pind[ENGINE_CUDA_PIND_WIDTH * (pi.w.y * cuda_maxtype + pj.w.y) + 2];
-            }
-            if(pind == 0) 
-                continue;
-
-            float ee = 0.0f;
-            float pjf[4];
-
-            /* Interact particles pi and pj. */
-            if(iscluster) 
-                potential_eval_super_ex_cuda<true>(pind, nr_pots, nr_dpds, pi, pj, dx, r2, &ee, pif, pjf);
-            else 
-                potential_eval_super_ex_cuda<false>(pind, nr_pots, nr_dpds, pi, pj, dx, r2, &ee, pif, pjf);
-
-            /* Store the interaction force and energy. */
-            epot += ee;
-
-        } /* loop over parts in cell_i. */
-
-        /* Update the force on pj. */
-        for(int k = 0 ; k < 4 ; k++)
-        	atomicAdd(&forces_i[ 4*spid + k], pif[k]);
-        
-    } /* loop over the particles in cell_j. */
-        
-    /* Store the potential energy. */
-    *epot_global += epot;
-        
-    TIMER_TOC(tid_pair)
-    
-}
-
-
-
-
-/**
- * @brief Compute the pairwise interactions for the given pair on a CUDA device.
- *
- * @param icid Array of parts in the first cell.
- * @param count_i Number of parts in the first cell.
- * @param icjd Array of parts in the second cell.
- * @param count_j Number of parts in the second cell.
- * @param pshift A pointer to an array of three floating point values containing
- *      the vector separating the centers of @c cell_i and @c cell_j.
- * @param cid Part buffer in local memory.
- * @param cjd Part buffer in local memory.
- *
- * @sa #runner_dopair.
- */
-__device__ void runner_dostate_right_cuda(cuda::Particle *parts_i, float *states_i, int count_i, cuda::Particle *parts_j, float *states_j, int count_j, float *fluxes_i, unsigned int *sort_i, unsigned int *sort_j, float *shift, unsigned int dshift, unsigned int nr_states) {
-    
-    TIMER_TIC
-    
-    /* Pre-compute the inverse norm of the shift. */
-    unsigned int dmaxdist = 2 + cuda_dscale * cuda_maxdist - dshift;
-
-    for(int i = threadIdx.x ; i < count_i ;  i += blockDim.x) {
-
-        unsigned int dj = (sort_i[i]&0xffff) - dmaxdist;
-        /* Get a direct pointer on the pjdth part in cell_j. */
-        int spid = sort_i[i] >> 16;
-        cuda::Particle pi = parts_i[ spid ];
-        float4 pix = float4(pi.x);
-        pix.x += shift[0]; pix.y += shift[1]; pix.z += shift[2];
+        int typeIdi = parts_datai_i[spid].y;
+        int pioff = typeIdi * cuda_maxtype;
 
         float pifx[TF_SIMD_SIZE];
         memset(pifx, 0.f, nr_states * sizeof(float));
         float *pis = &states_i[nr_states * spid];
-        
-        /* Loop over the particles in cell_j. */
-        for(int k = 0 ; k < count_j && dj <= (sort_j[k]&0xffff) ; k++) {
 
+        /* Loop over the particles in cell_j. */
+        for(int k = 0 ; k < count_j && di + dshift <= cuda_dmaxdist + (sort_j[k]&0xffff) ; k++) {
+                 
             /* Get a handle on the wrapped particle pid in cell_i. */
+
             int spjd = sort_j[k] >> 16;
-            cuda::Particle pj = parts_j[ spjd ];
 
             /* Compute the radius between pi and pj. */
+            float4 pjx = parts_pos_j[spjd];
             float r2 = 0.0f, dx;
-            dx = pix.x - pj.x.x; r2 += dx * dx;
-            dx = pix.y - pj.x.y; r2 += dx * dx;
-            dx = pix.z - pj.x.z; r2 += dx * dx;
-            
+            dx = pix.x - pjx.x; r2 += dx * dx;
+            dx = pix.y - pjx.y; r2 += dx * dx;
+            dx = pix.z - pjx.z; r2 += dx * dx;
+
             if(r2 >= cuda_cutoff2) {
                 continue;
             }
 
-            int fxind = cuda_fxind[pi.w.y * cuda_maxtype + pj.w.y];
-            if(fxind != 0) { 
-                flux_eval_ex_cuda(cuda_fluxes[fxind], sqrtf(r2), pis, &states_j[nr_states * spjd], pi.w.y, pj.w.y, pifx);
+            int typeIdj = parts_datai_j[spjd].y;
+            int fxind = cuda_fxind[pioff + typeIdj];
+            if(fxind != 0) {
+                flux_eval_ex_cuda(cuda_fluxes[fxind], sqrtf(r2), pis, &states_j[nr_states * spjd], typeIdi, typeIdj, pifx);
             }
 
         } /* loop over parts in cell_i. */
 
         for(int k = 0; k < nr_states; k++)
-            atomicAdd(&fluxes_i[nr_states * spid + k], pifx[k]);
+            fluxes_i[nr_states * spid + k] += pifx[k];
         
     } /* loop over the particles in cell_j. */
-
+        
     TIMER_TOC(tid_pair)
     
 }
@@ -2532,11 +2167,13 @@ __device__ void runner_dostate_right_cuda(cuda::Particle *parts_i, float *states
  *
  * @sa #runner_dopair.
  */
-__device__ void runner_dopair_self_cuda (cuda::Particle *parts, int count, int cell_id, float *forces, float *epot_global) {
+__device__ void runner_doself_cuda(
+    int ind, int count, 
+    float4* parts_pos, 
+    int4* parts_datai, 
+    float *forces, float *epot_global
+) {
     float epot = 0.0f;
-    unsigned int cell_flags = cuda_cflags[cell_id];
-    bool boundary = cell_flags & cell_active_any;
-    float3 cdims = cuda_cdims[cell_id];
     
     TIMER_TIC
 
@@ -2544,69 +2181,69 @@ __device__ void runner_dopair_self_cuda (cuda::Particle *parts, int count, int c
     for(int i = threadIdx.x ; i < count ;  i += blockDim.x) {
     
         /* Get a direct pointer on the pjdth part in cell_j. */
-        cuda::Particle pj = parts[ i ];
-        int pjoff = pj.w.y * cuda_maxtype;
-        float pjf[] = {0.0f, 0.0f, 0.0f, 0.0f};
-        bool iscluster_maybe = pj.w.w & PARTICLE_BOUND;
+        int pidi = ind + i;
+        float4 pix = parts_pos[i];
+        float pif[] = {0.0f, 0.0f, 0.0f, 0.0f};
+        int4 pdatai_i = parts_datai[i];
+        int pioff = pdatai_i.y * cuda_maxtype;
+        bool iscluster_maybe = pdatai_i.z & PARTICLE_BOUND;
+        int clusterIdi = pdatai_i.w;
 
-        if(boundary) {
-            boundary_eval_cuda(pj, cdims, cell_flags, pjf, &epot);
-        }
-        
         /* Loop over the particles in cell_i. */
         for(int k = 0 ; k < count ; k++) {
         	if(i != k) {
-                /* Get a handle on the wrapped particle k in cell_i. */
-                cuda::Particle pi = parts[ k ];
 
                 /* Compute the radius between pi and pj. */
-                float3 dx{pi.x.x - pj.x.x, pi.x.y - pj.x.y, pi.x.z - pj.x.z};
+                float4 pjx = parts_pos[k];
+                float3 dx{pix.x - pjx.x, pix.y - pjx.y, pix.z - pjx.z};
                 float r2 = dx.x * dx.x + dx.y * dx.y + dx.z * dx.z;
 
-                if(r2 >= cuda_cutoff2) {
-                    continue;
+                if(r2 < cuda_cutoff2) {
+
+                    float number_density;
+
+                    w_cubic_spline_cuda_nr(r2, cuda_cutoff, &number_density);
+
+                    pif[3] += number_density;
+
+                    int pind, nr_pots, nr_dpds;
+                    int4 pdatai_j = parts_datai[k];
+                    int pjoff = ENGINE_CUDA_PIND_WIDTH * (pioff + pdatai_j.y);
+                    bool iscluster = iscluster_maybe && pdatai_j.z & PARTICLE_BOUND && pdatai_j.w == clusterIdi;
+
+                    if(iscluster) {
+                        pind    = cuda_pind_cluster[pjoff    ];
+                        nr_pots = cuda_pind_cluster[pjoff + 1];
+                        nr_dpds = cuda_pind_cluster[pjoff + 2];
+                    }
+                    else {
+                        pind    = cuda_pind[pjoff    ];
+                        nr_pots = cuda_pind[pjoff + 1];
+                        nr_dpds = cuda_pind[pjoff + 2];
+                    }
+                    if(pind != 0) {
+
+                        float ee = 0.0f;
+                        int pidj = ind + k;
+
+                        /* Interact particles pi and pj. */
+                        if(iscluster) 
+                            potential_eval_super_ex_cuda<true>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+                        else 
+                            potential_eval_super_ex_cuda<false>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+
+                        /* Store the interaction force and energy. */
+                        epot += ee;
+                    }
                 }
-
-                float number_density;
-
-                w_cubic_spline_cuda_nr(r2, cuda_cutoff, &number_density);
-
-                pjf[3] += number_density;
-
-                int pind, nr_pots, nr_dpds;
-                bool iscluster = iscluster_maybe && pi.w.w & PARTICLE_BOUND && pi.w.z == pj.w.z;
-
-                if(iscluster) {
-                    pind    = cuda_pind_cluster[ENGINE_CUDA_PIND_WIDTH * (pjoff + pi.w.y)    ];
-                    nr_pots = cuda_pind_cluster[ENGINE_CUDA_PIND_WIDTH * (pjoff + pi.w.y) + 1];
-                    nr_dpds = cuda_pind_cluster[ENGINE_CUDA_PIND_WIDTH * (pjoff + pi.w.y) + 2];
-                }
-                else {
-                    pind    = cuda_pind[ENGINE_CUDA_PIND_WIDTH * (pjoff + pi.w.y)    ];
-                    nr_pots = cuda_pind[ENGINE_CUDA_PIND_WIDTH * (pjoff + pi.w.y) + 1];
-                    nr_dpds = cuda_pind[ENGINE_CUDA_PIND_WIDTH * (pjoff + pi.w.y) + 2];
-                }
-                if(pind == 0) 
-                    continue;
-
-                float ee = 0.0f;
-                float pif[4];
-
-                /* Interact particles pi and pj. */
-                if(iscluster) 
-                    potential_eval_super_ex_cuda<true>(pind, nr_pots, nr_dpds, pi, pj, dx, r2, &ee, pif, pjf);
-                else 
-                    potential_eval_super_ex_cuda<false>(pind, nr_pots, nr_dpds, pi, pj, dx, r2, &ee, pif, pjf);
-
-                /* Store the interaction force and energy. */
-                epot += ee;
 
 			}
         } /* loop over parts in cell_i. */
 
         /* Update the force on pj. */
+        #pragma unroll
         for(int k = 0 ; k < 4 ; k++)
-        	atomicAdd(&forces[ 4*i + k], pjf[k]);
+            forces[4*i + k] += pif[k];
 
     } /* loop over the particles in cell_j. */
 
@@ -2626,7 +2263,150 @@ __device__ void runner_dopair_self_cuda (cuda::Particle *parts, int count, int c
  *
  * @sa #runner_dopair.
  */
-__device__ void runner_dostate_self_cuda (cuda::Particle *parts, float *states, int count, float *fluxes, unsigned int nr_states) {
+__device__ void runner_doself_cuda(
+    int indi, int indj, 
+    int counti, int countj, 
+    float4* parts_pos_i, int4* parts_datai_i, 
+    float4* parts_pos_j, int4* parts_datai_j, 
+    float *forces_i, float *epot_global
+) {
+    float epot = 0.0f;
+    
+    TIMER_TIC
+
+    /* Loop over the particles in the cell, frame-wise. */
+    for(int i = threadIdx.x ; i < counti ;  i += blockDim.x) {
+    
+        /* Get a direct pointer on the pjdth part in cell_j. */
+        int pidi = indi + i;
+        float4 pix = parts_pos_i[i];
+        float pif[] = {0.0f, 0.0f, 0.0f, 0.0f};
+        int4 pdatai_i = parts_datai_i[i];
+        int pioff = pdatai_i.y * cuda_maxtype;
+        bool iscluster_maybe = pdatai_i.z & PARTICLE_BOUND;
+        int clusterIdi = pdatai_i.w;
+
+        /* Loop over the particles in cell_i. */
+        for(int k = 0 ; k < countj ; k++) {
+
+            int pidj = indj + k;
+
+        	if(pidi != pidj) {
+
+                /* Compute the radius between pi and pj. */
+                float4 pjx = parts_pos_j[k];
+                float3 dx{pix.x - pjx.x, pix.y - pjx.y, pix.z - pjx.z};
+                float r2 = dx.x * dx.x + dx.y * dx.y + dx.z * dx.z;
+
+                if(r2 < cuda_cutoff2) {
+
+                    float number_density;
+
+                    w_cubic_spline_cuda_nr(r2, cuda_cutoff, &number_density);
+
+                    pif[3] += number_density;
+
+                    int pind, nr_pots, nr_dpds;
+                    int4 pdatai_j = parts_datai_j[k];
+                    int pjoff = ENGINE_CUDA_PIND_WIDTH * (pioff + pdatai_j.y);
+                    bool iscluster = iscluster_maybe && pdatai_j.z & PARTICLE_BOUND && pdatai_j.w == clusterIdi;
+
+                    if(iscluster) {
+                        pind    = cuda_pind_cluster[pjoff    ];
+                        nr_pots = cuda_pind_cluster[pjoff + 1];
+                        nr_dpds = cuda_pind_cluster[pjoff + 2];
+                    }
+                    else {
+                        pind    = cuda_pind[pjoff    ];
+                        nr_pots = cuda_pind[pjoff + 1];
+                        nr_dpds = cuda_pind[pjoff + 2];
+                    }
+                    if(pind != 0) {
+
+                        float ee = 0.0f;
+                        
+                        /* Interact particles pi and pj. */
+                        if(iscluster) 
+                            potential_eval_super_ex_cuda<true>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+                        else 
+                            potential_eval_super_ex_cuda<false>(pind, nr_pots, nr_dpds, pix.w, pjx.w, pidi, pidj, dx, r2, &ee, pif);
+
+                        /* Store the interaction force and energy. */
+                        epot += ee;
+                    }
+                }
+
+			}
+        } /* loop over parts in cell_i. */
+
+        /* Update the force on pj. */
+        #pragma unroll
+        for(int k = 0 ; k < 4 ; k++)
+            forces_i[4*i + k] += pif[k];
+
+    } /* loop over the particles in cell_j. */
+
+    /* Store the potential energy. */
+    *epot_global += epot;
+        
+    TIMER_TOC(tid_self)
+    
+}
+
+/**
+ * @brief Compute the self interactions for the given cell on a CUDA device.
+ *
+ * @param iparts Array of parts in this cell.
+ * @param count Number of parts in the cell.
+ * @param parts Part buffer in local memory.
+ *
+ * @sa #runner_dopair.
+ */
+__device__ void runner_doboundary_self_cuda(
+    int ind, int count, 
+    int cell_id, unsigned int cell_flags, float3 cdims, 
+    float4* parts_pos, 
+    int4* parts_datai, 
+    float *forces, float *epot_global
+) {
+    float epot = 0.0f;
+    
+    TIMER_TIC
+
+    /* Loop over the particles in the cell, frame-wise. */
+    for(int i = threadIdx.x ; i < count ;  i += blockDim.x) {
+    
+        float pjf[] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+        boundary_eval_cuda(parts_pos[i], ind + i, parts_datai[i].y, cdims, cell_flags, pjf, &epot);
+
+        /* Update the force on pj. */
+        for(int k = 0 ; k < 4 ; k++)
+        	forces[4*i + k] += pjf[k];
+
+    } /* loop over the particles in cell_j. */
+
+    /* Store the potential energy. */
+    *epot_global += epot;
+        
+    TIMER_TOC(tid_self)
+    
+}
+
+/**
+ * @brief Compute the self interactions for the given cell on a CUDA device.
+ *
+ * @param iparts Array of parts in this cell.
+ * @param count Number of parts in the cell.
+ * @param parts Part buffer in local memory.
+ *
+ * @sa #runner_dopair.
+ */
+__device__ void runner_doself_state_cuda(
+    int ind, float *states, int count, 
+    float4* parts_pos, int4* parts_datai, 
+    float *fluxes, unsigned int nr_states
+) {
     
     TIMER_TIC
 
@@ -2634,8 +2414,9 @@ __device__ void runner_dostate_self_cuda (cuda::Particle *parts, float *states, 
     for(int i = threadIdx.x ; i < count ;  i += blockDim.x) {
     
         /* Get a direct pointer on the pjdth part in cell_j. */
-        cuda::Particle pj = parts[ i ];
-        int pjoff = pj.w.y * cuda_maxtype;
+        int typeIdj = parts_datai[i].y;
+        int pjoff = typeIdj * cuda_maxtype;
+        float4 pjx = parts_pos[i];
 
         float pjfx[TF_SIMD_SIZE];
         memset(pjfx, 0.f, nr_states * sizeof(float));
@@ -2644,29 +2425,28 @@ __device__ void runner_dostate_self_cuda (cuda::Particle *parts, float *states, 
         /* Loop over the particles in cell_i. */
         for(int k = 0 ; k < count ; k++) {
         	if(i != k) {
-                /* Get a handle on the wrapped particle k in cell_i. */
-                cuda::Particle pi = parts[ k ];
-
                 /* Compute the radius between pi and pj. */
+                float4 pix = parts_pos[k];
                 float r2 = 0.0f, dx;
-                dx = pi.x.x - pj.x.x; r2 += dx * dx;
-                dx = pi.x.y - pj.x.y; r2 += dx * dx;
-                dx = pi.x.z - pj.x.z; r2 += dx * dx;
+                dx = pix.x - pjx.x; r2 += dx * dx;
+                dx = pix.y - pjx.y; r2 += dx * dx;
+                dx = pix.z - pjx.z; r2 += dx * dx;
 
                 if(r2 >= cuda_cutoff2) {
                     continue;
                 }
 
-                int fxind = cuda_fxind[pjoff + pi.w.y];
+                int typeIdi = parts_datai[k].y;
+                int fxind = cuda_fxind[pjoff + typeIdi];
                 if(fxind != 0) {
-                    flux_eval_ex_cuda(cuda_fluxes[fxind], sqrtf(r2), pjs, &states[nr_states * k], pj.w.y, pi.w.y, pjfx);
+                    flux_eval_ex_cuda(cuda_fluxes[fxind], sqrtf(r2), pjs, &states[nr_states * k], typeIdj, typeIdi, pjfx);
                 }
 
 			}
         } /* loop over parts in cell_i. */
 
         for(int k = 0; k < nr_states; k++)
-            atomicAdd(&fluxes[nr_states * i + k], pjfx[k]);
+            fluxes[nr_states * i + k] += pjfx[k];
 
     } /* loop over the particles in cell_j. */
         
@@ -2674,14 +2454,11 @@ __device__ void runner_dostate_self_cuda (cuda::Particle *parts, float *states, 
     
 }
 
-
-
 /**
  * @brief Our very own memset for the particle forces as cudaMemsetAsync requires
  *        a device switch when using streams on different devices.
  *
- */
- 
+ */ 
 __global__ void cuda_memset_float(float *data, float val, int N) {
 
     int k, tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -2690,266 +2467,477 @@ __global__ void cuda_memset_float(float *data, float val, int N) {
     for(k = tid ; k < N ; k += stride)
         data[k] = val;
 
+}
+
+__global__ void runner_run_cuda_do_sort_kernel(int* counts, int* ind) {
+    extern __shared__ unsigned int sort_s[];
+
+    for(int cid = blockIdx.x; cid < cuda_nr_cells; cid += gridDim.x) {
+        if(cuda_cflags[cid] != 0) {
+            int indc = ind[cid];
+            int countc = counts[cid];
+            float4* part_pos = &cuda_parts_pos[indc];
+            for(int sid = 0; sid < 13; sid++) {
+                runner_dosort_cuda(part_pos, countc, sort_s, sid);
+                __syncthreads();
+                cuda_memcpy(&cuda_sortlists[13 * indc + sid * countc], sort_s, sizeof(unsigned int) * countc);
+                __syncthreads();
+            }
+        }
+    }
+}
+
+template<bool is_stateful> 
+__global__ void runner_run_cuda_do_self_kernel(
+    float* forces, float* fluxes, unsigned int nr_states, 
+    int* counts, int* ind
+) {
+    float epot;
+
+    for(int cid = blockIdx.x; cid < cuda_nr_cells; cid += gridDim.x) {
+
+        int indi = ind[cid];
+        int counti = counts[cid];
+        float3 cdims = cuda_cdims[cid];
+
+        float4* parts_pos = &cuda_parts_pos[indi];
+        int4* parts_datai = &cuda_parts_datai[indi];
+        
+        /* Put a finger on the forces. */
+        float *forces_i = &forces[4*indi];
+
+        unsigned int cell_flags = cuda_cflags[cid];
+        bool boundary = cell_flags & cell_active_any;
+
+        if(boundary) {
+            runner_doboundary_self_cuda(
+                indi, counti, cid, 
+                cell_flags, cdims, 
+                parts_pos, parts_datai, 
+                forces_i, &epot
+            );
+
+            __syncthreads();
+        }
+            
+        /* Compute the cell self interactions. */
+        runner_doself_cuda(
+            indi, counti, 
+            parts_pos, 
+            parts_datai, 
+            forces_i, &epot
+        );
+
+        if(is_stateful) {
+            __syncthreads();
+            
+            float *fluxes_i = &fluxes[nr_states * indi];
+            float *states_j = &cuda_part_states[nr_states * indi];
+            runner_doself_state_cuda(indi, states_j, counti, parts_pos, parts_datai, fluxes_i, nr_states);
+        }
+
+        __syncthreads();
     }
 
+    atomicAdd(&cuda_epot, epot * 0.5f);
+}
 
-/**
- * @brief Loop over the cell pairs and process them.
- *
- */
+__global__ void runner_run_cuda_do_self_fluxonly_kernel(float* fluxes, unsigned int nr_states, int* counts, int* ind) {
+
+    for(int cid = blockIdx.x; cid < cuda_nr_cells; cid += gridDim.x) {
+
+        int indi = ind[cid];
+        int counti = counts[cid];
+
+        float4* parts_pos = &cuda_parts_pos[indi];
+        int4* parts_datai = &cuda_parts_datai[indi];
+        
+        float *fluxes_i = &fluxes[nr_states * indi];
+        float *states_j = &cuda_part_states[nr_states * indi];
+        runner_doself_state_cuda(indi, states_j, counti, parts_pos, parts_datai, fluxes_i, nr_states);
+
+        __syncthreads();
+    }
+
+}
+
 template<bool is_stateful> 
-__global__ void runner_run_cuda(float *forces, float *fluxes, int *counts, int *ind, int verlet_rebuild, unsigned int nr_states, unsigned int cuda_nrparts) {
-    
-    int threadID;
+__global__ void runner_run_cuda_do_pair_left_kernel(
+    float* forces, float* fluxes, unsigned int nr_states, 
+    int* counts, int* ind, 
+    unsigned int cuda_nrparts
+) { 
     float epot = 0.0f;
-    volatile __shared__ int tid;
+
+    __shared__ float shiftn[39];
     __shared__ float shift[3];
     __shared__ unsigned int dshift;
     extern __shared__ unsigned int sort_arrs[];
     unsigned int *sort_i = (unsigned int*)&sort_arrs[0];
     unsigned int *sort_j = (unsigned int*)&sort_arrs[cuda_nrparts];
-    __shared__ float shiftn[39];
-
-	TIMER_TIC2
-    
-    /* Get the block and thread ids. */
-    threadID = threadIdx.x;
 
     // Copy shifts to shared memory
-    for(int i = threadID; i < 39; i += blockDim.x) {
-        shiftn[i] = cuda_shiftn[i];
-    }
-
+    for(int i = threadIdx.x; i < 39; i += blockDim.x) shiftn[i] = cuda_shiftn[i];
     __syncthreads();
 
-    /* Main loop... */
-    while(1) {
-    	
-    	if(threadID == 0) {
-            TIMER_TIC
-            tid = runner_cuda_gettask_nolock(&cuda_queues[0], 0);
-            TIMER_TOC(tid_gettask)
-        }
-        
-        /*Everyone wait for us to get a task id*/
-        __syncthreads();
-        
-        /* Exit if we didn't get a valid task. */
-        
-        if(tid < 0) 
-            break;
-	
-        /* Switch task type. */
-        if(cuda_tasks[tid].type == task_type_pair) {
-	        
-            /* Get a hold of the pair cells. */
-            
-            int cid = cuda_tasks[tid].i;
-            int cjd = cuda_tasks[tid].j;
-            /*Left interaction*/
+    for(int cid = blockIdx.x; cid < cuda_nr_cells; cid += gridDim.x) {
+        int cellpair_count = cuda_cellpair_count_left[cid];
+        int cellpair_ind = cuda_cellpair_ind_left[cid];
+        int2* cellpair_list = &cuda_cellpair_list_left[cellpair_ind];
+        for(int j = 0; j < cellpair_count; j++) {
+            int2 cellpair = cellpair_list[j];
+            int cjd = cellpair.x;
+            int cflags = cellpair.y;
+
             /* Get the shift and dshift vector for this pair. */
-            if(threadID == 0) {
-                #ifdef TASK_TIMERS
-                NAMD_timers[tid].x = blockIdx.x;
-                NAMD_timers[tid].y = task_type_pair;
-                NAMD_timers[tid].z = clock();
-                #endif
+            if(threadIdx.x == 0) {
+                #pragma unroll
                 for(int k = 0 ; k < 3 ; k++) {
-                    shift[k] = cuda_corig[ 3*cjd + k ] - cuda_corig[ 3*cid + k ];
+                    shift[k] = cuda_corig[3*cjd + k] - cuda_corig[3*cid + k];
                     if(2*shift[k] > cuda_dim[k])
                         shift[k] -= cuda_dim[k];
                     else if(2*shift[k] < -cuda_dim[k])
                         shift[k] += cuda_dim[k];
                 }
-                dshift = cuda_dscale *(shift[0]*shiftn[ 3*cuda_tasks[tid].flags     ] +
-                                         shift[1]*shiftn[ 3*cuda_tasks[tid].flags + 1 ] +
-                                         shift[2]*shiftn[ 3*cuda_tasks[tid].flags + 2 ]);
+                dshift = cuda_dscale *(
+                    shift[0]*shiftn[3 * cflags    ] +
+                    shift[1]*shiftn[3 * cflags + 1] +
+                    shift[2]*shiftn[3 * cflags + 2]
+                );
             }
             
             /* Load the sorted indices. */
 
-            cuda_memcpy(sort_i, &cuda_sortlists[ 13*ind[cid] + counts[cid]*cuda_tasks[tid].flags ], sizeof(int)*counts[cid]);
-            cuda_memcpy(sort_j, &cuda_sortlists[ 13*ind[cjd] + counts[cjd]*cuda_tasks[tid].flags ], sizeof(int)*counts[cjd]);
-            __syncthreads();
-            
-            /* Copy the particle data into the local buffers. */
-            cuda::Particle *parts_i = &cuda_parts[ ind[cid] ];
-            cuda::Particle *parts_j = &cuda_parts[ ind[cjd] ];
-            
-            /* Put a finger on the forces. */
-            float *forces_i = &forces[ 4*ind[cid] ];
-            
-            /*Set to left interaction*/
-            /* Compute the cell pair interactions. */
-            runner_dopair_left_cuda(
-                parts_i, counts[cid],
-                parts_j, counts[cjd],
-                forces_i, 
-                sort_i, sort_j,
-                shift, dshift, 
-                &epot 
-            );
-            
-            float *forces_j = &forces[ 4*ind[cjd] ];
+            int indi = ind[cid];
+            int indj = ind[cjd];
+            int counti = counts[cid];
+            int countj = counts[cjd];
 
-            /*Set to right interaction*/
-            /* Compute the cell pair interactions. */
-            runner_dopair_right_cuda(
-                parts_j, counts[cjd],
-                parts_i, counts[cid],
-                forces_j, 
-                sort_j, sort_i,
-                shift, dshift, 
-                &epot
+            cuda_memcpy(sort_i, &cuda_sortlists[13*indi + counti*cflags], sizeof(int)*counti);
+            cuda_memcpy(sort_j, &cuda_sortlists[13*indj + countj*cflags], sizeof(int)*countj);
+            __syncthreads();
+
+            float4* parts_pos_i = &cuda_parts_pos[indi];
+            int4* parts_datai_i = &cuda_parts_datai[indi];
+            
+            float4* parts_pos_j = &cuda_parts_pos[indj];
+            int4* parts_datai_j = &cuda_parts_datai[indj];
+
+            float *forces_i = &forces[4*indi];
+
+            runner_dopair_left_cuda(
+                indi, counti, 
+                indj, countj, 
+                parts_pos_i, parts_datai_i, 
+                parts_pos_j, parts_datai_j, 
+                forces_i, 
+                sort_i, sort_j, 
+                shift, dshift, &epot
             );
 
             if(is_stateful) {
+
+                __syncthreads();
                 
-                float *states_i = &cuda_part_states[nr_states * ind[cid]];
-                float *states_j = &cuda_part_states[nr_states * ind[cjd]];
-                float *fluxes_i = &fluxes[nr_states * ind[cid]];
+                float *states_i = &cuda_part_states[nr_states * indi];
+                float *states_j = &cuda_part_states[nr_states * indj];
+                float *fluxes_i = &fluxes[nr_states * indi];
                 
                 /*Set to left interaction*/
                 /* Compute the cell pair interactions. */
-                runner_dostate_left_cuda(
-                    parts_i, states_i, counts[cid],
-                    parts_j, states_j, counts[cjd],
+                runner_dopair_state_left_cuda(
+                    indi, states_i, counti,
+                    indj, states_j, countj,
+                    parts_pos_i, parts_datai_i, 
+                    parts_pos_j, parts_datai_j, 
                     fluxes_i, 
                     sort_i, sort_j,
                     shift, dshift, nr_states
                 );
+            }
+
+            __syncthreads();
+        }
+    }
+
+    atomicAdd(&cuda_epot, epot * 0.5f);
+}
+
+__global__ void runner_run_cuda_do_pair_left_fluxonly_kernel(
+    float* fluxes, unsigned int nr_states, 
+    int* counts, int* ind, 
+    unsigned int cuda_nrparts
+) { 
+
+    __shared__ float shiftn[39];
+    __shared__ float shift[3];
+    __shared__ unsigned int dshift;
+    extern __shared__ unsigned int sort_arrs[];
+    unsigned int *sort_i = (unsigned int*)&sort_arrs[0];
+    unsigned int *sort_j = (unsigned int*)&sort_arrs[cuda_nrparts];
+
+    // Copy shifts to shared memory
+    for(int i = threadIdx.x; i < 39; i += blockDim.x) shiftn[i] = cuda_shiftn[i];
+    __syncthreads();
+
+    for(int cid = blockIdx.x; cid < cuda_nr_cells; cid += gridDim.x) {
+        int cellpair_count = cuda_cellpair_count_left[cid];
+        int cellpair_ind = cuda_cellpair_ind_left[cid];
+        int2* cellpair_list = &cuda_cellpair_list_left[cellpair_ind];
+        for(int j = 0; j < cellpair_count; j++) {
+            int2 cellpair = cellpair_list[j];
+            int cjd = cellpair.x;
+            int cflags = cellpair.y;
+
+            /* Get the shift and dshift vector for this pair. */
+            if(threadIdx.x == 0) {
+                #pragma unroll
+                for(int k = 0 ; k < 3 ; k++) {
+                    shift[k] = cuda_corig[3*cjd + k] - cuda_corig[3*cid + k];
+                    if(2*shift[k] > cuda_dim[k])
+                        shift[k] -= cuda_dim[k];
+                    else if(2*shift[k] < -cuda_dim[k])
+                        shift[k] += cuda_dim[k];
+                }
+                dshift = cuda_dscale *(
+                    shift[0]*shiftn[3 * cflags    ] +
+                    shift[1]*shiftn[3 * cflags + 1] +
+                    shift[2]*shiftn[3 * cflags + 2]
+                );
+            }
+            
+            /* Load the sorted indices. */
+
+            int indi = ind[cid];
+            int indj = ind[cjd];
+            int counti = counts[cid];
+            int countj = counts[cjd];
+
+            cuda_memcpy(sort_i, &cuda_sortlists[13*indi + counti*cflags], sizeof(int)*counti);
+            cuda_memcpy(sort_j, &cuda_sortlists[13*indj + countj*cflags], sizeof(int)*countj);
+            __syncthreads();
+
+            float4* parts_pos_i = &cuda_parts_pos[indi];
+            int4* parts_datai_i = &cuda_parts_datai[indi];
+            
+            float4* parts_pos_j = &cuda_parts_pos[indj];
+            int4* parts_datai_j = &cuda_parts_datai[indj];
+
+            float *states_i = &cuda_part_states[nr_states * indi];
+            float *states_j = &cuda_part_states[nr_states * indj];
+            float *fluxes_i = &fluxes[nr_states * indi];
+            
+            /*Set to left interaction*/
+            /* Compute the cell pair interactions. */
+            runner_dopair_state_left_cuda(
+                indi, states_i, counti,
+                indj, states_j, countj,
+                parts_pos_i, parts_datai_i, 
+                parts_pos_j, parts_datai_j, 
+                fluxes_i, 
+                sort_i, sort_j,
+                shift, dshift, nr_states
+            );
+
+            __syncthreads();
+        }
+    }
+
+}
+
+template<bool is_stateful> 
+__global__ void runner_run_cuda_do_pair_right_kernel(
+    float* forces, float* fluxes, unsigned int nr_states, 
+    int* counts, int* ind, 
+    unsigned int cuda_nrparts
+) { 
+    float epot = 0.0f;
+
+    __shared__ float shiftn[39];
+    __shared__ float shift[3];
+    __shared__ unsigned int dshift;
+    extern __shared__ unsigned int sort_arrs[];
+    unsigned int *sort_i = (unsigned int*)&sort_arrs[0];
+    unsigned int *sort_j = (unsigned int*)&sort_arrs[cuda_nrparts];
+
+    // Copy shifts to shared memory
+    for(int i = threadIdx.x; i < 39; i += blockDim.x) shiftn[i] = cuda_shiftn[i];
+    __syncthreads();
+
+    for(int cjd = blockIdx.x; cjd < cuda_nr_cells; cjd += gridDim.x) {
+        int cellpair_count = cuda_cellpair_count_right[cjd];
+        int cellpair_ind = cuda_cellpair_ind_right[cjd];
+        int2* cellpair_list = &cuda_cellpair_list_right[cellpair_ind];
+        for(int j = 0; j < cellpair_count; j++) {
+            int2 cellpair = cellpair_list[j];
+            int cid = cellpair.x;
+            int cflags = cellpair.y;
+
+            /* Get the shift and dshift vector for this pair. */
+            if(threadIdx.x == 0) {
+                #pragma unroll
+                for(int k = 0 ; k < 3 ; k++) {
+                    shift[k] = cuda_corig[3*cjd + k] - cuda_corig[3*cid + k];
+                    if(2*shift[k] > cuda_dim[k])
+                        shift[k] -= cuda_dim[k];
+                    else if(2*shift[k] < -cuda_dim[k])
+                        shift[k] += cuda_dim[k];
+                }
+                dshift = cuda_dscale * (
+                    shift[0]*shiftn[3 * cflags    ] +
+                    shift[1]*shiftn[3 * cflags + 1] +
+                    shift[2]*shiftn[3 * cflags + 2]
+                );
+            }
+            
+            /* Load the sorted indices. */
+
+            int indi = ind[cid];
+            int indj = ind[cjd];
+            int counti = counts[cid];
+            int countj = counts[cjd];
+
+            cuda_memcpy(sort_i, &cuda_sortlists[13*indi + counti*cflags], sizeof(int)*counti);
+            cuda_memcpy(sort_j, &cuda_sortlists[13*indj + countj*cflags], sizeof(int)*countj);
+            __syncthreads();
+            
+            float4* parts_pos_i = &cuda_parts_pos[indi];
+            int4* parts_datai_i = &cuda_parts_datai[indi];
+            
+            float4* parts_pos_j = &cuda_parts_pos[indj];
+            int4* parts_datai_j = &cuda_parts_datai[indj];
+            
+            float *forces_j = &forces[4*indj];
+
+            runner_dopair_right_cuda(
+                indj, countj, 
+                indi, counti, 
+                parts_pos_j, parts_datai_j, 
+                parts_pos_i, parts_datai_i, 
+                forces_j, 
+                sort_j, sort_i, 
+                shift, dshift, &epot
+            );
+
+            if(is_stateful) {
+
+                __syncthreads();
                 
-                float *fluxes_j = &fluxes[nr_states * ind[cjd]];
+                float *states_i = &cuda_part_states[nr_states * indi];
+                float *states_j = &cuda_part_states[nr_states * indj];
+                float *fluxes_j = &fluxes[nr_states * indj];
 
                 /*Set to right interaction*/
                 /* Compute the cell pair interactions. */
-                runner_dostate_right_cuda(
-                    parts_j, states_j, counts[cjd],
-                    parts_i, states_i, counts[cid],
+                runner_dopair_state_right_cuda(
+                    indj, states_j, countj,
+                    indi, states_i, counti,
+                    parts_pos_j, parts_datai_j, 
+                    parts_pos_i, parts_datai_i, 
                     fluxes_j, 
                     sort_j, sort_i,
                     shift, dshift, nr_states
                 );
             }
 
-            #ifdef TASK_TIMERS
-            if(threadID==0)
-                NAMD_timers[tid].w = clock();
-    	    #endif
-            __syncthreads();                    
-        }
-        else if(cuda_tasks[tid].type == task_type_self) {
-        
-            #ifdef TASK_TIMERS
-            if(threadID==0){
-                NAMD_timers[tid].x = blockIdx.x;
-                NAMD_timers[tid].y = task_type_self;
-                NAMD_timers[tid].z = clock();
-            }
-    	    #endif
-            /* Get a hold of the cell id. */
-            int cid = cuda_tasks[tid].i;
-            
-            /* Put a finger on the forces. */
-            float *forces_i = &forces[ 4*ind[cid] ];
-                
-            /* Copy the particle data into the local buffers. */
-            cuda::Particle *parts_j = &cuda_parts[ ind[cid] ];
-                
-            /* Compute the cell self interactions. */
-            runner_dopair_self_cuda(parts_j, counts[cid], cid, forces_i, &epot);
-
-            if(is_stateful) {
-                float *fluxes_i = &fluxes[nr_states * ind[cid]];
-                float *states_j = &cuda_part_states[nr_states * ind[cid]];
-                runner_dostate_self_cuda(parts_j, states_j, counts[cid], fluxes_i, nr_states);
-            }
-
-            #ifdef TASK_TIMERS
-            if(threadID==0)
-            	NAMD_timers[tid].w = clock();
-    	    #endif
             __syncthreads();
         }
-            
-        /* Only do sorts if we have to re-build the pseudo-verlet lists. */
-        else if(/*0 &&*/ cuda_tasks[tid].type == task_type_sort && verlet_rebuild) {
-        	#ifdef TASK_TIMERS
-	        if(threadID==0){
-                NAMD_timers[tid].x = blockIdx.x;
-				NAMD_timers[tid].y = task_type_sort;
-            	NAMD_timers[tid].z = clock();
-		    }
-    	    #endif
-            
-            /* Loop over the different sort IDs. */
-            if(cuda_tasks[tid].flags != 0) {
-                /* Get a hold of the cell id. */
-                int cid = cuda_tasks[tid].i;
-                
-                /* Copy the particle data into the local buffers. */
-                cuda::Particle *parts_j = &cuda_parts[ ind[cid] ];
-
-                for(int sid = 0 ; sid < 13 ; sid++) {
-                        
-                    /* Call the sorting function with the buffer. */
-                    runner_dosort_cuda(parts_j, counts[cid], sort_i, sid);
-                    __syncthreads();
-                    /* Copy the local shared memory back to the global memory. */
-                    
-                    cuda_memcpy(&cuda_sortlists[ 13*ind[cid] + sid*counts[cid] ], sort_i, sizeof(unsigned int) * counts[cid]);
-                    
-                    __syncthreads();
-            
-                }
-            }
-            #ifdef TASK_TIMERS
-            if(threadID==0)
-                NAMD_timers[tid].w = clock();
-    	    #endif
-        		
-        }
-
-        /* Unlock any follow-up tasks. */
-        if(threadID == 0)
-            for(int k = 0 ; k < cuda_tasks[tid].nr_unlock ; k++)
-                atomicSub((int *)&cuda_tasks[ cuda_tasks[tid].unlock[k] ].wait, 1);
-        
-    } /* main loop. */
-        
-    /* Accumulate the potential energy. */
-    epot = epot * 0.5f ;
-	/* Accumulate the potential energy. */
-    atomicAdd(&cuda_epot, epot);
-
-    /* Make a notch on the barrier, last one out cleans up the mess... */
-
-	if(threadID == 0)
-		tid =(atomicAdd(&cuda_barrier, 1) == gridDim.x-1);
-	__syncthreads();
-    if(tid) {
-	    TIMER_TIC
-
-    	if(threadID == 0) {
-            cuda_barrier = 0;
-            cuda_epot_out = cuda_epot;
-            cuda_epot = 0.0f;
-            volatile int *temp = cuda_queues[0].data; cuda_queues[0].data = cuda_queues[0].rec_data; cuda_queues[0].rec_data = temp;
-            cuda_queues[0].first = 0;
-            cuda_queues[0].last = cuda_queues[0].count;
-            cuda_queues[0].rec_count = 0;
-	        // printf("%i \n", cuda_maxtype);
-        }
-        // NAMD_barrier=0;
-      	for(int j = threadID ; j < cuda_nr_tasks /*myq->count*/ ; j+= blockDim.x)
-            for(int k = 0 ; k < cuda_tasks[j].nr_unlock ; k++)
-                atomicAdd((int *) &cuda_tasks[ cuda_tasks[j].unlock[k] ].wait, 1);
-
-	    TIMER_TOC(tid_cleanup)
     }
-    
-    TIMER_TOC2(tid_total)
 
+    atomicAdd(&cuda_epot, epot * 0.5f);
+}
+
+__global__ void runner_run_cuda_do_pair_right_fluxonly_kernel(
+    float* fluxes, unsigned int nr_states, 
+    int* counts, int* ind, 
+    unsigned int cuda_nrparts
+) { 
+
+    __shared__ float shiftn[39];
+    __shared__ float shift[3];
+    __shared__ unsigned int dshift;
+    extern __shared__ unsigned int sort_arrs[];
+    unsigned int *sort_i = (unsigned int*)&sort_arrs[0];
+    unsigned int *sort_j = (unsigned int*)&sort_arrs[cuda_nrparts];
+
+    // Copy shifts to shared memory
+    for(int i = threadIdx.x; i < 39; i += blockDim.x) shiftn[i] = cuda_shiftn[i];
+    __syncthreads();
+
+    for(int cjd = blockIdx.x; cjd < cuda_nr_cells; cjd += gridDim.x) {
+        int cellpair_count = cuda_cellpair_count_right[cjd];
+        int cellpair_ind = cuda_cellpair_ind_right[cjd];
+        int2* cellpair_list = &cuda_cellpair_list_right[cellpair_ind];
+        for(int j = 0; j < cellpair_count; j++) {
+            int2 cellpair = cellpair_list[j];
+            int cid = cellpair.x;
+            int cflags = cellpair.y;
+
+            /* Get the shift and dshift vector for this pair. */
+            if(threadIdx.x == 0) {
+                #pragma unroll
+                for(int k = 0 ; k < 3 ; k++) {
+                    shift[k] = cuda_corig[3*cjd + k] - cuda_corig[3*cid + k];
+                    if(2*shift[k] > cuda_dim[k])
+                        shift[k] -= cuda_dim[k];
+                    else if(2*shift[k] < -cuda_dim[k])
+                        shift[k] += cuda_dim[k];
+                }
+                dshift = cuda_dscale * (
+                    shift[0]*shiftn[3 * cflags    ] +
+                    shift[1]*shiftn[3 * cflags + 1] +
+                    shift[2]*shiftn[3 * cflags + 2]
+                );
+            }
+            
+            /* Load the sorted indices. */
+
+            int indi = ind[cid];
+            int indj = ind[cjd];
+            int counti = counts[cid];
+            int countj = counts[cjd];
+
+            cuda_memcpy(sort_i, &cuda_sortlists[13*indi + counti*cflags], sizeof(int)*counti);
+            cuda_memcpy(sort_j, &cuda_sortlists[13*indj + countj*cflags], sizeof(int)*countj);
+            __syncthreads();
+            
+            float4* parts_pos_i = &cuda_parts_pos[indi];
+            int4* parts_datai_i = &cuda_parts_datai[indi];
+            
+            float4* parts_pos_j = &cuda_parts_pos[indj];
+            int4* parts_datai_j = &cuda_parts_datai[indj];
+            
+            float *states_i = &cuda_part_states[nr_states * indi];
+            float *states_j = &cuda_part_states[nr_states * indj];
+            float *fluxes_j = &fluxes[nr_states * indj];
+
+            /*Set to right interaction*/
+            /* Compute the cell pair interactions. */
+            runner_dopair_state_right_cuda(
+                indj, states_j, countj,
+                indi, states_i, counti,
+                parts_pos_j, parts_datai_j, 
+                parts_pos_i, parts_datai_i, 
+                fluxes_j, 
+                sort_j, sort_i,
+                shift, dshift, nr_states
+            );
+
+            __syncthreads();
+        }
+    }
+
+}
+
+__global__ void runner_run_cuda_integrate_state_kernel(float* fluxes, int* species_flags, unsigned int nr_fluxes, float dt_flux) {
+    int stride = blockDim.x * gridDim.x;
+
+    for(int i = blockDim.x * blockIdx.x + threadIdx.x; i < nr_fluxes; i += stride) {
+        float state = cuda_part_states[i];
+        float flux = fluxes[i] * (1.0 - float(species_flags[i] & state::SpeciesFlags::SPECIES_KONSTANT));
+        cuda_part_states[i] = state + dt_flux * flux;
+        fluxes[i] = 0.0;
+    }
 }
 
 extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
@@ -2958,12 +2946,16 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     cudaStream_t stream;
     cudaEvent_t tic, toc_load, toc_run, toc_unload;
     float ms_load, ms_run, ms_unload;
-    cuda::Particle *parts_cuda = (cuda::Particle*)e->parts_cuda_local;
+    float4* parts_pos_cuda = (float4*)e->parts_pos_cuda_local;
+    float3* parts_vel_cuda = (float3*)e->parts_vel_cuda_local;
+    int4* parts_datai_cuda = (int4*)e->parts_datai_cuda_local;
     float *part_states_cuda = (float *)e->part_states_cuda_local;
+    int *part_species_flags_cuda = e->part_species_flags_cuda_local;
     struct space *s = &e->s;
     FPTYPE maxdist = s->cutoff + 2*s->maxdx;
     int *counts = e->counts_cuda_local[ 0 ], *inds = e->ind_cuda_local[ 0 ];
-    float *forces_cuda[ engine_maxgpu ], *fluxes_next_cuda[engine_maxgpu], epot[ engine_maxgpu ];
+    float *forces_cuda[ engine_maxgpu ], *fluxes_next_cuda[engine_maxgpu], epot[ engine_maxgpu ], *part_states_next_cuda[engine_maxgpu];
+    float epot_init = 0.f;
     unsigned int nr_states = e->nr_fluxes_cuda - 1;
     #ifdef TIMERS
         float timers[ tid_count ];
@@ -3003,6 +2995,8 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
         /* Get the stream. */
         stream = (cudaStream_t)e->streams[did];
+
+        cuda_safe_call(cudaMemcpyToSymbolAsync(cuda_epot, &epot_init, sizeof(float), 0, cudaMemcpyHostToDevice, stream));
         
         /* Load the particle data onto the device. */
         
@@ -3013,15 +3007,11 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
         /* Load the counts. */
         for(maxcount = 0, k = 0; k < e->cells_cuda_nr[did] ; k++)
-        if((counts[e->cells_cuda_local[did][k]] = s->cells[e->cells_cuda_local[did][k]].count) > maxcount)
-            maxcount = counts[ e->cells_cuda_local[did][k]];
-    /*    for(maxcount = 0, k = 0 ; k < s->nr_marked ; k++)
-            if((counts[ s->cid_marked[k] ] = s->cells[ s->cid_marked[k] ].count) > maxcount)
-                maxcount = counts[ s->cid_marked[k] ];*/
+            if((counts[e->cells_cuda_local[did][k]] = s->cells[e->cells_cuda_local[did][k]].count) > maxcount)
+                maxcount = counts[ e->cells_cuda_local[did][k]];
 
         /* Raise maxcount to the next multiple of 32. */
         maxcount =(maxcount + (cuda_frame - 1)) & ~(cuda_frame - 1);
-        // printf("engine_cuda_load_parts: maxcount=%i.\n", maxcount);
 
         /* Compute the indices. */
         inds[0] = 0;
@@ -3031,35 +3021,73 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         auto _cells_cuda_local = e->cells_cuda_local[did];
 
         if(nr_states > 0) {
-            auto func = [nr_states, &_cells_cuda_local, &inds, &counts, &cell_parts, &parts_cuda, &part_states_cuda](int k) -> void {
+            if(e->nr_fluxsteps > 1) {
+                auto func = [&](int k) -> void {
 
-                /* Get the cell id. */
-                auto cid = _cells_cuda_local[k];
+                    /* Get the cell id. */
+                    auto cid = _cells_cuda_local[k];
 
-                /* Copy the particle data to the device. */
-                auto buff_part = (cuda::Particle*)&parts_cuda[ inds[cid] ];
-                auto buff_part_states = &part_states_cuda[nr_states * inds[cid]];
-                for(int pid = 0 ; pid < counts[cid] ; pid++) {
-                    TissueForge::Particle *part = &cell_parts[cid][pid];
-                    buff_part[ pid ] = cuda::Particle(part, nr_states);
-                    for(int ks = 0; ks < nr_states; ks++) 
-                        buff_part_states[nr_states * pid + ks] = part->state_vector->fvec[ks];
-                }
+                    /* Copy the particle data to the device. */
+                    auto buff_parts_pos_cuda = &parts_pos_cuda[inds[cid]];
+                    auto buff_parts_vel_cuda = &parts_vel_cuda[inds[cid]];
+                    auto buff_parts_datai_cuda = &parts_datai_cuda[inds[cid]];
+                    auto buff_part_states = &part_states_cuda[nr_states * inds[cid]];
+                    auto buff_part_species_flags = &part_species_flags_cuda[nr_states * inds[cid]];
+                    for(int pid = 0 ; pid < counts[cid] ; pid++) {
+                        TissueForge::Particle *part = &cell_parts[cid][pid];
+                        buff_parts_pos_cuda[pid] = {part->x[0], part->x[1], part->x[2], part->radius};
+                        buff_parts_vel_cuda[pid] = {part->v[0], part->v[1], part->v[2]};
+                        buff_parts_datai_cuda[pid] = {part->id, part->typeId, part->flags, part->clusterId};
+                        for(int ks = 0; ks < nr_states; ks++) {
+                            buff_part_states[nr_states * pid + ks] = part->state_vector->fvec[ks];
+                            buff_part_species_flags[nr_states * pid + ks] = part->state_vector->species_flags[ks];
+                        }
+                    }
 
-            };
+                };
 
-            parallel_for(e->cells_cuda_nr[did], func);
+                parallel_for(e->cells_cuda_nr[did], func);
+            } 
+            else {
+                auto func = [&](int k) -> void {
+
+                    /* Get the cell id. */
+                    auto cid = _cells_cuda_local[k];
+
+                    /* Copy the particle data to the device. */
+                    auto buff_parts_pos_cuda = &parts_pos_cuda[inds[cid]];
+                    auto buff_parts_vel_cuda = &parts_vel_cuda[inds[cid]];
+                    auto buff_parts_datai_cuda = &parts_datai_cuda[inds[cid]];
+                    auto buff_part_states = &part_states_cuda[nr_states * inds[cid]];
+                    for(int pid = 0 ; pid < counts[cid] ; pid++) {
+                        TissueForge::Particle *part = &cell_parts[cid][pid];
+                        buff_parts_pos_cuda[pid] = {part->x[0], part->x[1], part->x[2], part->radius};
+                        buff_parts_vel_cuda[pid] = {part->v[0], part->v[1], part->v[2]};
+                        buff_parts_datai_cuda[pid] = {part->id, part->typeId, part->flags, part->clusterId};
+                        for(int ks = 0; ks < nr_states; ks++) 
+                            buff_part_states[nr_states * pid + ks] = part->state_vector->fvec[ks];
+                    }
+
+                };
+
+                parallel_for(e->cells_cuda_nr[did], func);
+            }
         } 
         else {
-            auto func = [&_cells_cuda_local, &inds, &counts, &cell_parts, &parts_cuda](int k) -> void {
+            auto func = [&](int k) -> void {
 
                 /* Get the cell id. */
                 auto cid = _cells_cuda_local[k];
 
                 /* Copy the particle data to the device. */
-                auto buff_part = (cuda::Particle*)&parts_cuda[ inds[cid] ];
+                auto buff_parts_pos_cuda = &parts_pos_cuda[inds[cid]];
+                auto buff_parts_vel_cuda = &parts_vel_cuda[inds[cid]];
+                auto buff_parts_datai_cuda = &parts_datai_cuda[inds[cid]];
                 for(int pid = 0 ; pid < counts[cid] ; pid++) {
-                    buff_part[ pid ] = cuda::Particle(&cell_parts[cid][pid]);
+                    TissueForge::Particle* part = &cell_parts[cid][pid];
+                    buff_parts_pos_cuda[pid] = {part->x[0], part->x[1], part->x[2], part->radius};
+                    buff_parts_vel_cuda[pid] = {part->v[0], part->v[1], part->v[2]};
+                    buff_parts_datai_cuda[pid] = {part->id, part->typeId, part->flags, part->clusterId};
                 }
 
             };
@@ -3077,11 +3105,16 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         cuda_safe_call(cudaMemcpyAsync(e->ind_cuda[did], inds, sizeof(int) * s->nr_cells, cudaMemcpyHostToDevice, stream));
 
         /* Bind the particle positions. */
-        cuda_safe_call(cudaMemcpyAsync(e->parts_cuda[did], parts_cuda, sizeof(cuda::Particle) * s->nr_parts, cudaMemcpyHostToDevice, stream));
+        cuda_safe_call(cudaMemcpyAsync(e->parts_pos_cuda[did], parts_pos_cuda, sizeof(float4) * s->nr_parts, cudaMemcpyHostToDevice, stream));
+        cuda_safe_call(cudaMemcpyAsync(e->parts_vel_cuda[did], parts_vel_cuda, sizeof(float3) * s->nr_parts, cudaMemcpyHostToDevice, stream));
+        cuda_safe_call(cudaMemcpyAsync(e->parts_datai_cuda[did], parts_datai_cuda, sizeof(int4) * s->nr_parts, cudaMemcpyHostToDevice, stream));
 
         if(nr_states > 0) {
             /* Bind the particle states. */
             cuda_safe_call(cudaMemcpyAsync(e->part_states_cuda[did], part_states_cuda, sizeof(float) * s->nr_parts * nr_states, cudaMemcpyHostToDevice, stream));
+            if(e->nr_fluxsteps > 1) {
+                cuda_safe_call(cudaMemcpyAsync(e->part_species_flags_cuda[did], part_species_flags_cuda, sizeof(int) * s->nr_parts * nr_states, cudaMemcpyHostToDevice, stream));
+            }
         }
 
     /* Start the clock. */
@@ -3090,10 +3123,6 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     
     /* Lap the clock on the last stream. */
     cuda_safe_call(cudaEventRecord(toc_load, (cudaStream_t)e->streams[e->nr_devices-1]));
-    
-
-        
-        
 
 	/* Loop over the devices and call the different kernels on each stream. */
     for(did = 0 ; did < e->nr_devices ; did++) {
@@ -3111,13 +3140,29 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
         dim3 nr_threads(e->nr_threads[did], 1, 1);
         dim3 nr_blocks(std::min(e->nrtasks_cuda[did], e->nr_blocks[did]), 1, 1);
+
+        if(e->s.verlet_rebuild)
+            runner_run_cuda_do_sort_kernel<<<nr_blocks, nr_threads, maxcount * sizeof(unsigned int), stream>>>(e->counts_cuda[did], e->ind_cuda[did]);
+
+        /* Do flux sub-steps if requested. */
+        if(nr_states > 0 && e->nr_fluxsteps > 1) 
+            for(e->step_flux = 0; e->step_flux < e->nr_fluxsteps - 1; e->step_flux++) {
+                runner_run_cuda_do_self_fluxonly_kernel<<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did]);
+                runner_run_cuda_do_pair_left_fluxonly_kernel<<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
+                runner_run_cuda_do_pair_right_fluxonly_kernel<<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
+                runner_run_cuda_integrate_state_kernel<<<nr_blocks, nr_threads, 0, stream>>>(e->fluxes_next_cuda[did], e->part_species_flags_cuda[did], nr_states * s->nr_parts, e->dt_flux);
+            }
         
         /* Start the appropriate kernel. */
         if(nr_states > 0) {
-            runner_run_cuda<true><<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], e->counts_cuda[did], e->ind_cuda[did], e->s.verlet_rebuild, nr_states, maxcount);
+            runner_run_cuda_do_self_kernel<true><<<nr_blocks, nr_threads, 0, stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did]);
+            runner_run_cuda_do_pair_left_kernel<true><<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
+            runner_run_cuda_do_pair_right_kernel<true><<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
         }
         else {
-            runner_run_cuda<false><<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], e->counts_cuda[did], e->ind_cuda[did], e->s.verlet_rebuild, nr_states, maxcount);
+            runner_run_cuda_do_self_kernel<false><<<nr_blocks, nr_threads, 0, stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did]);
+            runner_run_cuda_do_pair_left_kernel<false><<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
+            runner_run_cuda_do_pair_right_kernel<false><<<nr_blocks, nr_threads, 2 * maxcount * sizeof(unsigned int), stream>>>(e->forces_cuda[did], e->fluxes_next_cuda[did], nr_states, e->counts_cuda[did], e->ind_cuda[did], maxcount);
         }
         cuda_safe_call(cudaPeekAtLastError());
     }
@@ -3126,9 +3171,12 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
     for(did = 0; did < e->nr_devices ; did ++) {
         if((forces_cuda[did] = (float *)malloc(sizeof(float) * 4 * s->nr_parts)) == NULL)
             return error(MDCERR_malloc);
-        if(nr_states > 0) 
+        if(nr_states > 0) {
             if((fluxes_next_cuda[did] = (float *)malloc(sizeof(float) * nr_states * s->nr_parts)) == NULL)
                 return error(MDCERR_malloc);
+            if(e->nr_fluxsteps > 1 && (part_states_next_cuda[did] = (float *)malloc(sizeof(float) * nr_states * s->nr_parts)) == NULL)
+                return error(MDCERR_malloc);
+            }
     }
 
 	for(did = 0; did < e->nr_devices ; did ++) {
@@ -3143,11 +3191,14 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         cuda_safe_call(cudaMemcpyAsync(forces_cuda[did], e->forces_cuda[did], sizeof(float) * 4 * s->nr_parts, cudaMemcpyDeviceToHost, stream));
 
         /* Get the potential energy. */
-        cuda_safe_call(cudaMemcpyFromSymbolAsync(&epot[did], cuda_epot_out, sizeof(float), 0, cudaMemcpyDeviceToHost, stream));
+        cuda_safe_call(cudaMemcpyFromSymbolAsync(&epot[did], cuda_epot, sizeof(float), 0, cudaMemcpyDeviceToHost, stream));
 
         if(nr_states > 0) {
             // Get the flux data
             cuda_safe_call(cudaMemcpyAsync(fluxes_next_cuda[did], e->fluxes_next_cuda[did], sizeof(float) * nr_states * s->nr_parts, cudaMemcpyDeviceToHost, stream));
+            if(e->nr_fluxsteps > 1) {
+                cuda_safe_call(cudaMemcpyAsync(part_states_next_cuda[did], e->part_states_cuda[did], sizeof(float) * nr_states * s->nr_parts, cudaMemcpyDeviceToHost, stream));
+            }
         }
         
     }
@@ -3170,14 +3221,6 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         printf("] ms\n");
     #endif
 
-    #ifdef TASK_TIMERS
-		int4 NAMD_timers_local[26*cuda_maxcells*3];
-		cuda_safe_call(cudaMemcpyFromSymbol(NAMD_timers_local, NAMD_timers, sizeof(int4)*26*cuda_maxcells*3, 0, cudaMemcpyDeviceToHost));
-		for(int i = 0; i < e->s.nr_tasks ; i++)
-		printf("Task: %i %i %i %i\n", NAMD_timers_local[i].x, NAMD_timers_local[i].y, NAMD_timers_local[i].z, NAMD_timers_local[i].w);
-
-    #endif
-    
     /* Check for any missed CUDA errors. */
     cuda_safe_call(cudaPeekAtLastError());
         
@@ -3201,29 +3244,61 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
         if(nr_states > 0) {
             auto _fluxes_next_cuda = fluxes_next_cuda[did];
 
-            auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, nr_states, &_fluxes_next_cuda, &cell_counts, &cell_parts](int k) -> void {
+            if(e->nr_fluxsteps > 1) {
+                auto _part_states_next_cuda = part_states_next_cuda[did];
 
-                /* Get the cell id. */
-                int cid = _cells_cuda_local[k];
+                auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, nr_states, &_fluxes_next_cuda, &_part_states_next_cuda, &cell_counts, &cell_parts](int k) -> void {
 
-                /* Copy the particle data from the device. */
-                auto buff_force = &_forces_cuda[ 4*_ind_cuda_local[cid] ];
-                auto buff_flux = &_fluxes_next_cuda[nr_states * _ind_cuda_local[cid] ];
+                    /* Get the cell id. */
+                    int cid = _cells_cuda_local[k];
 
-                for(int pid = 0 ; pid < cell_counts[cid] ; pid++) {
-                    auto p = &cell_parts[cid][pid];
-                    p->f[0] += buff_force[ 4*pid ];
-                    p->f[1] += buff_force[ 4*pid + 1 ];
-                    p->f[2] += buff_force[ 4*pid + 2 ];
-                    p->f[3] += buff_force[ 4*pid + 3 ];
+                    /* Copy the particle data from the device. */
+                    auto buff_force = &_forces_cuda[ 4*_ind_cuda_local[cid] ];
+                    auto buff_flux = &_fluxes_next_cuda[nr_states * _ind_cuda_local[cid] ];
+                    auto buff_state = &_part_states_next_cuda[nr_states * _ind_cuda_local[cid]];
 
-                    for(int fid = 0; fid < nr_states; fid++) 
-                        p->state_vector->q[fid] += buff_flux[nr_states * pid + fid];
-                }
+                    for(int pid = 0 ; pid < cell_counts[cid] ; pid++) {
+                        auto p = &cell_parts[cid][pid];
+                        p->f[0] += buff_force[ 4*pid ];
+                        p->f[1] += buff_force[ 4*pid + 1 ];
+                        p->f[2] += buff_force[ 4*pid + 2 ];
+                        p->f[3] += buff_force[ 4*pid + 3 ];
 
-            };
+                        for(int fid = 0; fid < p->state_vector->size; fid++) {
+                            p->state_vector->q[fid] += buff_flux[nr_states * pid + fid];
+                            p->state_vector->fvec[fid] = buff_state[nr_states * pid + fid];
+                        }
+                    }
 
-            parallel_for(e->cells_cuda_nr[did], func);
+                };
+
+                parallel_for(e->cells_cuda_nr[did], func);
+            } 
+            else {
+                auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, nr_states, &_fluxes_next_cuda, &cell_counts, &cell_parts](int k) -> void {
+
+                    /* Get the cell id. */
+                    int cid = _cells_cuda_local[k];
+
+                    /* Copy the particle data from the device. */
+                    auto buff_force = &_forces_cuda[ 4*_ind_cuda_local[cid] ];
+                    auto buff_flux = &_fluxes_next_cuda[nr_states * _ind_cuda_local[cid] ];
+
+                    for(int pid = 0 ; pid < cell_counts[cid] ; pid++) {
+                        auto p = &cell_parts[cid][pid];
+                        p->f[0] += buff_force[ 4*pid ];
+                        p->f[1] += buff_force[ 4*pid + 1 ];
+                        p->f[2] += buff_force[ 4*pid + 2 ];
+                        p->f[3] += buff_force[ 4*pid + 3 ];
+
+                        for(int fid = 0; fid < p->state_vector->size; fid++) 
+                            p->state_vector->q[fid] += buff_flux[nr_states * pid + fid];
+                    }
+
+                };
+
+                parallel_for(e->cells_cuda_nr[did], func);
+            }
         } 
         else {
             auto func = [&_cells_cuda_local, &_forces_cuda, &_ind_cuda_local, &cell_counts, &cell_parts](int k) -> void {
@@ -3248,8 +3323,11 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 
         /* Deallocate the parts array and counts array. */
         free(forces_cuda[did]);
-        if(nr_states > 0)
+        if(nr_states > 0) {
             free(fluxes_next_cuda[did]);
+            if(e->nr_fluxsteps > 1) 
+                free(part_states_next_cuda[did]);
+        }
         
     }
         
@@ -3281,7 +3359,9 @@ extern "C" HRESULT cuda::engine_nonbond_cuda(struct engine *e) {
 extern "C" HRESULT cuda::engine_cuda_load_parts(struct engine *e) {
     
     int k, did, maxcount = 0;
-    cuda::Particle *parts_cuda = (cuda::Particle*)e->parts_cuda_local;
+    float4* parts_pos_cuda = (float4*)e->parts_pos_cuda_local;
+    float3* parts_vel_cuda = (float3*)e->parts_vel_cuda_local;
+    int4* parts_datai_cuda = (int4*)e->parts_datai_cuda_local;
     struct space *s = &e->s;
     FPTYPE maxdist = s->cutoff + 2*s->maxdx;
     int *counts = e->counts_cuda_local[0], *inds = e->ind_cuda_local[0];
@@ -3305,15 +3385,20 @@ extern "C" HRESULT cuda::engine_cuda_load_parts(struct engine *e) {
         inds[k] = inds[k-1] + counts[k-1];
 
     /* Loop over the marked cells. */
-    auto func_alloc_marked = [&s, &parts_cuda, &inds, &counts] (int _k) -> void {
+    auto func_alloc_marked = [&] (int _k) -> void {
 
         /* Get the cell id. */
         int _cid = s->cid_marked[_k];
 
         /* Copy the particle data to the device. */
-        cuda::Particle *buff = (cuda::Particle*)&parts_cuda[ inds[_cid] ];
+        auto buff_parts_pos_cuda = &parts_pos_cuda[inds[_cid]];
+        auto buff_parts_vel_cuda = &parts_vel_cuda[inds[_cid]];
+        auto buff_parts_datai_cuda = &parts_datai_cuda[inds[_cid]];
         for(int _pid = 0 ; _pid < counts[_cid] ; _pid++) {
-            buff[ _pid ] = cuda::Particle(&s->cells[_cid].parts[_pid]);
+            TissueForge::Particle* part = &s->cells[_cid].parts[_pid];
+            buff_parts_pos_cuda[_pid] = {part->x[0], part->x[1], part->x[2], part->radius};
+            buff_parts_vel_cuda[_pid] = {part->v[0], part->v[1], part->v[2]};
+            buff_parts_datai_cuda[_pid] = {part->id, part->typeId, part->flags, part->clusterId};
         }
 
     };
@@ -3340,7 +3425,9 @@ extern "C" HRESULT cuda::engine_cuda_load_parts(struct engine *e) {
         cuda_safe_call(cudaMemcpyAsync(e->ind_cuda[did], inds, sizeof(int) * s->nr_cells, cudaMemcpyHostToDevice, stream));
 
         /* Bind the particle positions. */
-        cuda_safe_call(cudaMemcpyAsync(e->parts_cuda[did], parts_cuda, sizeof(cuda::Particle) * s->nr_parts, cudaMemcpyHostToDevice, stream));
+        cuda_safe_call(cudaMemcpyAsync(e->parts_pos_cuda[did], parts_pos_cuda, sizeof(float4) * s->nr_parts, cudaMemcpyHostToDevice, stream));
+        cuda_safe_call(cudaMemcpyAsync(e->parts_vel_cuda[did], parts_vel_cuda, sizeof(float3) * s->nr_parts, cudaMemcpyHostToDevice, stream));
+        cuda_safe_call(cudaMemcpyAsync(e->parts_datai_cuda[did], parts_datai_cuda, sizeof(int4) * s->nr_parts, cudaMemcpyHostToDevice, stream));
 
         /* Clear the force array. */
         cuda_safe_call(cudaMemsetAsync(e->forces_cuda[did], 0, sizeof(float) * 4 * s->nr_parts, stream));
@@ -3375,7 +3462,7 @@ extern "C" HRESULT cuda::engine_cuda_unload_parts(struct engine *e) {
         cuda_safe_call(cudaMemcpyAsync(forces_cuda[did], e->forces_cuda[did], sizeof(float) * 4 * s->nr_parts, cudaMemcpyDeviceToHost, stream));
 
         /* Get the potential energy. */
-        cuda_safe_call(cudaMemcpyFromSymbolAsync(&epot[did], cuda_epot_out, sizeof(float), 0, cudaMemcpyDeviceToHost, stream));
+        cuda_safe_call(cudaMemcpyFromSymbolAsync(&epot[did], cuda_epot, sizeof(float), 0, cudaMemcpyDeviceToHost, stream));
         
     }
 
@@ -3419,133 +3506,6 @@ extern "C" HRESULT cuda::engine_cuda_unload_parts(struct engine *e) {
 
 }
 
-/**
- * @brief Load the queues onto the CUDA device.
- *
- * @param e The #engine.
- */
-HRESULT engine_cuda_queues_load(struct engine *e) {
-    
-    int did, nr_queues, qid, k, qsize, nr_tasks = e->s.nr_tasks;
-    struct cudaDeviceProp prop;
-    int *data;
-    struct cuda::queue_cuda queues[ cuda_maxqueues ];
-    
-    /* Loop over the devices. */
-    for(did = 0 ; did < e->nr_devices ; did++) {
-    
-        /* Set the device ID. */
-        cuda_safe_call(cudaSetDevice(e->devices[did]));
-
-        /* Get the device properties. */
-        cuda_safe_call(cudaGetDeviceProperties(&prop, e->devices[did]));
-
-        /* Get the number of SMs on the current device. */
-        nr_queues = 1; // prop.multiProcessorCount;
-
-        /* Get the local number of tasks. */
-        nr_tasks = e->nrtasks_cuda[did];
-
-        /* Set the size of each queue. */
-        qsize = 3 * nr_tasks / min(nr_queues, e->nr_runners);
-        cuda_safe_call(cudaMemcpyToSymbol(cuda_queue_size, &qsize, sizeof(int), 0, cudaMemcpyHostToDevice));
-
-        /* Allocate a temporary buffer for the queue data. */
-        if((data = (int *)malloc(sizeof(int) * qsize)) == NULL)
-            return error(MDCERR_malloc);
-
-        /* Set the number of queues. */
-        e->nr_queues_cuda = nr_queues;
-
-        /* Init each queue separately. */
-        for(qid = 0 ; qid < nr_queues ; qid++) {
-
-            /* Fill the data for this queue. */
-            queues[qid].count = 0;
-            for(k = qid ; k < nr_tasks ; k += nr_queues)
-                data[ queues[qid].count++ ] = k;
-            for(k = queues[qid].count ; k < qsize ; k++)
-                data[k] = -1;
-
-            /* Allocate and copy the data. */
-            cuda_safe_call(cudaMalloc(&queues[qid].data, sizeof(int) * qsize));
-            cuda_safe_call(cudaMemcpy((void *)queues[qid].data, data, sizeof(int) * qsize, cudaMemcpyHostToDevice));
-
-            /* Allocate and copy the recycling data. */
-            for(k = 0 ; k < queues[qid].count ; k++)
-                data[k] = -1;
-            
-            cuda_safe_call(cudaMalloc(&queues[qid].rec_data, sizeof(int) * qsize));
-            cuda_safe_call(cudaMemcpy((void *)queues[qid].rec_data, data, sizeof(int) * qsize, cudaMemcpyHostToDevice));
-
-            /* Set some other values. */
-            queues[qid].first = 0;
-            queues[qid].last = queues[qid].count;
-            queues[qid].rec_count = 0;
-
-        }
-
-        /* Copy the queue structures to the device. */
-        cuda_safe_call(cudaMemcpyToSymbol(cuda_queues, queues, sizeof(struct cuda::queue_cuda) * nr_queues, 0, cudaMemcpyHostToDevice));
-
-        /* Wait so that we can re-use the local memory. */            
-        cuda_safe_call(cudaDeviceSynchronize());
-
-        /* Clean up. */
-        free(data);
-        
-    }
-        
-    /* Fade to grey. */
-    return S_OK;
-
-}
-
-
-__global__ void engine_cuda_queues_finalize_device(int nr_queues) {
-    if(threadIdx.x != 0 || blockIdx.x != 0) {
-        return;
-    }
-
-    for(int qid = 0; qid < nr_queues; qid++) {
-
-        if(cudaFree(&cuda_queues[qid].data) != cudaSuccess) {
-            printf("%s\n", "engine_cuda_queues_finalize_device failed (data)!");
-            return;
-        }
-
-        if(cudaFree(&cuda_queues[qid].rec_data) != cudaSuccess) {
-            printf("%s\n", "engine_cuda_queues_finalize_device failed (rec_data)!");
-            return;
-        }
-
-    }
-
-    if(cudaFree(cuda_queues) != cudaSuccess) {
-        printf("%s\n", "engine_cuda_queues_finalize_device failed (cuda_queues)!");
-        return;
-    }
-}
-
-HRESULT cuda::engine_cuda_queues_finalize(struct engine *e) {
-
-    /* Loop over the devices. */
-    for(int did = 0 ; did < e->nr_devices ; did++) {
-        
-        // Set the device ID
-        
-        cuda_safe_call(cudaSetDevice(e->devices[did]));
-
-        // Free queues
-        
-        engine_cuda_queues_finalize_device<<<1, 1>>>(e->nr_queues_cuda);
-
-        cuda_safe_call(cudaDeviceSynchronize());
-
-    }
-
-    return S_OK;
-}
 
 extern "C" HRESULT cuda::engine_cuda_load_pots(struct engine *e) {
     int nr_pots, nr_pots_cluster;
@@ -3598,72 +3558,72 @@ extern "C" HRESULT cuda::engine_cuda_load_pots(struct engine *e) {
         cuda_safe_call(cudaSetDevice(e->devices[did]));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_alpha[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_alpha[did], 0, 0, pot_alpha.data(), sizeof(float) * pot_alpha.size(), sizeof(float) * pot_alpha.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_alpha[did], 0, 0, pot_alpha.data(), sizeof(float) * ENGINE_CUDA_POT_WIDTH_ALPHA, sizeof(float) * ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_alpha[did], cuda_pot_alpha[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_alpha, &tex_pot_alpha[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_alpha[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha_cluster.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_alpha[did], 0, 0, pot_alpha_cluster.data(), sizeof(float) * pot_alpha_cluster.size(), sizeof(float) * pot_alpha_cluster.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_alpha[did], 0, 0, pot_alpha_cluster.data(), sizeof(float) * ENGINE_CUDA_POT_WIDTH_ALPHA, sizeof(float) * ENGINE_CUDA_POT_WIDTH_ALPHA, pot_alpha_cluster.size() / ENGINE_CUDA_POT_WIDTH_ALPHA, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_alpha[did], cuda_pot_cluster_alpha[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_alpha, &tex_pot_cluster_alpha[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_c[did], &channelDesc_float, potential_chunk * max_coeffs, pot_c.size() / (potential_chunk * max_coeffs), 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_c[did], 0, 0, pot_c.data(), sizeof(float) * pot_c.size(), sizeof(float) * pot_c.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_c[did], 0, 0, pot_c.data(), sizeof(float) * potential_chunk * max_coeffs, sizeof(float) * potential_chunk * max_coeffs, pot_c.size() / (potential_chunk * max_coeffs), cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_c[did], cuda_pot_c[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_c, &tex_pot_c[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_c[did], &channelDesc_float, potential_chunk * max_coeffs_cluster, pot_c_cluster.size() / (potential_chunk * max_coeffs_cluster), 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_c[did], 0, 0, pot_c_cluster.data(), sizeof(float) * pot_c_cluster.size(), sizeof(float) * pot_c_cluster.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_c[did], 0, 0, pot_c_cluster.data(), sizeof(float) * potential_chunk * max_coeffs_cluster, sizeof(float) * potential_chunk * max_coeffs_cluster, pot_c_cluster.size() / (potential_chunk * max_coeffs_cluster), cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_c[did], cuda_pot_cluster_c[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_c, &tex_pot_cluster_c[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_dataf[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_dataf[did], 0, 0, pot_dataf.data(), sizeof(float) * pot_dataf.size(), sizeof(float) * pot_dataf.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_dataf[did], 0, 0, pot_dataf.data(), sizeof(float) * ENGINE_CUDA_POT_WIDTH_DATAF, sizeof(float) * ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf.size() / ENGINE_CUDA_POT_WIDTH_DATAF, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_dataf[did], cuda_pot_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_dataf, &tex_pot_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_dataf[did], &channelDesc_float, ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_dataf[did], 0, 0, pot_dataf_cluster.data(), sizeof(float) * pot_dataf_cluster.size(), sizeof(float) * pot_dataf_cluster.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_dataf[did], 0, 0, pot_dataf_cluster.data(), sizeof(float) * ENGINE_CUDA_POT_WIDTH_DATAF, sizeof(float) * ENGINE_CUDA_POT_WIDTH_DATAF, pot_dataf_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAF, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_dataf[did], cuda_pot_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_dataf, &tex_pot_cluster_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_datai[did], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_datai[did], 0, 0, pot_datai.data(), sizeof(int) * pot_datai.size(), sizeof(int) * pot_datai.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_datai[did], 0, 0, pot_datai.data(), sizeof(int) * ENGINE_CUDA_POT_WIDTH_DATAI, sizeof(int) * ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai.size() / ENGINE_CUDA_POT_WIDTH_DATAI, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_datai[did], cuda_pot_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_datai, &tex_pot_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_pot_cluster_datai[did], &channelDesc_int, ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_datai[did], 0, 0, pot_datai_cluster.data(), sizeof(int) * pot_datai_cluster.size(), sizeof(int) * pot_datai_cluster.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_pot_cluster_datai[did], 0, 0, pot_datai_cluster.data(), sizeof(int) * ENGINE_CUDA_POT_WIDTH_DATAI, sizeof(int) * ENGINE_CUDA_POT_WIDTH_DATAI, pot_datai_cluster.size() / ENGINE_CUDA_POT_WIDTH_DATAI, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_pot_cluster_datai[did], cuda_pot_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_pot_cluster_datai, &tex_pot_cluster_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cfs[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cfs[did], 0, 0, dpd_cf.data(), sizeof(float) * dpd_cf.size(), sizeof(float) * dpd_cf.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cfs[did], 0, 0, dpd_cf.data(), sizeof(float) * ENGINE_CUDA_DPD_WIDTH_CF, sizeof(float) * ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf.size() / ENGINE_CUDA_DPD_WIDTH_CF, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cfs[did], cuda_dpd_cfs[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cfs, &tex_dpd_cfs[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_cfs[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_CF, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_cfs[did], 0, 0, dpd_cf_cluster.data(), sizeof(float) * dpd_cf_cluster.size(), sizeof(float) * dpd_cf_cluster.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_cfs[did], 0, 0, dpd_cf_cluster.data(), sizeof(float) * ENGINE_CUDA_DPD_WIDTH_CF, sizeof(float) * ENGINE_CUDA_DPD_WIDTH_CF, dpd_cf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_CF, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_cfs[did], cuda_dpd_cluster_cfs[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_cfs, &tex_dpd_cluster_cfs[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_dataf[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_dataf[did], 0, 0, dpd_dataf.data(), sizeof(float) * dpd_dataf.size(), sizeof(float) * dpd_dataf.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_dataf[did], 0, 0, dpd_dataf.data(), sizeof(float) * ENGINE_CUDA_DPD_WIDTH_DATAF, sizeof(float) * ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_dataf[did], cuda_dpd_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_dataf, &tex_dpd_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_dataf[did], &channelDesc_float, ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_dataf[did], 0, 0, dpd_dataf_cluster.data(), sizeof(float) * dpd_dataf_cluster.size(), sizeof(float) * dpd_dataf_cluster.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_dataf[did], 0, 0, dpd_dataf_cluster.data(), sizeof(float) * ENGINE_CUDA_DPD_WIDTH_DATAF, sizeof(float) * ENGINE_CUDA_DPD_WIDTH_DATAF, dpd_dataf_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAF, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_dataf[did], cuda_dpd_cluster_dataf[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_dataf, &tex_dpd_cluster_dataf[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_datai[did], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_datai[did], 0, 0, dpd_datai.data(), sizeof(int) * dpd_datai.size(), sizeof(int) * dpd_datai.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_datai[did], 0, 0, dpd_datai.data(), sizeof(int) * ENGINE_CUDA_DPD_WIDTH_DATAI, sizeof(int) * ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_datai[did], cuda_dpd_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_datai, &tex_dpd_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
         cuda_safe_call(cudaMallocArray(&cuda_dpd_cluster_datai[did], &channelDesc_int, ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, 0));
-        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_datai[did], 0, 0, dpd_datai_cluster.data(), sizeof(int) * dpd_datai_cluster.size(), sizeof(int) * dpd_datai_cluster.size(), 1, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy2DToArray(cuda_dpd_cluster_datai[did], 0, 0, dpd_datai_cluster.data(), sizeof(int) * ENGINE_CUDA_DPD_WIDTH_DATAI, sizeof(int) * ENGINE_CUDA_DPD_WIDTH_DATAI, dpd_datai_cluster.size() / ENGINE_CUDA_DPD_WIDTH_DATAI, cudaMemcpyHostToDevice));
         cuda_safe_call_e(engine_cuda_texture_init(&tex_dpd_cluster_datai[did], cuda_dpd_cluster_datai[did]), S_OK);
         cuda_safe_call(cudaMemcpyToSymbol(cuda_tex_dpd_cluster_datai, &tex_dpd_cluster_datai[did], sizeof(cudaTextureObject_t), 0, cudaMemcpyHostToDevice));
 
@@ -3769,14 +3729,22 @@ extern "C" HRESULT cuda::engine_cuda_refresh_pots(struct engine *e) {
 HRESULT engine_cuda_allocate_particles(struct engine *e) {
 
     /* Allocate the particle buffer. */
-    if((e->parts_cuda_local = (cuda::Particle*)malloc(sizeof(cuda::Particle) * e->s.size_parts)) == NULL)
+    if((e->parts_pos_cuda_local = malloc(sizeof(float4) * e->s.size_parts)) == NULL) 
+        return error(MDCERR_malloc);
+    if((e->parts_vel_cuda_local = malloc(sizeof(float3) * e->s.size_parts)) == NULL) 
+        return error(MDCERR_malloc);
+    if((e->parts_datai_cuda_local = malloc(sizeof(int4) * e->s.size_parts)) == NULL) 
         return error(MDCERR_malloc);
 
     /* Allocate the particle and force data. */
     for(int did = 0; did < e->nr_devices; did++) {
         cuda_safe_call (cudaSetDevice(e->devices[did]));
-        cuda_safe_call (cudaMalloc(&e->parts_cuda[did], sizeof(cuda::Particle) * e->s.size_parts));
-        cuda_safe_call (cudaMemcpyToSymbol(cuda_parts, &e->parts_cuda[did], sizeof(cuda::Particle*), 0, cudaMemcpyHostToDevice));
+        cuda_safe_call (cudaMalloc(&e->parts_pos_cuda[did], sizeof(float4) * e->s.size_parts));
+        cuda_safe_call (cudaMemcpyToSymbol(cuda_parts_pos, &e->parts_pos_cuda[did], sizeof(float4*), 0, cudaMemcpyHostToDevice));
+        cuda_safe_call (cudaMalloc(&e->parts_vel_cuda[did], sizeof(float3) * e->s.size_parts));
+        cuda_safe_call (cudaMemcpyToSymbol(cuda_parts_vel, &e->parts_vel_cuda[did], sizeof(float3*), 0, cudaMemcpyHostToDevice));
+        cuda_safe_call (cudaMalloc(&e->parts_datai_cuda[did], sizeof(int4) * e->s.size_parts));
+        cuda_safe_call (cudaMemcpyToSymbol(cuda_parts_datai, &e->parts_datai_cuda[did], sizeof(int4*), 0, cudaMemcpyHostToDevice));
         cuda_safe_call (cudaMalloc(&e->forces_cuda[did], sizeof(float) * 4 * e->s.size_parts));
     }
 
@@ -3797,15 +3765,18 @@ HRESULT engine_cuda_finalize_particles(struct engine *e) {
 
         // Free the particle and force data
 
-        cuda_safe_call(cudaFree(e->parts_cuda[did]));
-
+        cuda_safe_call(cudaFree(e->parts_pos_cuda[did]));
+        cuda_safe_call(cudaFree(e->parts_vel_cuda[did]));
+        cuda_safe_call(cudaFree(e->parts_datai_cuda[did]));
         cuda_safe_call(cudaFree(e->forces_cuda[did]));
 
     }
 
     // Free the particle buffer
 
-    free(e->parts_cuda_local);
+    free(e->parts_pos_cuda_local);
+    free(e->parts_vel_cuda_local);
+    free(e->parts_datai_cuda_local);
 
     return S_OK;
 }
@@ -3846,6 +3817,8 @@ extern "C" HRESULT cuda::engine_cuda_allocate_particle_states(struct engine *e) 
     
     if((e->part_states_cuda_local = (float*)malloc(sizeof(float) * e->s.size_parts * nr_states)) == NULL)
         return error(MDCERR_malloc);
+    if(e->nr_fluxsteps > 1 && (e->part_species_flags_cuda_local = (int*)malloc(sizeof(int) * e->s.size_parts * nr_states)) == NULL) 
+        return error(MDCERR_malloc);
 
     for(int did = 0; did < e->nr_devices; did++) {
 
@@ -3853,6 +3826,9 @@ extern "C" HRESULT cuda::engine_cuda_allocate_particle_states(struct engine *e) 
         
         cuda_safe_call (cudaMemcpyToSymbol(cuda_part_states, &e->part_states_cuda[did], sizeof(float *), 0, cudaMemcpyHostToDevice));
 
+        if(e->nr_fluxsteps > 1) {
+            cuda_safe_call(cudaMalloc(&e->part_species_flags_cuda[did], sizeof(int) * e->s.size_parts * nr_states));
+        }
     }
 
     engine_cuda_nr_states = nr_states;
@@ -3870,11 +3846,17 @@ extern "C" HRESULT cuda::engine_cuda_finalize_particle_states(struct engine *e) 
 
         cuda_safe_call(::cudaFree(e->part_states_cuda[did]));
 
+        if(e->nr_fluxsteps > 1) {
+            cuda_safe_call(::cudaFree(e->part_species_flags_cuda[did]));
+        }
     }
 
     // Free the particle buffer
 
     free(e->part_states_cuda_local);
+
+    if(e->nr_fluxsteps > 1) 
+        free(e->part_species_flags_cuda_local);
 
     engine_cuda_nr_states = 0;
 
@@ -3910,7 +3892,7 @@ extern "C" HRESULT cuda::engine_cuda_load(struct engine *e) {
     float dt = e->dt, cutoff = e->s.cutoff, cutoff2 = e->s.cutoff2, dscale; //, buff[ e->nr_types ];
     float h[3], dim[3], *corig;
     void *dummy[ engine_maxgpu ];
-    unsigned int *cflags;
+    unsigned int *cflags, nr_cells = s->nr_cells, dmaxdist;
     float3 *cdims;
 
     /*Split the space over the available GPUs*/
@@ -3965,14 +3947,17 @@ extern "C" HRESULT cuda::engine_cuda_load(struct engine *e) {
         
     /* Set the constant pointer to the null potential and other useful values. */
     dscale = ((float)SHRT_MAX) /(3.0 * sqrt(s->h[0]*s->h[0]*s->span[0]*s->span[0] + s->h[1]*s->h[1]*s->span[1]*s->span[1] + s->h[2]*s->h[2]*s->span[2]*s->span[2]));
+    dmaxdist = 2 + dscale * cutoff;
     for(did = 0 ;did < nr_devices ; did++) {
         cuda_safe_call(cudaSetDevice(e->devices[did]));
         cuda_safe_call(cudaMemcpyToSymbol(cuda_dt, &dt, sizeof(float), 0, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpyToSymbol(cuda_cutoff, &cutoff, sizeof(float), 0, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpyToSymbol(cuda_cutoff2, &cutoff2, sizeof(float), 0, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpyToSymbol(cuda_maxdist, &cutoff, sizeof(float), 0, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_dmaxdist, &dmaxdist, sizeof(unsigned int), 0, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpyToSymbol(cuda_maxtype, &(e->max_type), sizeof(int), 0, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpyToSymbol(cuda_dscale, &dscale, sizeof(float), 0, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_nr_cells, &nr_cells, sizeof(unsigned int), 0, cudaMemcpyHostToDevice));
     }
 
     /* Allocate and fill the task list. */
@@ -4053,14 +4038,65 @@ extern "C" HRESULT cuda::engine_cuda_load(struct engine *e) {
             for(k = 0 ; k < tasks_cuda[i].nr_unlock ; k++)
                 tasks_cuda[ tasks_cuda[i].unlock[k] ].wait += 1;
 
-        /* Allocate and fill the tasks list on the device. */
-        cuda_safe_call(cudaMemcpyToSymbol(cuda_nr_tasks, &nr_tasks, sizeof(int), 0, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(struct task_cuda) * s->nr_tasks));
-        cuda_safe_call(cudaMemcpy(dummy[did], tasks_cuda, sizeof(struct task_cuda) * s->nr_tasks, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpyToSymbol(cuda_tasks, &dummy[did], sizeof(struct task_cuda *), 0, cudaMemcpyHostToDevice));
-            
         /* Remember the number of tasks. */
         e->nrtasks_cuda[did] = nr_tasks;
+
+        std::unordered_map<int, std::vector<int2> > cellpair_map_left, cellpair_map_right;
+        for(i = 0; i < nr_tasks; i++) {
+            task_cuda& t = tasks_cuda[i];
+            if(t.type == task_type_pair) {
+                cellpair_map_left[t.i].push_back(make_int2(t.j, t.flags));
+                cellpair_map_right[t.j].push_back(make_int2(t.i, t.flags));
+            }
+        }
+        std::vector<int2> cellpair_list_left, cellpair_list_right;
+        std::vector<int> cellpair_ind_left, cellpair_ind_right, cellpair_count_left, cellpair_count_right;
+        cellpair_list_left.reserve(cellpair_map_left.size());
+        cellpair_list_right.reserve(cellpair_map_right.size());
+        cellpair_ind_left.reserve(nr_cells);
+        cellpair_ind_right.reserve(nr_cells);
+        cellpair_count_left.reserve(nr_cells);
+        cellpair_count_right.reserve(nr_cells);
+        for(i = 0; i < nr_cells; i++) {
+            std::vector<int2> cp;
+            std::unordered_map<int, std::vector<int2> >::iterator cpitr;
+            
+            cpitr = cellpair_map_left.find(i);
+            cp = cpitr == cellpair_map_left.end() ? std::vector<int2>() : cpitr->second;
+            cellpair_ind_left.push_back(cellpair_list_left.size());
+            cellpair_count_left.push_back(cp.size());
+            cellpair_list_left.insert(cellpair_list_left.end(), cp.begin(), cp.end());
+
+            cpitr = cellpair_map_right.find(i);
+            cp = cpitr == cellpair_map_right.end() ? std::vector<int2>() : cpitr->second;
+            cellpair_ind_right.push_back(cellpair_list_right.size());
+            cellpair_count_right.push_back(cp.size());
+            cellpair_list_right.insert(cellpair_list_right.end(), cp.begin(), cp.end());
+        }
+
+        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(int2) * cellpair_list_left.size()));
+        cuda_safe_call(cudaMemcpy(dummy[did], cellpair_list_left.data(), sizeof(int2) * cellpair_list_left.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_cellpair_list_left, &dummy[did], sizeof(int2*), 0, cudaMemcpyHostToDevice));
+
+        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(int2) * cellpair_list_right.size()));
+        cuda_safe_call(cudaMemcpy(dummy[did], cellpair_list_right.data(), sizeof(int2) * cellpair_list_right.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_cellpair_list_right, &dummy[did], sizeof(int2*), 0, cudaMemcpyHostToDevice));
+
+        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(int) * cellpair_ind_left.size()));
+        cuda_safe_call(cudaMemcpy(dummy[did], cellpair_ind_left.data(), sizeof(int) * cellpair_ind_left.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_cellpair_ind_left, &dummy[did], sizeof(int*), 0, cudaMemcpyHostToDevice));
+
+        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(int) * cellpair_ind_right.size()));
+        cuda_safe_call(cudaMemcpy(dummy[did], cellpair_ind_right.data(), sizeof(int) * cellpair_ind_right.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_cellpair_ind_right, &dummy[did], sizeof(int*), 0, cudaMemcpyHostToDevice));
+
+        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(int) * cellpair_count_left.size()));
+        cuda_safe_call(cudaMemcpy(dummy[did], cellpair_count_left.data(), sizeof(int) * cellpair_count_left.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_cellpair_count_left, &dummy[did], sizeof(int*), 0, cudaMemcpyHostToDevice));
+
+        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(int) * cellpair_count_right.size()));
+        cuda_safe_call(cudaMemcpy(dummy[did], cellpair_count_right.data(), sizeof(int) * cellpair_count_right.size(), cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpyToSymbol(cuda_cellpair_count_right, &dummy[did], sizeof(int*), 0, cudaMemcpyHostToDevice));
             
     }
     
@@ -4081,11 +4117,6 @@ extern "C" HRESULT cuda::engine_cuda_load(struct engine *e) {
             return error(MDCERR_malloc);
         cuda_safe_call(cudaMalloc(&e->counts_cuda[did], sizeof(int) * s->nr_cells));
         cuda_safe_call(cudaMalloc(&e->ind_cuda[did], sizeof(int) * s->nr_cells));
-        
-        /* Allocate and init the taboo list on the device. */
-        cuda_safe_call(cudaMalloc(&dummy[did], sizeof(int) * s->nr_cells));
-        cuda_safe_call(cudaMemset(dummy[did], 0, sizeof(int) * s->nr_cells));
-        cuda_safe_call(cudaMemcpyToSymbol(cuda_taboo, &dummy[did], sizeof(int *), 0, cudaMemcpyHostToDevice));
     }
 
     // Allocate boundary conditions
@@ -4102,10 +4133,6 @@ extern "C" HRESULT cuda::engine_cuda_load(struct engine *e) {
         return error(MDCERR_cuda);
         
     if(engine_cuda_allocate_particle_states(e) < 0)
-        return error(MDCERR_cuda);
-    
-    /* Init the pair queue on the device. */
-    if(engine_cuda_queues_load(e) < 0)
         return error(MDCERR_cuda);
         
     /* He's done it! */
@@ -4157,9 +4184,6 @@ extern "C" HRESULT engine_parts_finalize(struct engine *e) {
 
 extern "C" HRESULT cuda::engine_cuda_finalize(struct engine *e) {
     if(engine_parts_finalize(e) < 0)
-        return error(MDCERR_cuda);
-
-    if(engine_cuda_queues_finalize(e) < 0)
         return error(MDCERR_cuda);
 
     return S_OK;

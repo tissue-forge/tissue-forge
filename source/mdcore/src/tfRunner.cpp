@@ -308,37 +308,43 @@ HRESULT TissueForge::runner_run(struct runner *r) {
 
             /* Check task type... */
             switch(t->type) {
-            case task_type_sort:
-                TIMER_TIC_ND
-                if(s->verlet_rebuild && !(e->flags & engine_flag_unsorted))
-                    if(runner_dosort(r, &s->cells[ t->i ], t->flags) != S_OK)
-                        return error(MDCERR_runner);
-                s->cells_taboo[ t->i ] = 0;
-                TIMER_TOC(runner_timer_sort);
-                break;
-            case task_type_self:
-                TIMER_TIC_ND
-                if(runner_doself(r, &s->cells[ t->i ]) != S_OK)
-                    return error(MDCERR_runner);
-                s->cells_taboo[ t->i ] = 0;
-                TIMER_TOC(runner_timer_self);
-                break;
-            case task_type_pair:
-                TIMER_TIC_ND
-                if(e->flags & engine_flag_unsorted) {
-                    if(runner_dopair_unsorted(r, &s->cells[ t->i ], &s->cells[ t->j ]) != S_OK)
-                        return error(MDCERR_runner);
-                }
-                else {
-                    if(runner_dopair(r, &s->cells[ t->i ], &s->cells[ t->j ], t->flags) != S_OK)
-                        return error(MDCERR_runner);
-                }
-                s->cells_taboo[ t->i ] = 0;
-                s->cells_taboo[ t->j ] = 0;
-                TIMER_TOC(runner_timer_pair);
-                break;
-            default:
-                return error(MDCERR_tasktype);
+                case task_type_sort:
+                    TIMER_TIC_ND
+                    if(s->verlet_rebuild && e->step_flux == 0)
+                        if(runner_dosort(r, &s->cells[ t->i ], t->flags) != S_OK)
+                            return error(MDCERR_runner);
+                    s->cells_taboo[ t->i ] = 0;
+                    TIMER_TOC(runner_timer_sort);
+                    break;
+                case task_type_self:
+                    TIMER_TIC_ND
+                    if(e->integrator_flags & INTEGRATOR_FLUX_SUBSTEP) {
+                        if(runner_doself_fluxonly(r, &s->cells[ t->i ]) != S_OK)
+                            return error(MDCERR_runner);
+                    } 
+                    else {
+                        if(runner_doself(r, &s->cells[ t->i ]) != S_OK)
+                            return error(MDCERR_runner);
+                    }
+                    s->cells_taboo[ t->i ] = 0;
+                    TIMER_TOC(runner_timer_self);
+                    break;
+                case task_type_pair:
+                    TIMER_TIC_ND
+                    if(e->integrator_flags & INTEGRATOR_FLUX_SUBSTEP) {
+                        if(runner_dopair_fluxonly(r, &s->cells[ t->i ], &s->cells[ t->j ], t->flags) != S_OK)
+                            return error(MDCERR_runner);
+                    } 
+                    else {
+                        if(runner_dopair(r, &s->cells[ t->i ], &s->cells[ t->j ], t->flags) != S_OK)
+                            return error(MDCERR_runner);
+                    }
+                    s->cells_taboo[ t->i ] = 0;
+                    s->cells_taboo[ t->j ] = 0;
+                    TIMER_TOC(runner_timer_pair);
+                    break;
+                default:
+                    return error(MDCERR_tasktype);
             }
 
             /* Unlock any dependent tasks. */

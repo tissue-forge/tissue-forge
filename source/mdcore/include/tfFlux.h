@@ -59,6 +59,7 @@ namespace TissueForge {
         FPTYPE        coef[TF_SIMD_SIZE];
         FPTYPE        decay_coef[TF_SIMD_SIZE];
         FPTYPE        target[TF_SIMD_SIZE];
+        FPTYPE        cutoff[TF_SIMD_SIZE];
     };
 
     struct ParticleType;
@@ -98,7 +99,8 @@ namespace TissueForge {
             const std::string& name, 
             FPTYPE k, 
             FPTYPE decay, 
-            FPTYPE target
+            FPTYPE target,
+            FPTYPE cutoff=-FPTYPE_ONE
         );
         static Fluxes *addFlux(
             FluxKind kind, 
@@ -109,7 +111,8 @@ namespace TissueForge {
             int32_t index_b,
             FPTYPE k, 
             FPTYPE decay, 
-            FPTYPE target
+            FPTYPE target,
+            FPTYPE cutoff
         );
 
         /**
@@ -141,9 +144,17 @@ namespace TissueForge {
          * @param name name of species
          * @param k transport coefficient
          * @param decay optional decay. Defaults to 0.0. 
+         * @param cutoff optional cutoff distance. Defaults to global cutoff
          * @return Fluxes* 
          */
-        static Fluxes *fluxFick(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &decay=0.0f);
+        static Fluxes *fluxFick(
+            ParticleType *A, 
+            ParticleType *B, 
+            const std::string &name, 
+            const FPTYPE &k, 
+            const FPTYPE &decay=FPTYPE_ZERO, 
+            const FPTYPE &cutoff=-FPTYPE_ONE
+        );
 
         /**
          * @brief Alias of fluxFick. 
@@ -153,9 +164,17 @@ namespace TissueForge {
          * @param name name of species
          * @param k transport coefficient
          * @param decay optional decay. Defaults to 0.0. 
+         * @param cutoff optional cutoff distance. Defaults to global cutoff
          * @return Fluxes* 
          */
-        static Fluxes *flux(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &decay=0.0f);
+        static Fluxes *flux(
+            ParticleType *A, 
+            ParticleType *B, 
+            const std::string &name, 
+            const FPTYPE &k, 
+            const FPTYPE &decay=FPTYPE_ZERO, 
+            const FPTYPE &cutoff=-FPTYPE_ONE
+        );
 
         /**
          * @brief Creates a secretion flux by active pumping. 
@@ -187,9 +206,18 @@ namespace TissueForge {
          * @param k transport coefficient
          * @param target target concentration
          * @param decay optional decay. Defaults to 0.0 
+         * @param cutoff optional cutoff distance. Defaults to global cutoff
          * @return Fluxes* 
          */
-        static Fluxes *secrete(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &target, const FPTYPE &decay=0.0f);
+        static Fluxes *secrete(
+            ParticleType *A, 
+            ParticleType *B, 
+            const std::string &name, 
+            const FPTYPE &k, 
+            const FPTYPE &target, 
+            const FPTYPE &decay=FPTYPE_ZERO, 
+            const FPTYPE &cutoff=-FPTYPE_ONE
+        );
 
         /**
          * @brief Creates an uptake flux by active pumping. 
@@ -221,9 +249,18 @@ namespace TissueForge {
          * @param k transport coefficient
          * @param target target concentration
          * @param decay optional decay. Defaults to 0.0 
+         * @param cutoff optional cutoff distance. Defaults to global cutoff
          * @return Fluxes* 
          */
-        static Fluxes *uptake(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &target, const FPTYPE &decay=0.0f);
+        static Fluxes *uptake(
+            ParticleType *A, 
+            ParticleType *B, 
+            const std::string &name, 
+            const FPTYPE &k, 
+            const FPTYPE &target, 
+            const FPTYPE &decay=FPTYPE_ZERO, 
+            const FPTYPE &cutoff=-FPTYPE_ONE
+        );
 
         /**
          * @brief Get a JSON string representation

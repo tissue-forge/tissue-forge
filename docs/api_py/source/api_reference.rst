@@ -7,7 +7,7 @@ Tissue Forge Library Python API Reference
 
 This is the API Reference page for the module: :mod:`tissue_forge`
 
-.. moduleauthor:: T.J. Sego <tjsego@iu.edu>
+.. moduleauthor:: T.J. Sego
 
 
 .. autofunction:: init

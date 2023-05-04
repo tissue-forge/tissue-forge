@@ -83,7 +83,7 @@ vector of interacting particles such that particles tend to align laterally,
     L_{ij} = \left(\hat{\mathbf{r}}_{ij} \times \mathbf{q}_{i} \right) \cdot \left(\hat{\mathbf{r}}_{ij} \times \mathbf{q}_{j} \right).
 
 In Python, all functionality of the cell polarity model module can be accessed from the
-:py:module:`cell_polarity` (``models::center::CellPolarity`` namespace in C++), ::
+:mod:`cell_polarity <tissue_forge.models.center.cell_polarity>` (``models::center::CellPolarity`` namespace in C++), ::
 
     from tissue_forge.models.center import cell_polarity
 

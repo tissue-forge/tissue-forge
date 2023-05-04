@@ -378,6 +378,15 @@ namespace TissueForge {
     CAPI_FUNC(HRESULT) space_update_style(struct space *s);
 
     /**
+     * @brief Prepare the tasks before a time step.
+     *
+     * @param s A pointer to the #space to prepare.
+     *
+     * Initializes the tasks of a #space for a single time step. 
+     */
+    CAPI_FUNC(HRESULT) space_prepare_tasks(struct space *s);
+
+    /**
      * @brief Prepare the space before a time step.
      *
      * @param s A pointer to the #space to prepare.

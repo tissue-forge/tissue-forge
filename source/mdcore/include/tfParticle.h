@@ -348,6 +348,14 @@ namespace TissueForge {
         virtual ParticleHandle* split();
 
         /**
+         * @brief Splits a single particle into two along a direction. 
+         * 
+         * @param direction direction along which the particle is split. 
+         * @return new particle
+        */
+        virtual ParticleHandle* split(const FVector3& direction);
+
+        /**
          * @brief Destroys the particle and removes it from inventory. 
          * 
          * Subsequent references to a destroyed particle result in an error. 

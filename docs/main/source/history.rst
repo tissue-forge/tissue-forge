@@ -3,6 +3,22 @@
 History
 ========
 
+Version 0.1.1
+-------------
+* Improvements to GPU acceleration
+* Added flux sub-stepping
+* Minor improvements to lists
+* Minor improvements to docs
+* Improvements to species and flux
+* Added split overload for optional direction
+* Bug fixes
+
+  * Minor bug fix in factory particle constructor
+  * Minor bug fix in lists
+  * Fixed multithreading in cell polarity model module
+  * Fixed state during particle splitting
+  * Minor numpy fix in lattice python module
+
 Version 0.1.0
 --------------
 * Added vertex solver module

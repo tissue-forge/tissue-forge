@@ -49,6 +49,7 @@ int main(int argc, char const *argv[])
     config.universeConfig.dim = {15, 6, 6};
     config.universeConfig.spaceGridSize = {9, 3, 3};
     config.universeConfig.cutoff = 3;
+    config.universeConfig.nr_fluxsteps = 2;
     config.universeConfig.setBoundaryConditions(bcArgs);
     TF_TEST_CHECK(init(config));
 
