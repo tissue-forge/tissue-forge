@@ -51,6 +51,7 @@ requirements:
     - clang=12 # [linux]
     - clangxx=12 # [linux]
     - lld # [linux]
+    - libcxx=15 # [osx]
     - {{ compiler('c') }} # [linux or osx]
     - {{ compiler('cxx') }} # [linux or osx]
     - {{ cdt('mesa-libgl-devel') }} # [linux]
