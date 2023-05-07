@@ -30,7 +30,7 @@
 #include "tf_platform.h"
 #include <pthread.h>
 #include "tfSpace.h"
-#include "cycle.h"
+#include "tf_cycle.h"
 #include "tfBoundaryConditions.h"
 #include <tfSubEngine.h>
 #include <mutex>

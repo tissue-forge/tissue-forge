@@ -25,6 +25,7 @@ set(
   PUBLIC_HEADERS
   "${MDCORE_SOURCE_DIR}/include/cycle.h"
   "${MDCORE_SOURCE_DIR}/include/mdcore_config.h"
+  "${MDCORE_SOURCE_DIR}/include/tf_cycle.h"
   "${MDCORE_SOURCE_DIR}/include/tf_errs.h"
   "${MDCORE_SOURCE_DIR}/include/tf_fptype.h"
   "${MDCORE_SOURCE_DIR}/include/tf_lock.h"

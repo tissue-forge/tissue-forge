@@ -43,7 +43,7 @@
 #endif
 
 /* Include local headers */
-#include <cycle.h>
+#include <tf_cycle.h>
 #include <tf_errs.h>
 #include <tf_fptype.h>
 #include <tf_lock.h>
