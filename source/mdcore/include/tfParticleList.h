@@ -40,10 +40,7 @@ namespace TissueForge {
         PARTICLELIST_OWNDATA = 1 << 0,
         
         // list supports insertion / deletion
-        PARTICLELIST_MUTABLE = 1 << 1,
-        
-        // list owns it's own data, it was allocated.
-        PARTICLELIST_OWNSELF = 1 << 2,
+        PARTICLELIST_MUTABLE = 1 << 1
     };
 
     struct ParticleHandle;
@@ -93,7 +90,7 @@ namespace TissueForge {
          * 
          * @param other another list
          */
-        void extend(const ParticleList &other);
+        uint16_t extend(const ParticleList &other);
 
         /** Test whether the list has an id */
         bool has(const int32_t &pid);
@@ -139,8 +136,32 @@ namespace TissueForge {
          */
         std::vector<FVector3> sphericalPositions(FVector3 *origin=NULL);
 
+        /**
+         * @brief Get whether the list owns its data
+        */
+        bool getOwnsData() const;
+
+        /**
+         * @brief Set whether the list owns its data
+         * 
+         * @param flag flag signifying whether the list owns its data
+        */
+        void setOwnsData(const bool &_flag);
+
+        /**
+         * @brief Get whether the list is mutable
+        */
+        bool getMutable() const;
+
+        /**
+         * @brief Set whether the list is mutable
+         * 
+         * @param flag flag signifying whether the list is mutable
+        */
+        void setMutable(const bool &_flag);
+
         ParticleList();
-        ParticleList(uint16_t init_size, uint16_t flags = PARTICLELIST_OWNDATA |PARTICLELIST_MUTABLE | PARTICLELIST_OWNSELF);
+        ParticleList(uint16_t init_size, uint16_t flags = PARTICLELIST_OWNDATA | PARTICLELIST_MUTABLE);
         ParticleList(ParticleHandle *part);
         ParticleList(std::vector<ParticleHandle> particles);
         ParticleList(std::vector<ParticleHandle*> particles);

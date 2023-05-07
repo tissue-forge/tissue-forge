@@ -267,6 +267,14 @@ CAPI_FUNC(HRESULT) tfBoundaryConditions_getBack(struct tfBoundaryConditionsHandl
  */
 CAPI_FUNC(HRESULT) tfBoundaryConditions_setPotential(struct tfBoundaryConditionsHandle *handle, struct tfParticleTypeHandle *partHandle, struct tfPotentialHandle *potHandle);
 
+/**
+ * @brief Enforce boundary conditions on a position
+ * 
+ * @param position a position to bound
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfBoundaryConditions_boundedPosition(tfFloatP_t* position);
+
 
 /////////////////////////////////////
 // BoundaryConditionsArgsContainer //

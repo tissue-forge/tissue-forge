@@ -10,7 +10,7 @@ Vertex Model Solver
     :alt: Two-dimensional cell splitting demo
     :align: center
     :figclass: align-center
-    :target: https://github.com/tissue-forge/tissue-forge/tree/main/docs/main/source/models/vertx/solver/tf_interactive_2dsplitting.mp4
+    :target: https://cdn.jsdelivr.net/gh/tissue-forge/tissue-forge@main/docs/main/source/models/vertex/solver/tf_interactive_2dsplitting.mp4
 
     Two-dimensional cell splitting live demo. Cell splitting events are implemented using a keyboard event.
 

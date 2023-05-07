@@ -212,6 +212,12 @@ HRESULT tfBoundaryConditions_setPotential(struct tfBoundaryConditionsHandle *han
     return S_OK;
 }
 
+HRESULT tfBoundaryConditions_boundedPosition(tfFloatP_t* position) {
+    FVector3 _position = FVector3::from(position);
+    BoundaryConditions::boundedPosition(_position);
+    return S_OK;
+}
+
 
 /////////////////////////////////////
 // BoundaryConditionsArgsContainer //

@@ -216,6 +216,29 @@ static void check_periodicy(BoundaryCondition *low_bc, BoundaryCondition *high_b
     }
 }
 
+void BoundaryConditions::boundedPosition(FVector3& position) {
+    BoundaryConditions& _bc = _Engine.boundary_conditions;
+
+    const FVector3 dim = engine_dimensions();
+    PeriodicFlags perFlags[] = {space_periodic_x, space_periodic_y, space_periodic_z};
+    for(int i = 0; i < 3; i++) {
+        if(position[i] > dim[i]) {
+            if(_bc.periodic & perFlags[i]) {
+                while(position[i] > dim[i]) 
+                    position[i] -= dim[i];
+            } 
+            else position[i] = dim[i];
+        }
+        else if(position[i] < FPTYPE_ZERO) {
+            if(_bc.periodic & perFlags[i]) {
+                while(position[i] < FPTYPE_ZERO) 
+                    position[i] += dim[i];
+            } 
+            else position[i] = FPTYPE_ZERO;
+        }
+    }
+}
+
 BoundaryConditions::BoundaryConditions(int *cells) {
     if(_initIni() != S_OK) return;
     

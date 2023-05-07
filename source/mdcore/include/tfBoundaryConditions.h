@@ -152,6 +152,11 @@ namespace TissueForge {
         // allocated in BoundaryConditions_Init.
         struct Potential **potenntials;
 
+        /**
+         * @brief Enforce boundary conditions on a position
+        */
+        static void boundedPosition(FVector3& position);
+
         BoundaryConditions() {}
         BoundaryConditions(int *cells);
         BoundaryConditions(int *cells, const int &value);

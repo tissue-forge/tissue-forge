@@ -617,7 +617,7 @@ def create_lattice(uc: unitcell, n: Union[int, List[int]], origin: List[float] =
         extents = n[0] * uc.a1 + n[1] * uc.a2 + n[2] * uc.a3
         origin = tf.Universe.center - extents / 2 + cell_half_size
 
-    lattice = numpy.empty(n, dtype=numpy.object)
+    lattice = numpy.empty(n, dtype=object)
 
     for i in range(n[0]):
         for j in range(n[1]):

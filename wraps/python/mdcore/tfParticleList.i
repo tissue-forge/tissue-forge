@@ -86,6 +86,24 @@
             """Net forces acting on each particle in list"""
             return self.getForces()
 
+        @property
+        def ownsdata(self) -> bool:
+            """Whether the list owns its data"""
+            return self.getOwnsData()
+
+        @ownsdata.setter
+        def ownsdata(self, _flag: bool):
+            self.setOwnsData(_flag)
+
+        @property
+        def mutable(self) -> bool:
+            """Whether the list is mutable"""
+            return self.getMutable()
+
+        @mutable.setter
+        def mutable(self, _flag: bool):
+            self.setMutable(_flag)
+
         def __reduce__(self):
             return ParticleList.fromString, (self.toString(),)
     %}

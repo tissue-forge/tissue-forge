@@ -21,6 +21,10 @@ ParticleList and ParticleTypeList
 
     .. autoproperty:: forces
 
+    .. autoproperty:: ownsdata
+
+    .. autoproperty:: mutable
+
     .. automethod:: has
 
     .. automethod:: __len__
@@ -69,6 +73,10 @@ ParticleList and ParticleTypeList
     .. autoproperty:: velocities
 
     .. autoproperty:: forces
+
+    .. autoproperty:: ownsdata
+
+    .. autoproperty:: mutable
 
     .. automethod:: has
 
