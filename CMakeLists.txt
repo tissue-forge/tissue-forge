@@ -150,6 +150,10 @@ if(TF_HAVECUDA)
   endif()
 endif()
 
+find_package(glfw3 REQUIRED)
+
+add_library(GLFW::GLFW ALIAS glfw)
+
 # Find assimp before magnum-plugins to avoid fixes that don't seem relevant for current versions
 find_package(assimp REQUIRED)
 

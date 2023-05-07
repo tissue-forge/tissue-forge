@@ -10,3 +10,4 @@ dependencies:
   - assimp=5
   - nlohmann_json
   - eigen
+  - glfw
