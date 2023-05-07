@@ -20,26 +20,6 @@
 # need 3.20.3 for CUDA fixes
 cmake_minimum_required (VERSION 3.20.3)
 
-
-if(APPLE)
-
-  message("CMAKE_OSX_DEPLOYMENT_TARGET: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
-
-  if("${CMAKE_OSX_DEPLOYMENT_TARGET}" VERSION_GREATER_EQUAL "10.15")
-
-    message("MacOS newer than 10.15, building universal binary")
-
-    set (CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
-    set (CMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH NO)
-
-  else()
-
-    message("MacOS older than 10.15, not building universal binary")
-
-  endif()
-
-endif()
-
 project(TissueForge)
 
 # sets the target types
@@ -213,10 +193,11 @@ if(DEFINED ENV{TFPACKAGECONDA})
 endif()
 
 message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
-message("CMAKE_OSX_DEPLOYMENT_TARGET: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
-message("MACOSX_DEPLOYMENT_TARGET: ${MACOSX_DEPLOYMENT_TARGET}")
-message("CMAKE_OSX_SYSROOT: ${CMAKE_OSX_SYSROOT}")
-message("XCODE_VERSION: ${XCODE_VERSION}")
+if(APPLE)
+  message("CMAKE_OSX_DEPLOYMENT_TARGET: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  message("CMAKE_OSX_SYSROOT: ${CMAKE_OSX_SYSROOT}")
+  message("XCODE_VERSION: ${XCODE_VERSION}")
+endif()
 message("CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 message("CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
 message("CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")

@@ -7,7 +7,7 @@ cxx_compiler:
   - clangxx # [osx]
 
 python:
-  - 3.7
+  - 3.7 # [not arm64]
   - 3.8
   - 3.9
 
