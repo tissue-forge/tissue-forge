@@ -28,6 +28,7 @@
 #include <event/tfTimeEvent.h>
 #include <tf_bind.h>
 #include <io/tfFIO.h>
+#include <tfTaskScheduler.h>
 
 #include <unordered_set>
 #include <utility>
@@ -526,16 +527,14 @@ void load() {
 }
 
 void update() {
-    int i;
-    ParticlePolarityPack *p;
-#pragma omp parallel for schedule(static), private(i,p,size_partPolPack,_partPolPack,_drawingPolarityVecs)
-    for(i = 0; i < size_partPolPack; i++) {
-        p = (*_partPolPack)[i];
-        if(!p) continue;
+    auto func = [](int i) -> void {
+        ParticlePolarityPack *p = (*_partPolPack)[i];
+        if(!p) return;
 
         p->applyVectorIncrements();
         if(_drawingPolarityVecs) p->updateArrows();
-    }
+    };
+    parallel_for(size_partPolPack, func);
 
     polarityVecsFlip();
 
