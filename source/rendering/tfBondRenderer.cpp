@@ -55,7 +55,7 @@ static inline int render_bond(rendering::BondsInstanceData* bondData, int i, Bon
     if(!(bond->flags & BOND_ACTIVE)) 
         return 0;
 
-    Magnum::Vector3 *color = &bond->style->color;
+    Magnum::Vector3 color = bond->style->map_color(bond).xyz();
     Particle *pi = _Engine.s.partlist[bond->i];
     Particle *pj = _Engine.s.partlist[bond->j];
     
@@ -77,9 +77,9 @@ static inline int render_bond(rendering::BondsInstanceData* bondData, int i, Bon
     }
                     
     bondData[i].position = pix + pj_origin;
-    bondData[i].color = *color;
+    bondData[i].color = color;
     bondData[i+1].position = fVector3(pj->position + pj_origin);
-    bondData[i+1].color = *color;
+    bondData[i+1].color = color;
     return 2;
 }
 

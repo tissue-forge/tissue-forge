@@ -53,7 +53,7 @@ static inline int render_dihedral(rendering::BondsInstanceData* dihedralData, in
     if(!(dihedral->flags & DIHEDRAL_ACTIVE)) 
         return 0;
     
-    Magnum::Vector3 *color = &dihedral->style->color;
+    Magnum::Vector3 color = dihedral->style->map_color(dihedral).xyz();
     Particle *pi = _Engine.s.partlist[dihedral->i];
     Particle *pj = _Engine.s.partlist[dihedral->j];
     Particle *pk = _Engine.s.partlist[dihedral->k];
@@ -91,17 +91,17 @@ static inline int render_dihedral(rendering::BondsInstanceData* dihedralData, in
     fVector3 posl = pixlj + pj_origin;
     
     dihedralData[i].position = posi;
-    dihedralData[i].color = *color;
+    dihedralData[i].color = color;
     dihedralData[i+1].position = posk;
-    dihedralData[i+1].color = *color;
+    dihedralData[i+1].color = color;
     dihedralData[i+2].position = posj;
-    dihedralData[i+2].color = *color;
+    dihedralData[i+2].color = color;
     dihedralData[i+3].position = posl;
-    dihedralData[i+3].color = *color;
+    dihedralData[i+3].color = color;
     dihedralData[i+4].position = 0.5 * (posi + posk);
-    dihedralData[i+4].color = *color;
+    dihedralData[i+4].color = color;
     dihedralData[i+5].position = 0.5 * (posl + posj);
-    dihedralData[i+5].color = *color;
+    dihedralData[i+5].color = color;
     return 6;
 }
 

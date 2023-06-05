@@ -67,7 +67,7 @@ namespace TissueForge::rendering {
         const fVector3 &posi, 
         const fVector3 &posj, 
         const fVector3 &posk, 
-        const rendering::Style &s, 
+        const fVector4 &color, 
         const unsigned int &numSegments, 
         const unsigned int &faceDetail, 
         const float &radius

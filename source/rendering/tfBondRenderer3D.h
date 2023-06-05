@@ -62,7 +62,7 @@ namespace TissueForge::rendering {
         const int &idx, 
         const fVector3 &pipos, 
         const fVector3 &pjpos, 
-        const rendering::Style &s, 
+        const fVector4 &color, 
         const float &radius
     );
 
