@@ -30,7 +30,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
 #include <bitset>
-#include <cycle.h>
+#include <tf_cycle.h>
 #include <string>
 #include <list>
 #include <unordered_map>

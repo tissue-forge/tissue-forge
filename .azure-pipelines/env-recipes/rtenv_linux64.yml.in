@@ -10,6 +10,7 @@ dependencies:
   - assimp=5
   - nlohmann_json
   - eigen
+  - glfw
   - xorg-libxrandr
   - xorg-libxcursor
   - xorg-libxinerama

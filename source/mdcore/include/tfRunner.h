@@ -28,7 +28,7 @@
 #define _MDCORE_INCLUDE_TFRUNNER_H_
 
 #include "tf_platform.h"
-#include "cycle.h"
+#include "tf_cycle.h"
 
 
 /* some constants */

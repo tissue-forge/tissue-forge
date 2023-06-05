@@ -1,6 +1,3 @@
-[submodule "extern/glfw"]
-	url = https://github.com/glfw/glfw.git
-	path = extern/glfw
 [submodule "extern/magnum"]
 	path = extern/magnum
 	url = https://github.com/mosra/magnum.git
