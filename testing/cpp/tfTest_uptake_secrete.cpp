@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -33,7 +32,8 @@ struct AType : ParticleType {
         radius = 0.1;
         species = new state::SpeciesList();
         for(auto &s : speciesNames) species->insert(s);
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
 
@@ -45,7 +45,8 @@ struct ProducerType : ParticleType {
         radius = 0.1;
         species = new state::SpeciesList();
         for(auto &s : speciesNames) species->insert(s);
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
 
@@ -57,7 +58,8 @@ struct ConsumerType : ParticleType {
         radius = 0.1;
         species = new state::SpeciesList();
         for(auto &s : speciesNames) species->insert(s);
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
 
@@ -73,7 +75,7 @@ int main(int argc, char const *argv[])
     config.universeConfig.dim = {6.5, 6.5, 6.5};
     config.universeConfig.setBoundaryConditions(bcArgs);
     config.setWindowless(true);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     AType *A = new AType();
     ProducerType *Producer = new ProducerType();

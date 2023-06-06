@@ -136,7 +136,7 @@ namespace TissueForge::io {
 
         IOElement fe = IOElement::create();
 
-        if(toFile(jroot[FIO::KEY_VALUE], metaData, fe) != S_OK) 
+        if(toFile(jroot, metaData, fe) != S_OK) 
             tf_exp(std::runtime_error("Could not translate data"));
 
         jroot.clear();

@@ -5,7 +5,7 @@ The generated script is deposited next to this script, and is named 'rtenv.yml'
 
 command line arguments are the python version and platform
     - valid python versions -v/--version: 3.7, 3.8, 3.9
-    - valid platforms -p/--platform: win64, linux64, osx64
+    - valid platforms -p/--platform: win64, linux64, osx64, osxarm64
 """
 
 import argparse
@@ -14,7 +14,7 @@ import sys
 from typing import List
 
 supported_py_version = ['3.7', '3.8', '3.9']
-supported_platform = ['win64', 'linux64', 'osx64']
+supported_platform = ['win64', 'linux64', 'osx64', 'osxarm64']
 this_dir = os.path.dirname(os.path.abspath(__file__))
 py_version_token = '@PYTHON_VERSION@'
 env_output_script = 'rtenv.yml'

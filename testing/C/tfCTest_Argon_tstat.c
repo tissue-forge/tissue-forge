@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfSimulatorConfig_getUniverseConfig(&config, &uconfig));
     TFC_TEST_CHECK(tfSimulatorConfig_setWindowless(&config, 1));
     TFC_TEST_CHECK(tfUniverseConfig_setDim(&uconfig, dim));
-    TFC_TEST_CHECK(tfInitC(&config, NULL, 0));
+    TFC_TEST_CHECK(tfTest_initC(&config));
 
     // create a potential representing a 12-6 Lennard-Jones potential
     struct tfPotentialHandle pot;

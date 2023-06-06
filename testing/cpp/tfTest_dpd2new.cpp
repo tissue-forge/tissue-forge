@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -48,7 +47,7 @@ int main(int argc, char const *argv[])
     config.setWindowless(true);
     config.universeConfig.dt = 0.1;
     config.universeConfig.dim = {15, 12, 10};
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     AType *A = new AType();
     A = (AType*)A->get();

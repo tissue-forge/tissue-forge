@@ -22,7 +22,18 @@
 
 #include <tf_port.h>
 
+#include <TissueForge.h>
+#include <tfLogger.h>
+
 #define TF_TEST_REPORTERR() { std::cerr << "Error: " << __LINE__ << ", " << TF_FUNCTION << ", " << __FILE__ << std::endl; }
 #define TF_TEST_CHECK(code) { if((code) != S_OK) { TF_TEST_REPORTERR(); return E_FAIL; } }
+
+
+HRESULT tfTest_init(TissueForge::Simulator::Config &conf) {
+    #ifdef TFTEST_LOG
+    TissueForge::Logger::enableConsoleLogging(TissueForge::LogLevel::LOG_DEBUG);
+    #endif
+    return TissueForge::init(conf);
+}
 
 #endif // _TESTING_CPP_TFTEST_H_

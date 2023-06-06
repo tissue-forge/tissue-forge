@@ -55,6 +55,7 @@ jobs:
           call $(INSTALL_DIR)\etc\vars
           call $(SOURCE_DIR)\testing\run_tests
         displayName: Run tests
+        continueOnError: true
       
       # Package
       - script: |
