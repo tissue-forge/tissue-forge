@@ -29,7 +29,7 @@
 #define TF_TEST_CHECK(code) { if((code) != S_OK) { TF_TEST_REPORTERR(); return E_FAIL; } }
 
 
-HRESULT tfTest_init(Simulator::Config &conf) {
+HRESULT tfTest_init(TissueForge::Simulator::Config &conf) {
     #ifdef TFTEST_LOG
     TissueForge::Logger::enableConsoleLogging(TissueForge::LogLevel::LOG_DEBUG);
     #endif
