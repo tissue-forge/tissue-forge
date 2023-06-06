@@ -17,6 +17,10 @@ export MACOSX_DEPLOYMENT_TARGET=${TFOSX_SYSROOT}
 export CONDA_BUILD_SYSROOT="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${TFOSX_SYSROOT}.sdk"
 
 if [[ ! -d "${CONDA_BUILD_SYSROOT}" ]]; then
+    export CONDA_BUILD_SYSROOT="$(xcrun --sdk macosx${TFOSX_SYSROOT} --show-sdk-path)"
+fi
+
+if [[ ! -d "${CONDA_BUILD_SYSROOT}" ]]; then
     echo "SDK not found"
     exit 3
 fi
