@@ -34,7 +34,7 @@ tf.Universe.boundary_conditions.left.restore = 0.5
 
 class AType(tf.ParticleTypeSpec):
     radius = 0.2
-    style = {"color": "seagreen"}
+    style = {"colormap": {"velocity": "x", "range": (-0.4, 0.4)}}
     dynamics = tf.Newtonian
     mass = 10
 

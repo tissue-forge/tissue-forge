@@ -32,7 +32,7 @@ a = 0.3
 
 class AType(tf.ParticleTypeSpec):
     radius = 0.2
-    style = {"color": "seagreen"}
+    style = {"colormap": {"velocity": "x", "range": (-0.4, 0.4)}}
     dynamics = tf.Newtonian
     mass = 10
 
