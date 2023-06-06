@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -50,7 +49,7 @@ int main(int argc, char const *argv[])
     config.setWindowless(true);
     config.universeConfig.dim = dim;
     config.universeConfig.cutoff = cutoff;
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     // create a potential representing a 12-6 Lennard-Jones potential
     FloatP_t pot_tol = 0.001;

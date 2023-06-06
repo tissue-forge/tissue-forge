@@ -40,6 +40,7 @@ set(tfCTest_INCLUDES ${TISSUEFORGE_C_INCLUDE_DIRS})
 
 macro(tfCTest_Build src_name)
     add_executable(${src_name} ${src_name}.c)
+    target_compile_definitions(${src_name} PRIVATE TFTEST_LOG)
     target_link_libraries(${src_name} ${tfCTest_LIBS})
     target_include_directories(${src_name} PUBLIC ${tfCTest_INCLUDES})
 endmacro()

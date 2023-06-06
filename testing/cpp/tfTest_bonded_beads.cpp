@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -43,7 +42,7 @@ int main(int argc, char const *argv[])
     config.universeConfig.dim = {20., 20., 20.};
     config.universeConfig.cutoff = 8.0;
     config.setWindowless(true);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     BeadType *Bead = new BeadType();
     Bead = (BeadType*)Bead->get();

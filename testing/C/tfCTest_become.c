@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     struct tfSimulatorConfigHandle config;
     TFC_TEST_CHECK(tfSimulatorConfig_init(&config));
     TFC_TEST_CHECK(tfSimulatorConfig_setWindowless(&config, 1));
-    TFC_TEST_CHECK(tfInitC(&config, NULL, 0));
+    TFC_TEST_CHECK(tfTest_initC(&config));
 
     struct tfStateSpeciesHandle S1, S2, S3;
     TFC_TEST_CHECK(tfStateSpecies_initS(&S1, "S1"));

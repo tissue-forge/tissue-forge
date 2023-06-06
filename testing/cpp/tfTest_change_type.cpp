@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -52,7 +51,7 @@ int main(int argc, char const *argv[])
     Simulator::Config config;
     config.setWindowless(true);
     config.universeConfig.cutoff = 3.0;
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     AType *A = new AType();
     BType *B = new BType();

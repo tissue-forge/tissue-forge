@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfUniverseConfig_setCells(&uconfig, cells));
     TFC_TEST_CHECK(tfUniverseConfig_setCutoff(&uconfig, cutoff));
     TFC_TEST_CHECK(tfUniverseConfig_setBoundaryConditions(&uconfig, &bargs));
-    TFC_TEST_CHECK(tfInitC(&config, NULL, 0));
+    TFC_TEST_CHECK(tfTest_initC(&config));
 
     struct tfParticleTypeStyleSpec ATypeStyleDef = tfParticleTypeStyleSpec_init();
     struct tfParticleTypeSpec ATypeDef = tfParticleTypeSpec_init();

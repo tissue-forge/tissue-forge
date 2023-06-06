@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfSimulatorConfig_getUniverseConfig(&config, &uconfig));
     TFC_TEST_CHECK(tfUniverseConfig_setBoundaryConditions(&uconfig, &bargs));
     TFC_TEST_CHECK(tfUniverseConfig_setDim(&uconfig, dim));
-    TFC_TEST_CHECK(tfInitC(&config, NULL, 0));
+    TFC_TEST_CHECK(tfTest_initC(&config));
 
     struct tfParticleTypeSpec ATypeDef = tfParticleTypeSpec_init();
     struct tfParticleTypeSpec BTypeDef = tfParticleTypeSpec_init();

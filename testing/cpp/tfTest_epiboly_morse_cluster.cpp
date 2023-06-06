@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -84,7 +83,7 @@ int main(int argc, char const *argv[])
     config.universeConfig.cutoff = 3;
     config.universeConfig.dt = 0.001;
     config.universeConfig.spaceGridSize = {6, 6, 6};
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     BType *B = new BType();
     CType *C = new CType();

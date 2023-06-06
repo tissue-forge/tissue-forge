@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 #include <string>
 
@@ -68,7 +67,7 @@ int main(int argc, char const *argv[])
 {
     Simulator::Config config;
     config.setWindowless(true);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     BeadType *Bead = new BeadType();
     Bead = (BeadType*)Bead->get();

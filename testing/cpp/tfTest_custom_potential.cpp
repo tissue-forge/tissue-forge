@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 #include <limits.h>
 
@@ -100,7 +99,7 @@ int main(int argc, char const *argv[])
     config.setWindowless(true);
     config.universeConfig.cutoff = 5.0;
     config.universeConfig.setBoundaryConditions(bcArgs);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     WellType *well_type = new WellType();
     SmallType *small_type = new SmallType();
