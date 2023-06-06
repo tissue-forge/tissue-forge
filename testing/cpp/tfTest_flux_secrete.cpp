@@ -33,7 +33,8 @@ struct AType : ParticleType {
         radius = 0.1;
         species = new state::SpeciesList();
         for(auto &s : speciesNames) species->insert(s);
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
 
@@ -45,7 +46,8 @@ struct BType : ParticleType {
         radius = 0.1;
         species = new state::SpeciesList();
         for(auto &s : speciesNames) species->insert(s);
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
     

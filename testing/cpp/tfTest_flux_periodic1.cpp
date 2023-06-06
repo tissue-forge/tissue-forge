@@ -31,7 +31,8 @@ struct AType : ParticleType {
         species->insert("S1");
         species->insert("S2");
         species->insert("S3");
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
 
