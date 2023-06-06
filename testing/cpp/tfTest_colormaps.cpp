@@ -37,7 +37,8 @@ struct BeadType : ParticleType {
         radius = 3.0;
         species = new state::SpeciesList();
         species->insert("S1");
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
 

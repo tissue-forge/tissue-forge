@@ -34,8 +34,8 @@ struct AType : ParticleType {
         species = new state::SpeciesList();
         for(auto &s : speciesNames) 
             species->insert(s);
-        style = new rendering::Style();
-        style->newColorMapper(this, "S2");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S2");
 
         registerType();
     };
@@ -49,8 +49,8 @@ struct BType : ParticleType {
         species = new state::SpeciesList();
         for(auto &s : speciesNames) 
             species->insert(s);
-        style = new rendering::Style();
-        style->newColorMapper(this, "S2");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S2");
 
         registerType();
     };

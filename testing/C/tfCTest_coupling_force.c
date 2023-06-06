@@ -73,8 +73,8 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfBindForceS(&force_rnd_base, &BType, "S1"));
 
     struct tfFluxesHandle fluxhAA, fluxhAB;
-    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxhAA, &AType, &AType, "S1", 1.0, 0.0));
-    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxhAB, &AType, &BType, "S1", 1.0, 0.0));
+    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxhAA, &AType, &AType, "S1", 1.0, 0.0, -1));
+    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxhAB, &AType, &BType, "S1", 1.0, 0.0, -1));
 
     unsigned int numParts = 500;
     int pid;

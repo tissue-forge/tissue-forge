@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfParticleType_registerType(&AType));
 
     struct tfFluxesHandle flux;
-    TFC_TEST_CHECK(tfFluxes_fluxFick(&flux, &AType, &AType, "S1", 2.0, 0.0));
+    TFC_TEST_CHECK(tfFluxes_fluxFick(&flux, &AType, &AType, "S1", 2.0, 0.0, -1));
 
     tfFloatP_t *center = (tfFloatP_t*)malloc(3 * sizeof(tfFloatP_t));
     TFC_TEST_CHECK(tfUniverse_getCenter(&center));

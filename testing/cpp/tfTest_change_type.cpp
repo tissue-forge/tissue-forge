@@ -78,8 +78,7 @@ int main(int argc, char const *argv[])
     A->factory(nr_parts, &pos);
 
     ParticleHandle *a = A->items().item(0);
-    FloatP_t n_dist = 5.0;
-    ParticleList n_list = a->neighbors(&n_dist);
+    ParticleList n_list = a->neighbors(5.0);
     for(int i = 0; i < n_list.nr_parts; i++) 
         n_list.item(i)->become(B);
 
