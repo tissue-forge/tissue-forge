@@ -30,28 +30,30 @@ namespace TissueForge {
 
 
     struct Particle;
+    struct Angle;
+    struct Bond;
+    struct Dihedral;
+
     struct ParticleType;
 
 
     namespace rendering {
-
-
-        typedef fVector4 (*ColorMapperFunc)(struct ColorMapper *mapper, struct Particle *p);
 
         /**
          * @brief The Tissue Forge style type
          */
         struct CAPI_EXPORT Style
         {
+            /** Default color */
             fVector3 color;
+
+            /** Style flags */
             uint32_t flags;
             
             /**
              * @brief Color mapper of this style
              */
             struct ColorMapper *mapper = NULL;
-            
-            ColorMapperFunc mapper_func = NULL;
 
             Style(const fVector3 *color=NULL, const bool &visible=true, uint32_t flags=STYLE_VISIBLE, ColorMapper *cmap=NULL);
 
@@ -75,33 +77,61 @@ namespace TissueForge {
              * @return HRESULT 
              */
             HRESULT setColor(const std::string &colorName);
-            HRESULT setFlag(StyleFlags flag, bool value);
-            
-            fVector4 map_color(struct Particle *p);
-
-            const bool getVisible() const;
-            void setVisible(const bool &visible);
-            std::string getColorMap() const;
-            ColorMapper *getColorMapper() const;
-            void setColorMap(const std::string &colorMap);
-            void setColorMapper(ColorMapper *cmap);
 
             /**
-             * @brief Construct and apply a new color map for a particle type and species
-             * 
-             * @param partType particle type
-             * @param speciesName name of species
-             * @param name name of color map
-             * @param min minimum value of map
-             * @param max maximum value of map
-             */
-            void newColorMapper(
-                struct ParticleType *partType,
-                const std::string &speciesName, 
-                const std::string &name="rainbow", 
-                float min=0.0f, 
-                float max=1.0f
-            );
+             * @brief Set a style flag
+            */
+            HRESULT setFlag(StyleFlags flag, bool value);
+            
+            /**
+             * @brief Map a particle to a color
+            */
+            fVector4 map_color(struct Particle *p);
+
+            /**
+             * @brief Map an angle to a color
+            */
+            fVector4 map_color(struct Angle* a);
+
+            /**
+             * @brief Map a bond to a color
+            */
+            fVector4 map_color(struct Bond* b);
+
+            /**
+             * @brief Map a dihedral to a color
+            */
+            fVector4 map_color(struct Dihedral* d);
+
+            /**
+             * @brief Test whether visible
+            */
+            const bool getVisible() const;
+
+            /**
+             * @brief Set whether visible
+            */
+            void setVisible(const bool &visible);
+
+            /**
+             * @brief Get the name of the color map, if any
+            */
+            std::string getColorMap() const;
+
+            /**
+             * @brief Get the color mapper, if any
+            */
+            ColorMapper *getColorMapper() const;
+
+            /**
+             * @brief Create a color mapper by name
+            */
+            void setColorMap(const std::string &colorMap);
+
+            /**
+             * @brief Set the color mapper
+            */
+            void setColorMapper(ColorMapper *cmap);
 
             /**
              * @brief Get a JSON string representation

@@ -19,155 +19,130 @@
 
 #include "tfColorMapper.h"
 #include <tfParticle.h>
+#include <tfAngle.h>
+#include <tfBond.h>
+#include <tfDihedral.h>
 #include <tfLogger.h>
 #include <state/tfSpeciesList.h>
 #include <tfError.h>
 #include <tfSimulator.h>
 
-#include "colormaps/colormaps.h"
+#include "tfColorMaps.h"
 
 
 using namespace TissueForge;
 
 
-struct ColormapItem {
-    const char* name;
-    rendering::ColorMapperFunc func;
+#define REGULARIZE_SCALAR(s, smin, smax) (s - smin) / (smax - smin)
+
+enum MappedParticleData {
+    MappedParticleData_NONE = 0,
+    ParticlePositionX,
+    ParticlePositionY,
+    ParticlePositionZ,
+    ParticleVelocityX,
+    ParticleVelocityY,
+    ParticleVelocityZ,
+    ParticleSpeed,
+    ParticleForceX,
+    ParticleForceY,
+    ParticleForceZ,
+    ParticleSpecies
 };
 
-#define COLORMAP_REGULARIZE(cm, part) \
-    (part->state_vector->fvec[cm->species_index] - cm->min_val) / (cm->max_val - cm->min_val)
-
-#define COLORMAP_FUNCTION(CMAP) \
-static fVector4 CMAP (rendering::ColorMapper *cm, struct ::TissueForge::Particle *part) { \
-    float s = COLORMAP_REGULARIZE(cm, part);                              \
-    return fVector4{colormaps::all:: CMAP (s), 1};                  \
-}\
-
-
-COLORMAP_FUNCTION(grey_0_100_c0);
-COLORMAP_FUNCTION(grey_10_95_c0);
-COLORMAP_FUNCTION(kryw_0_100_c71);
-COLORMAP_FUNCTION(kryw_0_97_c73);
-COLORMAP_FUNCTION(green_5_95_c69);
-COLORMAP_FUNCTION(blue_5_95_c73);
-COLORMAP_FUNCTION(bmw_5_95_c86);
-COLORMAP_FUNCTION(bmy_10_95_c71);
-COLORMAP_FUNCTION(bgyw_15_100_c67);
-COLORMAP_FUNCTION(gow_60_85_c27);
-COLORMAP_FUNCTION(gow_65_90_c35);
-COLORMAP_FUNCTION(blue_95_50_c20);
-COLORMAP_FUNCTION(red_0_50_c52);
-COLORMAP_FUNCTION(green_0_46_c42);
-COLORMAP_FUNCTION(blue_0_44_c57);
-COLORMAP_FUNCTION(bwr_40_95_c42);
-COLORMAP_FUNCTION(gwv_55_95_c39);
-COLORMAP_FUNCTION(gwr_55_95_c38);
-COLORMAP_FUNCTION(bkr_55_10_c35);
-COLORMAP_FUNCTION(bky_60_10_c30);
-COLORMAP_FUNCTION(bjy_30_90_c45);
-COLORMAP_FUNCTION(bjr_30_55_c53);
-COLORMAP_FUNCTION(bwr_55_98_c37);
-COLORMAP_FUNCTION(cwm_80_100_c22);
-COLORMAP_FUNCTION(bgymr_45_85_c67);
-COLORMAP_FUNCTION(bgyrm_35_85_c69);
-COLORMAP_FUNCTION(bgyr_35_85_c72);
-COLORMAP_FUNCTION(mrybm_35_75_c68);
-COLORMAP_FUNCTION(mygbm_30_95_c78);
-COLORMAP_FUNCTION(wrwbw_40_90_c42);
-COLORMAP_FUNCTION(grey_15_85_c0);
-COLORMAP_FUNCTION(cgo_70_c39);
-COLORMAP_FUNCTION(cgo_80_c38);
-COLORMAP_FUNCTION(cm_70_c39);
-COLORMAP_FUNCTION(cjo_70_c25);
-COLORMAP_FUNCTION(cjm_75_c23);
-COLORMAP_FUNCTION(kbjyw_5_95_c25);
-COLORMAP_FUNCTION(kbw_5_98_c40);
-COLORMAP_FUNCTION(bwy_60_95_c32);
-COLORMAP_FUNCTION(bwyk_16_96_c31);
-COLORMAP_FUNCTION(wywb_55_96_c33);
-COLORMAP_FUNCTION(krjcw_5_98_c46);
-COLORMAP_FUNCTION(krjcw_5_95_c24);
-COLORMAP_FUNCTION(cwr_75_98_c20);
-COLORMAP_FUNCTION(cwrk_40_100_c20);
-COLORMAP_FUNCTION(wrwc_70_100_c20);
-
-ColormapItem colormap_items[] = {
-    {"Gray", grey_0_100_c0},
-    {"DarkGray", grey_10_95_c0},
-    {"Heat", kryw_0_100_c71},
-    {"DarkHeat", kryw_0_97_c73},
-    {"Green", green_5_95_c69},
-    {"Blue", blue_5_95_c73},
-    {"BlueMagentaWhite", bmw_5_95_c86},
-    {"BlueMagentaYellow", bmy_10_95_c71},
-    {"BGYW", bgyw_15_100_c67},
-    {"GreenOrangeWhite", gow_60_85_c27},
-    {"DarkGreenOrangeWhite", gow_65_90_c35},
-    {"LightBlue", blue_95_50_c20},
-    {"Red", red_0_50_c52},
-    {"DarkGreen", green_0_46_c42},
-    {"DarkBlue", blue_0_44_c57},
-    {"BlueWhiteRed", bwr_40_95_c42},
-    {"GreenWhiteViolet", gwv_55_95_c39},
-    {"GreenWhiteRed", gwr_55_95_c38},
-    {"BlueBlackRed", bkr_55_10_c35},
-    {"BlueBlackYellow", bky_60_10_c30},
-    {"BlueGrayYellow", bjy_30_90_c45},
-    {"BlueGrayRed", bjr_30_55_c53},
-    {"BluwWhiteRed", bwr_55_98_c37},
-    {"CyanWhiteMagenta", cwm_80_100_c22},
-    {"BGYMR", bgymr_45_85_c67},
-    {"DarkBGYMR", bgyrm_35_85_c69},
-    {"Rainbow", bgyr_35_85_c72},
-    {"CyclicMRYBM", mrybm_35_75_c68},
-    {"CyclicMYGBM", mygbm_30_95_c78},
-    {"CyclicWRWBW", wrwbw_40_90_c42},
-    {"CyclicGray", grey_15_85_c0},
-    {"DarkCyanGreenOrange", cgo_70_c39},
-    {"CyanGreenOrange", cgo_80_c38},
-    {"CyanMagenta", cm_70_c39},
-    {"CyanGrayOrange", cjo_70_c25},
-    {"CyanGrayMagenta", cjm_75_c23},
-    {"KBJW", kbjyw_5_95_c25},
-    {"BlackBlueWhite", kbw_5_98_c40},
-    {"BlueWhiteYellow", bwy_60_95_c32},
-    {"CyclicBWYK", bwyk_16_96_c31},
-    {"CyclicWYWB", wywb_55_96_c33},
-    {"KRJCW", krjcw_5_98_c46},
-    {"DarkKRJCW", krjcw_5_95_c24},
-    {"CyclicCyanWhiteRed", cwr_75_98_c20},
-    {"CyclicCWRK", cwrk_40_100_c20},
-    {"CyclicWRWC", wrwc_70_100_c20}
+enum MappedAngleData {
+    MappedAngleData_NONE = 0,
+    AngleAngle,
+    AngleAngleEq
 };
 
-static bool iequals(const std::string& a, const std::string& b)
-{
-    unsigned int sz = a.size();
-    if (b.size() != sz)
-        return false;
-    for (unsigned int i = 0; i < sz; ++i)
-        if (tolower(a[i]) != tolower(b[i]))
-            return false;
-    return true;
+enum MappedBondData {
+    MappedBondData_NONE = 0,
+    BondLength,
+    BondLengthEq
+};
+
+enum MappedDihedralData {
+    MappedDihedralData_NONE = 0,
+    DihedralAngle,
+    DihedralAngleEq
+};
+
+static float map_particle_pos_x(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->global_position()[0], mapper->min_val, mapper->max_val);
 }
 
-static int colormap_index_of_name(const char* s) {
-    const int size = sizeof(colormap_items) / sizeof(ColormapItem);
-    
-    for(int i = 0; i < size; ++i) {
-        if (iequals(s, colormap_items[i].name)) {
-            return i;
-        }
-    }
-    return -1;
+static float map_particle_pos_y(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->global_position()[1], mapper->min_val, mapper->max_val);
 }
+
+static float map_particle_pos_z(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->global_position()[2], mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_vel_x(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->v[0], mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_vel_y(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->v[1], mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_vel_z(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->v[2], mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_speed(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(ParticleHandle(p->id).getVelocity().length(), mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_force_x(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->f[0], mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_force_y(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->f[1], mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_force_z(Particle* p, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(p->f[2], mapper->min_val, mapper->max_val);
+}
+
+static float map_particle_species(Particle* p, struct rendering::ColorMapper* mapper) {
+    if(!p->state_vector) return FPTYPE_ZERO;
+    return REGULARIZE_SCALAR(p->state_vector->fvec[mapper->species_index], mapper->min_val, mapper->max_val);
+}
+
+static float map_angle_angle(Angle* a, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(AngleHandle(a->id).getAngle(), mapper->min_val, mapper->max_val);
+}
+
+static float map_angle_angleeq(Angle* a, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(std::abs(AngleHandle(a->id).getAngle() - a->potential->r0_plusone + 1), mapper->min_val, mapper->max_val);
+}
+
+static float map_bond_length(Bond* b, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(BondHandle(b->id).getLength(), mapper->min_val, mapper->max_val);
+}
+
+static float map_bond_lengtheq(Bond* b, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(std::abs(BondHandle(b->id).getLength() - b->potential->r0_plusone + 1), mapper->min_val, mapper->max_val);
+}
+
+static float map_dihedral_angle(Dihedral* d, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(DihedralHandle(d->id).getAngle(), mapper->min_val, mapper->max_val);
+}
+
+static float map_dihedral_angleeq(Dihedral* d, struct rendering::ColorMapper* mapper) {
+    return REGULARIZE_SCALAR(std::abs(DihedralHandle(d->id).getAngle() - d->potential->r0_plusone + 1), mapper->min_val, mapper->max_val);
+}
+
 
 bool rendering::ColorMapper::set_colormap(const std::string& s) {
-    int index = colormap_index_of_name(s.c_str());
+    auto func = getColorMapperFunc(s);
     
-    if(index >= 0) {
-        this->map = colormap_items[index].func;
+    if(func) {
+        this->map = func;
         
         Simulator::get()->redraw();
         
@@ -176,62 +151,255 @@ bool rendering::ColorMapper::set_colormap(const std::string& s) {
     return false;
 }
 
-rendering::ColorMapper::ColorMapper(
-    ParticleType *partType,
-    const std::string &speciesName,
-    const std::string &name, 
-    float min, 
-    float max) 
+rendering::ColorMapper::ColorMapper(const std::string &name, const float &vmin, const float &vmax) : 
+    species_index{-1}, 
+    min_val{vmin}, 
+    max_val{vmax}, 
+    map{NULL}, 
+    mapper_angle{NULL}, 
+    mapper_bond{NULL}, 
+    mapper_dihedral{NULL}, 
+    mapper_particle{NULL}, 
+    map_enum_angle{MappedAngleData::MappedAngleData_NONE}, 
+    map_enum_bond{MappedBondData::MappedBondData_NONE}, 
+    map_enum_dihedral{MappedDihedralData::MappedDihedralData_NONE}, 
+    map_enum_particle{MappedParticleData::MappedParticleData_NONE}
 {
-    
-    if(partType->species == NULL) {
+    map = getColorMapperFunc(name);
+}
+
+rendering::ColorMapper::ColorMapper() : 
+    ColorMapper("Rainbow")
+{}
+
+fVector4 rendering::ColorMapper::mapScalar(const float& val) const {
+    return (*this->map)(const_cast<ColorMapper*>(this), val);
+}
+
+fVector4 rendering::ColorMapper::mapObj(Particle* o) {
+    return mapScalar(hasMapParticle() ? mapper_particle(o, this) : FPTYPE_ZERO);
+}
+
+fVector4 rendering::ColorMapper::mapObj(Angle* o) {
+    return mapScalar(hasMapAngle() ? mapper_angle(o, this) : FPTYPE_ZERO);
+}
+
+fVector4 rendering::ColorMapper::mapObj(Bond* o) {
+    return mapScalar(hasMapBond() ? mapper_bond(o, this) : FPTYPE_ZERO);
+}
+
+fVector4 rendering::ColorMapper::mapObj(Dihedral* o) {
+    return mapScalar(hasMapDihedral() ? mapper_dihedral(o, this) : FPTYPE_ZERO);
+}
+
+const bool rendering::ColorMapper::hasMapParticle() const {
+    return this->mapper_particle;
+}
+
+const bool rendering::ColorMapper::hasMapAngle() const {
+    return this->mapper_angle;
+}
+
+const bool rendering::ColorMapper::hasMapBond() const {
+    return this->mapper_bond;
+}
+
+const bool rendering::ColorMapper::hasMapDihedral() const {
+    return this->mapper_dihedral;
+}
+
+void rendering::ColorMapper::clearMapParticle() {
+    this->species_index = -1;
+    this->mapper_particle = NULL;
+    map_enum_particle = MappedParticleData::MappedParticleData_NONE;
+}
+
+void rendering::ColorMapper::clearMapAngle() {
+    this->mapper_angle = NULL;
+    map_enum_angle = MappedAngleData::MappedAngleData_NONE;
+}
+
+void rendering::ColorMapper::clearMapBond() {
+    this->mapper_bond = NULL;
+    map_enum_bond = MappedBondData::MappedBondData_NONE;
+}
+
+void rendering::ColorMapper::clearMapDihedral() {
+    this->mapper_dihedral = NULL;
+    map_enum_dihedral = MappedDihedralData::MappedDihedralData_NONE;
+}
+
+void rendering::ColorMapper::setMapParticle(const unsigned int& label) {
+    this->clearMapParticle();
+    switch (label) {
+        case MappedParticleData::ParticlePositionX:
+            this->mapper_particle = map_particle_pos_x;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticlePositionY:
+            this->mapper_particle = map_particle_pos_y;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticlePositionZ:
+            this->mapper_particle = map_particle_pos_z;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleVelocityX:
+            this->mapper_particle = map_particle_vel_x;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleVelocityY:
+            this->mapper_particle = map_particle_vel_y;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleVelocityZ:
+            this->mapper_particle = map_particle_vel_z;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleSpeed:
+            this->mapper_particle = map_particle_speed;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleForceX:
+            this->mapper_particle = map_particle_force_x;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleForceY:
+            this->mapper_particle = map_particle_force_y;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleForceZ:
+            this->mapper_particle = map_particle_force_z;
+            map_enum_particle = label;
+            break;
+
+        case MappedParticleData::ParticleSpecies:
+            this->mapper_particle = map_particle_species;
+            map_enum_particle = label;
+
+        default:
+            break;
+    }
+}
+
+void rendering::ColorMapper::setMapAngle(const unsigned int& label) {
+    clearMapAngle();
+    switch (label) {
+        case MappedAngleData::AngleAngle:
+            this->mapper_angle = map_angle_angle;
+            map_enum_angle = label;
+            break;
+        
+        case MappedAngleData::AngleAngleEq:
+            this->mapper_angle = map_angle_angleeq;
+            map_enum_angle = label;
+            break;
+        
+        default:
+            break;
+    }
+}
+
+void rendering::ColorMapper::setMapBond(const unsigned int& label) {
+    clearMapBond();
+    switch (label) {
+        case MappedBondData::BondLength:
+            this->mapper_bond = map_bond_length;
+            map_enum_bond = label;
+            break;
+
+        case MappedBondData::BondLengthEq:
+            this->mapper_bond = map_bond_lengtheq;
+            map_enum_bond = label;
+            break;
+
+        default:
+            break;
+    }
+}
+
+void rendering::ColorMapper::setMapDihedral(const unsigned int& label) {
+    clearMapDihedral();
+    switch (label) {
+        case MappedDihedralData::DihedralAngle:
+            this->mapper_dihedral = map_dihedral_angle;
+            map_enum_dihedral = label;
+            break;
+
+        case MappedDihedralData::DihedralAngleEq:
+            this->mapper_dihedral = map_dihedral_angleeq;
+            map_enum_dihedral = label;
+            break;
+
+        default:
+            break;
+    }
+}
+
+void rendering::ColorMapper::setMapParticlePositionX()  { setMapParticle(MappedParticleData::ParticlePositionX); }
+void rendering::ColorMapper::setMapParticlePositionY()  { setMapParticle(MappedParticleData::ParticlePositionY); }
+void rendering::ColorMapper::setMapParticlePositionZ()  { setMapParticle(MappedParticleData::ParticlePositionZ); }
+void rendering::ColorMapper::setMapParticleVelocityX()  { setMapParticle(MappedParticleData::ParticleVelocityX); }
+void rendering::ColorMapper::setMapParticleVelocityY()  { setMapParticle(MappedParticleData::ParticleVelocityY); }
+void rendering::ColorMapper::setMapParticleVelocityZ()  { setMapParticle(MappedParticleData::ParticleVelocityZ); }
+void rendering::ColorMapper::setMapParticleSpeed()      { setMapParticle(MappedParticleData::ParticleSpeed); }
+void rendering::ColorMapper::setMapParticleForceX()     { setMapParticle(MappedParticleData::ParticleForceX); }
+void rendering::ColorMapper::setMapParticleForceY()     { setMapParticle(MappedParticleData::ParticleForceY); }
+void rendering::ColorMapper::setMapParticleForceZ()     { setMapParticle(MappedParticleData::ParticleForceZ); }
+
+void rendering::ColorMapper::setMapParticleSpecies(ParticleType* pType, const std::string& name) {
+
+    if(pType->species == NULL) {
         std::string msg = "can not create color map for particle type \"";
-        msg += partType->name;
+        msg += pType->name;
         msg += "\" without any species defined";
         tf_exp(std::invalid_argument(msg));
         return;
     }
     
-    int index = partType->species->index_of(speciesName);
+    int index = pType->species->index_of(name);
     TF_Log(LOG_DEBUG) << "Got species index: " << index;
     
     if(index < 0) {
         std::string msg = "can not create color map for particle type \"";
-        msg += partType->name;
+        msg += pType->name;
         msg += "\", does not contain species \"";
-        msg += speciesName;
+        msg += name;
         msg += "\"";
         tf_exp(std::invalid_argument(msg));
         return;
     }
-    
-    int cmap_index = colormap_index_of_name(name.c_str());
-    
-    if(cmap_index >= 0) {
-        this->map = colormap_items[cmap_index].func;
-    }
-    else {
-        this->map = bgyr_35_85_c72;
-    }
-    
+
+    setMapParticle(MappedParticleData::ParticleSpecies);
     this->species_index = index;
-    this->min_val = min;
-    this->max_val = max;
 }
 
+void rendering::ColorMapper::setMapAngleAngle()         { setMapAngle(MappedAngleData::AngleAngle); }
+void rendering::ColorMapper::setMapAngleAngleEq()       { setMapAngle(MappedAngleData::AngleAngleEq); }
+
+void rendering::ColorMapper::setMapBondLength()         { setMapBond(MappedBondData::BondLength); }
+void rendering::ColorMapper::setMapBondLengthEq()       { setMapBond(MappedBondData::BondLengthEq); }
+
+void rendering::ColorMapper::setMapDihedralAngle()      { setMapDihedral(MappedDihedralData::DihedralAngle); }
+void rendering::ColorMapper::setMapDihedralAngleEq()    { setMapDihedral(MappedDihedralData::DihedralAngleEq); }
+
 std::vector<std::string> rendering::ColorMapper::getNames() {
-    std::vector<std::string> result;
-    for (auto c : colormap_items) result.push_back(c.name);
-    return result;
+    return getColorMapperFuncNames();
 }
 
 std::string rendering::ColorMapper::getColorMapName() const {
-    const int size = sizeof(colormap_items) / sizeof(ColormapItem);
-    for(int i = 0; i < size; i++) {
-        ColormapItem ci = colormap_items[i];
-        if(ci.func == this->map) 
-            return ci.name;
-    }
+    for(auto& name : getColorMapperFuncNames()) 
+        if(getColorMapperFunc(name) == this->map) 
+            return name;
     return "";
 }
 
@@ -246,19 +414,22 @@ namespace TissueForge::io {
         TF_IOTOEASY(fileElement, metaData, "min_val", dataElement.min_val);
         TF_IOTOEASY(fileElement, metaData, "max_val", dataElement.max_val);
         
-        const int numMaps = sizeof(colormap_items) / sizeof(ColormapItem);
-        
-        std::string cMapName = "";
-        for(unsigned int i = 0; i < numMaps; i++) {
-            auto cMap = colormap_items[i];
-            if(dataElement.map == cMap.func) {
-                cMapName = std::string(cMap.name);
-                break;
-            }
-        }
-
+        std::string cMapName = dataElement.getColorMapName();
         if(cMapName.size() > 0) {
             TF_IOTOEASY(fileElement, metaData, "colorMap", cMapName);
+        }
+
+        if(dataElement.hasMapAngle()) {
+            TF_IOTOEASY(fileElement, metaData, "mapAngle", dataElement.getMapAngle());
+        }
+        if(dataElement.hasMapBond()) {
+            TF_IOTOEASY(fileElement, metaData, "mapBond", dataElement.getMapBond());
+        }
+        if(dataElement.hasMapDihedral()) {
+            TF_IOTOEASY(fileElement, metaData, "mapDihedral", dataElement.getMapDihedral());
+        }
+        if(dataElement.hasMapParticle()) {
+            TF_IOTOEASY(fileElement, metaData, "mapParticle", dataElement.getMapParticle());
         }
 
         fileElement.get()->type = "ColorMapper";
@@ -279,9 +450,34 @@ namespace TissueForge::io {
             std::string cMapName;
             TF_IOFROMEASY(fileElement, metaData, "colorMap", &cMapName);
 
-            auto idx = colormap_index_of_name(cMapName.c_str());
-            if(idx >= 0) 
-                dataElement->map = colormap_items[idx].func;
+            auto func = rendering::getColorMapperFunc(cMapName);
+            if(func)
+                dataElement->map = func;
+        }
+
+        feItr = fec.find("mapAngle");
+        if(feItr != fec.end()) {
+            unsigned int mapAngle;
+            TF_IOFROMEASY(fileElement, metaData, "mapAngle", &mapAngle);
+            dataElement->setMapAngle(mapAngle);
+        }
+        feItr = fec.find("mapBond");
+        if(feItr != fec.end()) {
+            unsigned int mapBond;
+            TF_IOFROMEASY(fileElement, metaData, "mapBond", &mapBond);
+            dataElement->setMapBond(mapBond);
+        }
+        feItr = fec.find("mapDihedral");
+        if(feItr != fec.end()) {
+            unsigned int mapDihedral;
+            TF_IOFROMEASY(fileElement, metaData, "mapDihedral", &mapDihedral);
+            dataElement->setMapDihedral(mapDihedral);
+        }
+        feItr = fec.find("mapParticle");
+        if(feItr != fec.end()) {
+            unsigned int mapParticle;
+            TF_IOFROMEASY(fileElement, metaData, "mapParticle", &mapParticle);
+            dataElement->setMapParticle(mapParticle);
         }
 
         return S_OK;

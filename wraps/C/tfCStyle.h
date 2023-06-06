@@ -39,6 +39,292 @@ struct CAPI_EXPORT tfRenderingStyleHandle {
     void *tfObj;
 };
 
+/**
+ * @brief Handle to a @ref rendering::ColorMapper instance
+ * 
+*/
+struct CAPI_EXPORT tfRenderingColorMapperHandle {
+    void *tfObj;
+};
+
+
+////////////////////////////
+// rendering::ColorMapper //
+////////////////////////////
+
+
+/**
+ * @brief Initialize an instance
+ * 
+ * @param handle handle to populate
+ * @param name color map name
+ * @param min minimum map value
+ * @param max maximum map value
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_init(struct tfRenderingColorMapperHandle* handle, const char* name, float min, float max);
+
+/**
+ * @brief Destroy an instance
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+ */
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_destroy(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Get the minimum map value
+ * 
+ * @param handle populated handle
+ * @param val value
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_getMinVal(struct tfRenderingColorMapperHandle* handle, float* val);
+
+/**
+ * @brief Set the minimum map value
+ * 
+ * @param handle populated handle
+ * @param val value
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMinVal(struct tfRenderingColorMapperHandle* handle, float val);
+
+/**
+ * @brief Get the maximum map value
+ * 
+ * @param handle populated handle
+ * @param val value
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_getMaxVal(struct tfRenderingColorMapperHandle* handle, float* val);
+
+/**
+ * @brief Set the maximum map value
+ * 
+ * @param handle populated handle
+ * @param val value
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMaxVal(struct tfRenderingColorMapperHandle* handle, float val);
+
+/**
+ * @brief Test whether the mapper has a particle map
+ * 
+ * @param handle populated handle
+ * @param result result of test
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_hasMapParticle(struct tfRenderingColorMapperHandle* handle, bool* result);
+
+/**
+ * @brief Test whether the mapper has an angle map
+ * 
+ * @param handle populated handle
+ * @param result result of test
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_hasMapAngle(struct tfRenderingColorMapperHandle* handle, bool* result);
+
+/**
+ * @brief Test whether the mapper has a bond map
+ * 
+ * @param handle populated handle
+ * @param result result of test
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_hasMapBond(struct tfRenderingColorMapperHandle* handle, bool* result);
+
+/**
+ * @brief Test whether the mapper has a dihedral map
+ * 
+ * @param handle populated handle
+ * @param result result of test
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_hasMapDihedral(struct tfRenderingColorMapperHandle* handle, bool* result);
+
+/**
+ * @brief Clear the particle map
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_clearMapParticle(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Clear the angle map
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_clearMapAngle(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Clear the bond map
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_clearMapBond(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Clear the dihedral map
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_clearMapDihedral(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to x-coordinate of particle position
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticlePositionX(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to y-coordinate of particle position
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticlePositionY(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to z-coordinate of particle position
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticlePositionZ(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to x-component of particle velocity
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleVelocityX(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to y-component of particle velocity
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleVelocityY(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to z-component of particle velocity
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleVelocityZ(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to particle speed
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleSpeed(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to x-component of particle force
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleForceX(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to y-component of particle force
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleForceY(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to z-component of particle force
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleForceZ(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the particle map to a species value
+ * 
+ * @param handle populated handle
+ * @param pType particle type
+ * @param name species name
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapParticleSpecies(struct tfRenderingColorMapperHandle* handle, struct tfParticleTypeHandle* pType, const char* name);
+
+/**
+ * @brief Set the angle map to angle
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapAngleAngle(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the angle map to angle from equilibrium
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapAngleAngleEq(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the bond map to length
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapBondLength(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the bond map to length from equilibrium
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapBondLengthEq(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the dihedral map to angle
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapDihedralAngle(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Set the dihedral map to angle from equilibrium
+ * 
+ * @param handle populated handle
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_setMapDihedralAngleEq(struct tfRenderingColorMapperHandle* handle);
+
+/**
+ * @brief Try to set the colormap. 
+ * 
+ * If the map doesn't exist, does not do anything and returns false.
+ * 
+ * @param handle populated handle
+ * @param s name of color map
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfRenderingColorMapper_set_colormap(struct tfRenderingColorMapperHandle* handle, const char* s);
+
 
 //////////////////////
 // rendering::Style //
@@ -109,24 +395,22 @@ CAPI_FUNC(HRESULT) tfRenderingStyle_getVisible(struct tfRenderingStyleHandle *ha
 CAPI_FUNC(HRESULT) tfRenderingStyle_setVisible(struct tfRenderingStyleHandle *handle, bool visible);
 
 /**
- * @brief Construct and apply a new color map for a particle type and species
+ * @brief Get the color mapper, if any
  * 
  * @param handle populated handle
- * @param partType particle type
- * @param speciesName name of species
- * @param name name of color map
- * @param min minimum value of map
- * @param max maximum value of map
- * @return S_OK on success
- */
-CAPI_FUNC(HRESULT) tfRenderingStyle_newColorMapper(
-    struct tfRenderingStyleHandle *handle, 
-    struct tfParticleTypeHandle *partType, 
-    const char *speciesName, 
-    const char *name, 
-    float min, 
-    float max
-);
+ * @param mapper color mapper
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingStyle_getColorMapper(struct tfRenderingStyleHandle *handle, struct tfRenderingColorMapperHandle* mapper);
+
+/**
+ * @brief Set the color mapper
+ * 
+ * @param handle populated handle
+ * @param mapper color mapper
+ * @return S_OK on success 
+*/
+CAPI_FUNC(HRESULT) tfRenderingStyle_setColorMapper(struct tfRenderingStyleHandle *handle, struct tfRenderingColorMapperHandle* mapper);
 
 /**
  * @brief Get a JSON string representation
