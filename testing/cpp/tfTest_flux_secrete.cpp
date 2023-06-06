@@ -59,7 +59,7 @@ HRESULT spew(const event::ParticleTimeEvent &event) {
     state::StateVector *sv = event.targetParticle->getSpecies();
     int32_t s_idx = sv->species->index_of("S1");
     sv->setItem(s_idx, 500);
-    state::SpeciesValue(*(sv->item(s_idx)), sv, s_idx).secrete(250.0, 1.0);
+    state::SpeciesValue(sv, s_idx).secrete(250.0, 1.0);
     return S_OK;
 }
 
