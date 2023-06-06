@@ -456,9 +456,9 @@ namespace TissueForge {
         /**
          * @brief Gets a list of nearby particles ids of all types. 
          * 
-         * @param distance search distance
+         * @param distance search distance; default is simulation cutoff
          */
-        std::vector<int32_t> neighborIds(const FPTYPE &distance);
+        std::vector<int32_t> neighborIds(const FPTYPE &distance=-FPTYPE_ONE);
 
         /**
          * @brief Gets a list of nearby particles ids within the global cutoff distance. 
