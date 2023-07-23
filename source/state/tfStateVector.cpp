@@ -19,6 +19,7 @@
 
 #include "tfStateVector.h"
 #include "tfSpeciesList.h"
+#include "tfSpeciesReactions.h"
 #include <tfLogger.h>
 #include <tfError.h>
 #include <io/tfFIO.h>
@@ -42,6 +43,7 @@ void state::StateVector::reset() {
         }
         fvec[i] = value;
     }
+    this->reactions->reset();
 }
 
 static void statevector_copy_values(state::StateVector *newVec, const state::StateVector* oldVec) {
@@ -88,7 +90,10 @@ void state::StateVector::setItem(const int &i, const FloatP_t &val) {
     }
 }
 
-state::StateVector::StateVector() : species(new state::SpeciesList()) {}
+state::StateVector::StateVector() : 
+    species(new state::SpeciesList()), 
+    reactions(new state::SpeciesReactions(this)) 
+{}
 
 state::StateVector::StateVector(SpeciesList *_species, 
                                 void *_owner, 
@@ -99,6 +104,7 @@ state::StateVector::StateVector(SpeciesList *_species,
     TF_Log(LOG_DEBUG) << "Creating state vector";
 
     this->species = _species;
+    this->reactions = new SpeciesReactions(this);
     if(_owner) this->owner = _owner;
     
     this->size = _species->size();
@@ -128,6 +134,18 @@ state::StateVector::StateVector(SpeciesList *_species,
                 this->fvec[i] = (FloatP_t)_s->getInitialConcentration();
         }
     }
+    if(this->species->numReactions() > 0) {
+        this->reactions = new SpeciesReactions(this);
+        for(int i = 0; i < this->species->numReactions(); i++) {
+            std::string modelName;
+            SpeciesReactionDef rDef;
+            this->species->reaction(i, modelName, rDef);
+
+            TF_Log(LOG_TRACE) << "Creating reaction: " << modelName << ", " << rDef.stepSize << ", " << rDef.numSteps;
+
+            this->reactions->create(modelName, rDef, false);
+        }
+    }
     
     for(int i = 0; i < _species->size(); ++i) {
         this->species_flags[i] = _species->item(i)->flags();
@@ -142,6 +160,8 @@ state::StateVector::~StateVector() {
     if(!owner) {
         delete species;
         species = 0;
+        delete reactions;
+        reactions = 0;
     }
 
     if(flags & STATEVECTOR_OWNMEMORY) {
@@ -182,6 +202,10 @@ namespace TissueForge::io {
             TF_IOTOEASY(fileElement, metaData, "species_flags", species_flags);
         }
 
+        if(dataElement.reactions->models.size() > 0) {
+            TF_IOTOEASY(fileElement, metaData, "reactions", *dataElement.reactions);
+        }
+
         fileElement.get()->type = "StateVector";
 
         return S_OK;
@@ -216,6 +240,11 @@ namespace TissueForge::io {
                 (*dataElement)->species_flags[i] = species_flags[i];
 
             }
+        }
+
+        IOChildMap fec = fileElement.children(fileElement);
+        if(fec.find("reactions") != fec.end()) {
+            TF_IOFROMEASY(fileElement, metaData, "reactions", (*dataElement)->reactions);
         }
 
         return S_OK;

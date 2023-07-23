@@ -22,6 +22,7 @@
 #include "TissueForge_c_private.h"
 
 #include "tfCSpecies.h"
+#include "tfCSpeciesReaction.h"
 
 #include <state/tfStateVector.h>
 
@@ -63,6 +64,13 @@ HRESULT tfStateStateVector_getSpecies(struct tfStateStateVectorHandle *handle, s
     TFC_STATEVECTOR_GET(handle);
     TFC_PTRCHECK(slist);
     slist->tfObj = (void*)svec->species;
+    return S_OK;
+}
+
+HRESULT tfStateStateVector_getReactions(struct tfStateStateVectorHandle *handle, struct tfStateSpeciesReactionsHandle *reactions) {
+    TFC_STATEVECTOR_GET(handle);
+    TFC_PTRCHECK(reactions);
+    reactions->tfObj = (void*)svec->reactions;
     return S_OK;
 }
 

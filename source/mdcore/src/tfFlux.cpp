@@ -173,12 +173,15 @@ Fluxes *TissueForge::Fluxes::fromString(const std::string &str) {
 }
 
 static void integrate_statevector(state::StateVector *s, FPTYPE dt) {
+    s->reactions->stepT(dt);
+    std::vector<FPTYPE> cachedFluxes = s->reactions->getCachedFluxes();
     for(int i = 0; i < s->size; ++i) {
         s->species_flags[i] = (uint32_t)s->species->item(i)->flags();
         FPTYPE konst = (s->species_flags[i] & state::SpeciesFlags::SPECIES_KONSTANT) ? 0.f : 1.f;
-        s->fvec[i] = FPTYPE_FMAX(FPTYPE_ZERO, s->fvec[i] + dt * s->q[i] * konst);
+        s->fvec[i] = FPTYPE_FMAX(FPTYPE_ZERO, s->fvec[i] + s->q[i] * konst * dt + cachedFluxes[i]);
         s->q[i] = 0; // clear flux for next step
     }
+    s->reactions->mapValuesTo();
 }
 
 static void integrate_statevector(state::StateVector *s) {

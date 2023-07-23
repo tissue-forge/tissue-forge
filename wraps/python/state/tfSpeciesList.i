@@ -23,6 +23,13 @@
 
 %}
 
+%ignore TissueForge::state::SpeciesList::reaction;
+
+%rename(add_reaction) TissueForge::state::SpeciesList::addReaction;
+%rename(_numReactions) TissueForge::state::SpeciesList::numReactions;
+%rename(reaction_name) TissueForge::state::SpeciesList::reactionName;
+%rename(reaction_def) TissueForge::state::SpeciesList::reactionDef;
+%rename(reaction_idx) TissueForge::state::SpeciesList::reactionIdx;
 
 %rename(_state_SpeciesList) SpeciesList;
 
@@ -74,5 +81,10 @@
 
         def __reduce__(self):
             return self.fromString, (self.toString(),)
+
+        @property
+        def num_reactions(self) -> int:
+            """Number of defined reactions"""
+            return self._numReactions()
     %}
 }

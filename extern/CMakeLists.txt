@@ -22,75 +22,6 @@ if(TF_APPLE)
   include_directories(${CMAKE_FIND_ROOT_PATH}/include)
 endif()
 
-# build libsbml
-
-set(LIBSBML_SHARED_VERSION OFF CACHE BOOL "dont build shared libsbml")
-
-set(WITH_CPP_NAMESPACE ON CACHE BOOL "Use a C++ namespace for libSBML.")
-
-set(WITH_PYTHON OFF CACHE BOOL "Generate the Python language interface for libSBML." )
-
-set(WITH_SWIG OFF CACHE BOOL "Regenerate the programming language interface code (for Java, Python, etc.) using SWIG.")
-
-set(LIBSBML_ROOT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libsbml" CACHE PATH "Path to the libSBML root source directory" FORCE)
-
-set(LIBSBML_ROOT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libsbml" CACHE PATH "Path to the libSBML root build directory" FORCE)
-
-set(LIBSBML_SKIP_SHARED_LIBRARY "ON")
-
-# If necessary, confine doc files to share, rather than in install root
-if(NOT UNIX AND NOT CYGWIN)
-  function(libsbml_doc_change variable access value current stack)
-    set(MISC_PREFIX "./share/sbml" PARENT_SCOPE)
-  endfunction()
-
-  variable_watch(MISC_PREFIX libsbml_doc_change)
-endif()
-
-add_subdirectory(libsbml)
-
-# create an interface target for libsbml as a modern cmake target
-
-add_library(libsbml-static-interface INTERFACE)
-
-# libsbml names libs differently, why???
-if(UNIX OR CYGWIN)
-  set(LIBSBML_LIBRARY sbml)
-else()
-  if(MINGW)
-    set(LIBSBML_LIBRARY sbml)
-  else()
-    set(LIBSBML_LIBRARY libsbml)
-  endif()
-endif()
-
-set_property(TARGET ${LIBSBML_LIBRARY}-static PROPERTY C_STANDARD 11)
-set_property(TARGET ${LIBSBML_LIBRARY}-static PROPERTY CXX_STANDARD 14)
-
-target_link_libraries(libsbml-static-interface INTERFACE ${LIBSBML_LIBRARY}-static)
-
-target_compile_definitions(libsbml-static-interface INTERFACE LIBSBML_STATIC)
-
-target_include_directories(libsbml-static-interface INTERFACE "$<TARGET_PROPERTY:${LIBSBML_LIBRARY}-static,INCLUDE_DIRECTORIES>")
-
-add_library(LibSBML::LibSBML ALIAS libsbml-static-interface)
-
-install(
-  TARGETS libsbml-static-interface 
-  EXPORT libsbml-static-interface_targets 
-  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" 
-  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" 
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-)
-install(
-  EXPORT libsbml-static-interface_targets 
-  FILE TissueForge-libSBMLTargets.cmake 
-  NAMESPACE TissueForge:: 
-  DESTINATION ${TF_SHARE_DIR} 
-  EXPORT_LINK_INTERFACE_LIBRARIES 
-  COMPONENT libSBML
-)
-
 set(WITH_PNGIMPORTER OFF CACHE BOOL "build PNG importer"    FORCE)
 
 # magnum / corrade want this
@@ -138,3 +69,16 @@ add_subdirectory(magnum)
 set(WITH_STBIMAGECONVERTER ON CACHE BOOL "Build Stb Image Converter" FORCE)
 
 add_subdirectory(magnum-plugins EXCLUDE_FROM_ALL)
+
+# build roadrunner
+
+# make sure to correctly target roadrunner dependencies
+set(CMAKE_PREFIX_PATH 
+  ${TF_ROADRUNNER_ROOT}
+  ${TF_ROADRUNNER_ROOT}/lib/cmake
+  ${CMAKE_PREFIX_PATH}
+)
+
+set(RR_DEPENDENCIES_INSTALL_PREFIX ${TF_PRIVATE_INSTALL_DIR}/roadrunner CACHE PATH "Path to dependency package" FORCE)
+
+add_subdirectory(roadrunner)

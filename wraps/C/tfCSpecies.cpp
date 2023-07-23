@@ -20,6 +20,7 @@
 #include "tfCSpecies.h"
 
 #include "TissueForge_c_private.h"
+#include "tfCSpeciesReaction.h"
 
 #include <state/tfSpecies.h>
 #include <state/tfSpeciesList.h>
@@ -513,6 +514,61 @@ HRESULT tfStateSpeciesList_insertS(struct tfStateSpeciesListHandle *handle, cons
     TFC_SPECIESLIST_GET(handle, slist);
     TFC_PTRCHECK(s);
     return slist->insert(s);
+}
+
+HRESULT addReaction(struct tfStateSpeciesListHandle *handle, const char* modelName, struct tfStateSpeciesReactionDefHandle* rDef) {
+    TFC_SPECIESLIST_GET(handle, slist);
+    TFC_PTRCHECK(modelName);
+    TFC_PTRCHECK(rDef);
+    return slist->addReaction(modelName, *(state::SpeciesReactionDef*)rDef->tfObj);
+}
+
+HRESULT numReactions(struct tfStateSpeciesListHandle *handle, unsigned int* value) {
+    TFC_SPECIESLIST_GET(handle, slist);
+    TFC_PTRCHECK(value);
+    *value = slist->numReactions();
+    return S_OK;
+}
+
+HRESULT reaction(
+    struct tfStateSpeciesListHandle *handle, 
+    unsigned int idx, 
+    char **modelName, 
+    unsigned int *numChars, 
+    struct tfStateSpeciesReactionDefHandle* rDef
+) {
+    TFC_SPECIESLIST_GET(handle, slist);
+    TFC_PTRCHECK(modelName);
+    TFC_PTRCHECK(numChars);
+    TFC_PTRCHECK(rDef);
+    std::string _modelName;
+    slist->reaction(idx, _modelName, *(state::SpeciesReactionDef*)rDef->tfObj);
+    if(TissueForge::capi::str2Char(_modelName, modelName, numChars) != S_OK) 
+        return E_FAIL;
+    return S_OK;
+}
+
+HRESULT reactionName(struct tfStateSpeciesListHandle *handle, unsigned int idx, char **modelName, unsigned int *numChars) {
+    TFC_SPECIESLIST_GET(handle, slist);
+    TFC_PTRCHECK(modelName);
+    TFC_PTRCHECK(numChars);
+    std::string _modelName = slist->reactionName(idx);
+    return TissueForge::capi::str2Char(_modelName, modelName, numChars);
+}
+
+HRESULT reactionDef(struct tfStateSpeciesListHandle *handle, unsigned int idx, struct tfStateSpeciesReactionDefHandle *rDef) {
+    TFC_SPECIESLIST_GET(handle, slist);
+    TFC_PTRCHECK(rDef);
+    rDef->tfObj = (void*)(new state::SpeciesReactionDef(slist->reactionDef(idx)));
+    return S_OK;
+}
+
+HRESULT reactionIdx(struct tfStateSpeciesListHandle *handle, const char *modelName, unsigned int *idx) {
+    TFC_SPECIESLIST_GET(handle, slist);
+    TFC_PTRCHECK(modelName);
+    TFC_PTRCHECK(idx);
+    *idx = slist->reactionIdx(modelName);
+    return S_OK;
 }
 
 HRESULT tfStateSpeciesList_toString(struct tfStateSpeciesListHandle *handle, char **str, unsigned int *numChars) {

@@ -38,6 +38,7 @@
 #include "tfCPotential.h"
 #include "tfCSimulator.h"
 #include "tfCSpecies.h"
+#include "tfCSpeciesReaction.h"
 #include "tfCStateVector.h"
 #include "tfCStyle.h"
 #include "tfCUniverse.h"

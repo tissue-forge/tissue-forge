@@ -578,7 +578,7 @@ namespace TissueForge::io {
         std::vector<S> keysde;
         std::vector<T> valsde;
 
-        for(typename std::map<S, T>::iterator de = dataElement.begin(); de != dataElement.end(); de++) {
+        for(auto de = dataElement.begin(); de != dataElement.end(); de++) {
             keysde.push_back(de->first);
             valsde.push_back(de->second);
         }

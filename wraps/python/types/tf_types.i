@@ -185,6 +185,7 @@ typedef TissueForge::types::TQuaternion<float> fQuaternion;
 %template(lists) std::list<std::string>;
 %template(pairff) std::pair<float, float>;
 %template(pairdd) std::pair<double, double>;
+%template(pairss) std::pair<std::string, std::string>;
 %template(umapsb) std::unordered_map<std::string, bool>;
 %template(umapss) std::unordered_map<std::string, std::string>;
 %template(vectord) std::vector<double>;
@@ -199,6 +200,8 @@ typedef TissueForge::types::TQuaternion<float> fQuaternion;
 
 %template(vector2f) std::vector<std::vector<float>>;
 %template(vector2d) std::vector<std::vector<double>>;
+
+%template(vectorpairss) std::vector<std::pair<std::string, std::string> >;
 
 // Generic prep instantiations for floating-point vectors. 
 // This partners with vector_template_init to implement

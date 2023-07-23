@@ -99,6 +99,55 @@ std::string state::SpeciesList::str() {
     return ss.str();
 }
 
+HRESULT state::SpeciesList::addReaction(const std::string& modelName, const SpeciesReactionDef& rDef) {
+    reaction_map.insert(std::make_pair(modelName, rDef));
+    return S_OK;
+}
+
+int32_t state::SpeciesList::numReactions() {
+    return reaction_map.size();
+}
+
+HRESULT state::SpeciesList::reaction(const int32_t& idx, std::string& modelName, SpeciesReactionDef& rDef) {
+    if(idx >= numReactions()) {
+        return tf_error(E_FAIL, "Invalid index");
+    }
+
+    auto i = reaction_map.begin();
+    i = std::next(i, idx);
+    modelName = i->first;
+    rDef = i->second;
+    return S_OK;
+}
+
+std::string state::SpeciesList::reactionName(const int32_t& idx) {
+    std::string modelName;
+    SpeciesReactionDef rDef;
+    if(reaction(idx, modelName, rDef) != S_OK) 
+        return "";
+    return modelName;
+}
+
+state::SpeciesReactionDef state::SpeciesList::reactionDef(const int32_t& idx) {
+    std::string modelName;
+    SpeciesReactionDef rDef;
+    if(reaction(idx, modelName, rDef) != S_OK) 
+        return SpeciesReactionDef();
+    return rDef;
+}
+
+int32_t state::SpeciesList::reactionIdx(const std::string& modelName) {
+    int32_t result = 0;
+    for(auto& mitr : reaction_map) {
+        if(mitr.first == modelName) 
+            return result;
+        result++;
+    }
+
+    tf_error(E_FAIL, "Invalid name");
+    return -1;
+}
+
 state::SpeciesList::~SpeciesList() {
     
     for (auto &i : species_map) {
@@ -132,6 +181,10 @@ namespace TissueForge::io {
 
         TF_IOTOEASY(fileElement, metaData, "species", species);
 
+        if(dataElement.reaction_map.size() > 0) {
+            TF_IOTOEASY(fileElement, metaData, "reactions", dataElement.reaction_map);
+        }
+
         fileElement.get()->type = "SpeciesList";
 
         return S_OK;
@@ -144,6 +197,11 @@ namespace TissueForge::io {
 
         for(auto s : species) 
             dataElement->insert(new state::Species(s));
+
+        IOChildMap fec = IOElement::children(fileElement);
+        if(fec.find("reactions") != fec.end()) {
+            TF_IOFROMEASY(fileElement, metaData, "reactions", &dataElement->reaction_map);
+        }
 
         return S_OK;
     }

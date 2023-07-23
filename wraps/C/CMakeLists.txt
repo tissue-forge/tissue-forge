@@ -39,6 +39,7 @@ set(
   tfCPotential.cpp 
   tfCSimulator.cpp 
   tfCSpecies.cpp 
+  tfCSpeciesReaction.cpp 
   tfCStateVector.cpp 
   tfCStyle.cpp 
   tfCUniverse.cpp 
@@ -67,6 +68,7 @@ set(
   tfCPotential.h 
   tfCSimulator.h 
   tfCSpecies.h 
+  tfCSpeciesReaction.h 
   tfCStateVector.h 
   tfCStyle.h 
   tfCUniverse.h 

@@ -17,10 +17,16 @@
  * 
  ******************************************************************************/
 
+/**
+ * @file tfSpeciesList.h
+ * 
+ */
+
 #ifndef _SOURCE_STATE_TFSPECIESLIST_H_
 #define _SOURCE_STATE_TFSPECIESLIST_H_
 
 #include "tfSpecies.h"
+#include "tfSpeciesReactionDef.h"
 #include <io/tf_io.h>
 #include <tf_port.h>
 #include <string>
@@ -33,6 +39,10 @@ namespace TissueForge {
     namespace state {
 
 
+        /**
+         * @brief Defines a set of \ref Species instances and 
+         * optionally a set of \ref SpeciesReactionDef instances. 
+         */
         struct CAPI_EXPORT SpeciesList
         {
             /**
@@ -88,6 +98,49 @@ namespace TissueForge {
              */
             std::string str();
 
+            /**
+             * @brief Add a reaction kinetics model definition
+             * 
+             * @param modelName model name
+             * @param rDef model definition
+             */
+            HRESULT addReaction(const std::string& modelName, const SpeciesReactionDef& rDef);
+
+            /**
+             * @brief Get the number of reaction kinetics model definitions
+             */
+            int32_t numReactions();
+
+            /**
+             * @brief Get a reaction kinetics model name and definition by index
+             * 
+             * @param idx model index
+             * @param modelName model name
+             * @param rDef model definition
+             */
+            HRESULT reaction(const int32_t& idx, std::string& modelName, SpeciesReactionDef& rDef);
+
+            /**
+             * @brief Get a reaction kinetics model name by index
+             * 
+             * @param idx model index
+             */
+            std::string reactionName(const int32_t& idx);
+
+            /**
+             * @brief Get a reaction kinetics model definition by index
+             * 
+             * @param idx model index
+             */
+            SpeciesReactionDef reactionDef(const int32_t& idx);
+
+            /**
+             * @brief Get a reaction kinetics model index by name
+             * 
+             * @param modelName model name
+             */
+            int32_t reactionIdx(const std::string& modelName);
+
             SpeciesList() {};
 
             ~SpeciesList();
@@ -106,11 +159,17 @@ namespace TissueForge {
              * @return SpeciesList* 
              */
             static SpeciesList *fromString(const std::string &str);
+
+            friend HRESULT io::toFile(const SpeciesList &dataElement, const io::MetaData &metaData, io::IOElement &fileElement);
+            friend HRESULT io::fromFile(const io::IOElement &fileElement, const io::MetaData &metaData, SpeciesList *dataElement);
             
         private:
             
             typedef std::map<std::string, TissueForge::state::Species*> Map;
             Map species_map;
+
+            typedef std::map<std::string, SpeciesReactionDef> ReactionMap;
+            ReactionMap reaction_map;
         };
 
     }

@@ -70,6 +70,15 @@ CAPI_FUNC(HRESULT) tfStateStateVector_getSize(struct tfStateStateVectorHandle *h
 CAPI_FUNC(HRESULT) tfStateStateVector_getSpecies(struct tfStateStateVectorHandle *handle, struct tfStateSpeciesListHandle *slist);
 
 /**
+ * @brief Get the reactions of a state vector
+ * 
+ * @param handle populated handle
+ * @param reactions reactions
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfStateStateVector_getReactions(struct tfStateStateVectorHandle *handle, struct tfStateSpeciesReactionsHandle *reactions);
+
+/**
  * @brief reset the species values based on the values specified in the species.
  * 
  * @param handle populated handle

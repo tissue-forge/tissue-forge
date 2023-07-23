@@ -120,6 +120,9 @@ set(
 
   state/tfSpecies.cpp
   state/tfSpeciesList.cpp
+  state/tfSpeciesReactionDef.cpp
+  state/tfSpeciesReaction.cpp
+  state/tfSpeciesReactions.cpp
   state/tfSpeciesValue.cpp
   state/tfStateVector.cpp
 
@@ -205,6 +208,9 @@ set(
 
   state/tfSpecies.h
   state/tfSpeciesList.h
+  state/tfSpeciesReactionDef.h
+  state/tfSpeciesReaction.h
+  state/tfSpeciesReactions.h
   state/tfSpeciesValue.h
   state/tfStateVector.h
 
@@ -352,8 +358,9 @@ target_link_libraries(
   TissueForge_obj PUBLIC 
   GLFW::GLFW 
   ${GLFW_LIBRARIES} 
-  LibSBML::LibSBML
   assimp::assimp
+  ${LIBANTIMONY_LIBRARY}
+  roadrunner
   ${OPENGL_LIBRARIES}
 )
 
@@ -383,8 +390,9 @@ set(TF_LIB_TARGETS
 set(TF_LIBDEPS_PUBLIC
   GLFW::GLFW 
   ${GLFW_LIBRARIES} 
-  LibSBML::LibSBML
   assimp::assimp
+  ${LIBANTIMONY_LIBRARY}
+  roadrunner
 )
 set(TF_LIBDEPS_PRIVATE
   mdcore
@@ -397,6 +405,7 @@ set(TF_INCLUDES_PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   ${ASSIMP_INCLUDE_DIRS}
   ${JSON_INCLUDE_DIRS}
+  ${LIBANTIMONY_INCLUDE_DIRS}
   $<INSTALL_INTERFACE:${TF_INCLUDE_DIR}> 
   $<INSTALL_INTERFACE:${TF_PRIVATE_INCLUDE_DIR}>
 )

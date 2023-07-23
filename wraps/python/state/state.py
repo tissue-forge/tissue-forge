@@ -19,6 +19,9 @@
 
 from tissue_forge.tissue_forge import _state_Species
 from tissue_forge.tissue_forge import _state_SpeciesList
+from tissue_forge.tissue_forge import _state_SpeciesReactionDef
+from tissue_forge.tissue_forge import _state_SpeciesReaction
+from tissue_forge.tissue_forge import _state_SpeciesReactions
 from tissue_forge.tissue_forge import _state_SpeciesValue
 from tissue_forge.tissue_forge import _state_StateVector
 
@@ -26,6 +29,15 @@ class Species(_state_Species):
     pass
 
 class SpeciesList(_state_SpeciesList):
+    pass
+
+class SpeciesReactionDef(_state_SpeciesReactionDef):
+    pass
+
+class SpeciesReaction(_state_SpeciesReaction):
+    pass
+
+class SpeciesReactions(_state_SpeciesReactions):
     pass
 
 class SpeciesValue(_state_SpeciesValue):

@@ -17,16 +17,36 @@
  * 
  ******************************************************************************/
 
-%include "tfSpeciesReactionDef.i"
+%{
 
-%include "tfSpeciesReaction.i"
+#include <state/tfSpeciesReactions.h>
 
-%include "tfSpeciesReactions.i"
+%}
 
-%include "tfStateVector.i"
+%ignore TissueForge::state::SpeciesReactions::models;
 
-%include "tfSpecies.i"
+%rename(copy_from) TissueForge::state::SpeciesReactions::copyFrom;
+%rename(map_values_to) TissueForge::state::SpeciesReactions::mapValuesTo;
+%rename(map_values_from) TissueForge::state::SpeciesReactions::mapValuesFrom;
 
-%include "tfSpeciesList.i"
+%rename(_state_SpeciesReactions) SpeciesReactions;
 
-%include "tfSpeciesValue.i"
+%include <state/tfSpeciesReactions.h>
+
+%extend TissueForge::state::SpeciesReactions {
+    %pythoncode %{
+        def __getitem__(self, key: str):
+            result = self._getModel(key)
+            if result is None:
+                raise KeyError
+            return result
+
+        def __reduce__(self):
+            return self.fromString, (self.toString(),)
+
+        @property
+        def model_names(self):
+            """List of model names"""
+            return self._modelNames()
+    %}
+}

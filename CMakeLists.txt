@@ -110,6 +110,7 @@ else()
   set(TF_HAVECUDA OFF)
 endif()
 
+set(TF_PRIVATE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib/TissueForge)
 set(TF_INCLUDE_DIR include/TissueForge)
 set(TF_PRIVATE_INCLUDE_DIR ${TF_INCLUDE_DIR}/private)
 set(TF_MODELS_INCLUDE_DIR ${TF_INCLUDE_DIR}/models)
@@ -139,6 +140,10 @@ if(assimp_FOUND)
 else()
   message("Assimp not found")
 endif()
+
+# Pre-built dependencies
+set(TF_ANTIMONY_ROOT ${TF_PRIVATE_INSTALL_DIR}/antimony)
+set(TF_ROADRUNNER_ROOT ${TF_PRIVATE_INSTALL_DIR}/roadrunner)
 
 # Borrowing Magnum's modules. 
 list(APPEND CMAKE_MODULE_PATH 
@@ -329,6 +334,26 @@ message("JSON include: ${JSON_INCLUDE_DIRS}")
 add_subdirectory(extern)
 
 find_package(MagnumPlugins REQUIRED StbImageConverter)
+
+# Get antimony
+
+find_library(
+  LIBANTIMONY_LIBRARY
+  NAMES libantimony.lib libantimony.so libantimony antimony.lib antimony.so antimony libantimonyd.lib libantimonymd.lib libantimonymdd.lib libantimonyd.so libantimonyd antimonyd.lib antimonyd.so antimonyd
+  PATHS ${TF_ANTIMONY_ROOT}/lib
+)
+find_path(
+  LIBANTIMONY_INCLUDE_DIRS
+  NAMES antimony_api.h
+  PATHS ${TF_ANTIMONY_ROOT}/include
+)
+message("Antimony include: ${LIBANTIMONY_INCLUDE_DIRS}")
+
+# This must be after extern so that roadrunner can correctly target its dependencies
+list(APPEND CMAKE_PREFIX_PATH 
+  ${TF_ROADRUNNER_ROOT}
+  ${TF_ROADRUNNER_ROOT}/lib/cmake
+)
 
 add_subdirectory(include)
 add_subdirectory(source)

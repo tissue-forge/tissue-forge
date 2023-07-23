@@ -31,6 +31,7 @@
 #include <string>
 
 #include "tfSpeciesList.h"
+#include "tfSpeciesReactions.h"
 
 
 namespace TissueForge {
@@ -46,6 +47,15 @@ namespace TissueForge {
 
         /**
          * @brief A state vector of an object. 
+         * 
+         * @details Includes a list of \ref Species 
+         * and assigns a concentration to each, which can 
+         * be transported between \ref Particle instances 
+         * by \ref Flux interactions. 
+         * 
+         * Optionally also includes \ref SpeciesReactions 
+         * that perform interactions between \ref Species 
+         * concentrations according reaction kinetics models. 
          */
         struct CAPI_EXPORT StateVector {
             uint32_t flags;
@@ -55,6 +65,11 @@ namespace TissueForge {
              * @brief Species of the state vector
              */
             struct TissueForge::state::SpeciesList *species;
+
+            /**
+             * @brief Species reactions, if any
+            */
+            struct SpeciesReactions* reactions;
             
             /**
              * owner of this state vector, usually a

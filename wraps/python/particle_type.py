@@ -64,6 +64,42 @@ def _colormap_from_dict(d: dict, type_instance):
     return mapper
 
 
+def _reactions_from_dict(sl: tf._state_SpeciesList, d: dict):
+    for model_name, model_data in d.items():
+        if 'name_map' in model_data.keys():
+            name_map = model_data['name_map']
+        else:
+            name_map = list()
+
+        model_data: dict
+        if 'sbml_string' in model_data.keys():
+            rdef = tf._state_SpeciesReactionDef(model_data['sbml_string'],
+                                                name_map)
+        elif 'sbml_file' in model_data.keys():
+            rdef = tf._state_SpeciesReactionDef(model_data['sbml_file'],
+                                                name_map)
+        elif 'antimony_string' in model_data.keys():
+            rdef = tf._state_SpeciesReactionDef.from_antimony_string(model_data['antimony_string'],
+                                                                     name_map)
+        elif 'antimony_file' in model_data.keys():
+            rdef = tf._state_SpeciesReactionDef.from_antimony_file(model_data['antimony_file'],
+                                                                   name_map)
+        else:
+            raise ValueError('No specification for model ' + model_name)
+
+        if 'integrator' in model_data.keys():
+            if isinstance(model_data['integrator'], str):
+                rdef.integrator = tf._state_SpeciesReactionDef.integrator_enum(model_data['integrator'])
+            else:
+                rdef.integrator = model_data['integrator']
+        if 'step_size' in model_data.keys():
+            rdef.step_size = model_data['step_size']
+        if 'num_steps' in model_data.keys():
+            rdef.num_steps = model_data['num_steps']
+
+        sl.add_reaction(model_name, rdef)
+
+
 class ParticleTypeSpec:
     """
     Interface for class-centric design of ParticleType
@@ -149,6 +185,53 @@ class ParticleTypeSpec:
     vector of the type and all created particles. 
     """
 
+    reactions = None
+    """
+    Particle type reaction dictionary specification. 
+    
+    Reactions can be specified as a dictionary, like model name, specification and simulation details, 
+    
+    .. code:: python
+
+        reactions = {'schnakenberg': {'sbml_string': schnakenberg_string,
+                                      'name_map': [('U', 'U'), ('V', 'V')]}}
+
+    This declaration is the same as performing operations on a type after registration, 
+    
+    .. code:: python
+    
+        ptype: ParticleType
+        rdef = tf.state.SpeciesReactionDef(schnakenberg_string, [('U', 'U'), ('V', 'V')])
+        ptype.species.add_reaction('schnakenberg', rdef)
+
+    A model specification must be provided with one of the following entries, 
+    
+    * 'antimony_file': the path to a file containing an Antimony model
+    * 'antimony_string': an Antimony model string
+    * 'sbml_file': the path to a file containing a SBML model
+    * 'sbml_string': a SBML model string
+    
+    The entry 'name_map' defines the mapping from species names to reaction model names. 
+    The value is a list of tuples, where the first element of each tuple defines the species name, 
+    and the second element of each tuple defines the reaction model name. 
+    If no entry for 'name_map' is defined, then no mapping is automatically performed. 
+
+    The optional entry 'integrator' defines the integrator to use. Valid entries are as follows, 
+
+    * 'cvode' (default): A deterministic solver from the SUNDIALS suite of timecourse integrators. 
+    * 'euler': A deterministic solver that uses the Euler method. 
+    * 'gillespie': A stochastic solver that uses the standard Gillespie Direct Method Stochastic Simulation Algorithm. 
+    * 'nleq1': A deterministic solver from the nleq1 package.
+    * 'nleq2': A deterministic solver from the nleq2 package.
+    * 'rk4': A deterministic solver that uses the standard 4th order Runge-Kutta solver. 
+    * 'rk45': A deterministic solver that uses the Runge-Kutte-Fehlberg algorithm.
+    
+    Additional valid entries are as follows,
+    
+    * 'num_steps': number of reaction simulator steps per integration step
+    * 'step_size': period per flux step according to the reaction simulation
+    """
+
     __tf_properties__ = [
         'mass',
         'charge',
@@ -162,7 +245,8 @@ class ParticleTypeSpec:
         'name',
         'name2',
         'style',
-        'species'
+        'species',
+        'reactions'
     ]
     """All defined particle type properties"""
 
@@ -187,7 +271,7 @@ class ParticleTypeSpec:
 
         type_instance = tf.ParticleType(noReg=True)
 
-        props_to_copy = [n for n in cls.__tf_properties__ if n not in ['name', 'species', 'style', 'types']]
+        props_to_copy = [n for n in cls.__tf_properties__ if n not in ['name', 'reactions', 'species', 'style', 'types']]
         props_to_assign = {prop_name: getattr(cls, prop_name) for prop_name in props_to_copy}
         props_to_assign['name'] = name
 
@@ -199,6 +283,8 @@ class ParticleTypeSpec:
             type_instance.species = state.SpeciesList()
             for s in cls.species:
                 type_instance.species.insert(s)
+            if cls.reactions is not None:
+                _reactions_from_dict(type_instance.species, cls.reactions)
 
         if cls.style is not None:
             cls.style: dict
@@ -252,7 +338,7 @@ class ClusterTypeSpec(ParticleTypeSpec):
 
         type_instance = tf.ClusterParticleType(noReg=True)
 
-        props_to_copy = [n for n in cls.__tf_properties__ if n not in ['name', 'species', 'style', 'types']]
+        props_to_copy = [n for n in cls.__tf_properties__ if n not in ['name', 'reactions', 'species', 'style', 'types']]
         props_to_assign = {prop_name: getattr(cls, prop_name) for prop_name in props_to_copy}
         props_to_assign['name'] = name
 
@@ -264,6 +350,8 @@ class ClusterTypeSpec(ParticleTypeSpec):
             type_instance.species = state.SpeciesList()
             for s in cls.species:
                 type_instance.species.insert(s)
+            if cls.reactions is not None:
+                _reactions_from_dict(type_instance.species, cls.reactions)
 
         if cls.style is not None:
             cls.style: dict

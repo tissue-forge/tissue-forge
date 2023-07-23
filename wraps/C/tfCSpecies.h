@@ -607,7 +607,7 @@ CAPI_FUNC(HRESULT) tfStateSpecies_hasRequiredAttributes(struct tfStateSpeciesHan
  * @brief Get a JSON string representation
  * 
  * @param handle populated handle
- * @param str string representation; can be used as an argument in a type particle factory
+ * @param str string representation
  * @param numChars number of characters of string representation
  * @return S_OK on success
  */
@@ -710,10 +710,78 @@ CAPI_FUNC(HRESULT) tfStateSpeciesList_insert(struct tfStateSpeciesListHandle *ha
 CAPI_FUNC(HRESULT) tfStateSpeciesList_insertS(struct tfStateSpeciesListHandle *handle, const char *s);
 
 /**
+ * @brief Add a reaction kinetics model definition
+ * 
+ * @param handle populated handle
+ * @param modelName model name
+ * @param rDef model definition
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) addReaction(struct tfStateSpeciesListHandle *handle, const char* modelName, struct tfStateSpeciesReactionDefHandle* rDef);
+
+/**
+ * @brief Get the number of reaction kinetics model definitions
+ * 
+ * @param handle populated handle
+ * @param value number of reaction kinetics model definitions
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) numReactions(struct tfStateSpeciesListHandle *handle, unsigned int* value);
+
+/**
+ * @brief Get a reaction kinetics model name and definition by index
+ * 
+ * @param handle populated handle
+ * @param idx model index
+ * @param modelName model name
+ * @param numChars number of model name characters
+ * @param rDef model definition
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) reaction(
+    struct tfStateSpeciesListHandle *handle, 
+    unsigned int idx, 
+    char **modelName, 
+    unsigned int *numChars, 
+    struct tfStateSpeciesReactionDefHandle* rDef
+);
+
+/**
+ * @brief Get a reaction kinetics model name by index
+ * 
+ * @param handle populated handle
+ * @param idx model index
+ * @param modelName model name
+ * @param numChars number of model name characters
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) reactionName(struct tfStateSpeciesListHandle *handle, unsigned int idx, char **modelName, unsigned int *numChars);
+
+/**
+ * @brief Get a reaction kinetics model definition by index
+ * 
+ * @param handle populated handle
+ * @param idx model index
+ * @param rDef model definition
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) reactionDef(struct tfStateSpeciesListHandle *handle, unsigned int idx, struct tfStateSpeciesReactionDefHandle *rDef);
+
+/**
+ * @brief Get a reaction kinetics model index by name
+ * 
+ * @param handle populated handle
+ * @param modelName model name
+ * @param idx model index
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) reactionIdx(struct tfStateSpeciesListHandle *handle, const char *modelName, unsigned int *idx);
+
+/**
  * @brief Get a JSON string representation
  * 
  * @param handle populated handle
- * @param str string representation; can be used as an argument in a type particle factory
+ * @param str string representation
  * @param numChars number of characters of string representation
  * @return S_OK on success
  */

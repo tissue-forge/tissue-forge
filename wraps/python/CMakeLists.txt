@@ -43,8 +43,7 @@ set(TissueForge_py_LIBS
   mdcore
 
   glfw 
-  ${GLFW_LIBRARIES} 
-  LibSBML::LibSBML 
+  ${GLFW_LIBRARIES}  
   Magnum::Application
   Magnum::Magnum
   Magnum::Shaders
@@ -52,10 +51,11 @@ set(TissueForge_py_LIBS
   Magnum::SceneGraph
   Magnum::Primitives
   Magnum::MeshTools
-  LibSBML::LibSBML
   MagnumPlugins::StbImageConverter
   TgaImageConverter
   assimp::assimp
+  ${LIBANTIMONY_LIBRARY}
+  roadrunner
 )
 
 if(TF_WITHCUDA)
@@ -163,7 +163,9 @@ macro(TF_BUILD_PY_LIB main_source target_name output_py_name output_subdir)
     file(RELATIVE_PATH _RPATH2PYLIBS ${TF_SITEPACKAGES}/${output_subdir} ${Python_LIBRARY_DIRS})
     file(RELATIVE_PATH _RPATH2TFLIBS ${TF_SITEPACKAGES}/${output_subdir} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
     file(RELATIVE_PATH _RPATH2TFENV  ${TF_SITEPACKAGES}/${output_subdir} ${CMAKE_INSTALL_PREFIX})
-    set_target_properties(${target_name} PROPERTIES INSTALL_RPATH "${RPATH_PREFIX};${RPATH_PREFIX}/${_RPATH2PYLIBS};${RPATH_PREFIX}/${_RPATH2TFLIBS};${RPATH_PREFIX}/${_RPATH2TFENV}")
+    file(RELATIVE_PATH _RPATH2TFAM   ${TF_SITEPACKAGES}/${output_subdir} ${TF_ANTIMONY_ROOT}/lib)
+    file(RELATIVE_PATH _RPATH2TFRR   ${TF_SITEPACKAGES}/${output_subdir} ${TF_ROADRUNNER_ROOT}/lib)
+    set_target_properties(${target_name} PROPERTIES INSTALL_RPATH "${RPATH_PREFIX};${RPATH_PREFIX}/${_RPATH2PYLIBS};${RPATH_PREFIX}/${_RPATH2TFLIBS};${RPATH_PREFIX}/${_RPATH2TFENV};${RPATH_PREFIX}/${_RPATH2TFAM};${RPATH_PREFIX}/${_RPATH2TFRR}")
   endif()
 
   set_target_properties(
