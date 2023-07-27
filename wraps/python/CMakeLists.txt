@@ -55,7 +55,7 @@ set(TissueForge_py_LIBS
   TgaImageConverter
   assimp::assimp
   ${LIBANTIMONY_LIBRARY}
-  roadrunner
+  roadrunner-static::roadrunner-static
 )
 
 if(TF_WITHCUDA)
@@ -163,8 +163,8 @@ macro(TF_BUILD_PY_LIB main_source target_name output_py_name output_subdir)
     file(RELATIVE_PATH _RPATH2PYLIBS ${TF_SITEPACKAGES}/${output_subdir} ${Python_LIBRARY_DIRS})
     file(RELATIVE_PATH _RPATH2TFLIBS ${TF_SITEPACKAGES}/${output_subdir} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
     file(RELATIVE_PATH _RPATH2TFENV  ${TF_SITEPACKAGES}/${output_subdir} ${CMAKE_INSTALL_PREFIX})
-    file(RELATIVE_PATH _RPATH2TFAM   ${TF_SITEPACKAGES}/${output_subdir} ${TF_ANTIMONY_ROOT}/lib)
-    file(RELATIVE_PATH _RPATH2TFRR   ${TF_SITEPACKAGES}/${output_subdir} ${TF_ROADRUNNER_ROOT}/lib)
+    file(RELATIVE_PATH _RPATH2TFAM   ${TF_SITEPACKAGES}/${output_subdir} ${ANTIMONY_INSTALL_PREFIX}/lib)
+    file(RELATIVE_PATH _RPATH2TFRR   ${TF_SITEPACKAGES}/${output_subdir} ${ROADRUNNER_INSTALL_PREFIX}/lib)
     set_target_properties(${target_name} PROPERTIES INSTALL_RPATH "${RPATH_PREFIX};${RPATH_PREFIX}/${_RPATH2PYLIBS};${RPATH_PREFIX}/${_RPATH2TFLIBS};${RPATH_PREFIX}/${_RPATH2TFENV};${RPATH_PREFIX}/${_RPATH2TFAM};${RPATH_PREFIX}/${_RPATH2TFRR}")
   endif()
 

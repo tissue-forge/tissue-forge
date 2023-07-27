@@ -25,8 +25,8 @@
 #include <io/tfFIO.h>
 #include <mdcore_config.h>
 
-#include <rrRoadRunner.h>
-#include <rrSelectionRecord.h>
+#include <rr/rrRoadRunner.h>
+#include <rr/rrSelectionRecord.h>
 
 
 using namespace TissueForge;

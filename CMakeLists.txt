@@ -22,6 +22,8 @@ cmake_minimum_required (VERSION 3.20.3)
 
 project(TissueForge)
 
+include(GNUInstallDirs)
+
 # sets the target types
 if(UNIX)
   # Both APPLE and UNIX are defined on OSX
@@ -142,8 +144,15 @@ else()
 endif()
 
 # Pre-built dependencies
-set(TF_ANTIMONY_ROOT ${TF_PRIVATE_INSTALL_DIR}/antimony)
-set(TF_ROADRUNNER_ROOT ${TF_PRIVATE_INSTALL_DIR}/roadrunner)
+if(NOT DEFINED ANTIMONY_INSTALL_PREFIX)
+  set(ANTIMONY_INSTALL_PREFIX ${TF_PRIVATE_INSTALL_DIR}/antimony)
+endif()
+if(NOT DEFINED ROADRUNNER_INSTALL_PREFIX)
+  set(ROADRUNNER_INSTALL_PREFIX ${TF_PRIVATE_INSTALL_DIR}/roadrunner)
+endif()
+if(NOT DEFINED LLVM_INSTALL_PREFIX)
+  set(LLVM_INSTALL_PREFIX ${TF_PRIVATE_INSTALL_DIR}/llvm-13.x)
+endif()
 
 # Borrowing Magnum's modules. 
 list(APPEND CMAKE_MODULE_PATH 
@@ -335,25 +344,29 @@ add_subdirectory(extern)
 
 find_package(MagnumPlugins REQUIRED StbImageConverter)
 
+# Get roadrunner
+
+list(APPEND CMAKE_PREFIX_PATH
+  "${ROADRUNNER_INSTALL_PREFIX}/cmake" 
+  "${ROADRUNNER_INSTALL_PREFIX}/lib/cmake" 
+  "${ROADRUNNER_INSTALL_PREFIX}/lib/cmake/Poco" 
+)
+list(APPEND CMAKE_MODULE_PATH "${ROADRUNNER_INSTALL_PREFIX}/lib/cmake")
+include(ImportRoadRunnerAndDependencies)
+
 # Get antimony
 
 find_library(
   LIBANTIMONY_LIBRARY
   NAMES libantimony.lib libantimony.so libantimony antimony.lib antimony.so antimony libantimonyd.lib libantimonymd.lib libantimonymdd.lib libantimonyd.so libantimonyd antimonyd.lib antimonyd.so antimonyd
-  PATHS ${TF_ANTIMONY_ROOT}/lib
+  PATHS ${ANTIMONY_INSTALL_PREFIX}/lib
 )
 find_path(
   LIBANTIMONY_INCLUDE_DIRS
   NAMES antimony_api.h
-  PATHS ${TF_ANTIMONY_ROOT}/include
+  PATHS ${ANTIMONY_INSTALL_PREFIX}/include
 )
 message("Antimony include: ${LIBANTIMONY_INCLUDE_DIRS}")
-
-# This must be after extern so that roadrunner can correctly target its dependencies
-list(APPEND CMAKE_PREFIX_PATH 
-  ${TF_ROADRUNNER_ROOT}
-  ${TF_ROADRUNNER_ROOT}/lib/cmake
-)
 
 add_subdirectory(include)
 add_subdirectory(source)

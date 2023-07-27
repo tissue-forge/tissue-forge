@@ -24,7 +24,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/TissueForgeTargets.cmake")
 
 get_filename_component(_dir "${CMAKE_CURRENT_LIST_FILE}" PATH)
 get_filename_component(_prefix "${_dir}/../../.." ABSOLUTE)
-set(TISSUEFORGE_INCLUDE_DIRS "${_prefix}/include/TissueForge;${_prefix}/include/TissueForge/private;${_prefix}/include/TissueForge/private/mdcore;${_prefix}/include/TissueForge/private/mdcore/private")
+set(TISSUEFORGE_INCLUDE_DIRS "${_prefix}/include/TissueForge;${_prefix}/include/TissueForge/private;${_prefix}/include/TissueForge/private/mdcore;${_prefix}/include/TissueForge/private/mdcore/private;${_prefix}/lib/TissueForge/antimony/include;${_prefix}/lib/TissueForge/roadrunner/include")
 
 set(TISSUEFORGE_HAS_C @TF_WITH_C@)
 set(TISSUEFORGE_C_INCLUDE_DIRS )

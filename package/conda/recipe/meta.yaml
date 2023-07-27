@@ -21,6 +21,7 @@ build:
   script_env:
     - TFBUILDQUAL={{ environ.get('TF_BUILDQUAL', '') }}
     - CONDA_BUILD_SYSROOT={{ environ.get('TF_BUILD_SYSROOT', '') }} # [osx]
+    - TF_OSXARM64={{ environ.get('TF_OSXARM64', '') }} # [osx]
 
 requirements:
   host:
@@ -36,6 +37,7 @@ requirements:
     - vs2019_win-64<=19.28 # [win]
     - clang=12 # [win]
     - lld # [win]
+    - llvmdev=13 # [osx]
     - xorg-libxfixes # [linux]
     - xorg-libxrandr # [linux]
     - xorg-libxcursor # [linux]
@@ -72,6 +74,7 @@ requirements:
     - eigen
     - glfw
     - pthreads-win32 # [win]
+    - llvmdev=13 # [osx]
 
 test:
   imports:

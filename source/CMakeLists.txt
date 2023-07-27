@@ -353,6 +353,7 @@ target_link_libraries(
   Magnum::Shaders
   MagnumPlugins::StbImageConverter
   mdcore
+  roadrunner-static::roadrunner-static
 )
 target_link_libraries(
   TissueForge_obj PUBLIC 
@@ -360,7 +361,6 @@ target_link_libraries(
   ${GLFW_LIBRARIES} 
   assimp::assimp
   ${LIBANTIMONY_LIBRARY}
-  roadrunner
   ${OPENGL_LIBRARIES}
 )
 
@@ -392,11 +392,11 @@ set(TF_LIBDEPS_PUBLIC
   ${GLFW_LIBRARIES} 
   assimp::assimp
   ${LIBANTIMONY_LIBRARY}
-  roadrunner
 )
 set(TF_LIBDEPS_PRIVATE
   mdcore
-  TissueForge::MagnumLibs
+  TissueForge::MagnumLibs 
+  roadrunner-static::roadrunner-static
 )
 set(TF_INCLUDES_PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>

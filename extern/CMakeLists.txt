@@ -69,16 +69,3 @@ add_subdirectory(magnum)
 set(WITH_STBIMAGECONVERTER ON CACHE BOOL "Build Stb Image Converter" FORCE)
 
 add_subdirectory(magnum-plugins EXCLUDE_FROM_ALL)
-
-# build roadrunner
-
-# make sure to correctly target roadrunner dependencies
-set(CMAKE_PREFIX_PATH 
-  ${TF_ROADRUNNER_ROOT}
-  ${TF_ROADRUNNER_ROOT}/lib/cmake
-  ${CMAKE_PREFIX_PATH}
-)
-
-set(RR_DEPENDENCIES_INSTALL_PREFIX ${TF_PRIVATE_INSTALL_DIR}/roadrunner CACHE PATH "Path to dependency package" FORCE)
-
-add_subdirectory(roadrunner)
