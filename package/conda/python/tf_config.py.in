@@ -25,13 +25,21 @@ tf_dir_bin_rel = @TFPY_RPATH_BIN_SITE@
 
 tf_dir_root = os.path.dirname(os.path.abspath(__file__))
 tf_dir_bin = None
+antimony_dir_bin = None
+roadrunner_dir_bin = None
 if tf_dir_bin_rel is not None:
     tf_dir_bin = os.path.abspath(os.path.join(tf_dir_root, tf_dir_bin_rel))
+    antimony_dir_bin = os.path.join(os.path.dirname(os.path.abspath(os.path.join(tf_dir_root, tf_dir_bin_rel))),
+                                    'lib', 'TissueForge', 'antimony', 'lib')
+    roadrunner_dir_bin = os.path.join(os.path.dirname(os.path.abspath(os.path.join(tf_dir_root, tf_dir_bin_rel))),
+                                    'lib', 'TissueForge', 'roadrunner', 'bin')
 
 if sys.platform.startswith('win'):
     if tf_dir_bin is not None:
         if sys.version_info >= (3, 8):
             os.add_dll_directory(tf_dir_bin)
+            os.add_dll_directory(antimony_dir_bin)
+            os.add_dll_directory(roadrunner_dir_bin)
         else:
             try:
                 env_str = os.environ['PATH']
@@ -39,5 +47,11 @@ if sys.platform.startswith('win'):
                 env_str = ''
             env_str_list = env_str.split(';')
 
+            _paths_to_add = []
             if tf_dir_bin not in env_str_list:
-                os.environ['PATH'] = ';'.join([tf_dir_bin] + env_str_list)
+                _paths_to_add.append(tf_dir_bin)
+            if antimony_dir_bin not in env_str_list:
+                _paths_to_add.append(antimony_dir_bin)
+            if roadrunner_dir_bin not in env_str_list:
+                _paths_to_add.append(roadrunner_dir_bin)
+            os.environ['PATH'] = ';'.join(_paths_to_add + env_str_list)
