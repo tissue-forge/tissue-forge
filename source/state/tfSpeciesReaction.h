@@ -280,10 +280,10 @@ namespace TissueForge {
              */
             static SpeciesReaction fromString(const std::string &str);
 
-            friend HRESULT io::toFile(const SpeciesReaction &dataElement, const io::MetaData &metaData, io::IOElement &fileElement);
-            friend HRESULT io::toFile(SpeciesReaction *dataElement, const io::MetaData &metaData, io::IOElement &fileElement);
-            friend HRESULT io::fromFile(const io::IOElement &fileElement, const io::MetaData &metaData, SpeciesReaction *dataElement);
-            friend HRESULT io::fromFile(const io::IOElement &fileElement, const io::MetaData &metaData, SpeciesReaction **dataElement);
+            friend HRESULT io::toFile<SpeciesReaction>(const SpeciesReaction &dataElement, const io::MetaData &metaData, io::IOElement &fileElement);
+            friend HRESULT io::toFile<SpeciesReaction>(SpeciesReaction *dataElement, const io::MetaData &metaData, io::IOElement &fileElement);
+            friend HRESULT io::fromFile<SpeciesReaction>(const io::IOElement &fileElement, const io::MetaData &metaData, SpeciesReaction *dataElement);
+            friend HRESULT io::fromFile<SpeciesReaction*>(const io::IOElement &fileElement, const io::MetaData &metaData, SpeciesReaction **dataElement);
 
         private:
 

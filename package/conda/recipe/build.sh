@@ -145,11 +145,6 @@ if [[ $(uname) == Darwin ]]; then
   fi
 
 else
-  CMAKE_CONFIG_ARGS+=(-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld)
-
-  export CC=${CONDA_PREFIX}/bin/clang
-  export CXX=${CONDA_PREFIX}/bin/clang++
-
   # Helping corrade rc find the right libstdc++
   export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}
 fi

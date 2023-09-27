@@ -37,7 +37,7 @@ requirements:
     - vs2019_win-64<=19.28 # [win]
     - clang=12 # [win]
     - lld # [win]
-    - llvmdev=13 # [osx]
+    - llvmdev=13 # [linux or osx]
     - xorg-libxfixes # [linux]
     - xorg-libxrandr # [linux]
     - xorg-libxcursor # [linux]
@@ -51,9 +51,6 @@ requirements:
     - git
     - ninja
     - swig>=4
-    - clang=12 # [linux]
-    - clangxx=12 # [linux]
-    - lld # [linux]
     - libcxx=15 # [osx]
     - {{ compiler('c') }} # [linux or osx]
     - {{ compiler('cxx') }} # [linux or osx]
@@ -74,7 +71,7 @@ requirements:
     - eigen
     - glfw
     - pthreads-win32 # [win]
-    - llvmdev=13 # [osx]
+    - llvmdev=13 # [linux or osx]
 
 test:
   imports:

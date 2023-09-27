@@ -352,7 +352,7 @@ list(APPEND CMAKE_PREFIX_PATH
   "${ROADRUNNER_INSTALL_PREFIX}/lib/cmake/Poco" 
 )
 list(APPEND CMAKE_MODULE_PATH "${ROADRUNNER_INSTALL_PREFIX}/lib/cmake")
-include(ImportRoadRunnerAndDependencies)
+include(ImportRoadrunnerAndDependencies)
 
 # Get antimony
 

@@ -160,8 +160,8 @@ namespace TissueForge {
              */
             static SpeciesList *fromString(const std::string &str);
 
-            friend HRESULT io::toFile(const SpeciesList &dataElement, const io::MetaData &metaData, io::IOElement &fileElement);
-            friend HRESULT io::fromFile(const io::IOElement &fileElement, const io::MetaData &metaData, SpeciesList *dataElement);
+            friend HRESULT io::toFile<SpeciesList>(const SpeciesList &dataElement, const io::MetaData &metaData, io::IOElement &fileElement);
+            friend HRESULT io::fromFile<SpeciesList>(const io::IOElement &fileElement, const io::MetaData &metaData, SpeciesList *dataElement);
             
         private:
             
