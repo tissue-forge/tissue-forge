@@ -30,14 +30,4 @@ if tf_dir_bin_rel is not None:
 
 if sys.platform.startswith('win'):
     if tf_dir_bin is not None:
-        if sys.version_info >= (3, 8):
-            os.add_dll_directory(tf_dir_bin)
-        else:
-            try:
-                env_str = os.environ['PATH']
-            except KeyError:
-                env_str = ''
-            env_str_list = env_str.split(';')
-
-            if tf_dir_bin not in env_str_list:
-                os.environ['PATH'] = ';'.join([tf_dir_bin] + env_str_list)
+        os.add_dll_directory(tf_dir_bin)

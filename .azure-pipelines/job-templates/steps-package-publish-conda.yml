@@ -9,7 +9,7 @@ parameters:
   type: string
 - name: py_versions
   type: object
-  default: ['py37', 'py38', 'py39']
+  default: ['py38', 'py39', 'py310', 'py311']
 
 steps:
 - ${{ each val in parameters.py_versions }}:
