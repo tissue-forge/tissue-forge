@@ -164,7 +164,7 @@ namespace TissueForge {
 	typedef struct CAPI_EXPORT engine {
 
 		/** Some flags controlling how this engine works. */
-		unsigned int flags;
+		unsigned int flags = 0;
 
 		/**
 		 * Internal flags related to multi-step integrators,

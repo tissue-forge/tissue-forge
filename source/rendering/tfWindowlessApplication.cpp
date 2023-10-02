@@ -46,7 +46,7 @@ namespace {
        */
       struct PrivateAccessTag8 {};
       /* Explicit instantiation */
-      template struct private_access<__decltype(&Magnum::Platform::WindowlessApplication::_context), &Magnum::Platform::WindowlessApplication::_context,
+      template struct private_access<decltype(&Magnum::Platform::WindowlessApplication::_context), &Magnum::Platform::WindowlessApplication::_context,
                                      PrivateAccessTag8>;
       /* We can build the PtrType only with two aliases */
       /* E.g. using PtrType = int(int) *; would be illformed */

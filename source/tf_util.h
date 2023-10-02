@@ -426,10 +426,12 @@ namespace TissueForge {
                     : "0" (*eax), "2" (*ecx));
 
         #else
-            /*on 32bit, ebx can NOT be used as PIC code*/
-            asm volatile ("xchgl %%ebx, %1; cpuid; xchgl %%ebx, %1"
-                    : "=a" (*eax), "=r" (*ebx), "=c" (*ecx), "=d" (*edx)
-                    : "0" (*eax), "2" (*ecx));
+            int regs[] = {*eax, *ebx, *ecx, *edx};
+            __cpuid(regs, *eax);
+            *eax = regs[0];
+            *ebx = regs[1];
+            *ecx = regs[2];
+            *edx = regs[3];
         #endif
         }
 

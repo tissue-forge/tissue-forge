@@ -460,7 +460,7 @@ FPTYPE potential_create_cosine_dihedral_delta;
 
 /* the potential functions */
 FPTYPE potential_create_cosine_dihedral_f(FPTYPE r) {
-	FPTYPE T[potential_create_cosine_dihedral_n+1], U[potential_create_cosine_dihedral_n+1];
+	std::vector<FPTYPE> T(potential_create_cosine_dihedral_n+1, FPTYPE_ZERO), U(potential_create_cosine_dihedral_n+1, FPTYPE_ZERO);
 	FPTYPE cosd = cos(potential_create_cosine_dihedral_delta), sind = sin(potential_create_cosine_dihedral_delta);
 	int k;
 	T[0] = 1.0; T[1] = r;
@@ -480,7 +480,7 @@ FPTYPE potential_create_cosine_dihedral_f(FPTYPE r) {
 }
 
 FPTYPE potential_create_cosine_dihedral_dfdr(FPTYPE r) {
-	FPTYPE T[potential_create_cosine_dihedral_n+1], U[potential_create_cosine_dihedral_n+1];
+	std::vector<FPTYPE> T(potential_create_cosine_dihedral_n+1, FPTYPE_ZERO), U(potential_create_cosine_dihedral_n+1, FPTYPE_ZERO);
 	FPTYPE cosd = cos(potential_create_cosine_dihedral_delta), sind = sin(potential_create_cosine_dihedral_delta);
 	int k;
 	T[0] = 1.0; T[1] = r;
@@ -1650,9 +1650,10 @@ HRESULT TissueForge::potential_init (struct Potential *p,
 int potential_getfp(FPTYPE (*f)(FPTYPE), int n, FPTYPE *x, FPTYPE *fp) {
 
 	int i, k;
-	FPTYPE m, h, eff, fx[n+1], hx[n];
-	FPTYPE d0[n+1], d1[n+1], d2[n+1], b[n+1];
-	FPTYPE viwl1[n], viwr1[n];
+	FPTYPE m, h, eff;
+	std::vector<FPTYPE> fx(n+1, FPTYPE_ZERO), hx(n, FPTYPE_ZERO);
+	std::vector<FPTYPE> d0(n+1, FPTYPE_ZERO), d1(n+1, FPTYPE_ZERO), d2(n+1, FPTYPE_ZERO), b(n+1, FPTYPE_ZERO);
+	std::vector<FPTYPE> viwl1(n, FPTYPE_ZERO), viwr1(n, FPTYPE_ZERO);
 	static FPTYPE *w = NULL, *xi = NULL;
 
 	/* Cardinal functions. */
@@ -1733,9 +1734,10 @@ int potential_getfp(FPTYPE (*f)(FPTYPE), int n, FPTYPE *x, FPTYPE *fp) {
 int potential_getfp_fixend(FPTYPE (*f)(FPTYPE), FPTYPE fpa, FPTYPE fpb, int n, FPTYPE *x, FPTYPE *fp) {
 
 	int i, k;
-	FPTYPE m, h, eff, fx[n+1], hx[n];
-	FPTYPE d0[n+1], d1[n+1], d2[n+1], b[n+1];
-	FPTYPE viwl1[n], viwr1[n];
+	FPTYPE m, h, eff;
+	std::vector<FPTYPE> fx(n+1, FPTYPE_ZERO), hx(n, FPTYPE_ZERO);
+	std::vector<FPTYPE> d0(n+1, FPTYPE_ZERO), d1(n+1, FPTYPE_ZERO), d2(n+1, FPTYPE_ZERO), b(n+1, FPTYPE_ZERO);
+	std::vector<FPTYPE> viwl1(n, FPTYPE_ZERO), viwr1(n, FPTYPE_ZERO);
 	static FPTYPE *w = NULL, *xi = NULL;
 
 	/* Cardinal functions. */
@@ -1839,7 +1841,8 @@ HRESULT TissueForge::potential_getcoeffs(FPTYPE (*f)(FPTYPE), FPTYPE (*fp)(FPTYP
 	// TODO, seriously buggy shit here!
 	// make sure all arrays are of length n+1
 	int i, j, k, ind;
-	FPTYPE phi[7], cee[6], fa, fb, dfa, dfb, fix[n+1], fpx[n+1];
+	FPTYPE phi[7], cee[6], fa, fb, dfa, dfb;
+	std::vector<FPTYPE> fix(n+1, FPTYPE_ZERO), fpx(n+1, FPTYPE_ZERO);
 	FPTYPE h, m, w, e, err_loc, maxf, x;
 	FPTYPE fx[potential_N];
 	static FPTYPE *coskx = NULL;
@@ -1865,11 +1868,11 @@ HRESULT TissueForge::potential_getcoeffs(FPTYPE (*f)(FPTYPE), FPTYPE (*fp)(FPTYP
 
 	/* Compute the optimal fpx. */
 	if(fp == NULL) {
-		if(potential_getfp(f, n, xi, fpx) != S_OK)
+		if(potential_getfp(f, n, xi, fpx.data()) != S_OK)
 			return error(MDCERR_potential);
 	}
 	else {
-		if(potential_getfp_fixend(f, fp(xi[0]), fp(xi[n]), n, xi, fpx) != S_OK)
+		if(potential_getfp_fixend(f, fp(xi[0]), fp(xi[n]), n, xi, fpx.data()) != S_OK)
 			return error(MDCERR_potential);
 	}
 	/* for(k = 0 ; k <= n ; k++)

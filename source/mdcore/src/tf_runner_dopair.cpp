@@ -69,7 +69,7 @@ extern unsigned int runner_rcount;
 static std::mutex _mutexPrint;
 
 
-__attribute__ ((flatten)) HRESULT TissueForge::runner_dopair(struct runner *r,
+TF_FLATTEN HRESULT TissueForge::runner_dopair(struct runner *r,
         struct space_cell *cell_i, struct space_cell *cell_j,
         int sid) {
 
@@ -331,7 +331,7 @@ __attribute__ ((flatten)) HRESULT TissueForge::runner_dopair(struct runner *r,
     return S_OK;
 }
 
-__attribute__ ((flatten)) HRESULT TissueForge::runner_dopair_fluxonly(struct runner *r,
+TF_FLATTEN HRESULT TissueForge::runner_dopair_fluxonly(struct runner *r,
         struct space_cell *cell_i, struct space_cell *cell_j,
         int sid) {
 
@@ -511,7 +511,7 @@ static inline HRESULT particle_largecell_force(Particle *p, struct space_cell *c
     return S_OK;
 }
 
-__attribute__ ((flatten)) HRESULT TissueForge::runner_doself(struct runner *r, struct space_cell *c) {
+TF_FLATTEN HRESULT TissueForge::runner_doself(struct runner *r, struct space_cell *c) {
 
     struct Particle *part_i, *part_j;
     struct space *s;
@@ -757,7 +757,7 @@ __attribute__ ((flatten)) HRESULT TissueForge::runner_doself(struct runner *r, s
     return S_OK;
 }
 
-__attribute__ ((flatten)) HRESULT TissueForge::runner_doself_fluxonly(struct runner *r, struct space_cell *c) {
+TF_FLATTEN HRESULT TissueForge::runner_doself_fluxonly(struct runner *r, struct space_cell *c) {
 
     struct Particle *part_i, *part_j;
     struct space *s;

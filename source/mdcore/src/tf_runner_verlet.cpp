@@ -76,7 +76,7 @@ using namespace TissueForge;
 extern unsigned int runner_rcount;
 
 
-__attribute__ ((flatten)) HRESULT TissueForge::runner_verlet_eval(struct runner *r, struct space_cell *c, FPTYPE *f_out) {
+TF_FLATTEN HRESULT TissueForge::runner_verlet_eval(struct runner *r, struct space_cell *c, FPTYPE *f_out) {
 
     struct space *s;
     struct Particle *part_i, *part_j;
@@ -250,7 +250,7 @@ __attribute__ ((flatten)) HRESULT TissueForge::runner_verlet_eval(struct runner 
 
 }
 
-__attribute__ ((flatten)) HRESULT TissueForge::runner_verlet_fill(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, FPTYPE *pshift) {
+TF_FLATTEN HRESULT TissueForge::runner_verlet_fill(struct runner *r, struct space_cell *cell_i, struct space_cell *cell_j, FPTYPE *pshift) {
 
     struct Particle *part_i, *part_j;
     struct space *s;
