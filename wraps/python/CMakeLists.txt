@@ -39,6 +39,10 @@ if(TF_APPLE)
   list(APPEND SWIG_COMPILEDEFS_PY CORRADE_TARGET_APPLE)
 endif()
 
+if(MSVC)
+  add_definitions(/bigobj)
+endif()
+
 set(TissueForge_py_LIBS
   mdcore
 
@@ -52,7 +56,6 @@ set(TissueForge_py_LIBS
   Magnum::SceneGraph
   Magnum::Primitives
   Magnum::MeshTools
-  LibSBML::LibSBML
   MagnumPlugins::StbImageConverter
   TgaImageConverter
   assimp::assimp

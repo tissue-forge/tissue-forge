@@ -43,9 +43,7 @@
 using namespace TissueForge;
 
 
-Universe TissueForge::_Universe = {
-    .isRunning = false
-};
+Universe TissueForge::_Universe;
 
 Universe *TissueForge::getUniverse() {
     return &_Universe;
@@ -54,9 +52,7 @@ Universe *TissueForge::getUniverse() {
 // the single static engine instance per process
 
 // make the global engine to show up here
-engine TissueForge::_Engine = {
-        .flags = 0
-};
+engine TissueForge::_Engine;
 
 // default to paused universe
 static uint32_t universe_flags = 0;

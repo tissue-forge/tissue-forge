@@ -221,6 +221,11 @@ set(
   types/tfVector4.h
 )
 
+if(MSVC) 
+  # Note to refactor tf_metrics.cpp
+  set_source_files_properties(tf_metrics.cpp PROPERTIES COMPILE_OPTIONS "/bigobj")
+endif()
+
 # Python source
 
 if(TF_WITH_PYTHON)

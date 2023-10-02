@@ -79,7 +79,7 @@ namespace TissueForge {
          */
         static FloatP_t volume();
 
-        bool isRunning;
+        bool isRunning = false;
 
         event::EventBaseList *events;
 

@@ -16,8 +16,6 @@ cmake -DCMAKE_BUILD_TYPE:STRING=%TFBUILD_CONFIG% ^
       -G "Ninja" ^
       -DCMAKE_PREFIX_PATH:PATH="%TFENV%;%TFINSTALLDIR%;%TFINSTALLDIR%/lib" ^
       -DCMAKE_FIND_ROOT_PATH:PATH=%TFENV%\Library ^
-      -DCMAKE_C_COMPILER:PATH=%TFENV%\Library\bin\clang-cl.exe ^
-      -DCMAKE_CXX_COMPILER:PATH=%TFENV%\Library\bin\clang-cl.exe ^
       -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld ^
       -DPython_EXECUTABLE:PATH=%TFENV%\python.exe ^
       -S . ^
