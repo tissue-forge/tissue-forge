@@ -24,7 +24,7 @@ parameters:
   default: [8, 9, 10, 11]
 - name: py_minor_versions_osx
   type: object
-  default: [8, 9, 10, 11]
+  default: [8, 9, 10]
 
 stages:
 
