@@ -117,7 +117,6 @@ set(TF_RESOURCE_DIR resources/TissueForge)
 set(TF_SHARE_DIR share/cmake/TissueForge)
 
 if(TF_HAVECUDA)
-  enable_language(CUDA)
   set(TF_CUDA_DIR ${TF_RESOURCE_DIR}/cuda)
   set(TF_CUDA_INCLUDE_DIR ${CUDAToolkit_INCLUDE_DIRS})
   option(TF_WITHCUDA             "Enable GPU-accelerated calculations using CUDA" OFF)
@@ -125,6 +124,10 @@ if(TF_HAVECUDA)
   if(DEFINED ENV{TF_WITHCUDA})
     set(TF_WITHCUDA ON)
   endif()
+endif()
+
+if(TF_WITHCUDA)
+  enable_language(CUDA)
 endif()
 
 find_package(glfw3 REQUIRED)

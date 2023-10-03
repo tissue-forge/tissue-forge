@@ -13,9 +13,6 @@ mkdir -p -v ${TFINSTALLDIR}
 
 cd ${TFBUILDDIR}
 
-export CC=${TFENV}/bin/clang
-export CXX=${TFENV}/bin/clang++
-
 cmake -DCMAKE_BUILD_TYPE:STRING=${TFBUILD_CONFIG} \
       -G "Ninja" \
       -DCMAKE_PREFIX_PATH:PATH=${TFENV} \
