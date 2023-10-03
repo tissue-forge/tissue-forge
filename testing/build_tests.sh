@@ -25,9 +25,6 @@ if [[ $(uname) == Darwin ]]; then
     export MACOSX_DEPLOYMENT_TARGET=${TFOSX_SYSROOT}
 else
     CMAKE_CONFIG_ARGS+=(-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld)
-
-    export CC=${TFENV}/bin/clang
-    export CXX=${TFENV}/bin/clang++
 fi
 
 cd ${this_dir}
