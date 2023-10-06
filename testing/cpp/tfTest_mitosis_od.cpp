@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -57,7 +56,7 @@ int main(int argc, char const *argv[])
     Simulator::Config config;
     config.universeConfig.dim = {20., 20., 20.};
     config.setWindowless(true);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     FloatP_t pot_d = 0.1;
     FloatP_t pot_a = 6.0;

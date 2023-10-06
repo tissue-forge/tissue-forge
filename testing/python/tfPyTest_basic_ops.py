@@ -19,7 +19,7 @@
 
 import tissue_forge as tf
 
-tf.init()
+tf.init(windowless=True)
 
 # Make some test particle types
 print('Test particle types:')

@@ -144,6 +144,12 @@
   #define TF_ALIGNED(RTYPE, VAL) RTYPE
 #endif
 
+#if __has_attribute(flatten)
+#  define TF_FLATTEN __attribute__((flatten))
+#else
+#  define TF_FLATTEN [[msvc::flatten]]
+#endif
+
 /* Declarations for symbol visibility.
 
   CAPI_FUNC(TYPE): Declares a public Tissue Forge C API function and return type

@@ -28,6 +28,7 @@
 #include <tfParticleList.h>
 #include <tfParticleTypeList.h>
 #include <state/tfSpeciesList.h>
+#include <rendering/tfColorMapper.h>
 #include <rendering/tfStyle.h>
 #include <tfEngine.h>
 
@@ -77,6 +78,19 @@ namespace TissueForge {
     TFC_PTRCHECK(ptlist);
 
 
+//////////////////////////////
+// tfMappedParticleDataEnum //
+//////////////////////////////
+
+
+struct tfMappedParticleDataEnum tfMappedParticleDataEnum_init() {
+    struct tfMappedParticleDataEnum mappedParticleDataEnum = {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    };
+    return mappedParticleDataEnum;
+}
+
+
 ////////////////////////
 // tfParticleTypeSpec //
 ////////////////////////
@@ -115,7 +129,8 @@ struct tfParticleTypeStyleSpec tfParticleTypeStyleSpec_init() {
         NULL, 
         "rainbow", 
         0.0, 
-        1.0
+        1.0,
+        tfMappedParticleDataEnum_init().MAPPEDPARTICLEDATA_NONE
     };
     return particleTypeStyleSpec;
 }
@@ -633,9 +648,47 @@ HRESULT tfParticleType_initD(struct tfParticleTypeHandle *handle, struct tfParti
     if(pdef.style) {
         if(pdef.style->color) 
             ptype->style->setColor(pdef.style->color);
-        else if(pdef.style->speciesName) 
-            ptype->style->newColorMapper(ptype, pdef.style->speciesName, pdef.style->speciesMapName, pdef.style->speciesMapMin, pdef.style->speciesMapMax);
         ptype->style->setVisible(pdef.style->visible);
+
+        tfMappedParticleDataEnum mappedParticleData = tfMappedParticleDataEnum_init();
+        if(pdef.style->mappedParticleData != mappedParticleData.MAPPEDPARTICLEDATA_NONE) {
+            ptype->style->mapper = new rendering::ColorMapper();
+            if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_POSITION_X) {
+                ptype->style->mapper->setMapParticlePositionX();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_POSITION_Y) {
+                ptype->style->mapper->setMapParticlePositionY();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_POSITION_Z) {
+                ptype->style->mapper->setMapParticlePositionZ();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_X) {
+                ptype->style->mapper->setMapParticleVelocityX();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_Y) {
+                ptype->style->mapper->setMapParticleVelocityY();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_Z) {
+                ptype->style->mapper->setMapParticleVelocityZ();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_SPEED) {
+                ptype->style->mapper->setMapParticleSpeed();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_SPECIES) {
+                if(pdef.style->speciesName) {
+                    ptype->style->mapper->setMapParticleSpecies(ptype, pdef.style->speciesName);
+                }
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_FORCE_X) {
+                ptype->style->mapper->setMapParticleForceX();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_FORCE_Y) {
+                ptype->style->mapper->setMapParticleForceY();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_FORCE_Z) {
+                ptype->style->mapper->setMapParticleForceZ();
+            }
+        }
     }
 
     return S_OK;

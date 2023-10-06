@@ -43,7 +43,7 @@
 #endif
 
 /* Include local headers */
-#include <cycle.h>
+#include <tf_cycle.h>
 #include <tf_errs.h>
 #include <tf_fptype.h>
 #include <tf_lock.h>
@@ -207,7 +207,8 @@ HRESULT TissueForge::runner_run(struct runner *r) {
     struct space *s = &e->s;
     int k, err = 0, acc = 0, naq, qid, myqid = e->nr_queues * r->id / e->nr_runners;
     struct task *t = NULL;
-    struct queue *myq = &e->queues[ myqid ], *queues[ e->nr_queues ];
+    struct queue *myq = &e->queues[ myqid ];
+    std::vector<queue*> queues(e->nr_queues, 0);
     //unsigned int myseed = rand() + r->id;
     int count;
 
@@ -349,7 +350,7 @@ HRESULT TissueForge::runner_run(struct runner *r) {
 
             /* Unlock any dependent tasks. */
             for(k = 0 ; k < t->nr_unlock ; k++)
-                __sync_fetch_and_sub(&t->unlock[k]->wait, 1);
+                sync_fetch_and_sub(&t->unlock[k]->wait, 1);
 
             /* Bing! */
             if(pthread_mutex_lock(&s->tasks_mutex) != 0)

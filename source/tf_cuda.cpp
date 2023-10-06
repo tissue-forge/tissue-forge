@@ -474,7 +474,7 @@ cuda::CUDAContext *cuda::CUDADevice::currentContext() {
 std::string cuda::CUDADevice::getDeviceName(const int &deviceId) {
     cuda::CUDADevice::validateDeviceId(deviceId);
 
-    size_t nameLen = 256;
+    const size_t nameLen = 256;
     char name[nameLen];
     TF_CUDA_CALL(cuDeviceGetName(name, nameLen, deviceId));
     return std::string(name);

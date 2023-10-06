@@ -32,6 +32,25 @@
 #include "tfCSpecies.h"
 
 /**
+ * @brief Mapped particle data enums
+ * 
+*/
+struct CAPI_EXPORT tfMappedParticleDataEnum {
+    int MAPPEDPARTICLEDATA_NONE;
+    int MAPPEDPARTICLEDATA_POSITION_X;
+    int MAPPEDPARTICLEDATA_POSITION_Y;
+    int MAPPEDPARTICLEDATA_POSITION_Z;
+    int MAPPEDPARTICLEDATA_VELOCITY_X;
+    int MAPPEDPARTICLEDATA_VELOCITY_Y;
+    int MAPPEDPARTICLEDATA_VELOCITY_Z;
+    int MAPPEDPARTICLEDATA_VELOCITY_SPEED;
+    int MAPPEDPARTICLEDATA_SPECIES;
+    int MAPPEDPARTICLEDATA_FORCE_X;
+    int MAPPEDPARTICLEDATA_FORCE_Y;
+    int MAPPEDPARTICLEDATA_FORCE_Z;
+};
+
+/**
  * @brief Particle type style definition in Tissue Forge C
  * 
  */
@@ -39,9 +58,10 @@ struct CAPI_EXPORT tfParticleTypeStyleSpec {
     char *color;
     unsigned int visible;
     char *speciesName;
-    char *speciesMapName;
-    tfFloatP_t speciesMapMin;
-    tfFloatP_t speciesMapMax;
+    char *mapName;
+    tfFloatP_t mapMin;
+    tfFloatP_t mapMax;
+    int mappedParticleData;
 };
 
 /**
@@ -115,6 +135,17 @@ struct CAPI_EXPORT tfParticleListHandle {
 struct CAPI_EXPORT tfParticleTypeListHandle {
     void *tfObj;
 };
+
+
+//////////////////////////////
+// tfMappedParticleDataEnum //
+//////////////////////////////
+
+
+/**
+ * @brief Initialize an instance
+*/
+CAPI_FUNC(struct tfMappedParticleDataEnum) tfMappedParticleDataEnum_init();
 
 
 ////////////////////////

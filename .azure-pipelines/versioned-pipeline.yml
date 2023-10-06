@@ -11,20 +11,20 @@ pr:
     - main
 
 variables:
-  tf_version: '0.1.1'
+  tf_version: '0.2.0'
   tf_buildnum: 0
   tf_buildqual: 'release'
 
 parameters:
 - name: py_minor_versions_win
   type: object
-  default: [7, 8]
+  default: [8, 9, 10, 11]
 - name: py_minor_versions_linux
   type: object
-  default: [7, 8]
+  default: [8, 9, 10, 11]
 - name: py_minor_versions_osx
   type: object
-  default: [7, 8]
+  default: [8, 9, 10]
 
 stages:
 

@@ -1,5 +1,7 @@
 /*******************************************************************************
- * This file is part of Tissue Forge.
+ * This file is part of mdcore.
+ * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
+ * Coypright (c) 2017 Andy Somogyi (somogyie at indiana dot edu)
  * Copyright (c) 2022, 2023 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,23 +19,20 @@
  * 
  ******************************************************************************/
 
-#ifndef _TESTING_CPP_TFTEST_H_
-#define _TESTING_CPP_TFTEST_H_
+/**
+ * @file tf_cycle.h
+ * 
+ */
 
-#include <tf_port.h>
+#ifndef _MDCORE_INCLUDE_TF_CYCLE_H_
+#define _MDCORE_INCLUDE_TF_CYCLE_H_
 
-#include <TissueForge.h>
-#include <tfLogger.h>
+#if defined(TF_APPLE) && defined(__arm64__) && !defined(HAVE_TICK_COUNTER)
+typedef unsigned long long ticks;
+#define getticks() clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW)
+#define HAVE_TICK_COUNTER
+#endif
 
-#define TF_TEST_REPORTERR() { std::cerr << "Error: " << __LINE__ << ", " << TF_FUNCTION << ", " << __FILE__ << std::endl; }
-#define TF_TEST_CHECK(code) { if((code) != S_OK) { TF_TEST_REPORTERR(); return E_FAIL; } }
+#include "cycle.h"
 
-
-HRESULT tfTest_init(TissueForge::Simulator::Config &conf) {
-    #ifdef TFTEST_LOG
-    TissueForge::Logger::enableConsoleLogging(TissueForge::LogLevel::LOG_DEBUG);
-    #endif
-    return TissueForge::init(conf);
-}
-
-#endif // _TESTING_CPP_TFTEST_H_
+#endif

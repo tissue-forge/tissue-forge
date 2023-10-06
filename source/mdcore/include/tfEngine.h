@@ -30,7 +30,7 @@
 #include "tf_platform.h"
 #include <pthread.h>
 #include "tfSpace.h"
-#include "cycle.h"
+#include "tf_cycle.h"
 #include "tfBoundaryConditions.h"
 #include <tfSubEngine.h>
 #include <mutex>
@@ -164,7 +164,7 @@ namespace TissueForge {
 	typedef struct CAPI_EXPORT engine {
 
 		/** Some flags controlling how this engine works. */
-		unsigned int flags;
+		unsigned int flags = 0;
 
 		/**
 		 * Internal flags related to multi-step integrators,

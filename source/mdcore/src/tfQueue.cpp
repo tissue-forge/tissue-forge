@@ -35,7 +35,7 @@
 #endif
 
 /* Include local headers */
-#include <cycle.h>
+#include <tf_cycle.h>
 #include <tf_errs.h>
 #include <tf_fptype.h>
 #include <tf_lock.h>
@@ -106,8 +106,8 @@ struct task *TissueForge::queue_get(struct queue *q, int rid, int keep) {
         /* Is this pair ok? */
         if(t->type == task_type_pair) {
             if(rid & 1) {
-                if(__sync_val_compare_and_swap(&cells_taboo[ t->i ], 0, 1) == 0) {
-                    if(__sync_val_compare_and_swap(&cells_taboo[ t->j ], 0, 1) == 0) {
+                if(sync_val_compare_and_swap(&cells_taboo[ t->i ], 0, 1) == 0) {
+                    if(sync_val_compare_and_swap(&cells_taboo[ t->j ], 0, 1) == 0) {
                         if(ind_best >= 0) {
                             t = &q->tasks[ q->ind[ ind_best ] ];
                             if(t->type == task_type_self || t->type == task_type_sort)
@@ -125,8 +125,8 @@ struct task *TissueForge::queue_get(struct queue *q, int rid, int keep) {
                 }
             }
             else {
-                if(__sync_val_compare_and_swap(&cells_taboo[ t->j ], 0, 1) == 0) {
-                    if(__sync_val_compare_and_swap(&cells_taboo[ t->i ], 0, 1) == 0) {
+                if(sync_val_compare_and_swap(&cells_taboo[ t->j ], 0, 1) == 0) {
+                    if(sync_val_compare_and_swap(&cells_taboo[ t->i ], 0, 1) == 0) {
                         if(ind_best >= 0) {
                             t = &q->tasks[ q->ind[ ind_best ] ];
                             if(t->type == task_type_self || t->type == task_type_sort)
@@ -145,7 +145,7 @@ struct task *TissueForge::queue_get(struct queue *q, int rid, int keep) {
             }
         }
         else if(t->type == task_type_sort || t->type == task_type_self) {
-            if(__sync_val_compare_and_swap(&cells_taboo[ t->i ], 0, 1) == 0) {
+            if(sync_val_compare_and_swap(&cells_taboo[ t->i ], 0, 1) == 0) {
                 if(ind_best >= 0) {
                     t = &q->tasks[ q->ind[ ind_best ] ];
                     if(t->type == task_type_self || t->type == task_type_sort)

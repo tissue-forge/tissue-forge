@@ -44,13 +44,46 @@ HRESULT rendering::Style::setFlag(StyleFlags flag, bool value) {
 }
 
 fVector4 rendering::Style::map_color(struct Particle *p) {
-    if(mapper_func) {
-        return mapper_func(mapper, p);
+    if(!getVisible()) {
+        return fVector4{color, 0};
+    }
+    else if(mapper && mapper->hasMapParticle()) {
+        return mapper->mapObj(p);
     }
     return fVector4{color, 1};
 };
 
-rendering::Style::Style(const fVector3 *color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) : mapper_func(NULL) {
+fVector4 rendering::Style::map_color(struct Angle* a) {
+    if(!getVisible()) {
+        return fVector4{color, 0};
+    }
+    else if(mapper && mapper->hasMapAngle()) {
+        return mapper->mapObj(a);
+    }
+    return fVector4(color, 1);
+}
+
+fVector4 rendering::Style::map_color(struct Bond* b) {
+    if(!getVisible()) {
+        return fVector4{color, 0};
+    }
+    else if(mapper && mapper->hasMapBond()) {
+        return mapper->mapObj(b);
+    }
+    return fVector4(color, 1);
+}
+
+fVector4 rendering::Style::map_color(struct Dihedral* d) {
+    if(!getVisible()) {
+        return fVector4{color, 0};
+    }
+    else if(mapper && mapper->hasMapDihedral()) {
+        return mapper->mapObj(d);
+    }
+    return fVector4(color, 1);
+}
+
+rendering::Style::Style(const fVector3 *color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) {
     init(color, visible, flags, cmap);
 }
 
@@ -84,31 +117,19 @@ rendering::ColorMapper *rendering::Style::getColorMapper() const {
 void rendering::Style::setColorMap(const std::string &colorMap) {
     if(mapper) {
         mapper->set_colormap(colorMap);
-        mapper_func = mapper->map;
     }
 }
 
 void rendering::Style::setColorMapper(rendering::ColorMapper *cmap) {
     if(cmap) {
         this->mapper = cmap;
-        this->mapper_func = this->mapper->map;
     }
-}
-
-void rendering::Style::newColorMapper(
-    struct ParticleType *partType,
-    const std::string &speciesName, 
-    const std::string &name, 
-    float min, 
-    float max) 
-{
-    setColorMapper(new rendering::ColorMapper(partType, speciesName, name, min, max));
 }
 
 int rendering::Style::init(const fVector3 *color, const bool &visible, uint32_t flags, rendering::ColorMapper *cmap) {
     this->flags = flags;
 
-    this->color = color ? *color : fVector3(util::Color3_Parse("steelblue"));
+    this->color = color ? fVector3(*color) : fVector3(util::Color3_Parse("steelblue"));
 
     setVisible(visible);
     setColorMapper(cmap);

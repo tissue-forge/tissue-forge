@@ -39,7 +39,7 @@
 #endif
 
 /* Include local headers */
-#include <cycle.h>
+#include <tf_cycle.h>
 #include <tf_errs.h>
 #include <tf_fptype.h>
 #include <tf_lock.h>
@@ -341,7 +341,7 @@ HRESULT TissueForge::rigid_eval_pshake(struct rigid *rs, int N, struct engine *e
         if(nr_constr > 1 &&(a_update || iter > rigid_pshake_refine)) {
         
             /* Some strictly local stuff. */
-            FPTYPE a_new[ nr_constr * nr_constr ], tmp[ nr_constr * nr_constr ];
+            std::vector<FPTYPE> a_new(nr_constr * nr_constr, FPTYPE_ZERO), tmp(nr_constr * nr_constr, FPTYPE_ZERO);
             FPTYPE w, dx[3], max_alpha = 0.0f;
                 
             /* Compute the entries of a_new. */
@@ -379,7 +379,7 @@ HRESULT TissueForge::rigid_eval_pshake(struct rigid *rs, int N, struct engine *e
                     for(k = 0 ; k < nr_constr ; k++)
                         tmp[ j*nr_constr + i ] += r->a[ k*nr_constr + i ] * a_new[ j*nr_constr + k ];
                 }
-            memcpy(r->a, tmp, sizeof(FPTYPE) * nr_constr * nr_constr);
+            memcpy(r->a, tmp.data(), sizeof(FPTYPE) * nr_constr * nr_constr);
         
         }
 

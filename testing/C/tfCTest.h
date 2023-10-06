@@ -17,7 +17,6 @@
  * 
  ******************************************************************************/
 
-
 #ifndef _TESTING_C_TFCTEST_H_
 #define _TESTING_C_TFCTEST_H_
 
@@ -32,6 +31,15 @@
 
 #define TFC_TEST_CHECK(x) { if((x) != S_OK) { return E_FAIL; }; }
 
+
+HRESULT tfTest_initC(struct tfSimulatorConfigHandle *conf) {
+    #ifdef TFTEST_LOG
+    struct tfLogLevelHandle logLevel;
+    TFC_TEST_CHECK(tfLogLevel_init(&logLevel));
+    TFC_TEST_CHECK(tfLogger_setLevel(logLevel.LOG_DEBUG));
+    #endif
+    return tfInitC(conf, NULL, 0);
+}
 
 HRESULT tfTest_runQuiet(unsigned int numSteps) {
     tfFloatP_t dt;

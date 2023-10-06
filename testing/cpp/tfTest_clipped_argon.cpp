@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -49,7 +48,7 @@ int main(int argc, char const *argv[])
         planeEquation({-1, 1, -1}, {5, 5, 5})
     };
     config.universeConfig.dim = {10, 10, 10};
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     // create a potential representing a 12-6 Lennard-Jones potential
     // A The first parameter of the Lennard-Jones potential.

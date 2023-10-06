@@ -31,7 +31,7 @@
 #include "tfMeshLogger.h"
 
 #include <tfSubEngine.h>
-#include <cycle.h>
+#include <tf_cycle.h>
 
 
 namespace TissueForge::models::vertex { 

@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -74,7 +73,7 @@ int main(int argc, char const *argv[])
 {
     Simulator::Config config;
     config.setWindowless(true);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     std::cout << "Test particle types:" << std::endl;
 

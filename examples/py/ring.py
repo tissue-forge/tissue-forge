@@ -33,7 +33,7 @@ Bead = BeadType.get()
 # simple harmonic potential to pull particles
 pot = tf.Potential.harmonic(k=1, r0=0.1, max=3)
 
-# make a ring of of 50 particles
+# make a ring of 50 particles
 pts = [p * 5 + tf.Universe.center for p in tf.points(tf.PointsType.Ring.value, 50)]
 
 # constuct a particle for each position, make
@@ -46,5 +46,16 @@ beads = [Bead(p) for p in pts]
 # distance and connects them with a bond.
 tf.bind.bonds(pot, beads, 1)
 
+# Visualize bonds by length scaled to potential cutoff
+cmap = tf.rendering.ColorMapper()
+cmap.min_val = 0
+cmap.max_val = pot.max
+cmap.set_map_bond_length()
+bond_style = tf.rendering.Style(None, True, 0, cmap)
+for b in tf.Universe.bonds:
+    b.style = bond_style
+
 # run the model
+tf.system.camera_view_top()
+tf.system.set_rendering_3d_bonds(True)
 tf.run()

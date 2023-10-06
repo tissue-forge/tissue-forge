@@ -42,7 +42,7 @@
 #endif
 
 /* Include local headers */
-#include <cycle.h>
+#include <tf_cycle.h>
 #include <tf_errs.h>
 #include <tf_fptype.h>
 #include <tf_lock.h>
@@ -61,7 +61,7 @@ using namespace TissueForge;
 extern unsigned int runner_rcount;
 
 
-__attribute__ ((flatten)) HRESULT TissueForge::runner_dosort(struct runner *r, struct space_cell *c, int flags) {
+TF_FLATTEN HRESULT TissueForge::runner_dosort(struct runner *r, struct space_cell *c, int flags) {
 
     struct Particle *p;
     struct space *s;

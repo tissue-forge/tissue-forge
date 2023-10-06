@@ -90,14 +90,13 @@ void rendering::render_plane3d(
     const fVector3 &posi, 
     const fVector3 &posj, 
     const fVector3 &posk, 
-    const rendering::Style &s) 
+    const fVector4 &color) 
 {
     fMatrix4 transformationMatrix = fMatrix4::from(fMatrix3(posk - posj, posi - posj, posk - posj), posj);
     transformationMatrix = transformationMatrix * fMatrix4::translation(fVector3(0.5, 0.5, 0)) * fMatrix4::scaling(fVector3(0.5));
-    const float alpha = s.getVisible() * 0.5;
     planeData[idx].transformationMatrix = transformationMatrix;
     planeData[idx].normalMatrix = transformationMatrix.normalMatrix();
-    planeData[idx].color = {s.color[0], s.color[1], s.color[2], alpha};
+    planeData[idx].color = color;
 }
 
 HRESULT rendering::DihedralRenderer3D::draw(rendering::ArcBallCamera *camera, const iVector2 &viewportSize, const fMatrix4 &modelViewMat) {
@@ -148,35 +147,37 @@ HRESULT rendering::DihedralRenderer3D::draw(rendering::ArcBallCamera *camera, co
                 const fVector3 plpos = pl->global_position();
                 const fVector3 pjkpos = metrics::relativePosition(pjpos, pkpos);
                 const fVector3 pkpos_relj = pjpos - pjkpos;
+                const fVector4 color = bond->style->map_color(bond);
+                const fVector4 color_plane = {color[0], color[1], color[2], 0.5f * color[3]};
 
                 auto _dataPlns = &dataPlns[i * 2];
                 rendering::render_plane3d(_dataPlns, 0, 
                     pipos_relj, 
                     pjpos, 
                     pkpos_relj, 
-                    *bond->style
+                    color_plane
                 );
                 rendering::render_plane3d(_dataPlns, 1,
                     pjpos,
                     pkpos_relj,
                     pjpos + metrics::relativePosition(plpos, pjpos),
-                    *bond->style
+                    color_plane
                 );
                 auto _dataBnds = &dataBnds[i * 3];
                 rendering::render_bond3d(_dataBnds, 0,
                     pipos_relj,
                     pjpos,
-                    *bond->style, radius
+                    color, radius
                 );
                 rendering::render_bond3d(_dataBnds, 1,
                     pkpos + pjkpos,
                     pkpos,
-                    *bond->style, radius
+                    color, radius
                 );
                 rendering::render_bond3d(_dataBnds, 2,
                     pkpos,
                     pkpos + metrics::relativePosition(plpos, pkpos),
-                    *bond->style, radius
+                    color, radius
                 );
                 i++;
             }

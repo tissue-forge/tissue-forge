@@ -109,12 +109,13 @@ for p in p_back:
 
 # Apply fracture criterion to material type
 
+dissociation_energy = 1E-2
 mtl_ids = [p.id for p in mtl_type.parts]
 for p in mtl_type.items():
     for b in p.bonds:
-        p1id, p2id = b.parts
-        if p1id in mtl_ids and p2id in mtl_ids:
-            b.dissociation_energy = 1E-2
+        p1, p2 = b.parts
+        if p1.id in mtl_ids and p2.id in mtl_ids:
+            b.dissociation_energy = dissociation_energy
 
 # Apply force with damping
 
@@ -122,6 +123,18 @@ f_load = tf.CustomForce([0, 2, 0])
 f_friction = tf.Force.friction(coef=1000.0)
 tf.bind.force(f_load + f_friction, loaded_type)
 
+# Visualize local mechanical state
+
+dissociation_rel_length = math.sqrt(dissociation_energy / stiffness)
+cmap = tf.rendering.ColorMapper()
+cmap.min_val = - dissociation_rel_length
+cmap.max_val = dissociation_rel_length
+cmap.set_map_bond_length_eq()
+bond_style = tf.rendering.Style(None, True, 0, cmap)
+for b in tf.Universe.bonds:
+    b.style = bond_style
+
 tf.system.camera_view_top()
+tf.system.set_rendering_3d_bonds(True)
 
 tf.show()

@@ -18,7 +18,50 @@
 # ******************************************************************************
 
 from . import tissue_forge as tf
+from . import rendering
 from . import state
+
+
+def _colormap_from_dict(d: dict, type_instance):
+    args = ['Rainbow', 0.0, 1.0]
+    if 'map' in d.keys():
+        args[0] = d['map']
+    if 'range' in d.keys():
+        r = d['range']
+        args[1] = r[0]
+        args[2] = r[1]
+    mapper = rendering.ColorMapper(*args)
+
+    if 'position' in d.keys():
+        if d['position'].lower() == 'x':
+            mapper.set_map_particle_position_x()
+        elif d['position'].lower() == 'y':
+            mapper.set_map_particle_position_y()
+        elif d['position'].lower() == 'z':
+            mapper.set_map_particle_position_z()
+
+    elif 'velocity' in d.keys():
+        if d['velocity'].lower() == 'x':
+            mapper.set_map_particle_velocity_x()
+        elif d['velocity'].lower() == 'y':
+            mapper.set_map_particle_velocity_y()
+        elif d['velocity'].lower() == 'z':
+            mapper.set_map_particle_velocity_z()
+        elif d['velocity'].lower() == 'speed':
+            mapper.set_map_particle_speed()
+
+    elif 'force' in d.keys():
+        if d['force'].lower() == 'x':
+            mapper.set_map_particle_force_x()
+        elif d['force'].lower() == 'y':
+            mapper.set_map_particle_force_y()
+        elif d['force'].lower() == 'z':
+            mapper.set_map_particle_force_z()
+
+    elif 'species' in d.keys():
+        mapper.set_map_particle_species(type_instance, d['species'])
+
+    return mapper
 
 
 class ParticleTypeSpec:
@@ -88,7 +131,15 @@ class ParticleTypeSpec:
     .. code:: python
     
         ptype: ParticleType
-        ptype.style.newColorMapper(partType=ptype, speciesName='S1', name='rainbow', min=0, max=10)
+        ptype.style.mapper = rendering.ColorMapper('rainbow', 0, 10)
+        ptype.style.mapper.set_map_particle_species(ptype, 'S1')
+
+    Valid entries for data mapping are as follows, 
+
+    * 'force': 'x', 'y' or 'z' for x-, y- or z-component of force
+    * 'position': 'x', 'y' or 'z' for x-, y- or z-component of position
+    * 'species': Name of a species attached to a particle type
+    * 'velocity': 'x', 'y', 'z' or 'speed' for x-, y-, z-component or magnitude of velocity
     
     """
 
@@ -156,15 +207,7 @@ class ParticleTypeSpec:
             if 'visible' in cls.style.keys():
                 type_instance.style.setVisible(cls.style['visible'])
             if 'colormap' in cls.style.keys():
-                kwargs = {'partType': type_instance,
-                          'speciesName': cls.style['colormap']['species']}
-                if 'map' in cls.style['colormap'].keys():
-                    kwargs['name'] = cls.style['colormap']['map']
-                if 'range' in cls.style['colormap'].keys():
-                    r = cls.style['colormap']['range']
-                    kwargs['min'] = r[0]
-                    kwargs['max'] = r[1]
-                type_instance.style.newColorMapper(**kwargs)
+                type_instance.style.mapper = _colormap_from_dict(cls.style['colormap'], type_instance)
 
         type_instance.registerType()
         type_instance = type_instance.get()
@@ -229,15 +272,7 @@ class ClusterTypeSpec(ParticleTypeSpec):
             if 'visible' in cls.style.keys():
                 type_instance.style.setVisible(cls.style['visible'])
             if 'colormap' in cls.style.keys():
-                kwargs = {'partType': type_instance,
-                          'speciesName': cls.style['colormap']['species']}
-                if 'map' in cls.style['colormap'].keys():
-                    kwargs['name'] = cls.style['colormap']['map']
-                if 'range' in cls.style['colormap'].keys():
-                    r = cls.style['colormap']['range']
-                    kwargs['min'] = r[0]
-                    kwargs['max'] = r[1]
-                type_instance.style.newColorMapper(**kwargs)
+                type_instance.style.mapper = _colormap_from_dict(cls.style['colormap'], type_instance)
 
         type_instance.registerType()
         type_instance = type_instance.get()

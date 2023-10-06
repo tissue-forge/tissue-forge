@@ -3,6 +3,17 @@
 History
 ========
 
+Version 0.2.0
+-------------
+* Added support for Apple Silicon
+* Added data mapping visualization
+* Improvements to build pipelines
+* Added support for Python 3.10 and 3.11
+* Dropped support for Python 3.7
+* Bug fixes
+
+  * Minor bug fix in cell polarity module
+
 Version 0.1.1
 -------------
 * Improvements to GPU acceleration

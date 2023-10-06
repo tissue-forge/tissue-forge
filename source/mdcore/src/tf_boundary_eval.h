@@ -128,7 +128,7 @@ namespace TissueForge {
         
         if(enforced) {
             for (int k = 0 ; k < 3 ; k++ ) {
-                delta[k] = __builtin_isgreaterequal( p->x[k], h[k] ) - __builtin_isless( p->x[k], 0.0 );
+                delta[k] = std::isgreaterequal( p->x[k], h[k] ) - std::isless( p->x[k], 0.0 );
             }
         }
 

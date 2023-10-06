@@ -1183,9 +1183,11 @@ std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE &dist
 std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE &distance) {
     TF_PARTICLE_SELFW(this, {})
 
+    const FPTYPE _distance = distance > 0 ? distance : _Engine.s.cutoff;
+
     ParticleTypeList typeList;
     for(int i = 0; i < _Engine.nr_types; ++i) typeList.insert(_Engine.types[i].id);
-    return neighborIds(distance, typeList);
+    return neighborIds(_distance, typeList);
 }
 
 std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const ParticleTypeList &types) {
