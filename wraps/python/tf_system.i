@@ -126,6 +126,18 @@
 %rename(_system_add_render_arrow) TissueForge::py::add_render_arrow;
 %rename(_system_remove_render_arrow) TissueForge::py::remove_render_arrow;
 %rename(_system_get_render_arrow) TissueForge::py::get_render_arrow;
+%rename(_system_add_button) TissueForge::py::add_button;
+%rename(_system_show_time) TissueForge::py::show_time;
+%rename(_system_show_particle_number) TissueForge::py::show_particle_number;
+%rename(_system_add_output_int) TissueForge::py::add_output_int;
+%rename(_system_add_output_float) TissueForge::py::add_output_float;
+%rename(_system_add_output_string) TissueForge::py::add_output_string;
+%rename(_system_add_input_int) TissueForge::py::add_input_int;
+%rename(_system_add_input_float) TissueForge::py::add_input_float;
+%rename(_system_add_input_string) TissueForge::py::add_input_string;
+%rename(_system_set_output_int) TissueForge::py::set_output_int;
+%rename(_system_set_output_float) TissueForge::py::set_output_float;
+%rename(_system_set_output_string) TissueForge::py::set_output_string;
 
 
 %include <langs/py/tf_systemPy.h>

@@ -748,6 +748,22 @@ namespace TissueForge::py {
     */
    CPPAPI_FUNC(rendering::ArrowData*) get_render_arrow(const int &arrowId);
 
+   CPPAPI_FUNC(int) add_button(PyObject* cb, const std::string& label);
+   CPPAPI_FUNC(HRESULT) show_time();
+   CPPAPI_FUNC(HRESULT) show_particle_number();
+
+   CPPAPI_FUNC(int) add_output_int(const int& val, const std::string& label);
+   CPPAPI_FUNC(int) add_output_float(const float& val, const std::string& label);
+   CPPAPI_FUNC(int) add_output_string(const std::string& val, const std::string& label);
+
+   CPPAPI_FUNC(int) add_input_int(PyObject* cb, const int& val, const std::string& label);
+   CPPAPI_FUNC(int) add_input_float(PyObject* cb, const float& val, const std::string& label);
+   CPPAPI_FUNC(int) add_input_string(PyObject* cb, const std::string& val, const std::string& label);
+
+   CPPAPI_FUNC(HRESULT) set_output_int(const unsigned int& idx, const int& val);
+   CPPAPI_FUNC(HRESULT) set_output_float(const unsigned int& idx, const float& val);
+   CPPAPI_FUNC(HRESULT) set_output_string(const unsigned int& idx, const std::string& val);
+
 };
 
 #endif // _SOURCE_LANGS_PY_TF_SYSTEMPY_H_

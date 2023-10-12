@@ -23,6 +23,7 @@
 #include <TissueForge_private.h>
 
 #include "tfArcBallCamera.h"
+#include <Magnum/Platform/GlfwApplication.h>
 
 
 namespace TissueForge {
@@ -54,6 +55,14 @@ namespace TissueForge {
              * @return HRESULT 
              */
             virtual HRESULT draw(ArcBallCamera *camera, const iVector2 &viewportSize, const fMatrix4 &modelViewMat) = 0;
+
+            virtual void keyPressEvent(Magnum::Platform::GlfwApplication::KeyEvent& event) {}
+            virtual void keyReleaseEvent(Platform::GlfwApplication::KeyEvent& event) {}
+            virtual void mousePressEvent(Magnum::Platform::GlfwApplication::MouseEvent& event) {}
+            virtual void mouseReleaseEvent(Magnum::Platform::GlfwApplication::MouseEvent& event) {}
+            virtual void mouseMoveEvent(Magnum::Platform::GlfwApplication::MouseMoveEvent& event) {}
+            virtual void mouseScrollEvent(Magnum::Platform::GlfwApplication::MouseScrollEvent& event) {}
+            virtual void textInputEvent(Platform::GlfwApplication::TextInputEvent& event) {}
 
             /**
              * @brief Adds a clip plane equation

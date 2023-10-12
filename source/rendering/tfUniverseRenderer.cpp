@@ -78,6 +78,7 @@
 #include "tfDihedralRenderer.h"
 #include "tfDihedralRenderer3D.h"
 #include "tfOrientationRenderer.h"
+#include "tfWidgetRenderer.h"
 
 #include <tf_util.h>
 #include <tfLogger.h>
@@ -342,7 +343,8 @@ rendering::UniverseRenderer::UniverseRenderer(const Simulator::Config &conf, ren
         new rendering::ArrowRenderer(), 
         new rendering::BondRenderer(), 
         new rendering::DihedralRenderer(), 
-        new rendering::OrientationRenderer()
+        new rendering::OrientationRenderer(),
+        new rendering::WidgetRenderer()
     };
     std::vector<fVector4> clipPlanes;
     for(auto &e : conf.clipPlanes) clipPlanes.push_back(e);
@@ -687,6 +689,14 @@ void rendering::UniverseRenderer::cameraZoomOut() {
 }
 
 void rendering::UniverseRenderer::keyPressEvent(Platform::GlfwApplication::KeyEvent& event) {
+    for(auto& s : subRenderers) {
+        s->keyPressEvent(event);
+        if(event.isAccepted()) {
+            window->redraw();
+            return;
+        }
+    }
+
     switch(event.key()) {
         case Platform::GlfwApplication::KeyEvent::Key::B: {
             if(event.modifiers() & Platform::GlfwApplication::MouseMoveEvent::Modifier::Shift) {
@@ -832,7 +842,21 @@ void rendering::UniverseRenderer::keyPressEvent(Platform::GlfwApplication::KeyEv
     window->redraw();
 }
 
+void rendering::UniverseRenderer::keyReleaseEvent(Platform::GlfwApplication::KeyEvent& event) {
+    for(auto& s : subRenderers) {
+        s->keyReleaseEvent(event);
+        if(event.isAccepted()) {
+            window->redraw();
+            return;
+        }
+    }
+}
+
 void rendering::UniverseRenderer::mousePressEvent(Platform::GlfwApplication::MouseEvent& event) {
+    for(auto& s : subRenderers) {
+        s->mousePressEvent(event);
+    }
+
     /* Enable mouse capture so the mouse can drag outside of the window */
     /** @todo replace once https://github.com/mosra/magnum/pull/419 is in */
     //SDL_CaptureMouse(SDL_TRUE);
@@ -845,7 +869,13 @@ void rendering::UniverseRenderer::mousePressEvent(Platform::GlfwApplication::Mou
 }
 
 void rendering::UniverseRenderer::mouseReleaseEvent(Platform::GlfwApplication::MouseEvent& event) {
-
+    for(auto& s : subRenderers) {
+        s->mouseReleaseEvent(event);
+        if(event.isAccepted()) {
+            window->redraw();
+            return;
+        }
+    }
 }
 
 void rendering::UniverseRenderer::mouseMoveEvent(Platform::GlfwApplication::MouseMoveEvent& event) {
@@ -872,6 +902,16 @@ void rendering::UniverseRenderer::mouseScrollEvent(Platform::GlfwApplication::Mo
     window->redraw(); /* camera has changed, redraw! */
 }
 
+void rendering::UniverseRenderer::textInputEvent(Platform::GlfwApplication::TextInputEvent& event) {
+    for(auto& s : subRenderers) {
+        s->textInputEvent(event);
+        if(event.isAccepted()) {
+            window->redraw();
+            return;
+        }
+    }
+}
+
 rendering::SubRenderer *rendering::UniverseRenderer::getSubRenderer(const rendering::SubRendererFlag &flag) {
     if(subRenderers.size() == 0) return 0;
 
@@ -894,6 +934,10 @@ rendering::SubRenderer *rendering::UniverseRenderer::getSubRenderer(const render
             break;
         case SUBRENDERER_ORIENTATION: {
             return subRenderers[4];
+            }
+            break;
+        case SUBRENDERER_WIDGET: {
+            return subRenderers[5];
             }
             break;
         default: {

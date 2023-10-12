@@ -146,6 +146,7 @@ namespace TissueForge::rendering {
         void mouseReleaseEvent(MouseEvent& event) override;
         void mouseMoveEvent(MouseMoveEvent& event) override;
         void mouseScrollEvent(MouseScrollEvent& event) override;
+        void textInputEvent(TextInputEvent& event) override;
         void exitEvent(ExitEvent& event) override;
 
         int windowAttribute(WindowAttributes attr) override;

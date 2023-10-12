@@ -401,6 +401,10 @@ void rendering::GlfwApplication::mouseScrollEvent(MouseScrollEvent &event)
     _ren->mouseScrollEvent(event);
 }
 
+void rendering::GlfwApplication::textInputEvent(TextInputEvent& event) {
+    _ren->textInputEvent(event);
+}
+
 void rendering::GlfwApplication::exitEvent(ExitEvent &event)
 {
     TF_Log(LOG_DEBUG);

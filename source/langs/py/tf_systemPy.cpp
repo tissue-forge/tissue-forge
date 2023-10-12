@@ -20,6 +20,7 @@
 #include "tf_systemPy.h"
 #include <tf_system.h>
 #include <rendering/tfApplication.h>
+#include <rendering/tfWidgetRenderer.h>
 
 
 using namespace TissueForge;
@@ -340,3 +341,64 @@ std::pair<int, rendering::ArrowData*> py::add_render_arrow(const FVector3 &pos, 
 HRESULT py::remove_render_arrow(const int &arrowId) { return system::removeRenderArrow(arrowId); }
 
 rendering::ArrowData *py::get_render_arrow(const int &arrowId) { return system::getRenderArrow(arrowId); }
+
+static void _pyVoidFunction(PyObject* callable) {
+    TF_Log(LOG_TRACE);
+
+    PyObject* result = PyObject_CallObject(callable, NULL);
+
+    if(result == NULL) {
+        PyObject* err = PyErr_Occurred();
+        TF_Log(LOG_CRITICAL) << py::pyerror_str();
+        PyErr_Clear();
+        return;
+    }
+    Py_DECREF(result);
+}
+
+template <typename T> 
+void _pyTFunction(PyObject* callable, const T& arg) {
+    TF_Log(LOG_TRACE);
+
+    PyObject* pyarg = cast<T, PyObject*>(arg);
+    PyObject* pyargs = PyTuple_Pack(1, pyarg);
+    PyObject* result = PyObject_CallObject(callable, pyargs);
+
+    if(result == NULL) {
+        PyObject* err = PyErr_Occurred();
+        TF_Log(LOG_CRITICAL) << py::pyerror_str();
+        PyErr_Clear();
+        return;
+    }
+    if(result) Py_CLEAR(result);
+}
+
+int py::add_button(PyObject* cb, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    return renderer->addButton(std::bind(_pyVoidFunction, cb), label);
+}
+
+HRESULT py::show_time() { return system::showTime(); }
+
+HRESULT py::show_particle_number() { return system::showParticleNumber(); }
+
+int py::add_output_int(const int& val, const std::string& label) { return system::addOutputInt(val, label); }
+int py::add_output_float(const float& val, const std::string& label) { return system::addOutputFloat(val, label); }
+int py::add_output_string(const std::string& val, const std::string& label) { return system::addOutputString(val, label); }
+
+template <typename T> 
+int _add_input_T(PyObject* cb, const T& val, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    Py_IncRef(cb);
+    return renderer->addInputField(std::bind(_pyTFunction<T>, cb, std::placeholders::_1), val, label);
+}
+
+int py::add_input_int(PyObject* cb, const int& val, const std::string& label) { return _add_input_T(cb, val, label); }
+int py::add_input_float(PyObject* cb, const float& val, const std::string& label) { return _add_input_T(cb, val, label); }
+int py::add_input_string(PyObject* cb, const std::string& val, const std::string& label) { return _add_input_T(cb, val, label); }
+
+HRESULT py::set_output_int(const unsigned int& idx, const int& val) { return system::setOutputInt(idx, val); }
+HRESULT py::set_output_float(const unsigned int& idx, const float& val) { return system::setOutputFloat(idx, val); }
+HRESULT py::set_output_string(const unsigned int& idx, const std::string& val) { return system::setOutputString(idx, val); }

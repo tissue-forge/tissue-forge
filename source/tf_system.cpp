@@ -19,11 +19,13 @@
 
 #include "tf_system.h"
 #include "tfSimulator.h"
+#include "event/tfEvent.h"
 #include "rendering/tfWindowlessApplication.h"
 #include "rendering/tfWindowless.h"
 #include "rendering/tfApplication.h"
 #include "rendering/tfGlfwApplication.h"
 #include "rendering/tfClipPlane.h"
+#include "rendering/tfWidgetRenderer.h"
 #include "tfLogger.h"
 #include "tfError.h"
 #include "tf_test.h"
@@ -1492,4 +1494,111 @@ rendering::ArrowData *system::getRenderArrow(const int &arrowId) {
     rendering::ArrowRenderer *renderer = rendering::ArrowRenderer::get(); 
     if(!renderer) return NULL;
     return renderer->getArrow(arrowId);
+}
+
+int system::addButton(CallbackVoidOutput& cb, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    return renderer->addButton(cb, label);
+}
+
+struct ShowTimeEvent : event::EventBase {
+
+    unsigned int idx;
+
+    ShowTimeEvent(const unsigned int& _idx) : event::EventBase(), idx{_idx} {}
+
+    HRESULT predicate() override { return 1; }
+
+    HRESULT invoke() override {
+        rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+        if(!renderer) return E_FAIL;
+
+        renderer->setOutputFloat(idx, (float)Universe::getTime());
+        return S_OK;
+    }
+};
+
+HRESULT system::showTime() {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+
+    ShowTimeEvent* e = new ShowTimeEvent(renderer->addOutputField((float)Universe::getTime(), "Time"));
+    Universe::get()->events->addEvent(e);
+    return S_OK;
+}
+
+struct ShowParticleNumberEvent : event::EventBase {
+
+    unsigned int idx;
+
+    ShowParticleNumberEvent(const unsigned int& _idx) : event::EventBase(), idx{_idx} {}
+
+    HRESULT predicate() override { return 1; }
+
+    HRESULT invoke() override {
+        rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+        if(!renderer) return E_FAIL;
+
+        renderer->setOutputInt(idx, Universe::particles().nr_parts);
+        return S_OK;
+    }
+
+};
+
+HRESULT system::showParticleNumber() {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+
+    ShowParticleNumberEvent* e = new ShowParticleNumberEvent(renderer->addOutputField(Universe::particles().nr_parts, "# particles"));
+    Universe::get()->events->addEvent(e);
+    return S_OK;
+}
+
+template <typename T> 
+int _addOutput(const T& val, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    return renderer->addOutputField(val, label);
+}
+
+int system::addOutputInt(const int& val, const std::string& label) { return _addOutput(val, label); }
+int system::addOutputFloat(const float& val, const std::string& label) { return _addOutput(val, label); }
+int system::addOutputDouble(const double& val, const std::string& label) { return _addOutput(val, label); }
+int system::addOutputString(const std::string& val, const std::string& label) { return _addOutput(val, label); }
+
+template <typename T> 
+int _addInput(rendering::WidgetRenderer::CallbackInput<T>& cb, const T& val, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->addInputField(cb, val, label);
+}
+
+int system::addInputInt(CallbackInputInt& cb, const int& val, const std::string& label) { return _addInput(cb, val, label); }
+int system::addInputFloat(CallbackInputFloat& cb, const float& val, const std::string& label) { return _addInput(cb, val, label); }
+int system::addInputDouble(CallbackInputDouble& cb, const double& val, const std::string& label) { return _addInput(cb, val, label); }
+int system::addInputString(CallbackInputString& cb, const std::string& val, const std::string& label) { return _addInput(cb, val, label); }
+
+HRESULT system::setOutputInt(const unsigned int& idx, const int& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputInt(idx, val);
+}
+
+HRESULT system::setOutputFloat(const unsigned int& idx, const float& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputFloat(idx, val);
+}
+
+HRESULT system::setOutputDouble(const unsigned int& idx, const double& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputDouble(idx, val);
+}
+
+HRESULT system::setOutputString(const unsigned int& idx, const std::string& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputString(idx, val);
 }

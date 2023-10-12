@@ -36,6 +36,8 @@ target_link_libraries(
   Magnum::Primitives
   Magnum::MeshTools
   MagnumPlugins::StbImageConverter
+  MagnumPlugins::StbTrueTypeFont
+  MagnumExtras::Ui
   TgaImageConverter
 )
 if(TF_APPLE)
@@ -111,6 +113,7 @@ set(
   rendering/tfSubRenderer.cpp
   rendering/tfUI.cpp
   rendering/tfUniverseRenderer.cpp
+  rendering/tfWidgetRenderer.cpp
   rendering/tfWindow.cpp
   rendering/tfWindowlessApplication.cpp
 
@@ -194,6 +197,7 @@ set(
   rendering/tfSubRenderer.h
   rendering/tfUI.h
   rendering/tfUniverseRenderer.h
+  rendering/tfWidgetRenderer.h
   rendering/tfWindow.h
   rendering/tfWindowless.h
   rendering/tfWindowlessApplication.h
@@ -351,6 +355,8 @@ target_link_libraries(
   Magnum::Magnum
   Magnum::Shaders
   MagnumPlugins::StbImageConverter
+  MagnumPlugins::StbTrueTypeFont
+  MagnumExtras::Ui
   mdcore
 )
 target_link_libraries(
@@ -362,7 +368,7 @@ target_link_libraries(
   ${OPENGL_LIBRARIES}
 )
 
-add_dependencies(TissueForge_obj MagnumPlugins::StbImageConverter)
+add_dependencies(TissueForge_obj MagnumPlugins::StbImageConverter MagnumPlugins::StbTrueTypeFont MagnumExtras::Ui)
 
 if(TF_WITHCUDA)
   target_link_libraries(
