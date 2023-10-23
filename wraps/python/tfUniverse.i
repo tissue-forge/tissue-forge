@@ -144,7 +144,7 @@
             Performs a single time step of the universe if no arguments are 
             given. Optionally runs until ``until``.
             
-            :param until: runs the timestep for this length of time, optional.
+            :param until: period to execute, in units of simulation time (default executes one time step).
             """
             return _tfUniverse.step(until, 0)
 

@@ -134,7 +134,7 @@ namespace TissueForge {
      * given. Optionally runs until ``until``, and can use a different timestep 
      * of ``dt``.
      * 
-     * @param until runs the timestep for this length of time, optional.
+     * @param until period to execute, in units of simulation time (default executes one time step).
      * @param dt overrides the existing time step, and uses this value for time stepping; currently not supported.
      */
     CPPAPI_FUNC(HRESULT) step(const FloatP_t &until=0, const FloatP_t &dt=0);
@@ -156,7 +156,7 @@ namespace TissueForge {
      * @brief Runs the event loop until all windows close or simulation time expires. 
      * Automatically performs universe time propogation. 
      * 
-     * @param et final time; a negative number runs infinitely
+     * @param et period to execute, in units of simulation time; a negative number runs infinitely
      */
     CPPAPI_FUNC(HRESULT) run(FloatP_t et=-1);
 

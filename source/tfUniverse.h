@@ -111,7 +111,7 @@ namespace TissueForge {
          * given. Optionally runs until ``until``, and can use a different timestep 
          * of ``dt``.
          * 
-         * @param until runs the timestep for this length of time, optional.
+         * @param until period to execute, in units of simulation time (default executes one time step).
          * @param dt overrides the existing time step, and uses this value for time stepping; currently not supported.
          */
         static HRESULT step(const FloatP_t &until=0, const FloatP_t &dt=0);
