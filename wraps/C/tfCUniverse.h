@@ -146,7 +146,7 @@ CAPI_FUNC(HRESULT) tfUniverse_getCenter(tfFloatP_t **center);
  * @brief Integrates the universe for a duration as given by ``until``, or for a single time step 
  * if 0 is passed.
  * 
- * @param until runs the timestep for this length of time.
+ * @param until period to execute, in units of simulation time.
  * @param dt overrides the existing time step, and uses this value for time stepping; currently not supported.
  * @return S_OK on success
  */

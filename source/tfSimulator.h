@@ -272,7 +272,7 @@ namespace TissueForge {
          * @brief Runs the event loop until all windows close or simulation time expires. 
          * Automatically performs universe time propogation. 
          * 
-         * @param et final time; a negative number runs infinitely
+         * @param et period to execute, in units of simulation time; a negative number runs infinitely
          */
         static HRESULT run(FloatP_t et);
 
