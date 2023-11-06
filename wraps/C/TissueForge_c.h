@@ -188,7 +188,7 @@ CAPI_FUNC(HRESULT) tfInitC(struct tfSimulatorConfigHandle *conf, char **appArgv,
  * @brief Integrates the universe for a duration as given by ``until``, or for a single time step 
  * if 0 is passed.
  * 
- * @param until runs the timestep for this length of time.
+ * @param until period to execute, in units of simulation time.
  * @param dt overrides the existing time step, and uses this value for time stepping; currently not supported.
  * @return S_OK on success
  */
@@ -215,7 +215,7 @@ CAPI_FUNC(HRESULT) tfStart();
  * @brief Runs the event loop until all windows close or simulation time expires. 
  * Automatically performs universe time propogation. 
  * 
- * @param et final time; a negative number runs infinitely
+ * @param et period to execute, in units of simulation time; a negative number runs infinitely
  */
 CAPI_FUNC(HRESULT) tfRun(tfFloatP_t et);
 
