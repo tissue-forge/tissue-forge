@@ -14,6 +14,12 @@ Vertex Model Solver
 
     Two-dimensional cell splitting live demo. Cell splitting events are implemented using a keyboard event.
 
+.. note::
+
+   To use the Tissue Forge vertex model solver in research, please cite the following:
+
+   Sego et al. (2023). `"General, open-source vertex modeling in biological applications using Tissue Forge." <https://www.nature.com/articles/s41598-023-45127-x>`_ *Scientific Reports*, 13(1), 17886.
+
 The vertex model solver implements the vertex model formalism for modeling biological objects
 as topologically connected :ref:`vertices <api_vertex_solver_vertex>` in a mesh.
 Each vertex is constructed from a Tissue Forge :ref:`particle <creating_particles_and_types>`.

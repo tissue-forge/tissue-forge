@@ -51,6 +51,12 @@ If you're looking for something specific, refer to the following,
 
 Tissue Forge is funded with generous support by NIBIB U24 EB028887.
 
+**Citing**
+
+To use Tissue Forge in research, please cite the following:
+
+   Sego et al. (2023). `"Tissue Forge: Interactive biological and biophysics simulation environment." <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010768>`_ *PLoS Computational Biology*, 19(10), e1010768.
+
 **Content**
 
 .. toctree::
