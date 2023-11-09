@@ -239,6 +239,12 @@ void BoundaryConditions::boundedPosition(FVector3& position) {
     }
 }
 
+FVector3 BoundaryConditions::boundedPosition(const FVector3& position) {
+    FVector3 result(position);
+    boundedPosition(result);
+    return result;
+}
+
 BoundaryConditions::BoundaryConditions(int *cells) {
     if(_initIni() != S_OK) return;
     

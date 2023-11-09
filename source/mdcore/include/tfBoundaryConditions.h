@@ -157,6 +157,11 @@ namespace TissueForge {
         */
         static void boundedPosition(FVector3& position);
 
+        /**
+         * @brief Enforce boundary conditions on a position
+        */
+        static FVector3 boundedPosition(const FVector3& position);
+
         BoundaryConditions() {}
         BoundaryConditions(int *cells);
         BoundaryConditions(int *cells, const int &value);
