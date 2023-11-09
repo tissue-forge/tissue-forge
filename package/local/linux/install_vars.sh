@@ -20,5 +20,8 @@ export TFENV=${TFINSTALLDIR}/env
 # local build qualifier
 export TFBUILDQUAL=local
 
+# conda installation
+export TFCONDAENV=${HOME}/miniconda3/etc/profile.d/conda.sh
+
 # path to cuda root directory
 export TFCUDAENV=""

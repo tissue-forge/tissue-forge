@@ -16,7 +16,7 @@ source ${this_dir}/${subdir}/install_vars.sh
 
 bash ${TFSRCDIR}/package/local/${subdir}/install_env.sh
 
-source ${HOME}/miniconda3/etc/profile.d/conda.sh
+source ${TFCONDAENV}
 
 # Install CUDA support if requested
 if [ -z "${TF_WITHCUDA+x}" ]; then
