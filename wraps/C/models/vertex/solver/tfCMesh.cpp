@@ -137,6 +137,25 @@ HRESULT tfVertexSolverMeshCreateVertex(struct tfVertexSolverVertexHandleHandle *
     return tfVertexSolverVertexHandle_init(handle, v->objectId());
 }
 
+HRESULT tfVertexSolverMeshCreateVertices(struct tfVertexSolverVertexHandleHandle **handles, unsigned int *pids, unsigned int numObjs) {
+    TFC_MESH_GET(mesh);
+    TFC_PTRCHECK(handles);
+    TFC_PTRCHECK(pids);
+    if(numObjs == 0) 
+        return S_OK;
+    std::vector<unsigned int> _pids(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        _pids[i] = pids[i];
+    std::vector<Vertex*> vs(numObjs, NULL);
+    Vertex** vs_data = vs.data();
+    if(mesh->create(&vs_data, _pids) != S_OK) 
+        return E_FAIL;
+    for(unsigned int i = 0; i < numObjs; i++) 
+        if(tfVertexSolverVertexHandle_init(handles[i], vs[i]->objectId()) != S_OK) 
+            return E_FAIL;
+    return S_OK;
+}
+
 HRESULT tfVertexSolverMeshCreateSurface(struct tfVertexSolverSurfaceHandleHandle *handle) {
     TFC_MESH_GET(mesh);
     TFC_PTRCHECK(handle);
@@ -146,6 +165,21 @@ HRESULT tfVertexSolverMeshCreateSurface(struct tfVertexSolverSurfaceHandleHandle
     return tfVertexSolverSurfaceHandle_init(handle, s->objectId());
 }
 
+HRESULT tfVertexSolverMeshCreateSurfaces(struct tfVertexSolverSurfaceHandleHandle **handles, unsigned int numObjs) {
+    TFC_MESH_GET(mesh);
+    TFC_PTRCHECK(handles);
+    if(numObjs == 0) 
+        return S_OK;
+    std::vector<Surface*> ss(numObjs, NULL);
+    Surface** ss_data = ss.data();
+    if(mesh->create(&ss_data, numObjs) != S_OK) 
+        return E_FAIL;
+    for(unsigned int i = 0; i < numObjs; i++) 
+        if(tfVertexSolverSurfaceHandle_init(handles[i], ss[i]->objectId()) != S_OK) 
+            return E_FAIL;
+    return S_OK;
+}
+
 HRESULT tfVertexSolverMeshCreateBody(struct tfVertexSolverBodyHandleHandle *handle) {
     TFC_MESH_GET(mesh);
     TFC_PTRCHECK(handle);
@@ -153,6 +187,21 @@ HRESULT tfVertexSolverMeshCreateBody(struct tfVertexSolverBodyHandleHandle *hand
     if(mesh->create(&b) != S_OK) 
         return E_FAIL;
     return tfVertexSolverBodyHandle_init(handle, b->objectId());
+}
+
+HRESULT tfVertexSolverMeshCreateBodies(struct tfVertexSolverBodyHandleHandle **handles, unsigned int numObjs) {
+    TFC_MESH_GET(mesh);
+    TFC_PTRCHECK(handles);
+    if(numObjs == 0) 
+        return S_OK;
+    std::vector<Body*> bs(numObjs, NULL);
+    Body** bs_data = bs.data();
+    if(mesh->create(&bs_data, numObjs) != S_OK) 
+        return E_FAIL;
+    for(unsigned int i = 0; i < numObjs; i++) 
+        if(tfVertexSolverBodyHandle_init(handles[i], bs[i]->objectId()) != S_OK) 
+            return E_FAIL;
+    return S_OK;
 }
 
 HRESULT tfVertexSolverMeshLock() {
@@ -322,6 +371,18 @@ HRESULT tfVertexSolverMeshRemoveVertex(struct tfVertexSolverVertexHandleHandle *
     return mesh->remove(_vObj);
 }
 
+HRESULT tfVertexSolverMeshRemoveVertices(struct tfVertexSolverVertexHandleHandle **v, unsigned int numObjs) {
+    TFC_MESH_GET(mesh);
+    TFC_PTRCHECK(v);
+    if(numObjs == 0) 
+        return S_OK;
+    std::vector<Vertex*> _v(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        _v[i] = TissueForge::castC<VertexHandle, tfVertexSolverVertexHandleHandle>(v[i])->vertex();
+    Vertex** o_data = _v.data();
+    return mesh->remove(o_data, numObjs);
+}
+
 HRESULT tfVertexSolverMeshRemoveSurface(struct tfVertexSolverSurfaceHandleHandle *s) {
     TFC_MESH_GET(mesh);
     TFC_PTRCHECK(s);
@@ -331,6 +392,18 @@ HRESULT tfVertexSolverMeshRemoveSurface(struct tfVertexSolverSurfaceHandleHandle
     return mesh->remove(_sObj);
 }
 
+HRESULT tfVertexSolverMeshRemoveSurfaces(struct tfVertexSolverSurfaceHandleHandle **s, unsigned int numObjs) {
+    TFC_MESH_GET(mesh);
+    TFC_PTRCHECK(s);
+    if(numObjs == 0) 
+        return S_OK;
+    std::vector<Surface*> _s(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        _s[i] = TissueForge::castC<SurfaceHandle, tfVertexSolverSurfaceHandleHandle>(s[i])->surface();
+    Surface** o_data = _s.data();
+    return mesh->remove(o_data, numObjs);
+}
+
 HRESULT tfVertexSolverMeshRemoveBody(struct tfVertexSolverBodyHandleHandle *b) {
     TFC_MESH_GET(mesh);
     TFC_PTRCHECK(b);
@@ -338,6 +411,18 @@ HRESULT tfVertexSolverMeshRemoveBody(struct tfVertexSolverBodyHandleHandle *b) {
     Body *_bObj = _b->body();
     TFC_PTRCHECK(_bObj);
     return mesh->remove(_bObj);
+}
+
+HRESULT tfVertexSolverMeshRemoveBodies(struct tfVertexSolverBodyHandleHandle **b, unsigned int numObjs) {
+    TFC_MESH_GET(mesh);
+    TFC_PTRCHECK(b);
+    if(numObjs == 0) 
+        return S_OK;
+    std::vector<Body*> _b(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        _b[i] = TissueForge::castC<BodyHandle, tfVertexSolverBodyHandleHandle>(b[i])->body();
+    Body** o_data = _b.data();
+    return mesh->remove(o_data, numObjs);
 }
 
 HRESULT tfVertexSolverMeshIs3D(bool *result) {

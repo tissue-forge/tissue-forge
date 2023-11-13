@@ -608,7 +608,7 @@ bool MeshSolver::_isDirtyInst() const {
 }
 
 bool MeshSolver::isDirty() {
-    TF_MESHSOLVER_CHECKINIT
+    TF_MESHSOLVER_CHECKINIT_RET(false);
 
     return _solver->_isDirtyInst();
 }

@@ -135,6 +135,20 @@ namespace TissueForge::models::vertex {
          */
         static SurfaceHandle create(TissueForge::io::ThreeDFFaceData *face);
 
+        /**
+         * @brief Construct surfaces from sets of vertices
+         * 
+         * @param _vertices sets of vertices
+         */
+        static std::vector<SurfaceHandle> create(const std::vector<std::vector<VertexHandle> > &_vertices);
+
+        /**
+         * @brief Construct surfaces from faces
+         * 
+         * @param _faces faces
+         */
+        static std::vector<SurfaceHandle> create(const std::vector<TissueForge::io::ThreeDFFaceData*> &_faces);
+
         MESHBOJ_DEFINES_DECL(Body);
         MESHOBJ_DEFINEDBY_DECL(Vertex);
         MESHOBJ_CLASSDEF(MeshObjTypeLabel::SURFACE)
@@ -253,6 +267,15 @@ namespace TissueForge::models::vertex {
         static HRESULT destroy(SurfaceHandle &target);
 
         /**
+         * @brief Destroy surfaces. 
+         * 
+         * Any resulting vertices without a surface are also destroyed. 
+         * 
+         * @param target handles to a surface to destroy
+         */
+        static HRESULT destroy(const std::vector<Surface*>& target);
+
+        /**
          * @brief Refresh internal ordering of defined bodies
          */
         HRESULT refreshBodies();
@@ -277,7 +300,7 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the vertices that define the surface
          */
-        std::vector<Vertex*> getVertices() const { return vertices; }
+        const std::vector<Vertex*>& getVertices() const { return vertices; }
 
         /**
          * @brief Find a vertex that defines this surface
@@ -358,32 +381,32 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the surface unnormalized normal
          */
-        FVector3 getUnnormalizedNormal() const { return normal; }
+        const FVector3& getUnnormalizedNormal() const { return normal; }
 
         /**
          * @brief Get the centroid
          */
-        FVector3 getCentroid() const { return centroid; }
+        const FVector3& getCentroid() const { return centroid; }
 
         /**
          * @brief Get the velocity, calculated as the velocity of the centroid
          */
-        FVector3 getVelocity() const { return velocity; }
+        const FVector3& getVelocity() const { return velocity; }
 
         /**
          * @brief Get the area
          */
-        FloatP_t getArea() const { return area; }
+        const FloatP_t& getArea() const { return area; }
 
         /**
          * @brief Get the perimeter
          */
-        FloatP_t getPerimeter() const { return perimeter; }
+        const FloatP_t& getPerimeter() const { return perimeter; }
 
         /**
          * @brief Get the mass density; only used in 2D simulation
          */
-        FloatP_t getDensity() const { return density; }
+        const FloatP_t& getDensity() const { return density; }
 
         /**
          * @brief Set the mass density; only used in 2D simulation
@@ -473,6 +496,16 @@ namespace TissueForge::models::vertex {
         bool contains(const FVector3 &pos) const;
 
         /**
+         * Test whether two vertices would be sewn.
+         * 
+         * @param s1 first surface
+         * @param s2 second surface
+         * @param distCf distance criterion coefficient
+         * @param indicesMatched indices to the vertices of the second surface matched to those of the first surface
+        */
+        static bool testSew(Surface* s1, Surface* s2, const FloatP_t& distCf, std::vector<int>& indicesMatched);
+
+        /**
          * @brief Sew two surfaces 
          * 
          * All vertices are merged that are a distance apart less than a distance criterion. 
@@ -508,7 +541,7 @@ namespace TissueForge::models::vertex {
          * @param _surfaces a set of surfaces 
          * @param distCf distance criterion coefficient
          */
-        static HRESULT sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf=0.01);
+        static HRESULT sew(const std::vector<Surface*>& _surfaces, const FloatP_t &distCf=0.01);
 
         /**
          * @brief Sew a set of surfaces 
@@ -521,7 +554,7 @@ namespace TissueForge::models::vertex {
          * @param distCf distance criterion coefficient
          * @return HRESULT 
          */
-        static HRESULT sew(std::vector<SurfaceHandle> _surfaces, const FloatP_t &distCf=0.01);
+        static HRESULT sew(const std::vector<SurfaceHandle>& _surfaces, const FloatP_t &distCf=0.01);
 
         /**
          * @brief Merge with a surface. The passed surface is destroyed. 
@@ -1148,11 +1181,25 @@ namespace TissueForge::models::vertex {
         HRESULT add(const SurfaceHandle &i);
 
         /**
+         * @brief Add instances
+         * 
+         * @param i instances to add
+         */
+        HRESULT add(const std::vector<SurfaceHandle>& i);
+
+        /**
          * @brief Remove an instance
          * 
          * @param i instance to remove
          */
         HRESULT remove(const SurfaceHandle &i);
+
+        /**
+         * @brief Remove instances
+         * 
+         * @param i instances to remove
+         */
+        HRESULT remove(const std::vector<SurfaceHandle>& i);
 
         /**
          * @brief list of instances that belong to this type
@@ -1189,6 +1236,28 @@ namespace TissueForge::models::vertex {
          * @param face a face
          */
         SurfaceHandle operator() (TissueForge::io::ThreeDFFaceData *face);
+
+        /**
+         * @brief Construct surfaces of this type from sets of vertices
+         * 
+         * @param _vertices sets of vertices
+         */
+        std::vector<SurfaceHandle> operator() (const std::vector<std::vector<VertexHandle> >& _vertices);
+
+        /**
+         * @brief Construct surfaces of this type from sets of positions
+         * 
+         * @param _positions sets of positions
+         */
+        std::vector<SurfaceHandle> operator() (const std::vector<std::vector<FVector3> > &_positions);
+
+        /**
+         * @brief Construct a surface of this type from faces
+         * 
+         * @param faces faces
+         * @param safe flag to discard existing topology and construct new vertices for each passed face
+         */
+        std::vector<SurfaceHandle> operator() (const std::vector<TissueForge::io::ThreeDFFaceData*>& faces, const bool& safe=true);
 
         /**
          * @brief Construct a polygon with n vertices circumscribed on a circle
@@ -1251,6 +1320,16 @@ inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::ver
 {
     os << o.str().c_str();
     return os;
+}
+
+namespace std {
+
+    template <> 
+    struct hash<TissueForge::models::vertex::SurfaceHandle> {
+        size_t operator() (const TissueForge::models::vertex::SurfaceHandle& h) const {
+            return hash<int>()(h.id);
+        }
+    };
 }
 
 #endif // _MODELS_VERTEX_SOLVER_TFSURFACE_H_

@@ -117,6 +117,14 @@ HRESULT tfVertexSolverVertexHandle_destroyVertex(struct tfVertexSolverVertexHand
     return vhandle->destroy();
 }
 
+HRESULT tfVertexSolverVertexHandle_destroyVertices(struct tfVertexSolverVertexHandleHandle **handles, unsigned int numObjs) {
+    TFC_PTRCHECK(handles);
+    std::vector<Vertex*> vertices(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        vertices[i] = TissueForge::castC<VertexHandle, tfVertexSolverVertexHandleHandle>(handles[i])->vertex();
+    return Vertex::destroy(vertices);
+}
+
 HRESULT tfVertexSolverVertexHandle_validate(struct tfVertexSolverVertexHandleHandle *handle, bool *result) {
     TFC_VERTEXHANDLE_GET(handle);
     TFC_PTRCHECK(result);
@@ -427,6 +435,21 @@ HRESULT tfVertexSolverVertexHandle_merge(
     return S_OK;
 }
 
+HRESULT tfVertexSolverVertexHandle_mergeA(
+    struct tfVertexSolverVertexHandleHandle ***handles, 
+    unsigned int numMerges, 
+    unsigned int *numVertices, 
+    tfFloatP_t lenCf
+) {
+    TFC_PTRCHECK(handles);
+    TFC_PTRCHECK(numVertices);
+    std::vector<std::vector<Vertex*> > vertices(numMerges);
+    for(unsigned int i = 0; i < numMerges; i++) 
+        for(unsigned int j = 0; j < numVertices[i]; j++) 
+            vertices[i].push_back(TissueForge::castC<VertexHandle, tfVertexSolverVertexHandleHandle>(handles[i][j])->vertex());
+    return Vertex::merge(vertices, lenCf);
+}
+
 HRESULT tfVertexSolverVertexHandle_insertBetween(
     struct tfVertexSolverVertexHandleHandle *handle, 
     struct tfVertexSolverVertexHandleHandle *v1, 
@@ -517,5 +540,53 @@ HRESULT tfVertexSolverCreateVertexByIOData(struct tfIoThreeDFVertexDataHandle *v
     if(vh.id < 0) 
         return E_FAIL;
     *objId = vh.id;
+    return S_OK;
+}
+
+HRESULT tfVertexSolverCreateVertexByPartIdA(unsigned int *pids, unsigned int numObjs, int **objIds) {
+    TFC_PTRCHECK(pids);
+    TFC_PTRCHECK(objIds);
+    if(numObjs == 0) 
+        return S_OK;
+
+    std::vector<unsigned int> _pids(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        _pids[i] = pids[i];
+
+    std::vector<VertexHandle> _newObjs = Vertex::create(_pids);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        (*objIds)[i] = _newObjs[i].id;
+    return S_OK;
+}
+
+HRESULT tfVertexSolverCreateVertexByPositionA(tfFloatP_t **positions, unsigned int numObjs, int **objIds) {
+    TFC_PTRCHECK(positions);
+    TFC_PTRCHECK(objIds);
+    if(numObjs == 0) 
+        return S_OK;
+
+    std::vector<FVector3> _positions(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        _positions[i] = FVector3::from(positions[i]);
+
+    std::vector<VertexHandle> _newObjs = Vertex::create(_positions);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        (*objIds)[i] = _newObjs[i].id;
+    return S_OK;
+}
+
+HRESULT tfVertexSolverCreateVertexByIODataA(struct tfIoThreeDFVertexDataHandle **vdata, unsigned int numObjs, int **objIds) {
+    TFC_PTRCHECK(vdata);
+    TFC_PTRCHECK(objIds);
+    if(numObjs == 0) 
+        return S_OK;
+
+    std::vector<io::ThreeDFVertexData*> _vdata(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        _vdata[i] = TissueForge::castC<io::ThreeDFVertexData, tfIoThreeDFVertexDataHandle>(vdata[i]);
+
+    std::vector<VertexHandle> _newObjs = Vertex::create(_vdata);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        (*objIds)[i] = _newObjs[i].id;
     return S_OK;
 }

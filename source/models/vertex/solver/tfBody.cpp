@@ -27,6 +27,7 @@
 
 #include <tfError.h>
 #include <tfLogger.h>
+#include <tfTaskScheduler.h>
 #include <io/tfIO.h>
 #include <io/tfFIO.h>
 
@@ -233,7 +234,7 @@ HRESULT Body::destroy() {
 }
 
 HRESULT Body::destroy(Body *target) {
-    auto surfaces = target->getSurfaces();
+    auto& surfaces = target->getSurfaces();
     if(target->destroy() != S_OK) 
         return E_FAIL;
 
@@ -254,6 +255,102 @@ HRESULT Body::destroy(BodyHandle &target) {
     if(res == S_OK) 
         target.id = -1;
     return res;
+}
+
+HRESULT Body::destroy(const std::vector<Body*>& toRemove) {
+    // Filter valid targets
+
+    std::vector<std::unordered_set<Body*> > bodiesToRemovePool(ThreadPool::size());
+    std::vector<std::unordered_set<BodyType*> > bodyTypesPool(ThreadPool::size());
+    std::vector<std::unordered_map<BodyType*, std::unordered_set<Body*> > > bodiesByTypePool(ThreadPool::size());
+    std::vector<std::unordered_set<Surface*> > surfacesToRemovePool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&toRemove, &bodiesToRemovePool, &bodyTypesPool, &bodiesByTypePool, &surfacesToRemovePool](int tid) -> void {
+            std::unordered_set<Body*>& bodiesToRemoveThread = bodiesToRemovePool[tid];
+            std::unordered_set<BodyType*>& bodyTypesThread = bodyTypesPool[tid];
+            std::unordered_map<BodyType*, std::unordered_set<Body*> >& bodiesByTypeThread = bodiesByTypePool[tid];
+            std::unordered_set<Surface*>& surfacesToRemoveThread = surfacesToRemovePool[tid];
+            for(int i = tid; i < toRemove.size(); i += ThreadPool::size()) {
+                Body* b = toRemove[i];
+                if(b->_objId >= 0) {
+                    bodiesToRemoveThread.insert(b);
+                    if(b->typeId >= 0) {
+                        BodyType* btype = b->type();
+                        bodyTypesThread.insert(btype);
+                        bodiesByTypeThread[btype].insert(b);
+                    }
+                    for(auto& s : b->getSurfaces()) 
+                        if(s->getBodies().size() == 1) 
+                            surfacesToRemoveThread.insert(s);
+                }
+            }
+        }
+    );
+    size_t numBodies = 0;
+    for(auto& bodiesToRemoveThread : bodiesToRemovePool) 
+        numBodies += bodiesToRemoveThread.size();
+    std::unordered_set<Body*> bodiesToRemove;
+    bodiesToRemove.reserve(numBodies);
+    for(auto& bodiesToRemoveThread : bodiesToRemovePool) 
+        bodiesToRemove.insert(bodiesToRemoveThread.begin(), bodiesToRemoveThread.end());
+    std::vector<Body*> bodiesToRemoveVec(bodiesToRemove.begin(), bodiesToRemove.end());
+
+    // Get affected surfaces
+
+    std::vector<std::unordered_set<Surface*> > affectedSurfacesPool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&bodiesToRemoveVec, &affectedSurfacesPool](int tid) -> void {
+            std::unordered_set<Surface*>& affectedSurfacesThread = affectedSurfacesPool[tid];
+            for(int i = tid; i < bodiesToRemoveVec.size(); i += ThreadPool::size()) 
+                for(auto& s : bodiesToRemoveVec[i]->getSurfaces()) 
+                    affectedSurfacesThread.insert(s);
+        }
+    );
+
+    // Remove from types
+
+    size_t numBodyTypes = 0;
+    for(auto& bodyTypesThread : bodyTypesPool) 
+        numBodyTypes += bodyTypesThread.size();
+    std::unordered_set<BodyType*> bodyTypes;
+    bodyTypes.reserve(numBodyTypes);
+    for(auto& bodyTypesThread : bodyTypesPool) 
+        bodyTypes.insert(bodyTypesThread.begin(), bodyTypesThread.end());
+    std::unordered_map<BodyType*, size_t> numBodiesByType;
+    for(auto& stype : bodyTypes) {
+        size_t& nBodies = numBodiesByType[stype];
+        for(auto& bodiesByTypeThread : bodiesByTypePool) 
+            nBodies += bodiesByTypeThread[stype].size();
+    }
+    std::unordered_map<BodyType*, std::unordered_set<BodyHandle> > bodiesByType;
+    for(auto& btype : bodyTypes) {
+        std::unordered_set<BodyHandle>& thisBodiesByType = bodiesByType[btype];
+        thisBodiesByType.reserve(numBodiesByType[btype]);
+        for(auto& bodiesByTypeThread : bodiesByTypePool) 
+            for(auto& s : bodiesByTypeThread[btype]) 
+                thisBodiesByType.emplace(s->objectId());
+        btype->remove({thisBodiesByType.begin(), thisBodiesByType.end()});
+    }
+
+    // Destroy bodies
+
+    Mesh::get()->remove(bodiesToRemoveVec.data(), bodiesToRemoveVec.size());
+
+    // Destroy orphaned surfaces
+
+    size_t numSurfaces = 0;
+    for(auto& surfacesToRemoveThread : surfacesToRemovePool) 
+        numSurfaces += surfacesToRemoveThread.size();
+    std::vector<Surface*> surfacesToRemove;
+    surfacesToRemove.reserve(numSurfaces);
+    for(auto& surfacesToRemoveThread : surfacesToRemovePool) 
+        for(auto& s : surfacesToRemoveThread) 
+            surfacesToRemove.push_back(s);
+    Surface::destroy(surfacesToRemove);
+
+    return S_OK;
 }
 
 bool Body::validate() {
@@ -386,7 +483,7 @@ FVector3 Body::getVelocity() const {
 }
 
 FloatP_t Body::getVertexArea(const Vertex *v) const {
-    FloatP_t result;
+    FloatP_t result = FPTYPE_ZERO;
     for(auto &s : surfaces) 
         result += s->getVertexArea(v);
     return result;
@@ -818,7 +915,7 @@ HRESULT BodyHandle::become(BodyType *btype) {
 
 std::vector<SurfaceHandle> BodyHandle::getSurfaces() const {
     BodyHandle_GETOBJ(o, {});
-    std::vector<Surface*> _result = o->getSurfaces();
+    auto& _result = o->getSurfaces();
     std::vector<SurfaceHandle> result;
     result.reserve(_result.size());
     for(auto &_s : _result) 
@@ -1121,6 +1218,42 @@ HRESULT BodyType::remove(const BodyHandle &i) {
 
     this->_instanceIds.erase(itr);
     _i->typeId = -1;
+    return S_OK;
+}
+
+HRESULT BodyType::remove(const std::vector<BodyHandle>& i) {
+    std::vector<Body*> _i(i.size());
+    std::vector<HRESULT> resultPool(ThreadPool::size(), S_OK);
+    parallel_for(ThreadPool::size(), [&i, &_i, &resultPool](int tid) -> void {
+        for(int j = tid; j < _i.size(); j += ThreadPool::size()) {
+            BodyHandle ij = i[j];
+            if(!ij) {
+                resultPool[tid] = E_FAIL;
+                return;
+            }
+
+            Body* _ij = ij.body();
+            if(!_ij) {
+                resultPool[tid] = E_FAIL;
+                return;
+            }
+
+            _i[j] = _ij;
+        }
+    });
+    for(auto& resultThread : resultPool) 
+        if(resultThread != S_OK) {
+            return tf_error(resultThread, "Failed to add object");
+        }
+
+    for(auto& s : i) {
+        auto itr = std::find(this->_instanceIds.begin(), this->_instanceIds.end(), s.id);
+        if(itr == this->_instanceIds.end()) 
+            return tf_error(E_FAIL, "Instance not of this type");
+        this->_instanceIds.erase(itr);
+    }
+
+    parallel_for(_i.size(), [&_i](int j) -> void { _i[j]->typeId = -1; });
     return S_OK;
 }
 

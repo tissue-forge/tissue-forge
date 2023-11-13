@@ -117,6 +117,27 @@ namespace TissueForge::models::vertex {
          */
         static VertexHandle create(TissueForge::io::ThreeDFVertexData *vdata);
 
+        /**
+         * @brief Create vertices
+         * 
+         * @param _pids ids of underlying particles
+         */
+        static std::vector<VertexHandle> create(const std::vector<unsigned int>& _pids);
+
+        /**
+         * @brief Create vertices
+         * 
+         * @param positions positions of vertices
+         */
+        static std::vector<VertexHandle> create(const std::vector<FVector3>& positions);
+
+        /**
+         * @brief Create vertices
+         * 
+         * @param vdata vertices
+         */
+        static std::vector<VertexHandle> create(const std::vector<TissueForge::io::ThreeDFVertexData*>& vdata);
+
         MESHBOJ_DEFINES_DECL(Surface);
         MESHBOJ_DEFINES_DECL(Body);
         MESHOBJ_CLASSDEF(MeshObjTypeLabel::VERTEX)
@@ -177,6 +198,13 @@ namespace TissueForge::models::vertex {
          */
         HRESULT replace(Surface *toInsert, Surface *toRemove);
 
+        /**
+         * @brief Destroy instances
+         * 
+         * @param toDestroy instances to destroy
+        */
+        static HRESULT destroy(const std::vector<Vertex*>& toDestroy);
+
         /** 
          * @brief Get the id of the underlying particle 
          */
@@ -190,7 +218,7 @@ namespace TissueForge::models::vertex {
         /** 
          * @brief Get the surfaces defined by the vertex 
          */
-        std::vector<Surface*> getSurfaces() const { return surfaces; }
+        const std::vector<Surface*>& getSurfaces() const { return surfaces; }
 
         /**
          * @brief Find a surface defined by this vertex
@@ -216,7 +244,7 @@ namespace TissueForge::models::vertex {
          * 
          * A vertex is connected if it defines an edge with this vertex.
          */
-        std::vector<Vertex*> connectedVertices() const { return _connectedVertices; }
+        const std::vector<Vertex*>& connectedVertices() const { return _connectedVertices; }
 
         /**
          * @brief Get the surfaces that this vertex and another vertex both define
@@ -253,7 +281,7 @@ namespace TissueForge::models::vertex {
         /** 
          * @brief Get the current position 
          */
-        FVector3 getPosition() const { return _particlePosition; }
+        const FVector3& getPosition() const { return _particlePosition; }
 
         /**
          * @brief Set the current position
@@ -266,12 +294,12 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the current velocity
          */
-        FVector3 getVelocity() const { return _particleVelocity; }
+        const FVector3& getVelocity() const { return _particleVelocity; }
 
         /**
          * @brief Get the cached particle mass from the most recent update
          */
-        FloatP_t getCachedParticleMass() const { return _particleMass; }
+        const FloatP_t& getCachedParticleMass() const { return _particleMass; }
 
         /**
          * @brief Transfer all bonds to another vertex
@@ -279,6 +307,13 @@ namespace TissueForge::models::vertex {
          * @param other another vertex
          */
         HRESULT transferBondsTo(Vertex *other);
+
+        /**
+         * @brief Transfer all bonds to other vertices
+         * 
+         * @param targets target vertices; first element is source, second element is target
+         */
+        static HRESULT transferBondsTo(const std::vector<std::pair<Vertex*, Vertex*> >& targets);
 
         /**
          * @brief Replace a surface
@@ -339,6 +374,16 @@ namespace TissueForge::models::vertex {
          * @param lenCf distance coefficient in [0, 1] for where to place the vertex, from the kept vertex to the removed vertex
          */
         HRESULT merge(Vertex *toRemove, const FloatP_t &lenCf=0.5f);
+
+        /**
+         * @brief Merge sets of vertices. 
+         * 
+         * The first instance of each list absorbs the remaining vertices. 
+         * 
+         * @param toMerge sets of vertices to merge
+         * @param lenCf distance coefficient in [0, 1] for where to place the vertex, from the kept vertex to the removed vertex
+        */
+        static HRESULT merge(const std::vector<std::vector<Vertex*> >& toMerge, const FloatP_t &lenCf=0.5f);
 
         /**
          * @brief Inserts a vertex between two vertices
@@ -750,6 +795,16 @@ inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::ver
 {
     os << o.str().c_str();
     return os;
+}
+
+namespace std {
+
+    template <> 
+    struct hash<TissueForge::models::vertex::VertexHandle> {
+        size_t operator() (const TissueForge::models::vertex::VertexHandle& h) const {
+            return hash<int>()(h.id);
+        }
+    };
 }
 
 #endif // _MODELS_VERTEX_SOLVER_TFVERTEX_H_

@@ -43,9 +43,7 @@ mesh_import.translateTo(tf.Universe.center)
 mesh_import.rotate(tf.FMatrix4.rotationX(np.pi / 2).rotation())
 
 # Create the mesh surfaces and sew them
-for io_surf in mesh_import.faces:
-    ctype(face_data=io_surf)
-tfv.Surface.sew(surfs=ctype.instances)
+ctype(face_data=mesh_import.faces, safe_face_data=False)
 
 # Run it!
 tf.show()

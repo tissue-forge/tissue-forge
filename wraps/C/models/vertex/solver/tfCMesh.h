@@ -93,6 +93,15 @@ CAPI_FUNC(HRESULT) tfVertexSolverMeshEnsureAvailableBodies(unsigned int numAlloc
 CAPI_FUNC(HRESULT) tfVertexSolverMeshCreateVertex(struct tfVertexSolverVertexHandleHandle *handle, unsigned int pid);
 
 /**
+ * @brief Create a vertices
+ * 
+ * @param handles handles to populate
+ * @param pids ids of underlying particles
+ * @param numObjs number of instances to create
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshCreateVertices(struct tfVertexSolverVertexHandleHandle **handles, unsigned int *pids, unsigned int numObjs);
+
+/**
  * @brief Create a surface
  * 
  * @param handle handle to populate
@@ -100,11 +109,27 @@ CAPI_FUNC(HRESULT) tfVertexSolverMeshCreateVertex(struct tfVertexSolverVertexHan
 CAPI_FUNC(HRESULT) tfVertexSolverMeshCreateSurface(struct tfVertexSolverSurfaceHandleHandle *handle);
 
 /**
+ * @brief Create surfaces
+ * 
+ * @param handles handles to populate
+ * @param numObjs number of instances to create
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshCreateSurfaces(struct tfVertexSolverSurfaceHandleHandle **handles, unsigned int numObjs);
+
+/**
  * @brief Create a body
  * 
  * @param handle handle to populate
  */
 CAPI_FUNC(HRESULT) tfVertexSolverMeshCreateBody(struct tfVertexSolverBodyHandleHandle *handle);
+
+/**
+ * @brief Create a bodies
+ * 
+ * @param handles handles to populate
+ * @param numObjs number of instances to create
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshCreateBodies(struct tfVertexSolverBodyHandleHandle *handles, unsigned int numObjs);
 
 /**
  * @brief Locks the mesh for thread-safe operations
@@ -262,6 +287,14 @@ CAPI_FUNC(HRESULT) tfVertexSolverMeshConnectedBodies(
 CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveVertex(struct tfVertexSolverVertexHandleHandle *v);
 
 /**
+ * @brief Remove vertices from the mesh; all connected surfaces and bodies are also removed
+ * 
+ * @param v vertices to remove
+ * @param numObjs number of instances
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveVertices(struct tfVertexSolverVertexHandleHandle **v, unsigned int numObjs);
+
+/**
  * @brief Remove a surface from the mesh; all connected bodies are also removed
  * 
  * @param s surface to remove
@@ -269,11 +302,27 @@ CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveVertex(struct tfVertexSolverVertexHan
 CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveSurface(struct tfVertexSolverSurfaceHandleHandle *s);
 
 /**
+ * @brief Remove surfaces from the mesh; all connected bodies are also removed
+ * 
+ * @param s surfaces to remove
+ * @param numObjs number of instances
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveSurfaces(struct tfVertexSolverSurfaceHandleHandle **s, unsigned int numObjs);
+
+/**
  * @brief Remove a body from the mesh
  * 
  * @param b body to remove
  */
 CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveBody(struct tfVertexSolverBodyHandleHandle *b);
+
+/**
+ * @brief Remove bodies from the mesh
+ * 
+ * @param b bodies to remove
+ * @param numObjs number of instances
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverMeshRemoveBodies(struct tfVertexSolverBodyHandleHandle **b, unsigned int numObjs);
 
 /**
  * @brief Test whether the mesh is 3D. 
