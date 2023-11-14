@@ -120,6 +120,14 @@ CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_objType(struct tfVertexSolverVerte
 CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_destroyVertex(struct tfVertexSolverVertexHandleHandle *handle);
 
 /**
+ * @brief Destroy vertices
+ * 
+ * @param handles populated handles
+ * @param numObjs number of objects to destroy
+ */
+CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_destroyVertices(struct tfVertexSolverVertexHandleHandle **handles, unsigned int numObjs);
+
+/**
  * @brief Validate the vertex
  * 
  * @param handle populated handle
@@ -432,6 +440,23 @@ CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_merge(
 );
 
 /**
+ * @brief Merge sets of vertices. 
+ * 
+ * The first instance of each list absorbs the remaining vertices. 
+ * 
+ * @param handle populated handles
+ * @param numMerges number of sets to merge
+ * @param numVertices number of vertices per set
+ * @param lenCf distance coefficient in [0, 1] for where to place the vertex, from the kept vertex to the removed vertex
+ */
+CAPI_DATA(HRESULT) tfVertexSolverVertexHandle_mergeA(
+    struct tfVertexSolverVertexHandleHandle ***handles, 
+    unsigned int numMerges, 
+    unsigned int *numVertices, 
+    tfFloatP_t lenCf
+);
+
+/**
  * @brief Inserts a vertex between two vertices
  * 
  * @param handle populated handle
@@ -513,5 +538,32 @@ CAPI_DATA(HRESULT) tfVertexSolverCreateVertexByPosition(tfFloatP_t *position, in
  * @param objId id of new vertex
  */
 CAPI_DATA(HRESULT) tfVertexSolverCreateVertexByIOData(struct tfIoThreeDFVertexDataHandle *vdata, int *objId);
+
+/**
+ * @brief Create vertices using the id of an existing particles
+ * 
+ * @param pids particle ids
+ * @param numObjs number of vertices to create
+ * @param objIds ids of new vertex
+ */
+CAPI_DATA(HRESULT) tfVertexSolverCreateVertexByPartIdA(unsigned int *pids, unsigned int numObjs, int **objIds);
+
+/**
+ * @brief Create vertices at positions
+ * 
+ * @param positions positions to create new vertices
+ * @param numObjs number of vertices to create
+ * @param objIds ids of new vertices
+ */
+CAPI_DATA(HRESULT) tfVertexSolverCreateVertexByPositionA(tfFloatP_t **positions, unsigned int numObjs, int **objIds);
+
+/**
+ * @brief Create vertices using I/O data
+ * 
+ * @param vdata I/O data
+ * @param numObjs number of vertices to create
+ * @param objIds ids of new vertex
+ */
+CAPI_DATA(HRESULT) tfVertexSolverCreateVertexByIODataA(struct tfIoThreeDFVertexDataHandle **vdata, unsigned int numObjs, int **objIds);
 
 #endif // _WRAPS_C_VERTEX_SOLVER_TFCVERTEX_H_

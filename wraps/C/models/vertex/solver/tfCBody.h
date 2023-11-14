@@ -157,6 +157,14 @@ CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_objType(struct tfVertexSolverBodyHan
 CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_destroyBody(struct tfVertexSolverBodyHandleHandle *handle);
 
 /**
+ * @brief Destroy instances
+ * 
+ * @param handles populated handles
+ * @param numObjs number of objects to destroy
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_destroyBodies(struct tfVertexSolverBodyHandleHandle **handles, unsigned int numObjs);
+
+/**
  * @brief Destroy the body. 
  * 
  * Any resulting surfaces without a body are also destroyed. 

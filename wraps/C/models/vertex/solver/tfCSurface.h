@@ -180,6 +180,14 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_objType(struct tfVertexSolverSurf
 CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_destroySurface(struct tfVertexSolverSurfaceHandleHandle *handle);
 
 /**
+ * @brief Destroy surfaces
+ * 
+ * @param handles populated handles
+ * @param numObjs number of objects to destroy
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceHandle_destroySurfaces(struct tfVertexSolverSurfaceHandleHandle **handles, unsigned int numObjs);
+
+/**
  * @brief Destroy an instance. 
  * 
  * Any resulting vertices without a surface are also destroyed. 
@@ -1019,6 +1027,55 @@ CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_createSurfaceIO(
     struct tfVertexSolverSurfaceTypeHandle *handle, 
     struct tfIoThreeDFFaceDataHandle *face, 
     struct tfVertexSolverSurfaceHandleHandle *newObj
+);
+
+/**
+ * @brief Construct a surface of this type from a set of vertices
+ * 
+ * @param handle populated handle
+ * @param vertices sets of vertices
+ * @param numSurfaces number of surfaces
+ * @param numVerts number of vertices per surface
+ * @param newObjs newly created objects
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_createSurfaceVA(
+    struct tfVertexSolverSurfaceTypeHandle *handle, 
+    struct tfVertexSolverVertexHandleHandle ***vertices, 
+    unsigned int numSurfaces, 
+    unsigned int *numVerts, 
+    struct tfVertexSolverSurfaceHandleHandle **newObjs
+);
+
+/**
+ * @brief Construct a surface of this type from a set of positions
+ * 
+ * @param handle populated handle
+ * @param positions sets of positions
+ * @param numSurfaces number of surfaces
+ * @param numPositions number of positions
+ * @param newObjs newly created objects
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_createSurfacePA(
+    struct tfVertexSolverSurfaceTypeHandle *handle, 
+    tfFloatP_t ***spositions, 
+    unsigned int numSurfaces, 
+    unsigned int *numPositions, 
+    struct tfVertexSolverSurfaceHandleHandle **newObjs
+);
+
+/**
+ * @brief Construct a surface of this type from a face
+ * 
+ * @param handle populated handle
+ * @param faces face data
+ * @param numSurfaces number of surfaces
+ * @param newObjs newly created objects
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverSurfaceType_createSurfaceIOA(
+    struct tfVertexSolverSurfaceTypeHandle *handle, 
+    struct tfIoThreeDFFaceDataHandle **faces, 
+    unsigned int numSurfaces, 
+    struct tfVertexSolverSurfaceHandleHandle **newObjs
 );
 
 /**
