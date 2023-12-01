@@ -42,6 +42,7 @@ jobs:
           bash $(SOURCE_DIR)/package/local/linux/install_env.sh
           source activate ${TFENV}
           conda install -y python=$(PY_VERSION_DEC)
+          conda list
           export TFBUILDQUAL=${{ parameters.tf_buildqual }}
           bash $(SOURCE_DIR)/package/local/linux/install_all.sh
         displayName: Execute build
@@ -51,6 +52,7 @@ jobs:
           source $(SOURCE_DIR)/package/local/linux/install_vars.sh
           source activate ${TFENV}
           conda install -y pytest
+          conda list
           bash $(SOURCE_DIR)/testing/build_tests.sh
           source $(INSTALL_DIR)/etc/vars.sh
           bash $(SOURCE_DIR)/testing/run_tests.sh

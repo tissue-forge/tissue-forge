@@ -27,7 +27,7 @@ requirements:
     - python {{ python }}
     - numpy
     - bzip2
-    - libxml2
+    - libxml2<=2.11
     - assimp=5
     - nlohmann_json
     - eigen

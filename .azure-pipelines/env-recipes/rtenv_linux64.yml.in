@@ -5,7 +5,7 @@ dependencies:
   - python=@PYTHON_VERSION@
   - numpy
   - bzip2
-  - libxml2
+  - libxml2<=2.11
   - matplotlib
   - assimp=5
   - nlohmann_json
