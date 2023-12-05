@@ -1289,7 +1289,7 @@ std::vector<DihedralHandle> TissueForge::ParticleHandle::getDihedrals() {
     
     for(int i = 0; i < _Engine.dihedrals_size; ++i) {
         Dihedral *d = &_Engine.dihedrals[i];
-        if((d->i == id || d->j == id || d->k == id || d->l == id)) {
+        if((d->flags & DIHEDRAL_ACTIVE) && (d->i == id || d->j == id || d->k == id || d->l == id)) {
             dihedrals.push_back(DihedralHandle(i));
         }
     }
