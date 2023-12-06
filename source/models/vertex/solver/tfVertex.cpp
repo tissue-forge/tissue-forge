@@ -96,7 +96,8 @@ void Vertex::updateConnectedVertices() {
         result.insert(vp);
         result.insert(vn);
     }
-    this->_connectedVertices = std::vector<Vertex*>(result.begin(), result.end());
+    auto tmp = std::vector<Vertex*>(result.begin(), result.end());
+    this->_connectedVertices = tmp;
 }
 
 std::vector<Surface*> Vertex::sharedSurfaces(const Vertex *other) const {
