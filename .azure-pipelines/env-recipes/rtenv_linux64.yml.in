@@ -2,7 +2,7 @@ name: tissue-forge
 channels:
   - conda-forge
 dependencies:
-  - python=@PYTHON_VERSION@
+  - python=@PYTHON_VERSION@.*=*_cpython
   - numpy
   - bzip2
   - libxml2<=2.11
