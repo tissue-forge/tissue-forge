@@ -39,6 +39,7 @@ jobs:
       # Build
       - script: |
           call activate $(ENV_DIR)
+          call conda list
           set TF_VERSION=$(tf_version)
           set TF_BUILDNUMBER=$(tf_buildnum)
           set TF_BUILDQUAL=${{ parameters.tf_buildqual }}
