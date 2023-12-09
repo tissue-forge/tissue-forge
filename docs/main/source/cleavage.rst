@@ -24,6 +24,31 @@ a particle occurs when calling the :py:attr:`Particle` method
     parent_particle = splitting_type()
     child_particle = parent_particle.split()
 
+The :py:attr:`Particle` :py:meth:`split <ParticleHandle.split>` method can 
+customize a number of details about particle splitting by passing certain 
+arguments, 
+including the direction of the split (random by default), 
+relative size of the resulting particles (equal by default), 
+allocation of any carried :ref:`species <species-label>` (equal by total species by default), 
+and :ref:`type <particle_types>` of the resulting particles (equal to the split particle by default). 
+For example, passing only a float tells Tissue Forge the ratio 
+of the volume of the newly created particle to the volume of the particle 
+before the split, ::
+
+    # Split the particle again and produce a new particle with 
+    # a volume equal to 25% of the volume of the parent particle before 
+    # before the split
+    smaller_particle = parent_particle.split(0.25)
+
+In general, the following always hold true during particle splitting, 
+
+* The two resulting particles are in contact. 
+* The total mass, volume, and any species amounts of the two resulting particles are equal to those of the split particle just before the split. 
+* The center of mass of the two resulting particles are the same as that of the split particle just before the split. 
+
+For details on using various particle splitting features, refer to the
+:ref:`Tissue Forge API Reference <api_reference>`.
+
 Splitting Clusters
 ^^^^^^^^^^^^^^^^^^^
 

@@ -31,6 +31,7 @@
 #include <rendering/tfColorMapper.h>
 #include <rendering/tfStyle.h>
 #include <tfEngine.h>
+#include <tf_util.h>
 
 
 using namespace TissueForge;
@@ -68,6 +69,10 @@ namespace TissueForge {
 #define TFC_PTYPEHANDLE_GET(handle) \
     ParticleType *ptype = TissueForge::castC<ParticleType, tfParticleTypeHandle>(handle); \
     TFC_PTRCHECK(ptype);
+
+#define TFC_PTYPEHANDLE_GETN(handle, name) \
+    ParticleType *name = TissueForge::castC<ParticleType, tfParticleTypeHandle>(handle); \
+    TFC_PTRCHECK(name);
 
 #define TFC_PARTICLELIST_GET(handle) \
     ParticleList *plist = TissueForge::castC<ParticleList, tfParticleListHandle>(handle); \
@@ -212,10 +217,40 @@ HRESULT tfParticleHandle_split(struct tfParticleHandleHandle *handle, struct tfP
     TFC_PARTICLEHANDLE_GET(handle);
     TFC_PTRCHECK(newParticleHandle);
 
-    auto nphandle = phandle->fission();
+    auto nphandle = phandle->split();
     TFC_PTRCHECK(nphandle);
 
     newParticleHandle->tfObj = (void*)nphandle;
+
+    return S_OK;
+}
+
+HRESULT tfParticleHandle_splitTypes(
+    struct tfParticleHandleHandle* handle, 
+    struct tfParticleHandleHandle* newParticleHandle,
+    struct tfParticleTypeHandle* parentTypeHandle, 
+    struct tfParticleTypeHandle* childTypeHandle
+) {
+    TFC_PARTICLEHANDLE_GETN(handle, parentParticle);
+    TFC_PTRCHECK(newParticleHandle);
+
+    ParticleType* parentType = NULL;
+    ParticleType* childType = NULL;
+    if(parentTypeHandle) {
+        TFC_PTYPEHANDLE_GETN(parentTypeHandle, _parentType);
+        parentType = _parentType;
+    }
+    if(childTypeHandle) {
+        TFC_PTYPEHANDLE_GETN(childTypeHandle, _childType);
+        childType = _childType;
+    }
+
+    FVector3 direction = randomUnitVector();
+
+    auto childParticle = parentParticle->split(randomUnitVector(), FPTYPE_ONE / FPTYPE_TWO, parentType, childType);
+    TFC_PTRCHECK(childParticle);
+
+    newParticleHandle->tfObj = (void*)childParticle;
 
     return S_OK;
 }

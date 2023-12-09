@@ -341,19 +341,175 @@ namespace TissueForge {
         virtual ParticleHandle* fission();
 
         /**
-         * @brief Splits a single particle into two and returns the new particle. 
+         * @brief Splits a single particle into two. 
+         * 
+         * The new particle is placed along a randomly selected orientation. 
+         * 
+         * The two resulting particles have the same mass and volume. 
+         * 
+         * If species are attached to the split particle, then the amount of species 
+         * is allocated to the two resulting particles such that their species concentrations 
+         * are the same as the split particle. Species are conserved. 
+         * 
+         * The two resulting particles have the type of the split particle. 
+         * 
+         * The two resulting particles are placed in contact. 
+         * 
+         * The center of mass of the two resulting particles is the same as that of the split particle. 
+         * 
+         * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
          * 
          * @return new particle
          */
         virtual ParticleHandle* split();
 
         /**
-         * @brief Splits a single particle into two along a direction. 
+         * @brief Splits a single particle into two 
+         * along a given direction. 
          * 
-         * @param direction direction along which the particle is split. 
+         * The new particle is placed along the orientation of the passed direction. 
+         * 
+         * The two resulting particles have the same mass and volume. 
+         * 
+         * If species are attached to the split particle, then the amount of species 
+         * is allocated to the two resulting particles such that their species concentrations 
+         * are the same as the split particle. Species are conserved. 
+         * 
+         * The two resulting particles have the type of the split particle. 
+         * 
+         * The two resulting particles are placed in contact. 
+         * 
+         * The center of mass of the two resulting particles is the same as that of the split particle. 
+         * 
+         * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
+         * 
+         * @param childDirection direction along which the particle is split. 
          * @return new particle
         */
-        virtual ParticleHandle* split(const FVector3& direction);
+        virtual ParticleHandle* split(const FVector3& childDirection);
+
+        /**
+         * @brief Splits a single particle into two 
+         * with sizes according to a given ratio. 
+         * 
+         * The new particle is placed along a randomly selected orientation. 
+         * 
+         * The new particle has a mass and volume equal to those of the split particle multiplied by a ratio. 
+         * 
+         * If species are attached to the split particle, then the amount of species 
+         * is allocated to the two resulting particles such that their species concentrations 
+         * are the same as the split particle. Species are conserved. 
+         * 
+         * The two resulting particles have the type of the split particle. 
+         * 
+         * The two resulting particles are placed in contact. 
+         * 
+         * The center of mass of the two resulting particles is the same as that of the split particle. 
+         * 
+         * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
+         * 
+         * @param childRatio ratio of the child particle volume to the split particle volume. Must be in (0, 1). 
+         * @return new particle
+         */
+        virtual ParticleHandle* split(const FPTYPE& childRatio);
+
+        /**
+         * @brief Splits a single particle into two and 
+         * allocates species according to given ratios. 
+         * 
+         * The new particle is placed along a randomly selected orientation. 
+         * 
+         * The two resulting particles have the same mass and volume. 
+         * 
+         * If species are attached to the split particle, then the amount of species 
+         * is allocated to the two resulting particles such that the total amount in the new particles is equal to  
+         * the total amount of the split particle multiplied by a ratio. Species are conserved. 
+         * 
+         * The two resulting particles have the type of the split particle. 
+         * 
+         * The two resulting particles are placed in contact. 
+         * 
+         * The center of mass of the two resulting particles is the same as that of the split particle. 
+         * 
+         * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
+         * 
+         * @param speciesRatios ratio of the child particle total species amount to the split particle total species amount. Each must be in (0, 1). 
+         * @return new particle
+         */
+        virtual ParticleHandle* split(const std::vector<FPTYPE>& speciesRatios);
+
+        /**
+         * @brief Splits a single particle into two 
+         * along a given direction, 
+         * with sizes according to a given ratio, and 
+         * and optionally with different resulting particle types. 
+         * 
+         * The new particle is placed along the orientation of the passed direction. 
+         * 
+         * The new particle has a mass and volume equal to those of the split particle multiplied by a ratio. 
+         * 
+         * If species are attached to the split particle, then the amount of species 
+         * is allocated to the two resulting particles such that the total amount in the new particles is equal to  
+         * the total amount of the split particle multiplied by a ratio. Species are conserved. 
+         * 
+         * The two resulting particles have the type of the split particle unless otherwise specified. 
+         * 
+         * The two resulting particles are placed in contact. 
+         * 
+         * The center of mass of the two resulting particles is the same as that of the split particle. 
+         * 
+         * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
+         * 
+         * @param childDirection direction along which the particle is split. 
+         * @param childRatio ratio of the child particle volume to the split particle volume. Must be in (0, 1). 
+         * @param parentType optional type of the split particle after the split
+         * @param childType optional type of the new particle
+         * @return new particle
+         */
+        virtual ParticleHandle* split(
+            const FVector3& childDirection,
+            const FPTYPE& childRatio,
+            ParticleType* parentType=NULL,
+            ParticleType* childType=NULL
+        );
+
+        /**
+         * @brief Splits a single particle into two 
+         * along a given direction, 
+         * with sizes according to a given ratio, 
+         * allocates species according to given ratios, and 
+         * optionally with different resulting particle types. 
+         * 
+         * The new particle is placed along the orientation of the passed direction. 
+         * 
+         * The new particle has a mass and volume equal to those of the split particle multiplied by a ratio. 
+         * 
+         * If species are attached to the split particle, then the amount of species 
+         * is allocated to the two resulting particles such that the total amount in the new particles is equal to  
+         * the total amount of the split particle multiplied by a ratio. Species are conserved. 
+         * 
+         * The two resulting particles have the type of the split particle unless otherwise specified. 
+         * 
+         * The two resulting particles are placed in contact. 
+         * 
+         * The center of mass of the two resulting particles is the same as that of the split particle. 
+         * 
+         * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
+         * 
+         * @param childDirection direction along which the particle is split. 
+         * @param childRatio ratio of the child particle volume to the split particle volume. Must be in (0, 1). 
+         * @param speciesRatios ratio of the child particle total species amount to the split particle total species amount. Each must be in (0, 1). 
+         * @param parentType optional type of the split particle after the split
+         * @param childType optional type of the new particle
+         * @return new particle
+         */
+        virtual ParticleHandle* split(
+            const FVector3& childDirection,
+            const FPTYPE& childRatio,
+            const std::vector<FPTYPE>& speciesRatios,
+            ParticleType* parentType=NULL,
+            ParticleType* childType=NULL
+        );
 
         /**
          * @brief Destroys the particle and removes it from inventory. 
@@ -926,20 +1082,13 @@ namespace TissueForge {
     CAPI_FUNC(Particle*) Particle_Get(ParticleHandle *pypart);
 
 
-    /**
-     * simple fission,
-     *
-     * divides a particle into two, and creates a new daughter particle in the
-     * universe.
-     *
-     * Vector of numbers indicate how to split the attached chemical cargo.
-     */
-    CAPI_FUNC(ParticleHandle*) Particle_FissionSimple(
-        Particle *part,
-        ParticleType *a, 
-        ParticleType *b,
-        int nPartitionRatios, 
-        FPTYPE *partitionRations
+    ParticleHandle* Particle_split(
+        Particle* self,
+        const FVector3& childDirection,
+        const FPTYPE& childRatio,
+        const std::vector<FPTYPE>* speciesRatios=NULL,
+        ParticleType* parentType=NULL,
+        ParticleType* childType=NULL
     );
 
     CAPI_FUNC(ParticleHandle*) Particle_New(
