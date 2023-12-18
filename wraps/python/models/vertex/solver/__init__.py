@@ -54,22 +54,25 @@ from tissue_forge.tissue_forge import _vertex_solver__createHex3DMesh as create_
 
 __all__ = ['bind']
 
+
 class MeshObjActor(_vertex_solver_MeshObjActor):
-    """
+    r"""
     Base definition of how a mesh object acts on another mesh object
     """
     pass
 
+
 class MeshObjType(_vertex_solver_MeshObjType):
-    """
+    r"""
     Base mesh object type definition. 
     
     The type definition of a mesh object should derive from this class
     """
     pass
 
+
 class Body(_vertex_solver_Body):
-    """
+    r"""
     The mesh body is a volume-enclosing object of mesh surfaces. 
     
     The mesh body consists of at least four mesh surfaces. 
@@ -80,8 +83,9 @@ class Body(_vertex_solver_Body):
     """
     pass
 
+
 class BodyHandle(_vertex_solver_BodyHandle):
-    """
+    r"""
     A handle to a :class:`Body`. 
     
     The engine allocates :class:`Body` memory in blocks, and :class:`Body`
@@ -91,8 +95,9 @@ class BodyHandle(_vertex_solver_BodyHandle):
     """
     pass
 
+
 class BodyType(_vertex_solver_BodyType):
-    """
+    r"""
     Mesh body type
     
     Can be used as a factory to create mesh body instances with 
@@ -100,28 +105,32 @@ class BodyType(_vertex_solver_BodyType):
     """
     pass
 
+
 class Mesh(_vertex_solver_Mesh):
-    """
+    r"""
     Contains all :class:`Vertex`, :class:`Surface` and :class:`Body` instances
     """
     pass
 
+
 class MeshSolver(_vertex_solver_MeshSolver):
-    """
+    r"""
     Vertex model mesh solver
     
     A singleton solver performs all vertex model dynamics simulation at runtime. 
     """
     pass
 
+
 class MeshSolverTimers(_vertex_solver_MeshSolverTimers):
-    """
+    r"""
     Mesh solver performance timers
     """
     pass
 
+
 class Surface(_vertex_solver_Surface):
-    """
+    r"""
     The mesh surface is an area-enclosed object of implicit mesh edges defined by mesh vertices. 
     
     The mesh surface consists of at least three mesh vertices. 
@@ -134,8 +143,9 @@ class Surface(_vertex_solver_Surface):
     """
     pass
 
+
 class SurfaceHandle(_vertex_solver_SurfaceHandle):
-    """
+    r"""
     A handle to a :class:`Surface`. 
     
     The engine allocates :class:`Surface` memory in blocks, and :class:`Surface`
@@ -145,8 +155,9 @@ class SurfaceHandle(_vertex_solver_SurfaceHandle):
     """
     pass
 
+
 class SurfaceType(_vertex_solver_SurfaceType):
-    """
+    r"""
     Mesh surface type. 
     
     Can be used as a factory to create mesh surface instances with 
@@ -154,14 +165,16 @@ class SurfaceType(_vertex_solver_SurfaceType):
     """
     pass
 
+
 class Vertex(_vertex_solver_Vertex):
-    """
+    r"""
     The mesh vertex is a volume of a mesh centered at a point in a space.
     """
     pass
 
+
 class VertexHandle(_vertex_solver_VertexHandle):
-    """
+    r"""
     A handle to a :class:`Vertex`. 
     
     The engine allocates :class:`Vertex` memory in blocks, and :class:`Vertex`
@@ -171,32 +184,37 @@ class VertexHandle(_vertex_solver_VertexHandle):
     """
     pass
 
+
 class Logger(_vertex_solver_Logger):
-    """
+    r"""
     The Tissue Forge vertex model solver logger. 
     """
     pass
 
+
 class Quality(_vertex_solver_Quality):
-    """
+    r"""
     An object that schedules topological operations on a mesh to maintain its quality
     """
     pass
 
+
 class BodyForce(_vertex_solver_BodyForce):
-    """
+    r"""
     Imposes a body force on :class:`Body` instances
     """
     pass
 
+
 class NormalStress(_vertex_solver_NormalStress):
-    """
+    r"""
     Models a stress acting on a :class:`Surface` along its normal
     """
     pass
 
+
 class PerimeterConstraint(_vertex_solver_PerimeterConstraint):
-    """
+    r"""
     Imposes a perimeter constraint on 'Surface' instances.
 
     The perimeter constraint is implemented for two-dimensional objects
@@ -212,8 +230,9 @@ class PerimeterConstraint(_vertex_solver_PerimeterConstraint):
     """
     pass
 
+
 class SurfaceAreaConstraint(_vertex_solver_SurfaceAreaConstraint):
-    """
+    r"""
     Imposes a surface area constraint on 'Body' or 'Surface' instances.
 
     The surface area constraint is implemented for two- and three-dimensional objects
@@ -229,14 +248,16 @@ class SurfaceAreaConstraint(_vertex_solver_SurfaceAreaConstraint):
     """
     pass
 
+
 class SurfaceTraction(_vertex_solver_SurfaceTraction):
-    """
+    r"""
     Models a traction force
     """
     pass
 
+
 class VolumeConstraint(_vertex_solver_VolumeConstraint):
-    """
+    r"""
     Imposes a volume constraint.
 
     The volume constraint is implemented for three-dimensional objects
@@ -252,8 +273,9 @@ class VolumeConstraint(_vertex_solver_VolumeConstraint):
     """
     pass
 
+
 class EdgeTension(_vertex_solver_EdgeTension):
-    """
+    r"""
     Models tension between connected vertices.
 
     Edge tension is implemented for two-dimensional objects as minimization of the Hamiltonian,
@@ -268,8 +290,9 @@ class EdgeTension(_vertex_solver_EdgeTension):
     """
     pass
 
+
 class Adhesion(_vertex_solver_Adhesion):
-    """
+    r"""
     Models adhesion between pairs of 'Surface' or 'Body' instances by type.
 
     Adhesion is implemented for two-dimensional objects as minimization of the Hamiltonian,
