@@ -99,7 +99,7 @@ namespace TissueForge {
 
         struct BondsInstanceData {
             Magnum::Vector3 position;
-            Magnum::Color3 color;
+            Magnum::Color4 color;
         };
 
 
