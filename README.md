@@ -1,7 +1,9 @@
 Tissue Forge
 ============
 
-![](https://github.com/tissue-forge/tissue-forge/blob/main/docs/main/source/droplets_3d.gif)
+<p align=center>
+<img src="docs/main/source/droplets_3d.gif" width="600">
+</p>
 
 Tissue Forge is an interactive, particle-based physics, chemistry and biology
 modeling and simulation environment. Tissue Forge provides the ability to create, 
@@ -43,6 +45,75 @@ Tissue Forge documentation is available online,
 |  Python API Documentation  | [link](https://tissue-forge-python-api-documentation.readthedocs.io/en/latest/) | [![Documentation Status](https://readthedocs.org/projects/tissue-forge-python-api-documentation/badge/?version=latest)](https://tissue-forge-python-api-documentation.readthedocs.io/en/latest/?badge=latest) |
 |    C API Documentation     |   [link](https://tissue-forge-c-api-documentation.readthedocs.io/en/latest/)    |      [![Documentation Status](https://readthedocs.org/projects/tissue-forge-c-api-documentation/badge/?version=latest)](https://tissue-forge-c-api-documentation.readthedocs.io/en/latest/?badge=latest)      |
 
+# Gallery #
+
+<p align=center>
+<img src="docs/main/source/droplets_3d.gif" width="600">
+<br/>
+<em>
+Tissue Forge simulation of chemical flux during fluid droplet collision. 
+Each particle represents a portion of fluid that carries an amount of a diffusive chemical, 
+the amount of which varies from zero (blue) to one (red). 
+When two droplets carrying different initial chemical amounts collide, 
+resulting droplets tend towards homogeneous chemical distributions. 
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/cell_sorting.gif" width="600">
+<br/>
+<em>
+Tissue Forge simulation of cell sorting by differential adhesion. 
+Each particle represents a cell, and cells sort by preferential attachment to 
+their own type (blue or red). 
+This 
+<a href="examples/py/cell_sorting.py">example</a> 
+is available in Python.
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/models/vertex/solver/capillary_loop.png" width="600">
+<br/>
+<em>
+Tissue Forge vertex model configuration generated from an imported _.obj_ mesh of a local vasculature. 
+The _.obj_ was generated in <a href="https://www.blender.org/">Blender</a>. 
+<br/>
+This 
+<a href="wraps/python/models/vertex/solver/examples/capillary_loop.py">example</a> 
+is available in Python.
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/colonic_crypt.gif" width="600">
+<br/>
+<em>
+Two-dimensional agent-based model of cell proliferation and differentiation in the colonic crypt. 
+Each cell is assigned a state dynamics model of the cell cycle and unique clonal identification 
+(visualized as a unique particle color). 
+When the cell cycle model of a cell transitions from the M phase to the G1 phase, 
+the cell divides and copies its clonal identification to its progeny. 
+Cells are removed when they reach the base of the crypt. 
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/cellcrawling.gif" width="600">
+<br/>
+<em>
+Tissue Forge simulation of single cell migration over extracellular matrix fibers using combined 
+vertex- and particle-based modeling. 
+Integrins (green particles) bind to extracellular matrix fibers (red particles) 
+and generate protrusive forces (green lines) 
+on the vertices that describe the shape of the cell (red polygon). 
+Detailed view shows deformations in the ECM caused by force generation during cell migration.
+<br/>
+This 
+<a href="wraps/python/models/vertex/solver/examples/cell_migration.py">example</a> 
+is available in Python.
+</em>
+</p>
 
 # Installation #
 
