@@ -76,8 +76,8 @@ is available in Python.
 <img src="docs/main/source/models/vertex/solver/capillary_loop.png" width="600">
 <br/>
 <em>
-Tissue Forge vertex model configuration generated from an imported *.obj* mesh of a local vasculature. 
-The *.obj* was generated in <a href="https://www.blender.org/">Blender</a>. 
+Tissue Forge vertex model configuration generated from an imported _.obj_ mesh of a local vasculature. 
+The _.obj_ was generated in <a href="https://www.blender.org/">Blender</a>. 
 <br/>
 This 
 <a href="wraps/python/models/vertex/solver/examples/capillary_loop.py">example</a> 
