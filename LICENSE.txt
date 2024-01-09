@@ -1,4 +1,4 @@
-Copyright (C) 2022, 2023 T.J. Sego
+Copyright (C) 2022-2024 T.J. Sego
 
 Tissue Forge is free software: you can redistribute it and/or modify 
 it under the terms of the GNU Lesser General Public License as 
