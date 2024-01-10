@@ -1,4 +1,4 @@
-#*******************************************************************************
+# ******************************************************************************
 # This file is part of Tissue Forge.
 # Copyright (c) 2022-2024 T.J. Sego
 # 
@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # 
-#*******************************************************************************
+# ******************************************************************************
 
 import tissue_forge as tf
 

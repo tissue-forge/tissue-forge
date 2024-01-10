@@ -562,6 +562,12 @@ Particle *particleSelf(ParticleHandle *handle) {
 HRESULT TissueForge::ParticleHandle::destroy()
 {
     TF_PARTICLE_SELFW(this, S_OK)
+    HRESULT result = S_OK;
+    if(self->clusterId >= 0 && (result = _Engine.s.partlist[self->clusterId]->removepart(self->id)) != S_OK)  
+        return result;
+    for(int i = 0; i < self->size_parts; i++) 
+        if(self->parts[i] >= 0 && (result = ParticleHandle(self->parts[i]).destroy()) != S_OK) 
+            return result;
     return engine_del_particle(&_Engine, self->id);
 }
 

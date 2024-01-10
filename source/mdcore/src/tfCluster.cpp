@@ -183,6 +183,11 @@ TissueForge::ClusterParticleType::ClusterParticleType(const bool &noReg) :
     ParticleType(noReg) 
 {
     this->particle_flags |= PARTICLE_CLUSTER;
+    this->types.flags &= ~PARTICLELIST_OWNDATA;
+}
+
+TissueForge::ClusterParticleType::~ClusterParticleType() {
+    this->types.free();
 }
 
 std::string TissueForge::ClusterParticleType::str() const {
