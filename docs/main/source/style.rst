@@ -13,6 +13,8 @@ its type, which can then be individually manipulated. The ``style`` attribute
 currently supports setting the color (:meth:`setColor <rendering.Style.setColor>`) and
 visibility (:meth:`setVisible <rendering.Style.setVisible>`) of its parent object.
 
+.. _styling_particles:
+
 Styling Particles
 ^^^^^^^^^^^^^^^^^^
 
@@ -48,3 +50,18 @@ color as a string. The visibility of a type can be specified with key
     class MyBlueParticleType(tf.ParticleTypeSpec):
         style = {'color': 'CornflowerBlue', 'visible': False}
 
+Styling Bonds
+^^^^^^^^^^^^^^
+
+:class:`Bonds <BondHandle>`, :class:`angles <AngleHandle>`, and :class:`dihedrals <DihedralHandle>`
+have a :py:class:`rendering.Style` instance.
+All instances of each class share the same :py:class:`rendering.Style` instance by default.
+To customize the appearance of an individual bond, angle, or dihedral,
+create and set a new style instance using the :ref:`same procedure as for particles <styling_particles>`.::
+
+    # Create a bond between particles "part_a" and "part_b"
+    bh: tf.BondHandle = tf.Bond.create(potential, part_a, part_b)
+    # Make the bond invisible
+    bond_style = tf.rendering.Style()
+    bond_style.visible = False
+    bh.style = bond_style
