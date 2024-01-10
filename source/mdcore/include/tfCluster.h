@@ -48,6 +48,7 @@ namespace TissueForge {
     struct CAPI_EXPORT ClusterParticleType : ParticleType {
 
         ClusterParticleType(const bool &noReg=false);
+        virtual ~ClusterParticleType();
 
         std::string str() const override;
 
