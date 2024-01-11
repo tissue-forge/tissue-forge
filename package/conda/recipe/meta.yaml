@@ -1,4 +1,4 @@
-{% set TF_PYVER = environ.get('TF_PYVER', 'None') %}
+{% set TF_PYVER = environ.get('TF_PYVER', 0) %}
 
 package:
   name: tissue-forge
@@ -26,8 +26,8 @@ build:
 
 requirements:
   host:
-    - python {{ python }}   # [TF_PYVER == 'None']
-    - python={{ TF_PYVER }} # [TF_PYVER != 'None']
+    - python {{ python }}   # [TF_PYVER==0]
+    - python={{ TF_PYVER }} # [TF_PYVER!=0]
     - numpy
     - bzip2
     - libxml2<=2.11
