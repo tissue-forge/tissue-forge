@@ -65,4 +65,4 @@ jobs:
           tf_version: $(tf_version)
           staging_dir: ${{ parameters.staging_dir }}
           build_output: $(BUILD_OUTPUT)
-          py_versions: $(PY_VERSION_LAB)
+          py_versions: [$(PY_VERSION_LAB)]
