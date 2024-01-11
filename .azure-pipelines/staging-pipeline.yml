@@ -25,6 +25,9 @@ parameters:
 - name: py_minor_versions_osx
   type: object
   default: [8, 9, 10]
+- name: py_minor_versions_conda
+  type: object
+  default: [8, 9, 10, 11]
 
 stages:
 
@@ -90,15 +93,17 @@ stages:
       vmImage: 'windows-2019'
     dependsOn: []
     jobs:
-      - template: job-templates/job-build-test-package-win-conda.yml
-        parameters:
-          name: 'TissueForgeBuildWindowsConda'
-          platform_name: 'win64'
-          tf_buildqual: $(tf_buildqual)
-          working_dir: $(Agent.BuildDirectory)
-          staging_dir: $(Build.ArtifactStagingDirectory)
-          tf_version: $(tf_version)
-          tf_buildnum: $(tf_buildnum)
+      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+        - template: job-templates/job-build-test-package-win-conda.yml
+          parameters:
+            name: ${{ format('TissueForgeBuildWindowsConda_Python_3_{0}', py_minor_version) }}
+            platform_name: 'win64'
+            tf_buildqual: $(tf_buildqual)
+            py_minor_version: ${{ py_minor_version }}
+            working_dir: $(Agent.BuildDirectory)
+            staging_dir: $(Build.ArtifactStagingDirectory)
+            tf_version: $(tf_version)
+            tf_buildnum: $(tf_buildnum)
 
   # Linux build: conda
 
@@ -108,15 +113,17 @@ stages:
       vmImage: 'ubuntu-20.04'
     dependsOn: []
     jobs:
-      - template: job-templates/job-build-test-package-linux-conda.yml
-        parameters:
-          name: 'TissueForgeBuildLinuxConda'
-          platform_name: 'linux64'
-          tf_buildqual: $(tf_buildqual)
-          working_dir: $(Agent.BuildDirectory)
-          staging_dir: $(Build.ArtifactStagingDirectory)
-          tf_version: $(tf_version)
-          tf_buildnum: $(tf_buildnum)
+      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+        - template: job-templates/job-build-test-package-linux-conda.yml
+          parameters:
+            name: ${{ format('TissueForgeBuildLinuxConda_Python_3_{0}', py_minor_version) }}
+            platform_name: 'linux64'
+            tf_buildqual: $(tf_buildqual)
+            py_minor_version: ${{ py_minor_version }}
+            working_dir: $(Agent.BuildDirectory)
+            staging_dir: $(Build.ArtifactStagingDirectory)
+            tf_version: $(tf_version)
+            tf_buildnum: $(tf_buildnum)
 
   # MacOS build: conda
 
@@ -126,12 +133,14 @@ stages:
       vmImage: 'macOS-11'
     dependsOn: []
     jobs:
-      - template: job-templates/job-build-test-package-osx-conda.yml
-        parameters:
-          name: 'TissueForgeBuildMacConda'
-          platform_name: 'osx64'
-          tf_buildqual: $(tf_buildqual)
-          working_dir: $(Agent.BuildDirectory)
-          staging_dir: $(Build.ArtifactStagingDirectory)
-          tf_version: $(tf_version)
-          tf_buildnum: $(tf_buildnum)
+      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+        - template: job-templates/job-build-test-package-osx-conda.yml
+          parameters:
+            name: ${{ format('TissueForgeBuildMacConda_Python_3_{0}', py_minor_version) }}
+            platform_name: 'osx64'
+            tf_buildqual: $(tf_buildqual)
+            py_minor_version: ${{ py_minor_version }}
+            working_dir: $(Agent.BuildDirectory)
+            staging_dir: $(Build.ArtifactStagingDirectory)
+            tf_version: $(tf_version)
+            tf_buildnum: $(tf_buildnum)
