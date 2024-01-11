@@ -37,6 +37,8 @@ jobs:
         submodules: recursive
         path: tissue-forge
         displayName: Get source
+      - script: rm -rf $(SOURCE_DIR)/docs
+        displayName: Clean source
       - script: conda create -p $(ENV_DIR) conda-build conda-verify -y
         displayName: Conda setup
       

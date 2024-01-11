@@ -33,8 +33,8 @@ jobs:
         submodules: recursive
         path: tissue-forge
         displayName: Get source
-      - script: rmdir $(SOURCE_DIR)\extern\libsbml\src\sbml\validator\test\test-data /s /q
-        displayName: Patch source
+      - script: rmdir $(SOURCE_DIR)\docs /s /q
+        displayName: Clean source
       - script: conda create -p $(ENV_DIR) conda-build conda-verify -y
         displayName: Conda setup
 
