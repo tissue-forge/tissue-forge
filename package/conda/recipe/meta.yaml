@@ -1,3 +1,5 @@
+{% set TF_PYVER = environ.get('TF_PYVER', 'None') %}
+
 package:
   name: tissue-forge
   version: {{ environ.get('TF_VERSION', '') }}
@@ -24,7 +26,8 @@ build:
 
 requirements:
   host:
-    - python {{ python }}
+    - python {{ python }}   # [TF_PYVER == 'None']
+    - python={{ TF_PYVER }} # [TF_PYVER != 'None']
     - numpy
     - bzip2
     - libxml2<=2.11
