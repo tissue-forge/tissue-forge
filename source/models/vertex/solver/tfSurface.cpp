@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -37,6 +37,8 @@
 #include <tf_util.h>
 #include <io/tfIO.h>
 #include <io/tfFIO.h>
+#include <tfTaskScheduler.h>
+#include <tf_metrics.h>
 
 #include <io/tfThreeDFVertexData.h>
 #include <io/tfThreeDFEdgeData.h>
@@ -113,7 +115,65 @@ static HRESULT Surface_fromVertices(Surface *s, std::vector<Vertex*> vertices) {
     return S_OK;
 }
 
-static Surface *Surface_create(std::vector<Vertex*> _vertices) {
+static HRESULT Surfaces_fromVertices(Surface **s, std::vector<std::vector<Vertex*> > vertices) {
+    Surface_GETMESH(mesh, E_FAIL);
+
+    std::vector<HRESULT> resultPool(ThreadPool::size(), S_OK);
+    std::vector<std::unordered_map<Vertex*, std::unordered_set<Surface*> > > toAddSurfacesByVertexPool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&s, &vertices, &mesh, &resultPool, &toAddSurfacesByVertexPool](int tid) -> void {
+            HRESULT& resultThread = resultPool[tid];
+            std::unordered_map<Vertex*, std::unordered_set<Surface*> >& toAddSurfacesByVertexThread = toAddSurfacesByVertexPool[tid];
+
+            for(int i = tid; i < vertices.size(); i += ThreadPool::size()) {
+                std::vector<Vertex*>& vertices_i = vertices[i];
+                Surface* si = s[i];
+                if(vertices_i.size() < 3) {
+                    resultThread = E_FAIL;
+                    return;
+                }
+                else {
+                    for(auto& v : vertices_i) {
+                        si->add(v);
+                        toAddSurfacesByVertexThread[v].insert(si);
+                    }
+                }
+            }
+        }
+    );
+    for(auto& resultThread : resultPool) 
+        if(resultThread != S_OK) {
+            return tf_error(resultThread, "Surfaces require at least 3 vertices");
+        }
+
+    std::unordered_map<Vertex*, std::unordered_set<Surface*> > toAddSurfacesByVertex;
+    for(auto& toAddSurfacesByVertexThread : toAddSurfacesByVertexPool) {
+        for(auto& m : toAddSurfacesByVertexThread) 
+            toAddSurfacesByVertex[m.first].insert(m.second.begin(), m.second.end());
+    }
+    std::vector<Vertex*> verticesFlat;
+    verticesFlat.reserve(toAddSurfacesByVertex.size());
+    for(auto& m : toAddSurfacesByVertex) 
+        verticesFlat.push_back(m.first);
+    parallel_for(
+        verticesFlat.size(), 
+        [&verticesFlat, &toAddSurfacesByVertex](int i) -> void {
+            Vertex* v = verticesFlat[i];
+            for(auto& s : toAddSurfacesByVertex[v]) 
+                v->add(s);
+        }
+    );
+
+    parallel_for(
+        vertices.size(), 
+        [&vertices](int i) -> void { for(auto& v : vertices[i]) v->updateConnectedVertices(); }
+    );
+
+    return S_OK;
+}
+
+static Surface *Surface_create(const std::vector<Vertex*>& _vertices) {
     Surface_GETMESH(mesh, NULL);
 
     Surface *result;
@@ -126,6 +186,23 @@ static Surface *Surface_create(std::vector<Vertex*> _vertices) {
         return NULL;
     }
     result->positionChanged();
+    return result;
+}
+
+static std::vector<Surface*> Surfaces_create(const std::vector<std::vector<Vertex*> >& _vertices) {
+    Surface_GETMESH(mesh, {});
+
+    std::vector<Surface*> result(_vertices.size());
+    Surface** data = result.data();
+    if(mesh->create(&data, _vertices.size()) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
+    if(Surfaces_fromVertices(data, _vertices) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
+    parallel_for(result.size(), [&result](int i) -> void { result[i]->positionChanged(); });
     return result;
 }
 
@@ -144,6 +221,39 @@ static Surface *Surface_create(const std::vector<VertexHandle> &_vertices) {
     }
 
     return Surface_create(_vertices_objs);
+}
+
+static std::vector<Surface*> Surfaces_create(const std::vector<std::vector<VertexHandle> >& _vertices) {
+    std::vector<std::vector<Vertex*> > _vertices_objs(_vertices.size());
+    std::vector<HRESULT> resultPool(ThreadPool::size(), S_OK);
+
+    parallel_for(
+        ThreadPool::size(), 
+        [&_vertices, &_vertices_objs, &resultPool](int tid) -> void {
+            HRESULT& resultThread = resultPool[tid];
+            for(unsigned int i = tid; i < _vertices.size(); i += ThreadPool::size()) {
+                const std::vector<VertexHandle>& _vertices_i = _vertices[i];
+                std::vector<Vertex*>& _vertices_objs_i = _vertices_objs[i];
+                _vertices_objs_i.reserve(_vertices_i.size());
+                for(auto& v : _vertices_i) {
+                    Vertex* _v = v.vertex();
+                    if(!_v) {
+                        resultThread = E_FAIL;
+                        return;
+                    }
+                    _vertices_objs_i.push_back(_v);
+                }
+            }
+        }
+    );
+
+    for(auto& resultThread : resultPool) 
+        if(resultThread != S_OK) {
+            TF_Log(LOG_ERROR);
+            return {};
+        }
+
+    return Surfaces_create(_vertices_objs);
 }
 
 SurfaceHandle Surface::create(const std::vector<VertexHandle> &_vertices) {
@@ -215,6 +325,71 @@ SurfaceHandle Surface::create(TissueForge::io::ThreeDFFaceData *face) {
     }
 
     return create(_vertices);
+}
+
+std::vector<SurfaceHandle> Surface::create(const std::vector<std::vector<VertexHandle> >& _vertices) {
+    std::vector<Surface*> _result = Surfaces_create(_vertices);
+    if(_result.empty()) 
+        return {};
+
+    std::vector<SurfaceHandle> result(_result.size());
+    parallel_for(result.size(), [&_result, &result](int i) -> void { result[i] = SurfaceHandle(_result[i]->_objId); });
+
+    return result;
+}
+
+std::vector<SurfaceHandle> Surface::create(const std::vector<TissueForge::io::ThreeDFFaceData*> &_faces) {
+    if(_faces.empty()) 
+        return {};
+
+    std::vector<std::vector<TissueForge::io::ThreeDFVertexData*> > verticesByFace(_faces.size());
+    std::vector<std::unordered_set<TissueForge::io::ThreeDFVertexData*> > verticesFlatPool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&_faces, &verticesByFace, &verticesFlatPool](int tid) -> void {
+            std::unordered_set<TissueForge::io::ThreeDFVertexData*>& verticesFlatThread = verticesFlatPool[tid];
+            for(unsigned int i = tid; i < _faces.size(); i += ThreadPool::size()) {
+                std::vector<TissueForge::io::ThreeDFVertexData*>& vverts = verticesByFace[i];
+                Surface_order3DFFaceVertices(_faces[i], vverts);
+                for(auto& v : vverts) 
+                    verticesFlatThread.insert(v);
+            }
+        }
+    );
+    std::unordered_set<TissueForge::io::ThreeDFVertexData*> verticesFlatSet;
+    size_t numVertices = 0;
+    for(auto& verticesFlatThread : verticesFlatPool) 
+        verticesFlatSet.insert(verticesFlatThread.begin(), verticesFlatThread.end());
+    std::vector<TissueForge::io::ThreeDFVertexData*> verticesFlat(verticesFlatSet.begin(), verticesFlatSet.end());
+
+    std::vector<VertexHandle> newVertices = Vertex::create(verticesFlat);
+    std::unordered_map<unsigned int, unsigned int> newVerticesMap;
+
+    parallel_for(
+        verticesFlat.size(), 
+        [&verticesFlat, &newVertices, &newVerticesMap](int i) -> void { newVerticesMap[verticesFlat[i]->id] = i; }
+    );
+
+    std::vector<std::vector<Vertex*> > vertices(_faces.size());
+    parallel_for(
+        _faces.size(), 
+        [&verticesByFace, &vertices, &newVertices, &newVerticesMap](int i) -> void {
+            std::vector<TissueForge::io::ThreeDFVertexData*> vverts = verticesByFace[i];
+            std::vector<Vertex*>& verts = vertices[i];
+            verts.reserve(vverts.size());
+            for(auto& vv : vverts) 
+                verts.push_back(newVertices[newVerticesMap[vv->id]].vertex());
+        }
+    );
+
+    std::vector<Surface*> _result = Surfaces_create(vertices);
+    std::vector<SurfaceHandle> result(_result.size());
+    parallel_for(
+        _result.size(), 
+        [&result, &_result](int i) -> void { result[i] = SurfaceHandle(_result[i]->_objId); }
+    );
+
+    return result;
 }
 
 bool Surface::defines(const Body *obj) const { MESHBOJ_DEFINES_DEF(getSurfaces) }
@@ -358,7 +533,7 @@ HRESULT Surface::destroy() {
         return E_FAIL;
     if(this->typeId >= 0 && this->type()->remove(SurfaceHandle(this->_objId)) != S_OK) 
         return E_FAIL;
-    std::vector<Vertex*> affectedVertices = getVertices();
+    auto& affectedVertices = getVertices();
     if(this->_objId >= 0) 
         Mesh::get()->remove(this);
     for(auto &v : affectedVertices) 
@@ -367,7 +542,7 @@ HRESULT Surface::destroy() {
 }
 
 HRESULT Surface::destroy(Surface *target) {
-    auto vertices = target->getVertices();
+    auto& vertices = target->getVertices();
 
     std::unordered_set<Vertex*> affectedVertices;
     for(auto &v : vertices) 
@@ -397,6 +572,131 @@ HRESULT Surface::destroy(SurfaceHandle &target) {
     if(res == S_OK) 
         target.id = -1;
     return res;
+}
+
+HRESULT Surface::destroy(const std::vector<Surface*>& target) {
+    // Filter valid targets and get all vertices, bodies and surface types associated with all removed surfaces
+
+    std::vector<std::unordered_set<Surface*> > surfacesToDestroyPool(ThreadPool::size());
+    std::vector<std::unordered_set<Vertex*> > verticesPool(ThreadPool::size());
+    std::vector<std::unordered_set<Body*> > bodiesPool(ThreadPool::size());
+    std::vector<std::unordered_set<SurfaceType*> > surfaceTypesPool(ThreadPool::size());
+    std::vector<std::unordered_map<SurfaceType*, std::unordered_set<Surface*> > > surfacesByTypePool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&target, &surfacesToDestroyPool, &verticesPool, &bodiesPool, &surfaceTypesPool, &surfacesByTypePool](int tid) -> void {
+            std::unordered_set<Surface*>& surfacesToDestroyThread = surfacesToDestroyPool[tid];
+            std::unordered_set<Vertex*>& verticesThread = verticesPool[tid];
+            std::unordered_set<Body*>& bodiesThread = bodiesPool[tid];
+            std::unordered_set<SurfaceType*>& surfaceTypesThread = surfaceTypesPool[tid];
+            std::unordered_map<SurfaceType*, std::unordered_set<Surface*> >& surfacesByTypeThread = surfacesByTypePool[tid];
+            for(int i = tid; i < target.size(); i += ThreadPool::size()) {
+                Surface* s = target[i];
+                if(s && s->_objId >= 0) {
+                    surfacesToDestroyThread.insert(s);
+                    for(auto& v : s->getVertices()) 
+                        if(v->getSurfaces().size() == 1) 
+                            verticesThread.insert(v);
+                    for(auto& b : s->getBodies()) 
+                        bodiesThread.insert(b);
+                    if(s->typeId >= 0) {
+                        SurfaceType* stype = s->type();
+                        surfaceTypesThread.insert(stype);
+                        surfacesByTypeThread[stype].insert(s);
+                    }
+                }
+            }
+        }
+    );
+    size_t numSurfaces = 0;
+    for(auto& surfacesToDestroyThread : surfacesToDestroyPool) 
+        numSurfaces += surfacesToDestroyThread.size();
+    std::unordered_set<Surface*> surfacesToDestroy;
+    surfacesToDestroy.reserve(numSurfaces);
+    for(auto& surfacesToDestroyThread : surfacesToDestroyPool) 
+        surfacesToDestroy.insert(surfacesToDestroyThread.begin(), surfacesToDestroyThread.end());
+    std::vector<Surface*> surfacesToDestroyVec(surfacesToDestroy.begin(), surfacesToDestroy.end());
+
+    size_t numVertices = 0;
+    for(auto& verticesThread : verticesPool) 
+        numVertices += verticesThread.size();
+    std::unordered_set<Vertex*> vertices;
+    vertices.reserve(numVertices);
+    for(auto& verticesThread : verticesPool) 
+        for(auto& v : verticesThread) 
+            vertices.insert(v);
+    std::vector<Vertex*> verticesVec(vertices.begin(), vertices.end());
+
+    // get all vertices affected by removing the surfaces
+
+    std::vector<std::unordered_set<Vertex*> > affectedVerticesPool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&verticesVec, &surfacesToDestroyVec, &affectedVerticesPool](int tid) -> void {
+            std::unordered_set<Vertex*>& affectedVerticesThread = affectedVerticesPool[tid];
+            for(int i = tid; i < surfacesToDestroyVec.size(); i += ThreadPool::size()) 
+                for(auto& v : surfacesToDestroyVec[i]->getVertices()) 
+                    for(auto& nv : v->connectedVertices()) 
+                        if(std::find(verticesVec.begin(), verticesVec.end(), nv) == verticesVec.end()) 
+                            affectedVerticesThread.insert(nv);
+        }
+    );
+    numVertices = 0;
+    for(auto& affectedVerticesThread : affectedVerticesPool) 
+        numVertices += affectedVerticesThread.size();
+    std::unordered_set<Vertex*> affectedVertices;
+    affectedVertices.reserve(numVertices);
+    for(auto& affectedVerticesThread : affectedVerticesPool) 
+        affectedVertices.insert(affectedVerticesThread.begin(), affectedVerticesThread.end());
+
+    // destroy dependent bodies
+
+    size_t numBodies = 0;
+    for(auto& bodiesThread : bodiesPool) 
+        numBodies += bodiesThread.size();
+    std::unordered_set<Body*> bodies;
+    bodies.reserve(numBodies);
+    for(auto& bodiesThread : bodiesPool) 
+        for(auto& b : bodiesThread) 
+            bodies.insert(b);
+    Body::destroy({bodies.begin(), bodies.end()});
+
+    // remove from types
+
+    size_t numSurfaceTypes = 0;
+    for(auto& surfaceTypesThread : surfaceTypesPool) 
+        numSurfaceTypes += surfaceTypesThread.size();
+    std::unordered_set<SurfaceType*> surfaceTypes;
+    surfaceTypes.reserve(numSurfaceTypes);
+    for(auto& surfaceTypesThread : surfaceTypesPool) 
+        surfaceTypes.insert(surfaceTypesThread.begin(), surfaceTypesThread.end());
+    std::unordered_map<SurfaceType*, size_t> numSurfacesByType;
+    for(auto& stype : surfaceTypes) {
+        size_t& nSurfaces = numSurfacesByType[stype];
+        for(auto& surfacesByTypeThread : surfacesByTypePool) 
+            nSurfaces += surfacesByTypeThread[stype].size();
+    }
+    std::unordered_map<SurfaceType*, std::unordered_set<SurfaceHandle> > surfacesByType;
+    for(auto& stype : surfaceTypes) {
+        std::unordered_set<SurfaceHandle>& thisSurfacesByType = surfacesByType[stype];
+        thisSurfacesByType.reserve(numSurfacesByType[stype]);
+        for(auto& surfacesByTypeThread : surfacesByTypePool) 
+            for(auto& s : surfacesByTypeThread[stype]) 
+                thisSurfacesByType.emplace(s->objectId());
+        stype->remove({thisSurfacesByType.begin(), thisSurfacesByType.end()});
+    }
+
+    // destroy the surfaces
+    Mesh::get()->remove(surfacesToDestroyVec.data(), surfacesToDestroyVec.size());
+
+    // destroy the vertices that have no remaining surfaces
+    Mesh::get()->remove(verticesVec.data(), verticesVec.size());
+
+    // update connectedness of the affected vertices
+    std::vector<Vertex*> affectedVerticesVec(affectedVertices.begin(), affectedVertices.end());
+    parallel_for(affectedVerticesVec.size(), [&affectedVerticesVec](int i) -> void { affectedVerticesVec[i]->updateConnectedVertices(); });
+
+    return S_OK;
 }
 
 bool Surface::validate() {
@@ -553,8 +853,18 @@ std::tuple<Vertex*, Vertex*> Surface::neighborVertices(const Vertex *v) const {
 
     auto itr = std::find(vertices.begin(), vertices.end(), v);
     if(itr != vertices.end()) {
-        vp = itr + 1 == vertices.end() ? *vertices.begin()     : *(itr + 1);
-        vn = itr == vertices.begin()   ? *(vertices.end() - 1) : *(itr - 1);
+        if(itr == vertices.begin()) {
+            vp = *(itr + 1);
+            vn = *(vertices.end() - 1);
+        }
+        else if(itr + 1 == vertices.end()) {
+            vp = *vertices.begin();
+            vn = *(itr - 1);
+        }
+        else {
+            vp = *(itr + 1);
+            vn = *(itr - 1);
+        }
     }
 
     return std::make_tuple(vp, vn);
@@ -791,28 +1101,20 @@ HRESULT Surface::positionChanged() {
     return S_OK;
 }
 
-HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
-    if(s1->objectId() == s2->objectId()) 
-        return S_OK;
+bool Surface::testSew(Surface* s1, Surface* s2, const FloatP_t& distCf, std::vector<int>& indicesMatched) {
+    indicesMatched = std::vector<int>(s1->vertices.size(), -1);
 
-    for(auto &v : s1->vertices) 
-        if(v->positionChanged() != S_OK) 
-            return E_FAIL;
-    for(auto &v : s2->vertices) 
-        if(v->positionChanged() != S_OK) 
-            return E_FAIL;
-    if(s1->positionChanged() != S_OK || s2->positionChanged() != S_OK) 
-        return E_FAIL;
-
-    // Pre-calculate vertex positions
-    std::vector<FVector3> s2_positions;
-    s2_positions.reserve(s2->vertices.size());
-    for(auto &v : s2->vertices) 
-        s2_positions.push_back(v->getPosition());
+    // Pre-calculate info
+    std::vector<std::pair<unsigned int, FVector3> > s2_positions_filtered;
+    s2_positions_filtered.reserve(s2->vertices.size());
+    for(unsigned int i = 0; i < s2->vertices.size(); i++) {
+        Vertex* v = s2->vertices[i];
+        if(!v->defines(s1)) 
+            s2_positions_filtered.push_back({i, v->getPosition()});
+    }
 
     // Find vertices to merge
-    FloatP_t distCrit2 = distCf * distCf * 0.5 * (s1->area + s2->area);
-    std::vector<int> indicesMatched(s1->vertices.size(), -1);
+    const FloatP_t distCrit2 = distCf * distCf * 0.5 * (s1->area + s2->area);
     std::vector<FloatP_t> dist2Matched(s1->vertices.size(), distCrit2);
     size_t numMatched = 0;
     for(int i = 0; i < s1->vertices.size(); i++) {
@@ -823,10 +1125,12 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
         auto posi = vi->getPosition();
         FloatP_t minDist2 = distCrit2;
         int matchedIdx = -1;
-        for(int j = 0; j < s2->vertices.size(); j++) { 
-            Vertex *vj = s2->vertices[j];
-            auto dist2 = (s2_positions[j] - posi).dot();
-            if(dist2 < minDist2 && !vj->defines(s1)) {
+        for(auto& p : s2_positions_filtered) {
+            unsigned int j;
+            FVector3 posj;
+            std::tie(j, posj) = p;
+            auto dist2 = (posj - posi).dot();
+            if(dist2 < minDist2) {
                 minDist2 = dist2;
                 matchedIdx = j;
             }
@@ -854,11 +1158,27 @@ HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
             numMatched++;
     }
 
-    if(numMatched == 0) 
+    return numMatched > 0;
+}
+
+HRESULT Surface::sew(Surface *s1, Surface *s2, const FloatP_t &distCf) {
+    for(auto &v : s1->vertices) 
+        if(v->positionChanged() != S_OK) 
+            return E_FAIL;
+    for(auto &v : s2->vertices) 
+        if(v->positionChanged() != S_OK) 
+            return E_FAIL;
+    if(s1->positionChanged() != S_OK || s2->positionChanged() != S_OK) 
+        return E_FAIL;
+
+    // Find vertices to merge
+    std::vector<int> indicesMatched;
+    if(!testSew(s1, s2, distCf, indicesMatched)) 
         return S_OK;
 
     // Merge matched vertices
     std::vector<std::pair<Vertex*, Vertex*> > toMerge;
+    toMerge.reserve(indicesMatched.size());
     for(int i = 0; i < indicesMatched.size(); i++) {
         int vj_idx = indicesMatched[i];
         if(vj_idx >= 0) 
@@ -885,26 +1205,163 @@ HRESULT Surface::sew(const SurfaceHandle &s1, const SurfaceHandle &s2, const Flo
     return Surface::sew(_s1, _s2, distCf);
 }
 
-HRESULT Surface::sew(std::vector<Surface*> _surfaces, const FloatP_t &distCf) {
-    for(std::vector<Surface*>::iterator itri = _surfaces.begin(); itri != _surfaces.end() - 1; itri++) 
-        for(std::vector<Surface*>::iterator itrj = itri + 1; itrj != _surfaces.end(); itrj++) 
-            if(*itri != *itrj && sew(*itri, *itrj, distCf) != S_OK) 
-                return E_FAIL;
-
-    return S_OK;
+template <typename T> 
+void _recursive_set_insert(const std::unordered_map<T, std::unordered_set<T> >& vMap, std::unordered_set<T>& vSet, T v) {
+    vSet.insert(v);
+    auto itr = vMap.find(v);
+    if(itr != vMap.end()) 
+        for(auto& vv : itr->second) 
+            _recursive_set_insert(vMap, vSet, vv);
 }
 
-HRESULT Surface::sew(std::vector<SurfaceHandle> _surfaces, const FloatP_t &distCf) {
-    std::vector<Surface*> surfaces;
-    surfaces.reserve(_surfaces.size());
-    for(auto &_s : _surfaces) {
-        Surface *s = _s.surface();
-        if(!s) {
-            SurfaceHandle_INVALIDHANDLERR;
-            return E_FAIL;
+HRESULT Surface::sew(const std::vector<Surface*>& _surfaces, const FloatP_t &distCf) {
+    // Do the same algorithm as inter-particle interactions, but only on particles underlying vertices
+
+    std::vector<FVector3> sCom(_surfaces.size());
+    std::vector<FloatP_t> sRadii(_surfaces.size(), FPTYPE_ZERO);
+    parallel_for(
+        ThreadPool::size(), 
+        [&_surfaces, &sCom, &sRadii](int tid) -> void {
+            for(int i = tid; i < _surfaces.size(); i += ThreadPool::size()) {
+                Surface* s = _surfaces[i];
+                const FVector3 com = s->getCentroid();
+                FloatP_t maxDist2 = FPTYPE_ZERO;
+                for(auto& v : s->getVertices()) 
+                    maxDist2 = FPTYPE_FMAX(maxDist2, metrics::relativePosition(v->getPosition(), com).dot());
+                sCom[i] = com;
+                sRadii[i] = FPTYPE_SQRT(maxDist2);
+            }
         }
-        surfaces.push_back(s);
-    }
+    );
+
+    std::vector<std::vector<std::pair<unsigned int, unsigned int> > > sewCandidatesPool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&sCom, &sRadii, &_surfaces, &distCf, &sewCandidatesPool](int tid) -> void {
+            std::vector<std::pair<unsigned int, unsigned int> >& sewCandidatesThread = sewCandidatesPool[tid];
+            for(unsigned int i = tid; i < sCom.size() - 1; i += ThreadPool::size()) {
+                Surface* si = _surfaces[i];
+                const FloatP_t siarea = si->getArea();
+                const FVector3 sicom = sCom[i];
+                const FloatP_t siRadius = sRadii[i];
+
+                for(unsigned int j = i + 1; j < sCom.size(); j++) {
+                    Surface* sj = _surfaces[j];
+                    const FVector3 sjcom = sCom[j];
+                    const FloatP_t sjRadius = sRadii[j];
+
+                    const FloatP_t sijDist = siRadius + sjRadius + FPTYPE_SQRT(0.5 * (siarea + sj->getArea())) * distCf;
+
+                    if(metrics::relativePosition(sicom, sjcom).dot() < sijDist * sijDist) 
+                        sewCandidatesThread.push_back({i, j});
+                }
+            }
+        }
+    );
+
+    // Among candidate pairs, the candidate with the lesser id (the primary surface) owns the pair
+    // When the secondary surface of a pair is not the primary surface of any pair, then only removing its vertices is not thread safe
+
+    std::vector<std::vector<unsigned int> > sewCandidateSchedule(_surfaces.size());
+    for(auto& sewCandidatesThread : sewCandidatesPool) 
+        for(auto& p : sewCandidatesThread) {
+            unsigned int si, sj;
+            std::tie(si, sj) = p;
+            sewCandidateSchedule[si].push_back(sj);
+        }
+
+    // Gather vertices that should be merged
+
+    std::vector<std::unordered_map<Vertex*, Vertex*> > toMergePool(ThreadPool::size());
+
+    parallel_for(
+        ThreadPool::size(), 
+        [&toMergePool, &sewCandidateSchedule, &_surfaces, &distCf](int tid) -> void {
+            std::vector<int> indicesMatched;
+            std::unordered_map<Vertex*, Vertex*>& toMergeThread = toMergePool[tid];
+
+            for(int i = tid; i < sewCandidateSchedule.size(); i += ThreadPool::size()) {
+                std::vector<unsigned int>& sewCandidateThread = sewCandidateSchedule[i];
+                Surface* si = _surfaces[i];
+
+                for(auto& j : sewCandidateThread) {
+                    Surface* sj = _surfaces[j];
+
+                    if(testSew(si, sj, distCf, indicesMatched)) {
+                        auto& si_vertices = si->getVertices();
+                        auto& sj_vertices = sj->getVertices();
+                        for(int j = 0; j < indicesMatched.size(); j++) {
+                            int s2_idx = indicesMatched[j];
+                            if(s2_idx >= 0) {
+                                Vertex* vi = si_vertices[j];
+                                Vertex* vj = sj_vertices[s2_idx];
+                                toMergeThread.insert(vi->objectId() < vj->objectId() ? std::make_pair(vi, vj) : std::make_pair(vj, vi));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    );
+
+    // Reduce
+
+    std::unordered_map<Vertex*, std::unordered_set<Vertex*> > toMerge, fromMerge;
+    for(auto& toMergeThread : toMergePool) 
+        for(auto& p : toMergeThread) {
+            Vertex* vt, *vf;
+            std::tie(vt, vf) = p;
+            toMerge[vt].insert(vf);
+            fromMerge[vf].insert(vt);
+        }
+    std::vector<Vertex*> fromMergeKeys;
+    fromMergeKeys.reserve(fromMerge.size());
+    for(auto& p : fromMerge) 
+        fromMergeKeys.push_back(p.first);
+
+    std::vector<std::vector<std::vector<Vertex*> > > mergeSetsPool(ThreadPool::size());
+    std::vector<size_t> mergeSetsSizePool(ThreadPool::size(), 0);
+    parallel_for(
+        ThreadPool::size(), 
+        [&mergeSetsPool, &mergeSetsSizePool, &toMerge, &fromMerge, &fromMergeKeys](int tid) -> void {
+            std::vector<std::vector<Vertex*> >& mergeSetsThread = mergeSetsPool[tid];
+            size_t& mergeSetsSizeThread = mergeSetsSizePool[tid];
+
+            std::unordered_set<Vertex*> rootElements;
+            for(unsigned int i = tid; i < fromMergeKeys.size(); i += ThreadPool::size()) {
+                Vertex* vi = fromMergeKeys[i];
+                if(toMerge.count(vi) == 0) 
+                    rootElements.insert(vi);
+            }
+
+            for(auto& vi : rootElements) {
+                std::unordered_set<Vertex*> mergeSet;
+                _recursive_set_insert(fromMerge, mergeSet, vi);
+                if(mergeSet.size() > 1) {
+                    mergeSetsThread.emplace_back(mergeSet.begin(), mergeSet.end());
+                    mergeSetsSizeThread++;
+                }
+            }
+        }
+    );
+
+    // Sew
+
+    size_t numMerge = 0;
+    for(auto& mergeSetsSizeThread : mergeSetsSizePool) 
+        numMerge += mergeSetsSizeThread;
+    std::vector<std::vector<Vertex*> > toMergeVec;
+    toMergeVec.reserve(numMerge);
+    for(auto& mergeSetsThread : mergeSetsPool) 
+        for(auto& mergeSet : mergeSetsThread) 
+            toMergeVec.push_back(mergeSet);
+
+    return Vertex::merge(toMergeVec, distCf);
+}
+
+HRESULT Surface::sew(const std::vector<SurfaceHandle>& _surfaces, const FloatP_t &distCf) {
+    std::vector<Surface*> surfaces(_surfaces.size());
+    parallel_for(surfaces.size(), [&surfaces, &_surfaces](int i) -> void { surfaces[i] = _surfaces[i].surface(); });
     return Surface::sew(surfaces, distCf);
 }
 
@@ -1166,7 +1623,7 @@ Surface *Surface::split(Vertex *v1, Vertex *v2) {
 /** Find a contiguous set of surface vertices partioned by a cut plane */
 static std::vector<Vertex*> Surface_SurfaceCutPlaneVertices(Surface *s, const FVector4 &planeEq) {
     // Calculate side of cut plane
-    auto s_vertices = s->getVertices();
+    auto& s_vertices = s->getVertices();
     std::vector<bool> planeEq_newSide;
     planeEq_newSide.reserve(s_vertices.size());
     size_t num_to_new = 0;
@@ -1190,7 +1647,7 @@ static std::vector<Vertex*> Surface_SurfaceCutPlaneVertices(Surface *s, const FV
     std::vector<bool>::iterator b_itr = planeEq_newSide.begin() + 1;
     std::vector<bool>::iterator b_itr_prev = b_itr - 1;
     std::vector<bool>::iterator b_itr_next = b_itr + 1;
-    std::vector<Vertex*>::iterator v_itr = s_vertices.begin() + 1;
+    auto v_itr = s_vertices.begin() + 1;
     while(!v_new_end) { 
         if(!v_new_start) {
             if(*b_itr && !*b_itr_prev) {
@@ -1233,7 +1690,7 @@ static HRESULT Surface_SurfaceCutPlanePointsPairs(
     *v_new_end = verts_new_s.back();
 
     // Determine coordinates of new vertices where cut plane intersects the surface
-    auto s_vertices = s->getVertices();
+    auto& s_vertices = s->getVertices();
     for(int i = 0; i < s_vertices.size(); i++) {
         if(s_vertices[i]->objectId() == (*v_new_start)->objectId()) 
             *v_old_start = i == 0 ? s_vertices.back() : s_vertices[i - 1];
@@ -1518,7 +1975,7 @@ std::vector<BodyHandle> SurfaceHandle::getBodies() const {
 
 std::vector<VertexHandle> SurfaceHandle::getVertices() const {
     SurfaceHandle_GETOBJ(o, {});
-    std::vector<Vertex*> _result = o->getVertices();
+    auto& _result = o->getVertices();
     std::vector<VertexHandle> result;
     result.reserve(_result.size());
     for(auto &_v : _result) 
@@ -1944,6 +2401,52 @@ HRESULT SurfaceType::add(const SurfaceHandle &i) {
     return S_OK;
 }
 
+HRESULT SurfaceType::add(const std::vector<SurfaceHandle>& i) {
+    std::vector<Surface*> _i(i.size());
+    std::vector<int32_t> instanceIds(i.size());
+    std::vector<std::unordered_map<SurfaceType*, std::unordered_set<SurfaceHandle>> > surfaceTypeMapPool(ThreadPool::size());
+    std::vector<HRESULT> resultPool(ThreadPool::size(), S_OK);
+    parallel_for(ThreadPool::size(), [&i, &_i, &instanceIds, &surfaceTypeMapPool, &resultPool](int tid) -> void {
+        std::unordered_map<SurfaceType*, std::unordered_set<SurfaceHandle> >& surfaceTypeMapThread = surfaceTypeMapPool[tid];
+        for(int j = tid; j < _i.size(); j += ThreadPool::size()) {
+            SurfaceHandle ij = i[j];
+            if(!ij) {
+                resultPool[tid] = E_FAIL;
+                return;
+            }
+
+            Surface* _ij = ij.surface();
+            if(!_ij) {
+                resultPool[tid] = E_FAIL;
+                return;
+            }
+
+            _i[j] = _ij;
+            instanceIds[j] = ij.id;
+            SurfaceType* stype = _ij->type();
+            if(stype) 
+                surfaceTypeMapThread[stype].insert(ij);
+        }
+    });
+    for(auto& resultThread : resultPool) 
+        if(resultThread != S_OK) {
+            return tf_error(resultThread, "Failed to add object");
+        }
+
+    for(auto& surfaceTypeMapThread : surfaceTypeMapPool) 
+        for(auto& st : surfaceTypeMapThread) 
+            if(st.first->remove({st.second.begin(), st.second.end()}) != S_OK) 
+                return E_FAIL;
+
+    const int stid = this->id;
+    parallel_for(_i.size(), [&_i, &stid](int i) -> void { _i[i]->typeId = stid; });
+    if(this->_instanceIds.capacity() - this->_instanceIds.size() < instanceIds.size()) 
+        this->_instanceIds.reserve(this->_instanceIds.size() + instanceIds.size());
+    for(auto& sid : instanceIds) this->_instanceIds.push_back(sid);
+
+    return S_OK;
+}
+
 HRESULT SurfaceType::remove(const SurfaceHandle &i) {
     if(!i) 
         return tf_error(E_FAIL, "Invalid object");
@@ -1957,6 +2460,42 @@ HRESULT SurfaceType::remove(const SurfaceHandle &i) {
 
     this->_instanceIds.erase(itr);
     _i->typeId = -1;
+    return S_OK;
+}
+
+HRESULT SurfaceType::remove(const std::vector<SurfaceHandle>& i) {
+    std::vector<Surface*> _i(i.size());
+    std::vector<HRESULT> resultPool(ThreadPool::size(), S_OK);
+    parallel_for(ThreadPool::size(), [&i, &_i, &resultPool](int tid) -> void {
+        for(int j = tid; j < _i.size(); j += ThreadPool::size()) {
+            SurfaceHandle ij = i[j];
+            if(!ij) {
+                resultPool[tid] = E_FAIL;
+                return;
+            }
+
+            Surface* _ij = ij.surface();
+            if(!_ij) {
+                resultPool[tid] = E_FAIL;
+                return;
+            }
+
+            _i[j] = _ij;
+        }
+    });
+    for(auto& resultThread : resultPool) 
+        if(resultThread != S_OK) {
+            return tf_error(resultThread, "Failed to add object");
+        }
+
+    for(auto& s : i) {
+        auto itr = std::find(this->_instanceIds.begin(), this->_instanceIds.end(), s.id);
+        if(itr == this->_instanceIds.end()) 
+            return tf_error(E_FAIL, "Instance not of this type");
+        this->_instanceIds.erase(itr);
+    }
+
+    parallel_for(_i.size(), [&_i](int j) -> void { _i[j]->typeId = -1; });
     return S_OK;
 }
 
@@ -1990,6 +2529,39 @@ static SurfaceHandle SurfaceType_fromVertices(SurfaceType *stype, const std::vec
         return SurfaceHandle();
     }
     _s->setDensity(stype->density);
+    return s;
+}
+
+static std::vector<SurfaceHandle> SurfaceType_fromVertices(SurfaceType *stype, const std::vector<std::vector<VertexHandle> > &vertices) {
+    if(vertices.empty()) 
+        return {};
+
+    std::vector<SurfaceHandle> s = Surface::create(vertices);
+    std::vector<HRESULT> resultPool(ThreadPool::size(), S_OK);
+    const FloatP_t density = stype->density;
+    parallel_for(
+        ThreadPool::size(), 
+        [&s, &resultPool, &density](int tid) -> void {
+            for(int i = tid; i < s.size(); i += ThreadPool::size()) {
+                Surface* _s = s[i].surface();
+                if(!_s) {
+                    resultPool[tid] = E_FAIL;
+                    return;
+                }
+                _s->setDensity(density);
+            }
+        }
+    );
+    for(auto& resultThread : resultPool) 
+        if(resultThread != S_OK) {
+            TF_Log(LOG_ERROR) << "Failed to create instance";
+            return {};
+        }
+
+    if(stype->add(s) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
     return s;
 }
 
@@ -2036,6 +2608,146 @@ SurfaceHandle SurfaceType::operator() (TissueForge::io::ThreeDFFaceData *face) {
             _positions.push_back(vv->position);
     
     return (*this)(_positions);
+}
+
+std::vector<SurfaceHandle> SurfaceType::operator() (const std::vector<std::vector<VertexHandle> >& _vertices) {
+    return SurfaceType_fromVertices(this, _vertices);
+}
+
+std::vector<SurfaceHandle> SurfaceType::operator() (const std::vector<std::vector<FVector3> > &_positions) {
+    if(_positions.empty()) 
+        return {};
+
+    std::vector<unsigned int> positionIndices(_positions.size() + 1);
+    positionIndices[0] = 0;
+    for(unsigned int i = 0; i < _positions.size(); i++) 
+        positionIndices[i+1] = positionIndices[i] + _positions[i].size();
+
+    std::vector<FVector3> positionsFlat(positionIndices.back());
+    parallel_for(
+        _positions.size(), 
+        [&positionsFlat, &_positions, &positionIndices](int i) -> void {
+            std::vector<FVector3> _positions_i = _positions[i];
+            const unsigned int ii = positionIndices[i];
+            for(int j = 0; j < _positions_i.size(); j++) 
+                positionsFlat[ii + j] = _positions_i[j];
+        }
+    );
+
+    std::vector<VertexHandle> verticesFlat = Vertex::create(positionsFlat);
+    if(verticesFlat.empty()) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
+
+    std::vector<std::vector<VertexHandle> > vertices(_positions.size());
+    parallel_for(
+        vertices.size(), 
+        [&verticesFlat, &vertices, &positionIndices](int i) -> void {
+            std::vector<VertexHandle>& vertices_i = vertices[i];
+            auto itr = positionIndices.begin() + i;
+            const unsigned int ii = *itr, ij = *(itr + 1);
+            vertices_i.reserve(ij - ii);
+            for(unsigned int j = ii; j < ij; j++) 
+                vertices_i.push_back(verticesFlat[j]);
+        }
+    );
+
+    return (*this)(vertices);
+}
+
+std::vector<SurfaceHandle> SurfaceType::operator() (const std::vector<TissueForge::io::ThreeDFFaceData*>& faces, const bool& safe) {
+    if(faces.empty()) 
+        return {};
+
+    if(safe) {
+
+        // Purge topology and build new vertices for each face
+
+        std::vector<std::vector<FVector3> > positions(faces.size());
+        std::vector<HRESULT> resultPool(ThreadPool::size(), S_OK);
+        parallel_for(
+            ThreadPool::size(), 
+            [&faces, &positions, &resultPool](int tid) -> void {
+                std::vector<TissueForge::io::ThreeDFVertexData*> vverts;
+
+                for(int i = tid; i < faces.size(); i += ThreadPool::size()) {
+                    TissueForge::io::ThreeDFFaceData* face = faces[i];
+                    if(Surface_order3DFFaceVertices(face, vverts) != S_OK) {
+                        resultPool[tid] = E_FAIL;
+                        return;
+                    }
+                    std::vector<FVector3>& positions_i = positions[i];
+                    positions_i.reserve(vverts.size());
+                    for(auto& vv : vverts) 
+                        positions_i.push_back(vv->position);
+                }
+            }
+        );
+
+        return (*this)(positions);
+
+    }
+    else {
+
+        // Use existing topology and hope for the best
+
+        // create vertices
+
+        std::vector<std::unordered_set<TissueForge::io::ThreeDFVertexData*> > verticesFlatPool(ThreadPool::size());
+        parallel_for(
+            ThreadPool::size(), 
+            [&faces, &verticesFlatPool](int tid) -> void {
+                std::unordered_set<TissueForge::io::ThreeDFVertexData*>& verticesFlatThread = verticesFlatPool[tid];
+                for(int i = tid; i < faces.size(); i += ThreadPool::size()) 
+                    for(auto& v : faces[i]->getVertices()) 
+                        verticesFlatThread.insert(v);
+            }
+        );
+        size_t numVertices = 0;
+        for(auto& verticesFlatThread : verticesFlatPool) 
+            numVertices += verticesFlatThread.size();
+        std::unordered_set<TissueForge::io::ThreeDFVertexData*> verticesFlat;
+        verticesFlat.reserve(numVertices);
+        for(auto& verticesFlatThread : verticesFlatPool) 
+            verticesFlat.insert(verticesFlatThread.begin(), verticesFlatThread.end());
+        std::vector<TissueForge::io::ThreeDFVertexData*> verticesFlatVec(verticesFlat.begin(), verticesFlat.end());
+
+        auto newVertices = Vertex::create(verticesFlatVec);
+
+        // construct structured vertices input and forward
+
+        std::unordered_map<int, int> vertexIdMap;
+        vertexIdMap.reserve(newVertices.size());
+        for(unsigned int i = 0; i < newVertices.size(); i++) {
+            int importId = verticesFlatVec[i]->id;
+            int createdId = newVertices[i].id;
+            if(importId < 0) {
+                TF_Log(LOG_ERROR) << "Vertex import failed";
+                return {};
+            }
+            else if(createdId < 0) {
+                TF_Log(LOG_ERROR) << "Vertex construction failed";
+                return {};
+            }
+            vertexIdMap[importId] = createdId;
+        }
+
+        std::vector<std::vector<VertexHandle> > vertexInput(faces.size());
+        parallel_for(
+            faces.size(), 
+            [&faces, &vertexIdMap, &vertexInput](int i) -> void {
+                std::vector<VertexHandle>& vertexInputFace = vertexInput[i];
+                std::vector<TissueForge::io::ThreeDFVertexData*> vverts;
+                Surface_order3DFFaceVertices(faces[i], vverts);
+                for(auto& v : vverts) 
+                    vertexInputFace.emplace_back(vertexIdMap[v->id]);
+            }
+        );
+
+        return (*this)(vertexInput);
+
+    }
 }
 
 SurfaceHandle SurfaceType::nPolygon(const unsigned int &n, const FVector3 &center, const FloatP_t &radius, const FVector3 &ax1, const FVector3 &ax2) {
@@ -2107,8 +2819,8 @@ SurfaceHandle SurfaceType::replace(VertexHandle &toReplace, std::vector<FloatP_t
 
     // Disconnect replaced vertex from all surfaces
     _toReplace = toReplace.vertex();
-    std::vector<Surface*> toReplaceSurfaces = _toReplace->getSurfaces();
-    std::vector<Vertex*> affectedVertices = _toReplace->connectedVertices();
+    auto& toReplaceSurfaces = _toReplace->getSurfaces();
+    auto& affectedVertices = _toReplace->connectedVertices();
     for(auto &s : toReplaceSurfaces) {
         s->remove(_toReplace);
         _toReplace->remove(s);

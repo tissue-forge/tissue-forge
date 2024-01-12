@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -31,9 +31,11 @@
 
 #include <algorithm>
 #include <limits>
+#include <numeric>
 #include <random>
 
 #include "tfThreeDFStructure.h"
+#include "tfTaskScheduler.h"
 
 
 namespace TissueForge {
@@ -113,26 +115,28 @@ namespace TissueForge::io {
         return S_OK;
     }
 
-    std::vector<unsigned int> buildVertexConsolidation(std::vector<FVector3> vPos, const FloatP_t &tol=1E-6) {
+    std::vector<unsigned int> buildVertexConsolidation(const std::vector<FVector3>& vPos, const FloatP_t &tol=1E-6) {
+
         unsigned int numV = vPos.size();
-        std::vector<unsigned int> result;
-        result.reserve(numV);
-        unsigned int consolidated = 0;
+        std::vector<unsigned int> result(numV);
+        std::iota(result.begin(), result.end(), 0);
 
-        for(unsigned int vIdx = 0; vIdx < numV; vIdx++) {
-            result.push_back(vIdx);
-            auto vp = vPos[vIdx];
+        auto func = [&vPos, &result, &tol, &numV](int tid) -> void {
+            const FloatP_t& tol2 = tol * tol;
+            for(unsigned int vIdx = tid; vIdx < numV; vIdx += ThreadPool::size()) {
+                auto vp = vPos[vIdx];
 
-            for(unsigned int vvIdx = 0; vvIdx < vIdx; vvIdx++) {
-                if((vp - vPos[vvIdx]).length() < tol) {
-                    result[vIdx] = vvIdx;
-                    consolidated++;
-                    break;
+                for(unsigned int vvIdx = 0; vvIdx < vIdx; vvIdx++) {
+                    if((vp - vPos[vvIdx]).dot() < tol2) {
+                        result[vIdx] = vvIdx;
+                        break;
+                    }
                 }
             }
-        }
+        };
+        parallel_for(ThreadPool::size(), func);
 
-        TF_Log(LOG_TRACE) << "Consolidated vertices: " << consolidated;
+        TF_Log(LOG_TRACE) << "Consolidated vertices";
 
         return result;
     }
@@ -144,7 +148,7 @@ namespace TissueForge::io {
      * @param vPos 
      * @return std::vector<FVector3> 
      */
-    FVector3 faceNormal(std::vector<unsigned int> vIndices, std::vector<FVector3> vPos, std::vector<FVector3> vNorm) {
+    FVector3 faceNormal(const std::vector<unsigned int>& vIndices, const std::vector<FVector3>& vPos, const std::vector<FVector3>& vNorm) {
         FVector3 vap = vPos[vIndices[0]],  vbp = vPos[vIndices[1]],  vcp = vPos[vIndices[2]];
         FVector3 vbn = vNorm[vIndices[1]];
 
@@ -219,32 +223,27 @@ namespace TissueForge::io {
             TF_Log(LOG_TRACE) << "Mesh " << mIdx << ": " << aim->mNumVertices << " vertices, " << aim->mNumFaces << " faces";
 
             // Construct and add every vertex while keeping original ordering for future indexing
-            ThreeDFVertexData *vertex;
-            std::vector<ThreeDFVertexData*> vertices;
-            std::vector<FVector3> vPos, vNorm;
-            vertices.reserve(aim->mNumVertices);
-            vPos.reserve(aim->mNumVertices);
-            vNorm.reserve(aim->mNumVertices);
-            for(unsigned int vIdx = 0; vIdx < aim->mNumVertices; vIdx++) {
+            std::vector<ThreeDFVertexData*> vertices(aim->mNumVertices);
+            std::vector<FVector3> vPos(aim->mNumVertices), vNorm(aim->mNumVertices);
+            parallel_for(
+                aim->mNumVertices, 
+                [&aim, &meshTransform, &vertices, &vNorm, &vPos](int vIdx) -> void {
+                    auto aiv = aim->mVertices[vIdx];
+                    auto ain = aim->mNormals[vIdx];
+                    
+                    FVector4 ait = {(FloatP_t)aiv.x, (FloatP_t)aiv.y, (FloatP_t)aiv.z, 1.f};
+                    FVector3 position = (meshTransform * ait).xyz();
+                    ThreeDFVertexData* vertex = new ThreeDFVertexData(position);
 
-                auto aiv = aim->mVertices[vIdx];
-                auto ain = aim->mNormals[vIdx];
-                
-                FVector4 ait = {(FloatP_t)aiv.x, (FloatP_t)aiv.y, (FloatP_t)aiv.z, 1.f};
-                FVector3 position = (meshTransform * ait).xyz();
-                vertex = new ThreeDFVertexData(position);
+                    vPos[vIdx] = position;
 
-                vPos.push_back(position);
-
-                FVector3 aiu = {(FloatP_t)ain.x, (FloatP_t)ain.y, (FloatP_t)ain.z};
-                FVector3 normal = meshTransform.rotation() * aiu;
-                vNorm.push_back(normal);
-
-                TF_Log(LOG_TRACE) << "Vertex " << vIdx << ": " << position << ", " << normal;
-                
-                vertices.push_back(vertex);
-
-            }
+                    FVector3 aiu = {(FloatP_t)ain.x, (FloatP_t)ain.y, (FloatP_t)ain.z};
+                    FVector3 normal = meshTransform.rotation() * aiu;
+                    vNorm[vIdx] = normal;
+                    
+                    vertices[vIdx] = vertex;
+                }
+            );
 
             // Consolidate
 
@@ -252,6 +251,8 @@ namespace TissueForge::io {
             for(unsigned int vIdx = 0; vIdx < vPos.size(); vIdx++) 
                 if(vcIndices[vIdx] == vIdx) 
                     this->add(vertices[vIdx]);
+                else 
+                    delete vertices[vIdx];
 
             // If there are faces, construct them and their edges and add them
             if(aim->HasFaces()) {
@@ -261,49 +262,92 @@ namespace TissueForge::io {
                 mesh->name = std::string(aim->mName.C_Str());
 
                 // Build and add faces and edges
-                
-                for(unsigned int fIdx = 0; fIdx < aim->mNumFaces; fIdx++) {
-                    auto aif = aim->mFaces[fIdx];
 
-                    std::vector<ThreeDFVertexData*> vertices_f;
-                    std::vector<unsigned int> fvIndices;
-                    vertices_f.reserve(aif.mNumIndices + 1);
-                    fvIndices.reserve(aif.mNumIndices);
-                    for(unsigned int fvIdx = 0; fvIdx < aif.mNumIndices; fvIdx++) { 
-                        unsigned int vIdx = aif.mIndices[fvIdx];
-                        vertices_f.push_back(vertices[vcIndices[vIdx]]);
-                        fvIndices.push_back(vIdx);
+                std::vector<ThreeDFFaceData*> newFaces(aim->mNumFaces, 0);
+                std::vector<std::vector<ThreeDFVertexData*> > newFacesVertexData(aim->mNumFaces);
+                std::vector<std::vector<unsigned int> > newFacesVertexIndexData(aim->mNumFaces);
+                std::vector<std::vector<ThreeDFEdgeData*> > newFacesEdgeData(aim->mNumFaces);
+
+                parallel_for(
+                    aim->mNumFaces, 
+                    [&newFacesVertexData, &newFacesVertexIndexData, &newFaces, &aim, &vertices, &vcIndices](int fIdx) -> void {
+                        auto aif = aim->mFaces[fIdx];
+
+                        std::vector<ThreeDFVertexData*>& vertices_f = newFacesVertexData[fIdx];
+                        std::vector<unsigned int>& fvIndices = newFacesVertexIndexData[fIdx];
+                        vertices_f.reserve(aif.mNumIndices + 1);
+                        fvIndices.reserve(aif.mNumIndices);
+                        for(unsigned int fvIdx = 0; fvIdx < aif.mNumIndices; fvIdx++) { 
+                            unsigned int vIdx = aif.mIndices[fvIdx];
+                            vertices_f.push_back(vertices[vcIndices[vIdx]]);
+                            fvIndices.push_back(vcIndices[vIdx]);
+                        }
+
+                        vertices_f.push_back(vertices_f[0]);
+                        newFaces[fIdx] = new ThreeDFFaceData();
+                    }
+                );
+
+                std::vector<std::tuple<ThreeDFVertexData*, ThreeDFVertexData*, unsigned int> > _newFacesNewEdgeData;
+                std::vector<std::vector<std::tuple<ThreeDFVertexData*, ThreeDFVertexData*, unsigned int> > > newFacesNewEdgeData(ThreadPool::size());
+                parallel_for(
+                    ThreadPool::size(), 
+                    [&newFacesEdgeData, &newFacesNewEdgeData, &newFacesVertexData, &newFaces, &aim](int tid) -> void {
+                        std::vector<std::tuple<ThreeDFVertexData*, ThreeDFVertexData*, unsigned int> >& newFacesNewEdgeDataThread = newFacesNewEdgeData[tid];
+
+                        for(unsigned int fIdx = tid; fIdx < aim->mNumFaces; fIdx += ThreadPool::size()) {
+                            auto aif = aim->mFaces[fIdx];
+
+                            std::vector<ThreeDFVertexData*> vertices_f = newFacesVertexData[fIdx];
+
+                            ThreeDFVertexData *va, *vb;
+                            ThreeDFEdgeData *edge;
+                            ThreeDFFaceData *face = newFaces[fIdx];
+                            for(unsigned int fvIdx = 0; fvIdx < aif.mNumIndices; fvIdx++) {
+                                va = vertices_f[fvIdx];
+                                vb = vertices_f[fvIdx + 1];
+                                edge = NULL;
+                                for(auto e : va->edges) 
+                                    if(e->has(vb)) {
+                                        edge = e;
+                                        newFacesEdgeData[fIdx].push_back(e);
+                                        break;
+                                    }
+                                if(edge == NULL) {
+                                    newFacesNewEdgeDataThread.push_back({va, vb, fIdx});
+                                }
+                            }
+                        }
+                    }
+                );
+
+                for(auto& newFacesNewEdgeDataThread : newFacesNewEdgeData) 
+                    for(auto& newEdgeData : newFacesNewEdgeDataThread) {
+                        ThreeDFVertexData* va, *vb;
+                        unsigned int fIdx;
+                        std::tie(va, vb, fIdx) = newEdgeData;
+                        ThreeDFEdgeData* edge = new ThreeDFEdgeData(va, vb);
+                        this->add(edge);
+                        newFacesEdgeData[fIdx].push_back(edge);
                     }
 
-                    vertices_f.push_back(vertices_f[0]);
-
-                    ThreeDFVertexData *va, *vb;
-                    ThreeDFEdgeData *edge;
-                    ThreeDFFaceData *face = new ThreeDFFaceData();
-                    for(unsigned int fvIdx = 0; fvIdx < aif.mNumIndices; fvIdx++) {
-                        va = vertices_f[fvIdx];
-                        vb = vertices_f[fvIdx + 1];
-                        edge = NULL;
-                        for(auto e : va->edges) 
-                            if(e->has(vb)) {
-                                edge = e;
-                                break;
-                            }
-                        if(edge == NULL) {
-                            edge = new ThreeDFEdgeData(va, vb);
-                            this->add(edge);
-                        }
-                        
+                for(unsigned int fIdx = 0; fIdx < aim->mNumFaces; fIdx++) {
+                    ThreeDFFaceData *face = newFaces[fIdx];
+                    for(auto& edge : newFacesEdgeData[fIdx]) {
                         face->edges.push_back(edge);
                         edge->faces.push_back(face);
                     }
-                    face->normal = faceNormal(fvIndices, vPos, vNorm);
-
                     mesh->faces.push_back(face);
                     face->meshes.push_back(mesh);
                     this->add(face);
-
                 }
+
+                parallel_for(
+                    aim->mNumFaces, 
+                    [&newFaces, &vPos, &vNorm, &newFacesVertexIndexData](int fIdx) -> void {
+                        newFaces[fIdx]->normal = faceNormal(newFacesVertexIndexData[fIdx], vPos, vNorm);
+                    }
+                );
 
                 // Add final data for this mesh
 

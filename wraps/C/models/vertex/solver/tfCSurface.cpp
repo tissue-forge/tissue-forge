@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -130,7 +130,7 @@ HRESULT tfVertexSolverSurfaceHandle_fromString(struct tfVertexSolverSurfaceHandl
 }
 
 HRESULT tfVertexSolverSurfaceHandle_destroy(struct tfVertexSolverSurfaceHandleHandle *handle) {
-    return TissueForge::capi::destroyHandle<SurfaceHandle, tfVertexSolverSurfaceHandleHandle>(handle);
+    return TissueForge::capi::destroyHandle<SurfaceHandle, tfVertexSolverSurfaceHandleHandle>(handle) ? S_OK : E_FAIL;
 }
 
 HRESULT tfVertexSolverSurfaceHandle_getId(struct tfVertexSolverSurfaceHandleHandle *handle, int *objId) {
@@ -176,6 +176,14 @@ HRESULT tfVertexSolverSurfaceHandle_objType(struct tfVertexSolverSurfaceHandleHa
 HRESULT tfVertexSolverSurfaceHandle_destroySurface(struct tfVertexSolverSurfaceHandleHandle *handle) {
     TFC_SURFACEHANDLE_GET(handle);
     return shandle->destroy();
+}
+
+HRESULT tfVertexSolverSurfaceHandle_destroySurfaces(struct tfVertexSolverSurfaceHandleHandle **handles, unsigned int numObjs) {
+    TFC_PTRCHECK(handles);
+    std::vector<Surface*> surfaces(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        surfaces[i] = TissueForge::castC<SurfaceHandle, tfVertexSolverSurfaceHandleHandle>(handles[i])->surface();
+    return Surface::destroy(surfaces);
 }
 
 HRESULT tfVertexSolverSurfaceHandle_destroySurfaceC(struct tfVertexSolverSurfaceHandleHandle *handle) {
@@ -1100,6 +1108,72 @@ HRESULT tfVertexSolverSurfaceType_createSurfaceIO(
     TFC_PTRCHECK(_face);
     SurfaceHandle _newObj = (*stype)(_face);
     return tfVertexSolverSurfaceHandle_init(newObj, _newObj.id);
+}
+
+HRESULT tfVertexSolverSurfaceType_createSurfaceVA(
+    struct tfVertexSolverSurfaceTypeHandle *handle, 
+    struct tfVertexSolverVertexHandleHandle ***vertices, 
+    unsigned int numSurfaces, 
+    unsigned int *numVerts, 
+    struct tfVertexSolverSurfaceHandleHandle **newObjs
+) {
+    TFC_SURFACETYPE_GET(handle);
+    TFC_PTRCHECK(vertices);
+    TFC_PTRCHECK(numVerts);
+    TFC_PTRCHECK(newObjs);
+
+    std::vector<std::vector<VertexHandle> > _vertices(numSurfaces);
+    for(unsigned int i = 0; i < numSurfaces; i++) 
+        for(unsigned int j = 0; j < numVerts[i]; j++) 
+            _vertices[i].emplace_back(TissueForge::castC<VertexHandle, tfVertexSolverVertexHandleHandle>(vertices[i][j])->id);
+
+    std::vector<SurfaceHandle> _newObjs = (*stype)(_vertices);
+    for(unsigned int i = 0; i < numSurfaces; i++) 
+        tfVertexSolverSurfaceHandle_init(newObjs[i], _newObjs[i].id);
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceType_createSurfacePA(
+    struct tfVertexSolverSurfaceTypeHandle *handle, 
+    tfFloatP_t ***spositions, 
+    unsigned int numSurfaces, 
+    unsigned int *numPositions, 
+    struct tfVertexSolverSurfaceHandleHandle **newObjs
+) {
+    TFC_SURFACETYPE_GET(handle);
+    TFC_PTRCHECK(spositions);
+    TFC_PTRCHECK(numPositions);
+    TFC_PTRCHECK(newObjs);
+
+    std::vector<std::vector<FVector3> > _spositions(numSurfaces);
+    for(unsigned int i = 0; i < numSurfaces; i++) 
+        for(unsigned int j = 0; j < numPositions[i]; j++) 
+            _spositions[i].push_back(FVector3::from(spositions[i][j]));
+
+    std::vector<SurfaceHandle> _newObjs = (*stype)(_spositions);
+    for(unsigned int i = 0; i < numSurfaces; i++) 
+        tfVertexSolverSurfaceHandle_init(newObjs[i], _newObjs[i].id);
+    return S_OK;
+}
+
+HRESULT tfVertexSolverSurfaceType_createSurfaceIOA(
+    struct tfVertexSolverSurfaceTypeHandle *handle, 
+    struct tfIoThreeDFFaceDataHandle **faces, 
+    unsigned int numSurfaces, 
+    struct tfVertexSolverSurfaceHandleHandle **newObjs
+) {
+    TFC_SURFACETYPE_GET(handle);
+    TFC_PTRCHECK(faces);
+    TFC_PTRCHECK(newObjs);
+
+    std::vector<io::ThreeDFFaceData*> _faces(numSurfaces);
+    for(unsigned int i = 0; i < numSurfaces; i++) 
+        _faces[i] = TissueForge::castC<io::ThreeDFFaceData, tfIoThreeDFFaceDataHandle>(faces[i]);
+
+    std::vector<SurfaceHandle> _newObjs = (*stype)(_faces);
+    for(unsigned int i = 0; i < numSurfaces; i++) 
+        tfVertexSolverSurfaceHandle_init(newObjs[i], _newObjs[i].id);
+    return S_OK;
 }
 
 HRESULT tfVertexSolverSurfaceType_nPolygon(

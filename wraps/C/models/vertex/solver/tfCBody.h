@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -155,6 +155,14 @@ CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_objType(struct tfVertexSolverBodyHan
  * @param handle populated handle
  */
 CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_destroyBody(struct tfVertexSolverBodyHandleHandle *handle);
+
+/**
+ * @brief Destroy instances
+ * 
+ * @param handles populated handles
+ * @param numObjs number of objects to destroy
+ */
+CAPI_FUNC(HRESULT) tfVertexSolverBodyHandle_destroyBodies(struct tfVertexSolverBodyHandleHandle **handles, unsigned int numObjs);
 
 /**
  * @brief Destroy the body. 

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -71,6 +71,9 @@ namespace TissueForge::models::vertex {
         HRESULT allocateVertex(Vertex **obj);
         HRESULT allocateSurface(Surface **obj);
         HRESULT allocateBody(Body **obj);
+        HRESULT allocateVertices(Vertex*** objs, const size_t& numObjs);
+        HRESULT allocateSurfaces(Surface*** objs, const size_t& numObjs);
+        HRESULT allocateBodies(Body*** objs, const size_t& numObjs);
 
     public:
 
@@ -144,6 +147,14 @@ namespace TissueForge::models::vertex {
         HRESULT create(Vertex **obj, const unsigned int &pid);
 
         /**
+         * @brief Create vertices
+         * 
+         * @param objs vertices to populate
+         * @param pids the ids of the underlying particles
+         */
+        HRESULT create(Vertex*** objs, const std::vector<unsigned int>& pids);
+
+        /**
          * @brief Create a surface
          * 
          * @param obj a surface to populate
@@ -151,11 +162,27 @@ namespace TissueForge::models::vertex {
         HRESULT create(Surface **obj);
 
         /**
+         * @brief Create surfaces
+         * 
+         * @param objs surfaces to populate
+         * @param numObjs number of surfaces
+         */
+        HRESULT create(Surface*** objs, const size_t& numObjs);
+
+        /**
          * @brief Create a body
          * 
          * @param obj a body to populate
          */
         HRESULT create(Body **obj);
+
+        /**
+         * @brief Create bodies
+         * 
+         * @param objs bodies to populate
+         * @param numObjs number of bodies
+         */
+        HRESULT create(Body*** objs, const size_t& numObjs);
 
         /**
          * @brief Get the mesh
@@ -286,6 +313,14 @@ namespace TissueForge::models::vertex {
         HRESULT remove(Vertex *v);
 
         /**
+         * @brief Remove vertices from the mesh; all dependent surfaces and bodies are also removed
+         * 
+         * @param v vertices
+         * @param numObjs number of vertices
+         */
+        HRESULT remove(Vertex** v, const size_t& numObjs);
+
+        /**
          * @brief Remove a surface from the mesh; all dependent bodies are also removed
          * 
          * @param s a surface
@@ -293,11 +328,27 @@ namespace TissueForge::models::vertex {
         HRESULT remove(Surface *s);
 
         /**
+         * @brief Remove surfaces from the mesh; all dependent bodies are also removed
+         * 
+         * @param s surfaces
+         * @param numObjs number of surfaces
+         */
+        HRESULT remove(Surface** s, const size_t& numObjs);
+
+        /**
          * @brief Remove a body from the mesh
          * 
          * @param b a body
          */
         HRESULT remove(Body *b);
+
+        /**
+         * @brief Remove bodies from the mesh
+         * 
+         * @param b bodies
+         * @param numObjs number of bodies
+         */
+        HRESULT remove(Body** b, const size_t& numObjs);
 
         /**
          * @brief Test whether the mesh is 3D. 

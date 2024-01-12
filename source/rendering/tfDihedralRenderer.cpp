@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -43,7 +43,7 @@ HRESULT rendering::DihedralRenderer::start(const std::vector<fVector4> &clipPlan
     _mesh.setPrimitive(Magnum::MeshPrimitive::Lines);
     _mesh.addVertexBuffer(_buffer, 0,
                           shaders::Flat3D::Position{}, 
-                          shaders::Flat3D::Color3{});
+                          shaders::Flat3D::Color4{});
 
     return S_OK;
 }
@@ -53,7 +53,7 @@ static inline int render_dihedral(rendering::BondsInstanceData* dihedralData, in
     if(!(dihedral->flags & DIHEDRAL_ACTIVE)) 
         return 0;
     
-    Magnum::Vector3 color = dihedral->style->map_color(dihedral).xyz();
+    const Magnum::Vector4 color = dihedral->style->map_color(dihedral);
     Particle *pi = _Engine.s.partlist[dihedral->i];
     Particle *pj = _Engine.s.partlist[dihedral->j];
     Particle *pk = _Engine.s.partlist[dihedral->k];

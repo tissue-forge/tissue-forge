@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -107,7 +107,7 @@ HRESULT tfVertexSolverBodyHandle_fromString(struct tfVertexSolverBodyHandleHandl
 }
 
 HRESULT tfVertexSolverBodyHandle_destroy(struct tfVertexSolverBodyHandleHandle *handle) {
-    return TissueForge::capi::destroyHandle<BodyHandle, tfVertexSolverBodyHandleHandle>(handle);
+    return TissueForge::capi::destroyHandle<BodyHandle, tfVertexSolverBodyHandleHandle>(handle) ? S_OK : E_FAIL;
 }
 
 HRESULT tfVertexSolverBodyHandle_getId(struct tfVertexSolverBodyHandleHandle *handle, int *objId) {
@@ -155,6 +155,14 @@ HRESULT tfVertexSolverBodyHandle_objType(struct tfVertexSolverBodyHandleHandle *
 HRESULT tfVertexSolverBodyHandle_destroyBody(struct tfVertexSolverBodyHandleHandle *handle) {
     TFC_BODYHANDLE_GET(handle);
     return bhandle->destroy();
+}
+
+HRESULT tfVertexSolverBodyHandle_destroyBodies(struct tfVertexSolverBodyHandleHandle **handles, unsigned int numObjs) {
+    TFC_PTRCHECK(handles);
+    std::vector<Body*> bodies(numObjs);
+    for(unsigned int i = 0; i < numObjs; i++) 
+        bodies[i] = TissueForge::castC<BodyHandle, tfVertexSolverBodyHandleHandle>(handles[i])->body();
+    return Body::destroy(bodies);
 }
 
 HRESULT tfVertexSolverBodyHandle_destroyBodyC(struct tfVertexSolverBodyHandleHandle *handle) {

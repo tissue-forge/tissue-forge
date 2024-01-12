@@ -84,7 +84,7 @@ master_doc = 'index_api_cpp'
 
 # General information about the project.
 project = 'Tissue Forge C++ API Reference'
-copyright = '2022 T.J. Sego, James A. Glazier, Herbert Sauro'
+copyright = '2022-2024 T.J. Sego, James A. Glazier, Herbert Sauro'
 author = 'T.J. Sego'
 
 # The version info for the project you're documenting, acts as replacement for

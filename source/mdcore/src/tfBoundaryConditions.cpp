@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -237,6 +237,12 @@ void BoundaryConditions::boundedPosition(FVector3& position) {
             else position[i] = FPTYPE_ZERO;
         }
     }
+}
+
+FVector3 BoundaryConditions::boundedPosition(const FVector3& position) {
+    FVector3 result(position);
+    boundedPosition(result);
+    return result;
 }
 
 BoundaryConditions::BoundaryConditions(int *cells) {

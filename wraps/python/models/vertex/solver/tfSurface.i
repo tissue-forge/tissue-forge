@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -51,9 +51,9 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(_destroy_o) TissueForge::models::vertex::Surface::destroy(Surface*);
 %rename(_destroy_h) TissueForge::models::vertex::Surface::destroy(SurfaceHandle&);
 %rename(_sew_o1) TissueForge::models::vertex::Surface::sew(Surface*, Surface*, const FloatP_t&);
-%rename(_sew_o2) TissueForge::models::vertex::Surface::sew(std::vector<Surface*>, const FloatP_t&);
+%rename(_sew_o2) TissueForge::models::vertex::Surface::sew(const std::vector<Surface*>&, const FloatP_t&);
 %rename(_sew_h1) TissueForge::models::vertex::Surface::sew(const SurfaceHandle&, const SurfaceHandle&, const FloatP_t&);
-%rename(_sew_h2) TissueForge::models::vertex::Surface::sew(std::vector<SurfaceHandle>, const FloatP_t&);
+%rename(_sew_h2) TissueForge::models::vertex::Surface::sew(const std::vector<SurfaceHandle>&, const FloatP_t&);
 
 ///////////////////
 // SurfaceHandle //
@@ -92,6 +92,7 @@ vertex_solver_MeshObj_prep_py(TissueForge::models::vertex::Surface)
 %rename(_operator_vertices) TissueForge::models::vertex::SurfaceType::operator() (const std::vector<VertexHandle>&);
 %rename(_operator_positions) TissueForge::models::vertex::SurfaceType::operator() (const std::vector<FVector3>&);
 %rename(_operator_iofacedata) TissueForge::models::vertex::SurfaceType::operator() (TissueForge::io::ThreeDFFaceData*);
+%rename(_operator_iofacevectordata) TissueForge::models::vertex::SurfaceType::operator() (const std::vector<TissueForge::io::ThreeDFFaceData*>&, const bool&);
 %rename(_n_polygon) TissueForge::models::vertex::SurfaceType::nPolygon;
 %rename(_replace) TissueForge::models::vertex::SurfaceType::replace;
 
@@ -435,7 +436,7 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
             """flat surface constraints bound to the type"""
             return _vertex_solver_MeshObjActor_getFlatSurfaceConstraint(self)
 
-        def __call__(self, vertices=None, positions=None, face_data=None):
+        def __call__(self, vertices=None, positions=None, face_data=None, safe_face_data: bool = True):
             """
             Construct a surface of this type
 
@@ -453,7 +454,10 @@ vertex_solver_MeshObjType_extend_py(TissueForge::models::vertex::SurfaceType)
                         positions[i] = FVector3(*p)
                 result = self._operator_positions(positions)
             elif face_data is not None:
-                result = self._operator_iofacedata(face_data)
+                if isinstance(face_data, list) or isinstance(face_data, tuple):
+                    result = self._operator_iofacevectordata(face_data, safe_face_data)
+                else:
+                    result = self._operator_iofacedata(face_data)
 
             return result
 

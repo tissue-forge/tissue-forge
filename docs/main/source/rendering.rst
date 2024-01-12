@@ -116,7 +116,7 @@ The :py:class:`rendering.ClipPlanes` interface also provides the ability to crea
 at any time during a simulation, ::
 
     # Create a second clip plane at the center along the x-z plane
-    clip_plane1 = tf.ClipPlanes.create(tf.Universe.center, tf.FVector3(0, 1, 0))
+    clip_plane1 = tf.rendering.ClipPlanes.create(tf.Universe.center, tf.FVector3(0, 1, 0))
 
 A :py:class:`rendering.ClipPlane` instance provides a live interface to its clip plane in the Tissue Forge
 rendering engine, so that clip planes can be manipulated or destroyed at any time in simulation after

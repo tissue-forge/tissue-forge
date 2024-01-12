@@ -14,6 +14,12 @@ Vertex Model Solver
 
     Two-dimensional cell splitting live demo. Cell splitting events are implemented using a keyboard event.
 
+.. note::
+
+   To use the Tissue Forge vertex model solver in research, please cite the following:
+
+   Sego et al. (2023). `"General, open-source vertex modeling in biological applications using Tissue Forge." <https://www.nature.com/articles/s41598-023-45127-x>`_ *Scientific Reports*, 13(1), 17886.
+
 The vertex model solver implements the vertex model formalism for modeling biological objects
 as topologically connected :ref:`vertices <api_vertex_solver_vertex>` in a mesh.
 Each vertex is constructed from a Tissue Forge :ref:`particle <creating_particles_and_types>`.
@@ -357,17 +363,27 @@ to roll the sheet into a cylinder, ::
 The vertex model solver also supports constructing mesh objects using data in
 :ref:`3D model formats <file_io>`.
 A body can be constructed from a :py:class:`Mesh3DF <tissue_forge.io.Mesh3DF>` instance, and
-a surface can be constructed from a :py:class:`Face3DF <tissue_forge.io.Face3DF>` instance, ::
+a surface can be constructed from a :py:class:`Face3DF <tissue_forge.io.Face3DF>` instance
+or list of them, ::
 
     # Import a two-dimensional mesh from a 3DF
     obj_struct: tf.io.ThreeDFStructure = tf.io.fromFile3DF('my_blender_mesh2d.obj')
     # Build a two-dimensional cell for each imported face
-    for f in obj_struct.faces:
-        cell_type(f)
+    cell_type(face_data=obj_struct.faces)
     # Verify each newly created vertex position
     for s in cell_type:
         for v in s.vertices:
             print(f'Vertex {v.id}: {v.position}')
+
+.. note::
+
+    Constructing surfaces from a list of imported faces can be performed by either purging (default)
+    or keeping the topology of the imported faces. When purging the imported topology, new vertices are
+    created for each imported face, and the topology can be reconstructed with :meth:`Surface.sew`.
+    Reconstructing the topology can be slow depending on the details of the imported mesh but can act
+    as a safeguard against errors in mesh topology that are hard to detect.
+    Constructing surfaces while keeping the topology of imported faces can be enabled by setting the
+    keyword argument ``safe_face_data`` to ``False``.
 
 Mesh objects provide methods for conveniently finding other objects according to their neighborhood
 and topology. For example, a vertex that defines a surface can be retrieved from the surface

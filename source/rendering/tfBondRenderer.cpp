@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -45,7 +45,7 @@ HRESULT rendering::BondRenderer::start(const std::vector<fVector4> &clipPlanes) 
     _mesh.setPrimitive(Magnum::MeshPrimitive::Lines);
     _mesh.addVertexBuffer(_buffer, 0,
                           shaders::Flat3D::Position{}, 
-                          shaders::Flat3D::Color3{});
+                          shaders::Flat3D::Color4{});
 
     return S_OK;
 }
@@ -55,7 +55,7 @@ static inline int render_bond(rendering::BondsInstanceData* bondData, int i, Bon
     if(!(bond->flags & BOND_ACTIVE)) 
         return 0;
 
-    Magnum::Vector3 color = bond->style->map_color(bond).xyz();
+    const Magnum::Vector4 color = bond->style->map_color(bond);
     Particle *pi = _Engine.s.partlist[bond->i];
     Particle *pj = _Engine.s.partlist[bond->j];
     
@@ -75,7 +75,7 @@ static inline int render_bond(rendering::BondsInstanceData* bondData, int i, Bon
             shift[k] = 1;
         pix[k] = pi->x[k] + _Engine.s.h[k]* shift[k];
     }
-                    
+
     bondData[i].position = pix + pj_origin;
     bondData[i].color = color;
     bondData[i+1].position = fVector3(pj->position + pj_origin);

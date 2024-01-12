@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -255,7 +255,7 @@ CAPI_FUNC(HRESULT) tfSimulator_makeCurrent(struct tfSimulatorHandle *handle);
  * @brief Runs the event loop until all windows close or simulation time expires. 
  * Automatically performs universe time propogation. 
  * 
- * @param et final time; a negative number runs infinitely
+ * @param et period to execute, in units of simulation time; a negative number runs infinitely
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfSimulator_run(tfFloatP_t et);

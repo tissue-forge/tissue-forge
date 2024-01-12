@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -48,6 +48,7 @@ namespace TissueForge {
     struct CAPI_EXPORT ClusterParticleType : ParticleType {
 
         ClusterParticleType(const bool &noReg=false);
+        virtual ~ClusterParticleType();
 
         std::string str() const override;
 

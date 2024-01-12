@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -161,6 +161,16 @@ namespace TissueForge::models::vertex {
         static HRESULT destroy(BodyHandle &target);
 
         /**
+         * @brief Destroy bodies. 
+         * 
+         * Any resulting surfaces without a body are also destroyed. 
+         * 
+         * @param target handles to a body
+         * @return HRESULT 
+         */
+        static HRESULT destroy(const std::vector<Body*>& toRemove);
+
+        /**
          * @brief Get the body type
          */
         BodyType *type() const;
@@ -175,7 +185,7 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the surfaces that define the body
          */
-        std::vector<Surface*> getSurfaces() const { return surfaces; }
+        const std::vector<Surface*>& getSurfaces() const { return surfaces; }
 
         /**
          * @brief Get the vertices that define the body
@@ -222,7 +232,7 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the mass density
          */
-        FloatP_t getDensity() const { return density; }
+        const FloatP_t& getDensity() const { return density; }
 
         /**
          * @brief Set the mass density
@@ -234,7 +244,7 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the centroid
          */
-        FVector3 getCentroid() const { return centroid; }
+        const FVector3& getCentroid() const { return centroid; }
 
         /**
          * @brief Get the velocity, calculated as the velocity of the centroid
@@ -244,12 +254,12 @@ namespace TissueForge::models::vertex {
         /**
          * @brief Get the surface area
          */
-        FloatP_t getArea() const { return area; }
+        const FloatP_t& getArea() const { return area; }
 
         /**
          * @brief Get the volume
          */
-        FloatP_t getVolume() const { return volume; }
+        const FloatP_t& getVolume() const { return volume; }
 
         /**
          * @brief Get the mass
@@ -671,6 +681,13 @@ namespace TissueForge::models::vertex {
         HRESULT remove(const BodyHandle &i);
 
         /**
+         * @brief Remove instances
+         * 
+         * @param i instances to remove
+         */
+        HRESULT remove(const std::vector<BodyHandle>& i);
+
+        /**
          * @brief list of instances that belong to this type
          */
         std::vector<BodyHandle> getInstances();
@@ -753,6 +770,16 @@ inline std::ostream &operator<<(std::ostream& os, const TissueForge::models::ver
 {
     os << o.str().c_str();
     return os;
+}
+
+namespace std {
+
+    template <> 
+    struct hash<TissueForge::models::vertex::BodyHandle> {
+        size_t operator() (const TissueForge::models::vertex::BodyHandle& h) const {
+            return hash<int>()(h.id);
+        }
+    };
 }
 
 #endif // _MODELS_VERTEX_SOLVER_TFBODY_H_

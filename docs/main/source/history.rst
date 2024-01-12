@@ -3,6 +3,26 @@
 History
 ========
 
+Version 0.2.1
+-------------
+* Added new particle split overloads
+* Major performance improvements to mesh I/O
+* Added movie gallery to main readme
+* Minor corrections to docs typos
+* Improvements to build pipelines
+
+  * CI/CD conda package builds split by Python version
+  * Added handling arbitrary conda installation location by automated local build
+* Bug fixes
+
+  * Added constraints to libxml2 version
+  * Fixed particle dihedral getter
+  * Fixed minor bug in vertex connectivity update
+  * Fixed libmamba dependency bug for linux
+  * Fixed vertex solver API docs
+  * Fixed missing support for invisible bonds
+  * Fixed cluster memory ownership bugs
+
 Version 0.2.0
 -------------
 * Added support for Apple Silicon
