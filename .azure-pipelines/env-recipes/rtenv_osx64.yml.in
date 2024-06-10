@@ -7,6 +7,6 @@ dependencies:
   - bzip2
   - libxml2
   - matplotlib
-  - assimp=5
+  - assimp<=5.3.1
   - nlohmann_json
   - eigen
