@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -65,7 +65,7 @@ namespace TissueForge::rendering {
         const fVector3 &posi, 
         const fVector3 &posj, 
         const fVector3 &posk, 
-        const rendering::Style &s
+        const fVector4 &color
     );
 
 }

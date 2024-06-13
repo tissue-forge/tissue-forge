@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -136,7 +136,7 @@ namespace TissueForge::io {
 
         IOElement fe = IOElement::create();
 
-        if(toFile(jroot[FIO::KEY_VALUE], metaData, fe) != S_OK) 
+        if(toFile(jroot, metaData, fe) != S_OK) 
             tf_exp(std::runtime_error("Could not translate data"));
 
         jroot.clear();

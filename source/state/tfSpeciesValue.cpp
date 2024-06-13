@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -36,11 +36,19 @@ state::Species *state::SpeciesValue::species() {
     return state_vector->species->item(index);
 }
 
-state::SpeciesValue::SpeciesValue(const FloatP_t &value) : value(value) {}
-
-state::SpeciesValue::SpeciesValue(const FloatP_t &value, struct state::StateVector *state_vector, uint32_t index) : 
-    value(value), state_vector(state_vector), index(index) 
+state::SpeciesValue::SpeciesValue(struct state::StateVector *state_vector, uint32_t index) : 
+    state_vector(state_vector), index(index) 
 {}
+
+FloatP_t state::SpeciesValue::getValue() const {
+    if(!state_vector) return -FPTYPE_ONE;
+    return state_vector->fvec[index];
+}
+
+void state::SpeciesValue::setValue(const FloatP_t &_value) {
+    if(state_vector) 
+        state_vector->fvec[index] = FPTYPE_FMAX(FPTYPE_ZERO, _value);
+}
 
 bool state::SpeciesValue::getBoundaryCondition() {
     return species()->getBoundaryCondition();

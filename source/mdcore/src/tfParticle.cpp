@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -176,7 +176,7 @@ struct Offset {
 
 static_assert(sizeof(Offset) == sizeof(void*), "error, void* must be 64 bit");
 
-FVector3 particle_posdefault() { 
+static FVector3 particle_posdefault() { 
     RandomType &randEng = randomEngine();
     auto eng_origin = engine_origin();
     auto eng_dims = engine_dimensions();
@@ -186,7 +186,13 @@ FVector3 particle_posdefault() {
     return {x(randEng), y(randEng), z(randEng)};
 }
 
-FVector3 particle_veldefault(const ParticleType &ptype) {
+static FVector3 particle_dirdefault() {
+    std::uniform_real_distribution<FPTYPE> x(-1, 1);
+    RandomType &randEng = randomEngine();
+    return {x(randEng), x(randEng), x(randEng)};
+}
+
+static FVector3 particle_veldefault(const ParticleType &ptype) {
     FVector3 _velocity;
 
     if(ptype.target_energy <= 0) _velocity = {0.0, 0.0, 0.0};
@@ -374,6 +380,7 @@ FVector3 TissueForge::ParticleHandle::getPosition() {
 
 void TissueForge::ParticleHandle::setPosition(FVector3 position) {
     TF_PARTICLE_SELFW(this,)
+    BoundaryConditions::boundedPosition(position);
     self->set_global_position(position);
 }
 
@@ -555,6 +562,12 @@ Particle *particleSelf(ParticleHandle *handle) {
 HRESULT TissueForge::ParticleHandle::destroy()
 {
     TF_PARTICLE_SELFW(this, S_OK)
+    HRESULT result = S_OK;
+    if(self->clusterId >= 0 && (result = _Engine.s.partlist[self->clusterId]->removepart(self->id)) != S_OK)  
+        return result;
+    for(int i = 0; i < self->size_parts; i++) 
+        if(self->parts[i] >= 0 && (result = ParticleHandle(self->parts[i]).destroy()) != S_OK) 
+            return result;
     return engine_del_particle(&_Engine, self->id);
 }
 
@@ -653,6 +666,8 @@ ParticleHandle *TissueForge::ParticleType::operator()(const std::string &str, in
     }
     p->vid = dummy->vid;
     p->flags = dummy->flags;
+    if(dummy->state_vector) 
+        p->state_vector = dummy->state_vector;
 
     delete dummy;
 
@@ -714,20 +729,33 @@ ParticleType *TissueForge::ParticleType::get() {
     return ParticleType_FindFromName(this->name);
 }
 
-ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
-        ParticleType *a, ParticleType *b, int nPartitionRatios,
-        FPTYPE *partitionRations)
-{
-    TF_Log(LOG_TRACE) << "Executing simple fission " << self->id << ", " << (int)self->typeId;
+ParticleHandle* TissueForge::Particle_split(
+    Particle* self,
+    const FVector3& childDirection,
+    const FPTYPE& childRatio,
+    const std::vector<FPTYPE>* speciesRatios,
+    ParticleType* parentType,
+    ParticleType* childType
+) {
+    TF_Log(LOG_TRACE) << "Executing particle split " << self->id << ", " << (int)self->typeId;
+
+    const FPTYPE parentRatio = FPTYPE_ONE - childRatio;
+
+    if(childRatio <= FPTYPE_ZERO || parentRatio <= FPTYPE_ZERO) {
+        error(MDCERR_range);
+        return NULL;
+    }
 
     int self_id = self->id;
 
-    ParticleType *type = &_Engine.types[self->typeId];
+    ParticleType* _parentType = parentType ? parentType : &_Engine.types[self->typeId];
+    ParticleType* _childType = childType ? childType : _parentType;
     
-    // volume preserving radius
-    FPTYPE r2 = self->radius / std::pow(2., 1/3.);
+    // volume preserving radii
+    FPTYPE rC = self->radius * std::pow(childRatio, 1/3.);
+    FPTYPE rP = self->radius * std::pow(parentRatio, 1/3.);
     
-    if(r2 < type->minimum_radius) {
+    if(rC < _childType->minimum_radius || rP < _parentType->minimum_radius) {
         return NULL;
     }
 
@@ -741,7 +769,7 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
     part.radius = self->radius;
     part.id = engine_next_partid(&_Engine);
     part.vid = 0;
-    part.typeId = type->id;
+    part.typeId = _childType->id;
     part.flags = self->flags;
     part._handle = NULL;
     part.parts = NULL;
@@ -751,13 +779,31 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
     if(part.radius > _Engine.s.cutoff) {
         part.flags |= PARTICLE_LARGE;
     }
+    if(self->state_vector) {
+        part.state_vector = new state::StateVector(*self->state_vector);
 
-    std::uniform_real_distribution<FPTYPE> x(-1, 1);
+        std::vector<FPTYPE> _speciesRatios;
+        if(speciesRatios) 
+            _speciesRatios = *speciesRatios;
+        else 
+            _speciesRatios = std::vector<FPTYPE>(self->state_vector->size, childRatio);
 
-    RandomType &randEng = randomEngine();
-    FVector3 sep = {x(randEng), x(randEng), x(randEng)};
-    sep = sep.normalized();
-    sep = sep * r2;
+        if(_speciesRatios.size() != self->state_vector->size) {
+            TF_Log(LOG_ERROR) << "Species size do not match specified ratios";
+        } 
+        else {
+            for(unsigned int i = 0; i < _speciesRatios.size(); i++) {
+                const FPTYPE ratio_i = _speciesRatios[i];
+                if(ratio_i < FPTYPE_ZERO || ratio_i > FPTYPE_ONE) {
+                    error(MDCERR_range);
+                    continue;
+                }
+                const FPTYPE fvec_i = self->state_vector->fvec[i];
+                part.state_vector->fvec[i] = fvec_i * ratio_i / childRatio;
+                self->state_vector->fvec[i] = fvec_i * (FPTYPE_ONE - ratio_i) / parentRatio;
+            }
+        }
+    }
 
     // create a new particle at the same location as the original particle.
     Particle *p = NULL;
@@ -771,30 +817,11 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
         return NULL;
     }
 
-    // Double-check boundaries
-    const BoundaryConditions &bc = _Engine.boundary_conditions;
-    std::vector<bool> periodicFlags {
-        bool(bc.periodic & space_periodic_x), 
-        bool(bc.periodic & space_periodic_y), 
-        bool(bc.periodic & space_periodic_z)
-    };
-
     // Calculate new positions; account for boundaries
-    FVector3 posParent = vec + sep;
-    FVector3 posChild = FVector3(vec - sep);
-
-    for(unsigned int i = 0; i < 3; i++) {
-        FPTYPE dim_i = _Engine.s.dim[i];
-        FPTYPE origin_i = _Engine.s.origin[i];
-
-        if(periodicFlags[i]) {
-            while(posChild[i] >= dim_i + origin_i) 
-                posChild[i] -= dim_i;
-
-            while(posChild[i] < origin_i) 
-                posChild[i] += dim_i;
-        }
-    }
+    // Particles should be in contact and center of mass should not change
+    const FVector3 dir = childDirection.normalized();
+    FVector3 posParent = BoundaryConditions::boundedPosition(vec - dir * childRatio * (rC + rP));
+    FVector3 posChild = BoundaryConditions::boundedPosition(vec + dir * (FPTYPE_ONE - childRatio) * (rC + rP));
 
     if(engine_addpart(&_Engine, &part, posChild.data(), &p) != S_OK) {
         TF_Log(LOG_CRITICAL) << part.typeId << ", " << _Engine.nr_types;
@@ -807,14 +834,21 @@ ParticleHandle *TissueForge::Particle_FissionSimple(Particle *self,
     
     // pointers after engine_addpart could change...
     space_setpos(&_Engine.s, self_id, posParent.data());
+    space_setpos(&_Engine.s, part.id, posChild.data());
     self = _Engine.s.partlist[self_id];
+    p = _Engine.s.partlist[part.id];
     TF_Log(LOG_DEBUG) << self->position << ", " << p->position;
     
     // all is good, set the new radii
-    self->radius = r2;
-    p->radius = r2;
-    self->mass = p->mass = self->mass / 2.;
-    self->imass = p->imass = self->mass > 0 ? 1. / self->mass : 0;
+    p->radius = rC;
+    self->radius = rP;
+    p->mass = self->mass * childRatio;
+    self->mass = self->mass * parentRatio;
+    p->imass = p->mass > 0 ? 1. / p->mass : 0;
+    self->imass = self->mass > 0 ? 1. / self->mass : 0;
+
+    if(parentType) 
+        self->handle()->become(parentType);
 
     TF_Log(LOG_TRACE) << "Simple fission for type " << (int)_Engine.types[self->typeId].id;
 
@@ -840,10 +874,48 @@ std::string TissueForge::ParticleHandle::str() const {
 ParticleHandle* TissueForge::ParticleHandle::fission()
 {
     TF_PARTICLE_SELF(this)
-    return Particle_FissionSimple(self, NULL, NULL, 0, NULL);
+    return Particle_split(self, particle_dirdefault(), FPTYPE_ONE / FPTYPE_TWO);
 }
 
 ParticleHandle *TissueForge::ParticleHandle::split() { return fission(); }
+
+ParticleHandle* TissueForge::ParticleHandle::split(const FVector3& direction) {
+    TF_PARTICLE_SELF(this)
+    return Particle_split(self, direction, FPTYPE_ONE / FPTYPE_TWO);
+}
+
+ParticleHandle* TissueForge::ParticleHandle::split(const FPTYPE& childRatio) {
+    TF_PARTICLE_SELF(this)
+    return Particle_split(self, particle_dirdefault(), childRatio);
+}
+
+ParticleHandle* TissueForge::ParticleHandle::split(const std::vector<FPTYPE>& speciesRatios) {
+    TF_PARTICLE_SELF(this)
+    std::vector<FPTYPE> _speciesRatios(speciesRatios);
+    return Particle_split(self, particle_dirdefault(), FPTYPE_ONE / FPTYPE_TWO, &_speciesRatios);
+}
+
+ParticleHandle* TissueForge::ParticleHandle::split(
+    const FVector3& childDirection,
+    const FPTYPE& childRatio,
+    ParticleType* parentType,
+    ParticleType* childType
+) {
+    TF_PARTICLE_SELF(this)
+    return Particle_split(self, childDirection, childRatio, NULL, parentType, childType);
+}
+
+ParticleHandle* TissueForge::ParticleHandle::split(
+    const FVector3& childDirection,
+    const FPTYPE& childRatio,
+    const std::vector<FPTYPE>& speciesRatios,
+    ParticleType* parentType,
+    ParticleType* childType
+) {
+    TF_PARTICLE_SELF(this)
+    std::vector<FPTYPE> _speciesRatios(speciesRatios);
+    return Particle_split(self, childDirection, childRatio, &_speciesRatios, parentType, childType);
+}
 
 Particle* TissueForge::Particle_Get(ParticleHandle *pypart) {
     return _Engine.s.partlist[pypart->id];
@@ -1184,9 +1256,11 @@ std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE &dist
 std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const FPTYPE &distance) {
     TF_PARTICLE_SELFW(this, {})
 
+    const FPTYPE _distance = distance > 0 ? distance : _Engine.s.cutoff;
+
     ParticleTypeList typeList;
     for(int i = 0; i < _Engine.nr_types; ++i) typeList.insert(_Engine.types[i].id);
-    return neighborIds(distance, typeList);
+    return neighborIds(_distance, typeList);
 }
 
 std::vector<int32_t> TissueForge::ParticleHandle::neighborIds(const ParticleTypeList &types) {
@@ -1288,7 +1362,7 @@ std::vector<DihedralHandle> TissueForge::ParticleHandle::getDihedrals() {
     
     for(int i = 0; i < _Engine.dihedrals_size; ++i) {
         Dihedral *d = &_Engine.dihedrals[i];
-        if((d->i == id || d->j == id || d->k == id || d->l == id)) {
+        if((d->flags & DIHEDRAL_ACTIVE) && (d->i == id || d->j == id || d->k == id || d->l == id)) {
             dihedrals.push_back(DihedralHandle(i));
         }
     }

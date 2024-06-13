@@ -15,8 +15,6 @@ cmake -DCMAKE_BUILD_TYPE:STRING=%TFBUILD_CONFIG% ^
       -DCMAKE_PREFIX_PATH:PATH=%TFENV% ^
       -DCMAKE_FIND_ROOT_PATH:PATH=%TFENV%\Library ^
       -DCMAKE_INSTALL_PREFIX:PATH=%TFINSTALLDIR% ^
-      -DCMAKE_C_COMPILER:PATH=%TFENV%\Library\bin\clang-cl.exe ^
-      -DCMAKE_CXX_COMPILER:PATH=%TFENV%\Library\bin\clang-cl.exe ^
       -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld ^
       -DPython_EXECUTABLE:PATH=%TFENV%\python.exe ^
       -DPThreads_ROOT:PATH=%TFENV%\Library ^

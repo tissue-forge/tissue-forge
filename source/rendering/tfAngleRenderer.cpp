@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -44,7 +44,7 @@ HRESULT rendering::AngleRenderer::start(const std::vector<fVector4> &clipPlanes)
     _mesh.setPrimitive(Magnum::MeshPrimitive::Lines);
     _mesh.addVertexBuffer(_buffer, 0,
                           shaders::Flat3D::Position{}, 
-                          shaders::Flat3D::Color3{});
+                          shaders::Flat3D::Color4{});
 
     return S_OK;
 }
@@ -54,7 +54,7 @@ static inline int render_angle(rendering::BondsInstanceData* angleData, int i, A
     if(!(angle->flags & ANGLE_ACTIVE)) 
         return 0;
 
-    Magnum::Vector3 *color = &angle->style->color;
+    const Magnum::Vector4 color = angle->style->map_color(angle);
     Particle *pi = _Engine.s.partlist[angle->i];
     Particle *pj = _Engine.s.partlist[angle->j];
     Particle *pk = _Engine.s.partlist[angle->k];
@@ -89,18 +89,18 @@ static inline int render_angle(rendering::BondsInstanceData* angleData, int i, A
     fVector3 posk = pixkj + pj_origin;
     
     angleData[i].position = posi;
-    angleData[i].color = *color;
+    angleData[i].color = color;
     angleData[i+1].position = posj;
-    angleData[i+1].color = *color;
+    angleData[i+1].color = color;
     
     angleData[i+2].position = posk;
-    angleData[i+2].color = *color;
+    angleData[i+2].color = color;
     angleData[i+3] = angleData[i+1];
 
     angleData[i+4].position = 0.5 * (posi + posj);
-    angleData[i+4].color = *color;
+    angleData[i+4].color = color;
     angleData[i+5].position = 0.5 * (posk + posj);
-    angleData[i+5].color = *color;
+    angleData[i+5].color = color;
     return 6;
 }
 

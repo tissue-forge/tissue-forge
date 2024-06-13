@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -151,6 +151,16 @@ namespace TissueForge {
         // into this array, so allocate and free in single block.
         // allocated in BoundaryConditions_Init.
         struct Potential **potenntials;
+
+        /**
+         * @brief Enforce boundary conditions on a position
+        */
+        static void boundedPosition(FVector3& position);
+
+        /**
+         * @brief Enforce boundary conditions on a position
+        */
+        static FVector3 boundedPosition(const FVector3& position);
 
         BoundaryConditions() {}
         BoundaryConditions(int *cells);

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -741,7 +741,7 @@ CAPI_FUNC(HRESULT) tfStateSpeciesList_fromString(struct tfStateSpeciesListHandle
  * @param index species index in state vector
  * @return S_OK on success
  */
-CAPI_FUNC(HRESULT) tfStateSpeciesValue_init(struct tfStateSpeciesValueHandle *handle, tfFloatP_t value, struct tfStateStateVectorHandle *state_vector, unsigned int index);
+CAPI_FUNC(HRESULT) tfStateSpeciesValue_init(struct tfStateSpeciesValueHandle *handle, struct tfStateStateVectorHandle *state_vector, unsigned int index);
 
 /**
  * @brief Get the value

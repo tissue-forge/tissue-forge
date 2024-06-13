@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -34,8 +33,8 @@ struct AType : ParticleType {
         species = new state::SpeciesList();
         for(auto &s : speciesNames) 
             species->insert(s);
-        style = new rendering::Style();
-        style->newColorMapper(this, "S2");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S2");
 
         registerType();
     };
@@ -49,8 +48,8 @@ struct BType : ParticleType {
         species = new state::SpeciesList();
         for(auto &s : speciesNames) 
             species->insert(s);
-        style = new rendering::Style();
-        style->newColorMapper(this, "S2");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S2");
 
         registerType();
     };
@@ -62,7 +61,7 @@ int main(int argc, char const *argv[])
 {
     Simulator::Config config;
     config.setWindowless(true);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     AType *A = new AType();
     A = (AType*)A->get();

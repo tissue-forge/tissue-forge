@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -28,6 +28,7 @@
 #include <event/tfTimeEvent.h>
 #include <tf_bind.h>
 #include <io/tfFIO.h>
+#include <tfTaskScheduler.h>
 
 #include <unordered_set>
 #include <utility>
@@ -526,16 +527,14 @@ void load() {
 }
 
 void update() {
-    int i;
-    ParticlePolarityPack *p;
-#pragma omp parallel for schedule(static), private(i,p,size_partPolPack,_partPolPack,_drawingPolarityVecs)
-    for(i = 0; i < size_partPolPack; i++) {
-        p = (*_partPolPack)[i];
-        if(!p) continue;
+    auto func = [](int i) -> void {
+        ParticlePolarityPack *p = (*_partPolPack)[i];
+        if(!p) return;
 
         p->applyVectorIncrements();
         if(_drawingPolarityVecs) p->updateArrows();
-    }
+    };
+    parallel_for(size_partPolPack, func);
 
     polarityVecsFlip();
 

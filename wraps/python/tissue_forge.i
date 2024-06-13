@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -213,10 +213,10 @@
     def run(*args, **kwargs):
         """
         Runs the event loop until all windows close or simulation time expires. 
-        Automatically performs universe time propogation. 
+        Automatically performs universe time propagation.
 
         :type args: float
-        :param args: final time (default runs infinitly)
+        :param args: period to execute, in units of simulation time (default runs infinitely)
         """
         return Simulator.run(*args, **kwargs)
 

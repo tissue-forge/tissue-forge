@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -163,6 +163,26 @@ CAPI_FUNC(HRESULT) tfFlux_getTarget(struct tfFluxHandle *handle, unsigned int in
  */
 CAPI_FUNC(HRESULT) tfFlux_setTarget(struct tfFluxHandle *handle, unsigned int index, tfFloatP_t target);
 
+/**
+ * @brief Set the cutoff of a flux
+ * 
+ * @param handle populated handle
+ * @param index flux index
+ * @param cutoff flux cutoff
+ * @return S_OK on success
+*/
+CAPI_FUNC(HRESULT) tfFlux_getCutoff(struct tfFluxHandle *handle, unsigned int index, tfFloatP_t *cutoff);
+
+/**
+ * @brief Set the cutoff of a flux
+ * 
+ * @param handle populated handle
+ * @param index flux index
+ * @param cutoff flux cutoff
+ * @return S_OK on success
+*/
+CAPI_FUNC(HRESULT) tfFlux_setCutoff(struct tfFluxHandle *handle, unsigned int index, tfFloatP_t cutoff);
+
 
 ////////////
 // Fluxes //
@@ -222,6 +242,7 @@ CAPI_FUNC(HRESULT) tfFluxes_getFlux(struct tfFluxesHandle *handle, unsigned int 
  * @param name name of species
  * @param k flux transport coefficient
  * @param decay flux decay coefficient
+ * @param cutoff flux cutoff distance
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfFluxes_fluxFick(
@@ -230,7 +251,8 @@ CAPI_FUNC(HRESULT) tfFluxes_fluxFick(
     struct tfParticleTypeHandle *B, 
     const char *name, 
     tfFloatP_t k, 
-    tfFloatP_t decay
+    tfFloatP_t decay, 
+    tfFloatP_t cutoff
 );
 
 /**
@@ -262,6 +284,7 @@ CAPI_FUNC(HRESULT) tfFluxes_fluxFick(
  * @param k flux transport coefficient
  * @param target flux target
  * @param decay flux decay coefficient
+ * @param cutoff flux cutoff distance
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfFluxes_secrete(
@@ -271,7 +294,8 @@ CAPI_FUNC(HRESULT) tfFluxes_secrete(
     const char *name, 
     tfFloatP_t k, 
     tfFloatP_t target, 
-    tfFloatP_t decay
+    tfFloatP_t decay, 
+    tfFloatP_t cutoff
 );
 
 /**
@@ -303,6 +327,7 @@ CAPI_FUNC(HRESULT) tfFluxes_secrete(
  * @param k flux transport coefficient
  * @param target flux target
  * @param decay flux decay coefficient
+ * @param cutoff flux cutoff distance
  * @return S_OK on success 
  */
 CAPI_FUNC(HRESULT) tfFluxes_uptake(
@@ -312,7 +337,8 @@ CAPI_FUNC(HRESULT) tfFluxes_uptake(
     const char *name, 
     tfFloatP_t k, 
     tfFloatP_t target, 
-    tfFloatP_t decay
+    tfFloatP_t decay, 
+    tfFloatP_t cutoff
 );
 
 #endif // _WRAPS_C_TFCFLUX_H_

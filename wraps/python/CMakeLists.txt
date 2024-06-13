@@ -1,6 +1,6 @@
 #*******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022, 2023 T.J. Sego
+# Copyright (c) 2022-2024 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -39,6 +39,10 @@ if(TF_APPLE)
   list(APPEND SWIG_COMPILEDEFS_PY CORRADE_TARGET_APPLE)
 endif()
 
+if(MSVC)
+  add_definitions(/bigobj)
+endif()
+
 set(TissueForge_py_LIBS
   mdcore
 
@@ -52,7 +56,6 @@ set(TissueForge_py_LIBS
   Magnum::SceneGraph
   Magnum::Primitives
   Magnum::MeshTools
-  LibSBML::LibSBML
   MagnumPlugins::StbImageConverter
   TgaImageConverter
   assimp::assimp

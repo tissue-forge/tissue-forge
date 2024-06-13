@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -32,6 +32,25 @@
 #include "tfCSpecies.h"
 
 /**
+ * @brief Mapped particle data enums
+ * 
+*/
+struct CAPI_EXPORT tfMappedParticleDataEnum {
+    int MAPPEDPARTICLEDATA_NONE;
+    int MAPPEDPARTICLEDATA_POSITION_X;
+    int MAPPEDPARTICLEDATA_POSITION_Y;
+    int MAPPEDPARTICLEDATA_POSITION_Z;
+    int MAPPEDPARTICLEDATA_VELOCITY_X;
+    int MAPPEDPARTICLEDATA_VELOCITY_Y;
+    int MAPPEDPARTICLEDATA_VELOCITY_Z;
+    int MAPPEDPARTICLEDATA_VELOCITY_SPEED;
+    int MAPPEDPARTICLEDATA_SPECIES;
+    int MAPPEDPARTICLEDATA_FORCE_X;
+    int MAPPEDPARTICLEDATA_FORCE_Y;
+    int MAPPEDPARTICLEDATA_FORCE_Z;
+};
+
+/**
  * @brief Particle type style definition in Tissue Forge C
  * 
  */
@@ -39,9 +58,10 @@ struct CAPI_EXPORT tfParticleTypeStyleSpec {
     char *color;
     unsigned int visible;
     char *speciesName;
-    char *speciesMapName;
-    tfFloatP_t speciesMapMin;
-    tfFloatP_t speciesMapMax;
+    char *mapName;
+    tfFloatP_t mapMin;
+    tfFloatP_t mapMax;
+    int mappedParticleData;
 };
 
 /**
@@ -115,6 +135,17 @@ struct CAPI_EXPORT tfParticleListHandle {
 struct CAPI_EXPORT tfParticleTypeListHandle {
     void *tfObj;
 };
+
+
+//////////////////////////////
+// tfMappedParticleDataEnum //
+//////////////////////////////
+
+
+/**
+ * @brief Initialize an instance
+*/
+CAPI_FUNC(struct tfMappedParticleDataEnum) tfMappedParticleDataEnum_init();
 
 
 ////////////////////////
@@ -210,13 +241,62 @@ CAPI_FUNC(HRESULT) tfParticleHandle_getType(struct tfParticleHandleHandle *handl
 CAPI_FUNC(HRESULT) tfParticleHandle_str(struct tfParticleHandleHandle *handle, char **str, unsigned int *numChars);
 
 /**
- * @brief Splits a single particle into two. Returns the new particle. 
+ * @brief Splits a single particle into two. 
+ * 
+ * The new particle is placed along a randomly selected orientation. 
+ * 
+ * The two resulting particles have the same mass and volume. 
+ * 
+ * If species are attached to the split particle, then the amount of species 
+ * is allocated to the two resulting particles such that their species concentrations 
+ * are the same as the split particle. Species are conserved. 
+ * 
+ * The two resulting particles have the type of the split particle. 
+ * 
+ * The two resulting particles are placed in contact. 
+ * 
+ * The center of mass of the two resulting particles is the same as that of the split particle. 
+ * 
+ * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
  * 
  * @param handle populated handle
  * @param newParticleHandle new particle handle to populate
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleHandle_split(struct tfParticleHandleHandle *handle, struct tfParticleHandleHandle *newParticleHandle);
+
+/**
+ * @brief Splits a single particle into two
+ * and optionally with different resulting particle types. 
+ * 
+ * The new particle is placed along a randomly selected orientation. 
+ * 
+ * The two resulting particles have the same mass and volume. 
+ * 
+ * If species are attached to the split particle, then the amount of species 
+ * is allocated to the two resulting particles such that their species concentrations 
+ * are the same as the split particle. Species are conserved. 
+ * 
+ * The two resulting particles have the type of the split particle unless otherwise specified. 
+ * 
+ * The two resulting particles are placed in contact. 
+ * 
+ * The center of mass of the two resulting particles is the same as that of the split particle. 
+ * 
+ * The combined mass and volume of the two resulting particles are the same as those of the split particle. 
+ * 
+ * @param handle populated handle
+ * @param newParticleHandle new particle handle to populate
+ * @param parentTypeHandle optional type of the split particle after the split (NULL specifies default)
+ * @param childTypeHandle optional type of the new particle (NULL specifies default)
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfParticleHandle_splitTypes(
+    struct tfParticleHandleHandle* handle, 
+    struct tfParticleHandleHandle* newParticleHandle,
+    struct tfParticleTypeHandle* parentTypeHandle, 
+    struct tfParticleTypeHandle* childTypeHandle
+);
 
 /**
  * @brief Destroys the particle, and removes it from inventory. 
@@ -1311,6 +1391,38 @@ CAPI_FUNC(HRESULT) tfParticleList_sphericalPositions(struct tfParticleListHandle
 CAPI_FUNC(HRESULT) tfParticleList_sphericalPositionsO(struct tfParticleListHandle *handle, tfFloatP_t *origin, tfFloatP_t **coordinates);
 
 /**
+ * @brief Get whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleList_getOwnsData(struct tfParticleListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleList_setOwnsData(struct tfParticleListHandle *handle, bool flag);
+
+/**
+ * @brief Get whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleList_getMutable(struct tfParticleListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleList_setMutable(struct tfParticleListHandle *handle, bool flag);
+
+/**
  * @brief Get a JSON string representation
  * 
  * @param handle populated handle
@@ -1580,6 +1692,38 @@ CAPI_FUNC(HRESULT) tfParticleTypeList_sphericalPositions(struct tfParticleTypeLi
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfParticleTypeList_sphericalPositionsO(struct tfParticleTypeListHandle *handle, tfFloatP_t *origin, tfFloatP_t **coordinates);
+
+/**
+ * @brief Get whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_getOwnsData(struct tfParticleTypeListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list owns its data
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list owns its data
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_setOwnsData(struct tfParticleTypeListHandle *handle, bool flag);
+
+/**
+ * @brief Get whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param result flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_getMutable(struct tfParticleTypeListHandle *handle, bool* result);
+
+/**
+ * @brief Set whether the list is mutable
+ * 
+ * @param handle populated handle
+ * @param flag flag signifying whether the list is mutable
+*/
+CAPI_FUNC(HRESULT) tfParticleTypeList_setMutable(struct tfParticleTypeListHandle *handle, bool flag);
 
 /**
  * @brief Get a particle list populated with particles of all current particle types

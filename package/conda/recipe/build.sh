@@ -20,11 +20,17 @@ CMAKE_CONFIG_ARGS+=(-DLIBXML_INCLUDE_DIR:PATH=${PREFIX}/include/libxml2)
 if [[ $(uname) == Darwin ]]; then
   export MACOSX_DEPLOYMENT_TARGET=${TFOSX_SYSROOT}
   CMAKE_CONFIG_ARGS+=(-DCMAKE_OSX_SYSROOT:PATH=${CONDA_BUILD_SYSROOT})
+
+  if [ -z "${TF_OSXARM64+x}" ]; then
+    if [ ${TF_OSXARM64} -eq 1 ]; then
+      CMAKE_CONFIG_ARGS+=(-DCMAKE_APPLE_SILICON_PROCESSOR:STRING=arm64)
+      CMAKE_CONFIG_ARGS+=(-DTF_ENABLE_AVX:BOOL=OFF)
+      CMAKE_CONFIG_ARGS+=(-DTF_ENABLE_SSE4:BOOL=OFF)
+    fi
+  fi
+
 else
   CMAKE_CONFIG_ARGS+=(-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld)
-
-  export CC=${CONDA_PREFIX}/bin/clang
-  export CXX=${CONDA_PREFIX}/bin/clang++
 
   # Helping corrade rc find the right libstdc++
   export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}

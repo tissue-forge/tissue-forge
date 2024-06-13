@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -474,7 +474,7 @@ cuda::CUDAContext *cuda::CUDADevice::currentContext() {
 std::string cuda::CUDADevice::getDeviceName(const int &deviceId) {
     cuda::CUDADevice::validateDeviceId(deviceId);
 
-    size_t nameLen = 256;
+    const size_t nameLen = 256;
     char name[nameLen];
     TF_CUDA_CALL(cuDeviceGetName(name, nameLen, deviceId));
     return std::string(name);

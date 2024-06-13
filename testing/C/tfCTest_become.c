@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     struct tfSimulatorConfigHandle config;
     TFC_TEST_CHECK(tfSimulatorConfig_init(&config));
     TFC_TEST_CHECK(tfSimulatorConfig_setWindowless(&config, 1));
-    TFC_TEST_CHECK(tfInitC(&config, NULL, 0));
+    TFC_TEST_CHECK(tfTest_initC(&config));
 
     struct tfStateSpeciesHandle S1, S2, S3;
     TFC_TEST_CHECK(tfStateSpecies_initS(&S1, "S1"));
@@ -57,13 +57,19 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfParticleType_setRadius(&BType, 4.0));
     TFC_TEST_CHECK(tfParticleType_setSpecies(&BType, &slistB));
 
+    struct tfRenderingColorMapperHandle cmapA, cmapB;
     struct tfRenderingStyleHandle styleA, styleB;
+
+    TFC_TEST_CHECK(tfRenderingColorMapper_init(&cmapA, "rainbow", 0.0, 1.0));
+    TFC_TEST_CHECK(tfRenderingColorMapper_setMapParticleSpecies(&cmapA, &AType, "S2"));
     TFC_TEST_CHECK(tfRenderingStyle_init(&styleA));
-    TFC_TEST_CHECK(tfRenderingStyle_newColorMapper(&styleA, &AType, "S2", "rainbow", 0.0, 1.0));
+    TFC_TEST_CHECK(tfRenderingStyle_setColorMapper(&styleA, &cmapA));
     TFC_TEST_CHECK(tfParticleType_setStyle(&AType, &styleA));
     
+    TFC_TEST_CHECK(tfRenderingColorMapper_init(&cmapB, "rainbow", 0.0, 1.0));
+    TFC_TEST_CHECK(tfRenderingColorMapper_setMapParticleSpecies(&cmapB, &BType, "S2"));
     TFC_TEST_CHECK(tfRenderingStyle_init(&styleB));
-    TFC_TEST_CHECK(tfRenderingStyle_newColorMapper(&styleB, &BType, "S2", "rainbow", 0.0, 1.0));
+    TFC_TEST_CHECK(tfRenderingStyle_setColorMapper(&styleB, &cmapB));
     TFC_TEST_CHECK(tfParticleType_setStyle(&BType, &styleB));
 
     struct tfParticleHandleHandle part;

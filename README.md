@@ -1,7 +1,9 @@
 Tissue Forge
 ============
 
-![](https://github.com/tissue-forge/tissue-forge/blob/main/docs/main/source/droplets_3d.gif)
+<p align=center>
+<img src="docs/main/source/droplets_3d.gif" width="600">
+</p>
 
 Tissue Forge is an interactive, particle-based physics, chemistry and biology
 modeling and simulation environment. Tissue Forge provides the ability to create, 
@@ -43,6 +45,75 @@ Tissue Forge documentation is available online,
 |  Python API Documentation  | [link](https://tissue-forge-python-api-documentation.readthedocs.io/en/latest/) | [![Documentation Status](https://readthedocs.org/projects/tissue-forge-python-api-documentation/badge/?version=latest)](https://tissue-forge-python-api-documentation.readthedocs.io/en/latest/?badge=latest) |
 |    C API Documentation     |   [link](https://tissue-forge-c-api-documentation.readthedocs.io/en/latest/)    |      [![Documentation Status](https://readthedocs.org/projects/tissue-forge-c-api-documentation/badge/?version=latest)](https://tissue-forge-c-api-documentation.readthedocs.io/en/latest/?badge=latest)      |
 
+# Gallery #
+
+<p align=center>
+<img src="docs/main/source/droplets_3d.gif" width="600">
+<br/>
+<em>
+Tissue Forge simulation of chemical flux during fluid droplet collision. 
+Each particle represents a portion of fluid that carries an amount of a diffusive chemical, 
+the amount of which varies from zero (blue) to one (red). 
+When two droplets carrying different initial chemical amounts collide, 
+resulting droplets tend towards homogeneous chemical distributions. 
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/cell_sorting.gif" width="600">
+<br/>
+<em>
+Tissue Forge simulation of cell sorting by differential adhesion. 
+Each particle represents a cell, and cells sort by preferential attachment to 
+their own type (blue or red). 
+This 
+<a href="examples/py/cell_sorting.py">example</a> 
+is available in Python.
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/models/vertex/solver/capillary_loop.png" width="600">
+<br/>
+<em>
+Tissue Forge vertex model configuration generated from an imported _.obj_ mesh of a local vasculature. 
+The _.obj_ was generated in <a href="https://www.blender.org/">Blender</a>. 
+<br/>
+This 
+<a href="wraps/python/models/vertex/solver/examples/capillary_loop.py">example</a> 
+is available in Python.
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/colonic_crypt.gif" width="600">
+<br/>
+<em>
+Two-dimensional agent-based model of cell proliferation and differentiation in the colonic crypt. 
+Each cell is assigned a state dynamics model of the cell cycle and unique clonal identification 
+(visualized as a unique particle color). 
+When the cell cycle model of a cell transitions from the M phase to the G1 phase, 
+the cell divides and copies its clonal identification to its progeny. 
+Cells are removed when they reach the base of the crypt. 
+</em>
+</p>
+
+<p align=center>
+<img src="docs/main/source/cellcrawling.gif" width="600">
+<br/>
+<em>
+Tissue Forge simulation of single cell migration over extracellular matrix fibers using combined 
+vertex- and particle-based modeling. 
+Integrins (green particles) bind to extracellular matrix fibers (red particles) 
+and generate protrusive forces (green lines) 
+on the vertices that describe the shape of the cell (red polygon). 
+Detailed view shows deformations in the ECM caused by force generation during cell migration.
+<br/>
+This 
+<a href="wraps/python/models/vertex/solver/examples/cell_migration.py">example</a> 
+is available in Python.
+</em>
+</p>
 
 # Installation #
 
@@ -194,8 +265,16 @@ conda activate $TFENV
 bash ${TFSRCDIR}/package/local/osx/install_all.sh
 ```
 
-The default Python version of the installation is 3.7, though Tissue Forge has also been tested 
-on Windows, Linux and MacOS for Python versions 3.8 and 3.9. 
+Note that Tissue Forge assumes that conda is installed in a typical location on Linux and MacOS. 
+If Tissue Forge has trouble finding the conda script `conda.sh`, then it can be provided during build 
+customization using the environment variable `TFCONDAENV`. 
+
+```bash
+export TFCONDAENV=${HOME}/mambaforge/etc/profile.d/conda.sh
+```
+
+The default Python version of the installation is 3.8, though Tissue Forge has also been tested 
+on Windows, Linux and MacOS for Python versions 3.8, 3.9, 3.10, and 3.11. 
 To specify a different version of Python, simply add a call to 
 [update the conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-python.html#updating-or-upgrading-python) 
 in the previous commands before calling `install_all`. 
@@ -218,3 +297,9 @@ environment as previously described and install the `notebook`, `ipywidgets` and
 ```bash
 conda install -c conda-forge notebook ipywidgets ipyevents
 ```
+
+## Citing ##
+
+To use Tissue Forge in research, please cite the following: 
+
+Sego et al. (2023). ["Tissue Forge: Interactive biological and biophysics simulation environment."](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010768) *PLoS Computational Biology*, 19(10), e1010768.

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -18,8 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
-#include <tfLogger.h>
 
 
 using namespace TissueForge;
@@ -68,7 +66,7 @@ int main(int argc, char const *argv[])
     config.universeConfig.spaceGridSize = {3, 3, 3};
     config.universeConfig.dt = 0.01;
     config.universeConfig.setBoundaryConditions(bcArgs);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     AType *A = new AType();
     SphereType *Sphere = new SphereType();

@@ -3,6 +3,53 @@
 History
 ========
 
+Version 0.2.1
+-------------
+* Added new particle split overloads
+* Major performance improvements to mesh I/O
+* Added movie gallery to main readme
+* Minor corrections to docs typos
+* Improvements to build pipelines
+
+  * CI/CD conda package builds split by Python version
+  * Added handling arbitrary conda installation location by automated local build
+* Bug fixes
+
+  * Added constraints to libxml2 version
+  * Fixed particle dihedral getter
+  * Fixed minor bug in vertex connectivity update
+  * Fixed libmamba dependency bug for linux
+  * Fixed vertex solver API docs
+  * Fixed missing support for invisible bonds
+  * Fixed cluster memory ownership bugs
+
+Version 0.2.0
+-------------
+* Added support for Apple Silicon
+* Added data mapping visualization
+* Improvements to build pipelines
+* Added support for Python 3.10 and 3.11
+* Dropped support for Python 3.7
+* Bug fixes
+
+  * Minor bug fix in cell polarity module
+
+Version 0.1.1
+-------------
+* Improvements to GPU acceleration
+* Added flux sub-stepping
+* Minor improvements to lists
+* Minor improvements to docs
+* Improvements to species and flux
+* Added split overload for optional direction
+* Bug fixes
+
+  * Minor bug fix in factory particle constructor
+  * Minor bug fix in lists
+  * Fixed multithreading in cell polarity model module
+  * Fixed state during particle splitting
+  * Minor numpy fix in lattice python module
+
 Version 0.1.0
 --------------
 * Added vertex solver module

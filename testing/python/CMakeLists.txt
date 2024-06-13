@@ -1,6 +1,6 @@
 #*******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022, 2023 T.J. Sego
+# Copyright (c) 2022-2024 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -17,7 +17,7 @@
 # 
 #*******************************************************************************
 
-find_package(Python 3.7.0...3.9.99 REQUIRED COMPONENTS Interpreter)
+find_package(Python 3.8.0...3.11.99 REQUIRED COMPONENTS Interpreter)
 
 macro(tfPyTest_Test src_name src_path)
     add_test(

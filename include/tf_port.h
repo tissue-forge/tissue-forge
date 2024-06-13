@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -142,6 +142,12 @@
   #define TF_ALIGNED(RTYPE, VAL) __declspec(align(VAL)) RTYPE
 #else
   #define TF_ALIGNED(RTYPE, VAL) RTYPE
+#endif
+
+#if __has_attribute(flatten)
+#  define TF_FLATTEN __attribute__((flatten))
+#else
+#  define TF_FLATTEN [[msvc::flatten]]
 #endif
 
 /* Declarations for symbol visibility.

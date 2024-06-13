@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -50,11 +50,16 @@ namespace TissueForge {
     {
         
         Flux *flux = &f->fluxes[0];
-        FPTYPE  r = std::sqrt(r2);
-        FPTYPE term = (1. - r / _Engine.s.cutoff);
-        term = term * term;
+        FPTYPE r = FPTYPE_SQRT(r2);
         
         for(int i = 0; i < flux->size; ++i) {
+            FPTYPE cutoff = flux->cutoff[i];
+            if(r > cutoff) 
+                continue;
+
+            FPTYPE term = 1 - r / cutoff;
+            term = term * term;
+
             // NOTE: order important here, type ids could be the same, i.e.
             // Fick flux, the true branch of each assignemnt gets evaluated.
             Particle *pi = part_i->typeId == flux->type_ids[i].a ? part_i : part_j;

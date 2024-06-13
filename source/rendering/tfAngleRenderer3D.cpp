@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -104,7 +104,7 @@ void rendering::render_arc3d(
     const fVector3 &posi, 
     const fVector3 &posj, 
     const fVector3 &posk, 
-    const rendering::Style &s, 
+    const fVector4 &color, 
     const unsigned int &numSegments, 
     const unsigned int &faceDetail, 
     const float &radius)
@@ -145,7 +145,6 @@ void rendering::render_arc3d(
 
     // transforms relative displacement of cross-section at every segment
     const fMatrix4 dirTransform = fMatrix4::rotation(relpos0.angle(relpos1) / (float)(numSegments), rotAxis);
-    const Magnum::Color4 color = {s.color[0], s.color[1], s.color[2], (float)s.getVisible()};
     const size_t vertexIdxIncr = 6 * faceDetail;
     for(size_t i = 0; i < numSegments; i++) {
         
@@ -251,10 +250,11 @@ HRESULT rendering::AngleRenderer3D::draw(rendering::ArcBallCamera *camera, const
                 const fVector3 pjpos = pj->global_position();
                 const fVector3 pipos = pjpos + metrics::relativePosition(pi->global_position(), pjpos);
                 const fVector3 pkpos = pjpos + metrics::relativePosition(pk->global_position(), pjpos);
+                const fVector4 color = bond->style->map_color(bond);
 
-                render_arc3d(dataArcs, i * vertsPerArc, pipos, pjpos, pkpos, *bond->style, _segmentsArcs, _detailBnds, radius * 0.5);
-                render_bond3d(dataBnds, i * 2    , pipos, pjpos, *bond->style, radius);
-                render_bond3d(dataBnds, i * 2 + 1, pkpos, pjpos, *bond->style, radius);
+                render_arc3d(dataArcs, i * vertsPerArc, pipos, pjpos, pkpos, color, _segmentsArcs, _detailBnds, radius * 0.5);
+                render_bond3d(dataBnds, i * 2    , pipos, pjpos, color, radius);
+                render_bond3d(dataBnds, i * 2 + 1, pkpos, pjpos, color, radius);
                 i++;
             }
         }

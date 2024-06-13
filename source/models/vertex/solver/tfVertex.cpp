@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -29,6 +29,7 @@
 #include <tfError.h>
 #include <tfLogger.h>
 #include <tfEngine.h>
+#include <tfTaskScheduler.h>
 #include <io/tfIO.h>
 #include <io/tfFIO.h>
 
@@ -52,6 +53,13 @@ using namespace TissueForge::models::vertex;
     Vertex *name;                                                       \
     if(this->id < 0 || !(name = Mesh::get()->getVertex(this->id))) {    \
         VertexHandle_INVALIDHANDLERR; return retval; }
+
+
+struct PairHash_VertexPtr_VertexPtr {
+    size_t operator() (const std::pair<Vertex*, Vertex*>& p) const {
+        return std::hash<Vertex*>()(p.first) ^ std::hash<Vertex*>()(p.second);
+    }
+};
 
 
 ////////////
@@ -88,7 +96,8 @@ void Vertex::updateConnectedVertices() {
         result.insert(vp);
         result.insert(vn);
     }
-    this->_connectedVertices = std::vector<Vertex*>(result.begin(), result.end());
+    auto tmp = std::vector<Vertex*>(result.begin(), result.end());
+    this->_connectedVertices = tmp;
 }
 
 std::vector<Surface*> Vertex::sharedSurfaces(const Vertex *other) const {
@@ -199,6 +208,17 @@ static Vertex *Vertex_create(const unsigned int &_pid) {
     return result;
 }
 
+static std::vector<Vertex*> Vertex_create(const std::vector<unsigned int>& _pids) {
+    Vertex_GETMESH(mesh, {});
+    std::vector<Vertex*> result(_pids.size(), 0);
+    Vertex** data = result.data();
+    if(mesh->create(&data, _pids) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
+    return result;
+}
+
 static Vertex *Vertex_create(const FVector3 &position, int &pid) {
     MeshParticleType *ptype = MeshParticleType_get();
     Mesh *mesh = Mesh::get();
@@ -222,8 +242,43 @@ static Vertex *Vertex_create(const FVector3 &position, int &pid) {
     return Vertex_create(ph->id);
 }
 
+static std::vector<Vertex*> Vertex_create(const std::vector<FVector3>& positions, std::vector<unsigned int>& pids) {
+    if(positions.empty()) 
+        return {};
+
+    MeshParticleType *ptype = MeshParticleType_get();
+    Mesh *mesh = Mesh::get();
+    if(!ptype) {
+        TF_Log(LOG_ERROR) << "Could not instantiate particle type";
+        return {};
+    } 
+    else if(!mesh) {
+        TF_Log(LOG_ERROR) << "Could not get mesh";
+        return {};
+    }
+
+    auto _positions = positions;
+    auto _pids = ptype->factory(0, &_positions);
+    if(_pids.empty()) {
+        TF_Log(LOG_ERROR) << "Could not instantiate particles";
+        return {};
+    }
+    pids = std::vector<unsigned int>(_pids.size());
+    parallel_for(_pids.size(), [&pids, &_pids](int i) -> void { pids[i] = _pids[i]; });
+
+    return Vertex_create(pids);
+}
+
 static Vertex *Vertex_create(TissueForge::io::ThreeDFVertexData *vdata, int &pid) {
     return Vertex_create(vdata->position, pid);
+}
+
+static std::vector<Vertex*> Vertex_create(const std::vector<TissueForge::io::ThreeDFVertexData*>& vdata, std::vector<unsigned int>& pids) {
+    std::vector<FVector3> positions(vdata.size());
+
+    parallel_for(vdata.size(), [&vdata, &positions](int i) -> void { positions[i] = vdata[i]->position; });
+
+    return Vertex_create(positions, pids);
 }
 
 VertexHandle Vertex::create(const unsigned int &_pid) {
@@ -265,6 +320,80 @@ VertexHandle Vertex::create(TissueForge::io::ThreeDFVertexData *vdata) {
         result->positionChanged();
     }
     return VertexHandle(result->_objId);
+}
+
+std::vector<VertexHandle> Vertex::create(const std::vector<unsigned int>& _pids) {
+    std::vector<Vertex*> vertices = Vertex_create(_pids);
+    if(vertices.empty() && !_pids.empty()) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
+
+    std::vector<VertexHandle> result(_pids.size());
+
+    parallel_for(
+        _pids.size(), 
+        [&result, &_pids, &vertices](int i) -> void {
+            unsigned int _pid = _pids[i];
+            Vertex *v = vertices[i];
+            v->pid = _pid;
+            if(_pid >= 0) {
+                v->positionChanged();
+            }
+            result[i] = VertexHandle(v->_objId);
+        }
+    );
+    return result;
+}
+
+std::vector<VertexHandle> Vertex::create(const std::vector<FVector3>& positions) {
+    if(positions.empty()) 
+        return {};
+
+    std::vector<unsigned int> pids;
+    std::vector<Vertex*> vertices = Vertex_create(positions, pids);
+    if(vertices.empty()) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
+
+    std::vector<VertexHandle> result(vertices.size());
+    parallel_for(
+        vertices.size(), 
+        [&vertices, &pids, &result](int i) -> void {
+            Vertex* v = vertices[i];
+            v->pid = pids[i];
+            if(v->pid >= 0) 
+                v->positionChanged();
+            result[i] = VertexHandle(v->_objId);
+        }
+    );
+    return result;
+}
+
+std::vector<VertexHandle> Vertex::create(const std::vector<TissueForge::io::ThreeDFVertexData*>& vdata) {
+    if(vdata.empty()) 
+        return {};
+
+    std::vector<unsigned int> pids;
+    std::vector<Vertex*> vertices = Vertex_create(vdata, pids);
+    if(vertices.empty()) {
+        TF_Log(LOG_ERROR);
+        return {};
+    }
+
+    std::vector<VertexHandle> result(vertices.size());
+    parallel_for(
+        vertices.size(), 
+        [&vertices, &pids, &result](int i) -> void {
+            Vertex* v = vertices[i];
+            v->pid = pids[i];
+            if(v->pid >= 0) 
+                v->positionChanged();
+            result[i] = VertexHandle(v->_objId);
+        }
+    );
+    return result;
 }
 
 bool Vertex::defines(const Surface *obj) const { MESHBOJ_DEFINES_DEF(getVertices) }
@@ -365,6 +494,72 @@ HRESULT Vertex::destroy() {
     return S_OK;
 }
 
+HRESULT Vertex::destroy(const std::vector<Vertex*>& toDestroy) {
+
+    std::vector<std::unordered_set<int> > particleIdsToDestroyPool(ThreadPool::size());
+    std::vector<std::unordered_set<Vertex*> > verticesToDestroyPool(ThreadPool::size());
+    std::vector<std::unordered_set<Surface*> > surfacesToDestroyPool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&particleIdsToDestroyPool, &verticesToDestroyPool, &surfacesToDestroyPool, &toDestroy](int tid) -> void {
+            std::unordered_set<int>& particleIdsToDestroyThread = particleIdsToDestroyPool[tid];
+            std::unordered_set<Vertex*>& verticesToDestroyThread = verticesToDestroyPool[tid];
+            std::unordered_set<Surface*>& surfacesToDestroyThread = surfacesToDestroyPool[tid];
+            for(int i = tid; i < toDestroy.size(); i += ThreadPool::size()) {
+                Vertex* v = toDestroy[i];
+                if(!v || v->objectId() < 0) 
+                    continue;
+                particleIdsToDestroyThread.insert(v->getPartId());
+                verticesToDestroyThread.insert(v);
+                for(auto& s : v->getSurfaces()) 
+                    surfacesToDestroyThread.insert(s);
+            }
+        }
+    );
+
+    size_t numSurfaces = 0;
+    for(auto& surfacesToDestroyThread : surfacesToDestroyPool) 
+        numSurfaces += surfacesToDestroyThread.size();
+    if(numSurfaces > 0) {
+        std::unordered_set<Surface*> surfacesToDestroy;
+        surfacesToDestroy.reserve(numSurfaces);
+        for(auto& surfacesToDestroyThread : surfacesToDestroyPool) 
+            surfacesToDestroy.insert(surfacesToDestroyThread.begin(), surfacesToDestroyThread.end());
+        Surface::destroy(std::vector<Surface*>{surfacesToDestroy.begin(), surfacesToDestroy.end()});
+    }
+
+    size_t numVertices = 0;
+    for(auto& verticesToDestroyThread : verticesToDestroyPool) 
+        numVertices += verticesToDestroyThread.size();
+    std::vector<Vertex*> verticesToDestroyVec;
+    if(numVertices > 0) {
+        std::unordered_set<Vertex*> verticesToDestroy;
+        verticesToDestroy.reserve(numVertices);
+        for(auto& verticesToDestroyThread : verticesToDestroyPool) 
+            verticesToDestroy.insert(verticesToDestroyThread.begin(), verticesToDestroyThread.end());
+        verticesToDestroyVec = std::vector<Vertex*>(verticesToDestroy.begin(), verticesToDestroy.end());
+        Mesh::get()->remove(verticesToDestroyVec.data(), verticesToDestroyVec.size());
+
+        std::unordered_set<int> particleIdsToDestroy;
+        particleIdsToDestroy.reserve(numVertices);
+        for(auto& particleIdsToDestroyThread : particleIdsToDestroyPool) 
+            particleIdsToDestroy.insert(particleIdsToDestroyThread.begin(), particleIdsToDestroyThread.end());
+        for(auto& pid : particleIdsToDestroy) 
+            ParticleHandle(pid).destroy();
+    }
+
+    parallel_for(
+        verticesToDestroyVec.size(), 
+        [&verticesToDestroyVec](int i) -> void {
+            Vertex* v = verticesToDestroyVec[i];
+            v->pid = -1;
+            v->_connectedVertices.clear();
+        }
+    );
+
+    return S_OK;
+}
+
 std::vector<Body*> Vertex::getBodies() const {
     std::unordered_set<Body*> result;
     for(auto &s : surfaces) 
@@ -413,78 +608,212 @@ Body *Vertex::findBody(const FVector3 &dir) const {
     return result;
 }
 
-HRESULT Vertex::transferBondsTo(Vertex *other) {
-    ParticleHandle *ph = this->particle();
+static HRESULT Vertex_destroyOrTransferBonds(
+    Vertex* source, 
+    Vertex* target, 
+    std::vector<std::pair<uint32_t, int> >& bondsInfo, 
+    std::vector<std::pair<uint32_t, int> >& anglesInfo, 
+    std::vector<std::pair<uint32_t, int> >& dihedralsInfo
+) {
+    ParticleHandle *ph = source->particle();
+    const int source_pid = source->getPartId();
+    const int target_pid = target->getPartId();
 
-    for(auto &ah : ph->getAngles()) {
-        Angle *a = ah.get();
-        if(a->i == this->pid) {
-            if(a->j == other->pid || a->k == other->pid) 
-                ah.destroy();
-            else 
-                a->i = other->pid;
-        } 
-        else if(a->j == this->pid) {
-            if(a->i == other->pid || a->k == other->pid) 
-                ah.destroy();
-            else 
-                a->j = other->pid;
-        } 
-        else if(a->k == this->pid) {
-            if(a->i == other->pid || a->j == other->pid) 
-                ah.destroy();
-            else 
-                a->k = other->pid;
-        }
-    }
-    
     std::unordered_set<uint32_t> bonded_ids;
-    bonded_ids.insert(other->pid);
+    bonded_ids.insert(target_pid);
     for(auto &bh : ph->getBonds()) {
         Bond *b = bh.get();
-        if(b->i == this->pid) {
-            if(std::find(bonded_ids.begin(), bonded_ids.end(), b->j) != bonded_ids.end()) 
-                bh.destroy();
-            else {
-                b->i = other->pid;
-                bonded_ids.insert(b->j);
-            }
+        int result = -1;
+        if(b->i == source_pid && std::find(bonded_ids.begin(), bonded_ids.end(), b->j) == bonded_ids.end()) {
+            result = 0;
+            bonded_ids.insert(b->j);
         } 
-        else if(b->j == this->pid) {
-            if(std::find(bonded_ids.begin(), bonded_ids.end(), b->i) != bonded_ids.end()) 
-                bh.destroy();
-            else {
-                b->j = other->pid;
-                bonded_ids.insert(b->i);
-            }
-        } 
+        else if(b->j == source_pid && std::find(bonded_ids.begin(), bonded_ids.end(), b->i) == bonded_ids.end()) {
+            result = 1;
+            bonded_ids.insert(b->i);
+        }
+        bondsInfo.push_back({b->id, result});
+    }
+    
+    for(auto &ah : ph->getAngles()) {
+        Angle *a = ah.get();
+        int result = -1;
+        if(a->i == source_pid && a->j != target_pid && a->k != target_pid) 
+            result = 0;
+        else if(a->j == source_pid && a->i != target_pid && a->k != target_pid) 
+            result = 1;
+        else if(a->k == source_pid && a->i != target_pid && a->j != target_pid) 
+            result = 2;
+        anglesInfo.push_back({a->id, result});
     }
     
     for(auto &dh : ph->getDihedrals()) {
         Dihedral *d = dh.get();
-        if(d->i == this->pid) {
-            if(d->j == other->pid || d->k == other->pid || d->l == other->pid) 
-                dh.destroy();
-            else 
-                d->i = other->pid;
-        } 
-        else if(d->j == this->pid) {
-            if(d->i == other->pid || d->k == other->pid || d->l == other->pid) 
-                dh.destroy();
-            else 
-                d->j = other->pid;
-        } 
-        else if(d->k == this->pid) {
-            if(d->i == other->pid || d->j == other->pid || d->l == other->pid) 
-                dh.destroy();
-            else 
-                d->k = other->pid;
+        int result = -1;
+        if(d->i == source_pid && d->j != target_pid && d->k != target_pid && d->l != target_pid) 
+            result = 0;
+        else if(d->j == source_pid && d->i != target_pid && d->k != target_pid && d->l != target_pid) 
+            result = 1;
+        else if(d->k == source_pid && d->i != target_pid && d->j != target_pid && d->l != target_pid) 
+            result = 2;
+        else if(d->l == source_pid && d->i != target_pid && d->j != target_pid && d->k != target_pid) 
+            result = 3;
+        dihedralsInfo.push_back({d->id, result});
+    }
+
+    return S_OK;
+}
+
+HRESULT Vertex::transferBondsTo(Vertex *other) {
+    std::vector<std::pair<uint32_t, int> > bondsInfo;
+    std::vector<std::pair<uint32_t, int> > anglesInfo;
+    std::vector<std::pair<uint32_t, int> > dihedralsInfo;
+    if(Vertex_destroyOrTransferBonds(this, other, bondsInfo, anglesInfo, dihedralsInfo) != S_OK) 
+        return E_FAIL;
+    for(auto& p : bondsInfo) {
+        uint32_t bid;
+        int result;
+        std::tie(bid, result) = p;
+        BondHandle bh(bid);
+        if(result < 0) bh.destroy();
+        else if(result == 0) bh.get()->i = other->pid;
+        else if(result == 1) bh.get()->j = other->pid;
+    }
+    for(auto& p : anglesInfo) {
+        uint32_t bid;
+        int result;
+        std::tie(bid, result) = p;
+        AngleHandle bh(bid);
+        if(result < 0) bh.destroy();
+        else if(result == 0) bh.get()->i = other->pid;
+        else if(result == 1) bh.get()->j = other->pid;
+        else if(result == 2) bh.get()->k = other->pid;
+    }
+    for(auto& p : dihedralsInfo) {
+        uint32_t bid;
+        int result;
+        std::tie(bid, result) = p;
+        DihedralHandle bh(bid);
+        if(result < 0) bh.destroy();
+        else if(result == 0) bh.get()->i = other->pid;
+        else if(result == 1) bh.get()->j = other->pid;
+        else if(result == 2) bh.get()->k = other->pid;
+        else if(result == 3) bh.get()->l = other->pid;
+    }
+
+    return S_OK;
+}
+
+HRESULT Vertex::transferBondsTo(const std::vector<std::pair<Vertex*, Vertex*> >& targets) {
+    std::vector<std::unordered_map<uint32_t, std::unordered_map<int, int> > > bondsInfoPool(ThreadPool::size());
+    std::vector<std::unordered_map<uint32_t, std::unordered_map<int, int> > > anglesInfoPool(ThreadPool::size());
+    std::vector<std::unordered_map<uint32_t, std::unordered_map<int, int> > > dihedralsInfoPool(ThreadPool::size());
+
+    parallel_for(
+        ThreadPool::size(), 
+        [&targets, &anglesInfoPool, &bondsInfoPool, &dihedralsInfoPool](int tid) -> void {
+            std::unordered_map<uint32_t, std::unordered_map<int, int> >& bondsInfoThread = bondsInfoPool[tid];
+            std::unordered_map<uint32_t, std::unordered_map<int, int> >& anglesInfoThread = anglesInfoPool[tid];
+            std::unordered_map<uint32_t, std::unordered_map<int, int> >& dihedralsInfoThread = dihedralsInfoPool[tid];
+            for(int i = tid; i < targets.size(); i += ThreadPool::size()) {
+                Vertex* vs, *vt;
+                std::tie(vs, vt) = targets[i];
+                const int vtid = vt->getPartId();
+                std::vector<std::pair<uint32_t, int> > _bondsInfo;
+                std::vector<std::pair<uint32_t, int> > _anglesInfo;
+                std::vector<std::pair<uint32_t, int> > _dihedralsInfo;
+                Vertex_destroyOrTransferBonds(vs, vt, _bondsInfo, _anglesInfo, _dihedralsInfo);
+                for(auto& p : _bondsInfo) {
+                    uint32_t bid;
+                    int result;
+                    std::tie(bid, result) = p;
+                    bondsInfoThread[bid][vtid] = result;
+                }
+                for(auto& p : _anglesInfo) {
+                    uint32_t bid;
+                    int result;
+                    std::tie(bid, result) = p;
+                    anglesInfoThread[bid][vtid] = result;
+                }
+                for(auto& p : _dihedralsInfo) {
+                    uint32_t bid;
+                    int result;
+                    std::tie(bid, result) = p;
+                    dihedralsInfoThread[bid][vtid] = result;
+                }
+            }
         }
-        else if(d->l == this->pid) {
-            if(d->i == other->pid || d->j == other->pid || d->k == other->pid) 
-                dh.destroy();
-            else 
-                d->l = other->pid;
+    );
+
+    std::unordered_map<uint32_t, std::unordered_map<int, int> > bondsInfo;
+    std::unordered_map<uint32_t, std::unordered_map<int, int> > anglesInfo;
+    std::unordered_map<uint32_t, std::unordered_map<int, int> > dihedralsInfo;
+
+    for(auto& bondsInfoThread : bondsInfoPool) 
+        for(auto& m : bondsInfoThread) {
+            auto& mf = bondsInfo[m.first];
+            for(auto& p : m.second) 
+                mf[p.first] = p.second;
+        }
+    for(auto& anglesInfoThread : anglesInfoPool) 
+        for(auto& m : anglesInfoThread) {
+            auto& mf = anglesInfo[m.first];
+            for(auto& p : m.second) 
+                mf[p.first] = p.second;
+        }
+    for(auto& dihedralsInfoThread : dihedralsInfoPool) 
+        for(auto& m : dihedralsInfoThread) {
+            auto& mf = dihedralsInfo[m.first];
+            for(auto& p : m.second) 
+                mf[p.first] = p.second;
+        }
+
+    for(auto& m : bondsInfo) {
+        const int bid = m.first;
+        for(auto& p : m.second) {
+            const int vtid = p.first;
+            const int result = p.second;
+
+            BondHandle bh(bid);
+            if(result < 0) {
+                bh.destroy();
+                break;
+            }
+            else if(result == 0) bh.get()->i = vtid;
+            else if(result == 1) bh.get()->j = vtid;
+        }
+    }
+    for(auto& m : anglesInfo) {
+        const int bid = m.first;
+        for(auto& p : m.second) {
+            const int vtid = p.first;
+            const int result = p.second;
+
+            AngleHandle bh(bid);
+            if(result < 0) {
+                bh.destroy();
+                break;
+            }
+            else if(result == 0) bh.get()->i = vtid;
+            else if(result == 1) bh.get()->j = vtid;
+            else if(result == 2) bh.get()->k = vtid;
+        }
+    }
+    for(auto& m : dihedralsInfo) {
+        const int bid = m.first;
+        for(auto& p : m.second) {
+            const int vtid = p.first;
+            const int result = p.second;
+
+            DihedralHandle bh(bid);
+            if(result < 0) {
+                bh.destroy();
+                break;
+            }
+            else if(result == 0) bh.get()->i = vtid;
+            else if(result == 1) bh.get()->j = vtid;
+            else if(result == 2) bh.get()->k = vtid;
+            else if(result == 3) bh.get()->l = vtid;
         }
     }
 
@@ -747,6 +1076,246 @@ VertexHandle Vertex::replace(const FVector3 &position, BodyHandle &toReplace) {
     return VertexHandle(v->objectId());
 }
 
+static HRESULT Vertex_merge_assm(
+    Vertex* toKeep, 
+    Vertex* toRemove, 
+    std::unordered_set<Surface*>& common_s, 
+    std::unordered_set<Surface*>& different_s
+) {
+    // In common surfaces, just remove; in different surfaces, replace
+    auto& toRemove_surfaces = toRemove->getSurfaces();
+    common_s.reserve(toRemove_surfaces.size());
+    different_s.reserve(toRemove_surfaces.size());
+    for(auto &s : toRemove_surfaces) {
+        if(!toKeep->defines(s)) 
+            different_s.insert(s);
+        else {
+            // Prevent invalid surface
+            if(s->getVertices().size() < 4) 
+                return E_FAIL;
+            common_s.insert(s);
+        }
+    }
+
+    return S_OK;
+}
+
+static HRESULT Vertex_merge(Vertex* toKeep, Vertex* toRemove, const FloatP_t& lenCf) {
+
+    // In common surfaces, just remove; in different surfaces, replace
+    std::unordered_set<Surface*> common_s, different_s;
+    auto& toRemove_surfaces = toRemove->getSurfaces();
+    std::vector<Vertex*> toRemoveConnectedVertices = toRemove->connectedVertices();
+    if(Vertex_merge_assm(toKeep, toRemove, common_s, different_s) != S_OK) {
+        TF_Log(LOG_DEBUG) << "Insufficient surface vertices. Ignoring";
+        return E_FAIL;
+    }
+    for(auto &s : common_s) {
+        s->remove(toRemove);
+        toRemove->remove(s);
+    }
+    for(auto &s : different_s) {
+        toRemove->remove(s);
+        toKeep->add(s);
+        s->replace(toKeep, toRemove);
+    }
+
+    toKeep->updateConnectedVertices();
+    std::unordered_set<Vertex*> affectedVertices;
+    for(auto &v : toKeep->connectedVertices()) 
+        affectedVertices.insert(v);
+    for(auto &v : toRemoveConnectedVertices) 
+        affectedVertices.insert(v);
+    for(auto &v : affectedVertices) 
+        v->updateConnectedVertices();
+    
+    // Set new position
+    const FVector3 posToKeep = toKeep->getPosition();
+    const FVector3 newPos = posToKeep + (toRemove->getPosition() - posToKeep) * lenCf;
+    if(toKeep->setPosition(newPos) != S_OK) 
+        return E_FAIL;
+
+    MeshSolver::log(MeshLogEventType::Create, {toKeep->objectId(), toRemove->objectId()}, {toKeep->objType(), toRemove->objType()}, "merge");
+    
+    if(toRemove->transferBondsTo(toKeep) != S_OK || toRemove->destroy() != S_OK) 
+        return E_FAIL;
+
+    if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
+        return E_FAIL;
+
+    return S_OK;
+}
+
+static HRESULT Vertex_merge(const std::vector<std::pair<Vertex*, Vertex*> >& toMerge, const FloatP_t& lenCf) {
+
+    std::vector<std::unordered_set<Vertex*> > verticesAffectedPool(ThreadPool::size());
+    std::vector<std::unordered_map<Vertex*, std::unordered_set<Surface*> > > toRemoveSurfacesByVertexPool(ThreadPool::size()), toKeepSurfacesByVertexPool(ThreadPool::size());
+    std::vector<std::unordered_map<Surface*, std::unordered_set<Vertex*> > > toRemoveVerticesBySurfacePool(ThreadPool::size());
+    std::vector<std::unordered_map<Surface*, std::unordered_set<std::pair<Vertex*, Vertex*>, PairHash_VertexPtr_VertexPtr> > > toReplaceVerticesBySurfacePool(ThreadPool::size());
+
+    parallel_for(
+        ThreadPool::size(), 
+        [&toMerge, &verticesAffectedPool, &toRemoveSurfacesByVertexPool, &toKeepSurfacesByVertexPool, &toRemoveVerticesBySurfacePool, &toReplaceVerticesBySurfacePool](int tid) -> void {
+            std::unordered_set<Vertex*>& verticesAffectedThread = verticesAffectedPool[tid];
+            std::unordered_map<Vertex*, std::unordered_set<Surface*> >& toRemoveSurfacesByVertexThread = toRemoveSurfacesByVertexPool[tid];
+            std::unordered_map<Vertex*, std::unordered_set<Surface*> >& toKeepSurfacesByVertexThread = toKeepSurfacesByVertexPool[tid];
+            std::unordered_map<Surface*, std::unordered_set<Vertex*> >& toRemoveVerticesBySurfaceThread = toRemoveVerticesBySurfacePool[tid];
+            std::unordered_map<Surface*, std::unordered_set<std::pair<Vertex*, Vertex*>, PairHash_VertexPtr_VertexPtr> >& toReplaceVerticesBySurfaceThread = toReplaceVerticesBySurfacePool[tid];
+            for(int i = tid; i < toMerge.size(); i += ThreadPool::size()) {
+                Vertex* toKeep, *toRemove;
+                std::tie(toKeep, toRemove) = toMerge[i];
+
+                std::unordered_set<Surface*> common_s, different_s;
+                if(Vertex_merge_assm(toKeep, toRemove, common_s, different_s) == S_OK) {
+                    for(auto &s : common_s) {
+                        toRemoveSurfacesByVertexThread[toRemove].insert(s);
+                        toRemoveVerticesBySurfaceThread[s].insert(toRemove);
+                    }
+                    for(auto &s : different_s) {
+                        toRemoveSurfacesByVertexThread[toRemove].insert(s);
+                        toKeepSurfacesByVertexThread[toKeep].insert(s);
+                        toReplaceVerticesBySurfaceThread[s].insert({toKeep, toRemove});
+                    }
+                }
+                for(auto& v : toRemove->connectedVertices()) 
+                    verticesAffectedThread.insert(v);
+            }
+        }
+    );
+
+    std::unordered_map<Vertex*, std::unordered_set<Surface*> > toRemoveSurfacesByVertex;
+    for(auto& toRemoveSurfacesByVertexThread : toRemoveSurfacesByVertexPool) 
+        for(auto& p : toRemoveSurfacesByVertexThread) 
+            toRemoveSurfacesByVertex[p.first].insert(p.second.begin(), p.second.end());
+    std::vector<Vertex*> toRemoveSurfacesByVertexKeys;
+    toRemoveSurfacesByVertexKeys.reserve(toRemoveSurfacesByVertex.size());
+    for(auto& p : toRemoveSurfacesByVertex) 
+        toRemoveSurfacesByVertexKeys.push_back(p.first);
+    parallel_for(
+        toRemoveSurfacesByVertexKeys.size(), 
+        [&toRemoveSurfacesByVertex, &toRemoveSurfacesByVertexKeys](int i) -> void {
+            Vertex* v = toRemoveSurfacesByVertexKeys[i];
+            for(auto& s : toRemoveSurfacesByVertex[v]) 
+                v->remove(s);
+        }
+    );
+
+    std::unordered_map<Vertex*, std::unordered_set<Surface*> > toKeepSurfacesByVertex;
+    for(auto& toKeepSurfacesByVertexThread : toKeepSurfacesByVertexPool) 
+        for(auto& p : toKeepSurfacesByVertexThread) 
+            toKeepSurfacesByVertex[p.first].insert(p.second.begin(), p.second.end());
+    std::vector<Vertex*> toKeepSurfacesByVertexKeys;
+    toKeepSurfacesByVertexKeys.reserve(toKeepSurfacesByVertex.size());
+    for(auto& p : toKeepSurfacesByVertex) 
+        toKeepSurfacesByVertexKeys.push_back(p.first);
+    parallel_for(
+        toKeepSurfacesByVertexKeys.size(), 
+        [&toKeepSurfacesByVertex, &toKeepSurfacesByVertexKeys](int i) -> void {
+            Vertex* v = toKeepSurfacesByVertexKeys[i];
+            for(auto& s : toKeepSurfacesByVertex[v]) 
+                v->add(s);
+        }
+    );
+
+    std::unordered_map<Surface*, std::unordered_set<Vertex*> > toRemoveVerticesBySurface;
+    for(auto& toRemoveVerticesBySurfaceThread : toRemoveVerticesBySurfacePool) 
+        for(auto& p : toRemoveVerticesBySurfaceThread) 
+            toRemoveVerticesBySurface[p.first].insert(p.second.begin(), p.second.end());
+    std::vector<Surface*> toRemoveVerticesBySurfaceKeys;
+    toRemoveVerticesBySurfaceKeys.reserve(toRemoveVerticesBySurface.size());
+    for(auto& p : toRemoveVerticesBySurface) 
+        toRemoveVerticesBySurfaceKeys.push_back(p.first);
+    parallel_for(
+        toRemoveVerticesBySurfaceKeys.size(), 
+        [&toRemoveVerticesBySurface, &toRemoveVerticesBySurfaceKeys](int i) -> void {
+            Surface* s = toRemoveVerticesBySurfaceKeys[i];
+            for(auto& v : toRemoveVerticesBySurface[s]) 
+                s->remove(v);
+        }
+    );
+
+    std::unordered_map<Surface*, std::unordered_set<std::pair<Vertex*, Vertex*>, PairHash_VertexPtr_VertexPtr> > toReplaceVerticesBySurface;
+    for(auto& toReplaceVerticesBySurfaceThread : toReplaceVerticesBySurfacePool) 
+        for(auto& p : toReplaceVerticesBySurfaceThread) 
+            toReplaceVerticesBySurface[p.first].insert(p.second.begin(), p.second.end());
+    std::vector<Surface*> toReplaceVerticesBySurfaceKeys;
+    toReplaceVerticesBySurfaceKeys.reserve(toReplaceVerticesBySurface.size());
+    for(auto& p : toReplaceVerticesBySurface) 
+        toReplaceVerticesBySurfaceKeys.push_back(p.first);
+    parallel_for(
+        toReplaceVerticesBySurfaceKeys.size(), 
+        [&toReplaceVerticesBySurface, &toReplaceVerticesBySurfaceKeys](int i) -> void {
+            Surface* s = toReplaceVerticesBySurfaceKeys[i];
+            for(auto& p : toReplaceVerticesBySurface[s]) 
+                s->replace(p.first, p.second);
+        }
+    );
+
+    parallel_for(
+        ThreadPool::size(), 
+        [&toMerge, &verticesAffectedPool](int tid) -> void {
+            std::unordered_set<Vertex*>& verticesAffectedThread = verticesAffectedPool[tid];
+            for(int i = tid; i < toMerge.size(); i += ThreadPool::size()) {
+                Vertex* toKeep, *toRemove;
+                std::tie(toKeep, toRemove) = toMerge[i];
+                toKeep->updateConnectedVertices();
+                for(auto& v : toKeep->connectedVertices()) 
+                    verticesAffectedThread.insert(v);
+            }
+        }
+    );
+
+    size_t numVerticesAffected = 0;
+    for(auto& verticesAffectedThread : verticesAffectedPool) 
+        numVerticesAffected += verticesAffectedThread.size();
+    std::unordered_set<Vertex*> verticesAffected;
+    verticesAffected.reserve(numVerticesAffected);
+    for(auto& verticesAffectedThread : verticesAffectedPool) 
+        verticesAffected.insert(verticesAffectedThread.begin(), verticesAffectedThread.end());
+    std::vector<Vertex*> verticesAffectedVec(verticesAffected.begin(), verticesAffected.end());
+
+    parallel_for(verticesAffectedVec.size(), [&verticesAffectedVec](int i) -> void { verticesAffectedVec[i]->updateConnectedVertices(); });
+    
+    // Set new position
+
+    std::vector<Vertex*> toRemoveVec(toMerge.size());
+    parallel_for(
+        toMerge.size(), 
+        [&toMerge, &toRemoveVec, &lenCf](int i) -> void {
+            Vertex* toKeep, *toRemove;
+            std::tie(toKeep, toRemove) = toMerge[i];
+
+            toRemoveVec[i] = toRemove;
+
+            const FVector3 posToKeep = toKeep->getPosition();
+            const FVector3 newPos = posToKeep + (toRemove->getPosition() - posToKeep) * lenCf;
+            toKeep->setPosition(newPos);
+        }
+    );
+
+    // log
+
+    if(MeshLogger::getForwardLogging()) 
+        for(auto& p : toMerge) {
+            Vertex* toKeep, *toRemove;
+            std::tie(toKeep, toRemove) = p;
+            MeshSolver::log(MeshLogEventType::Create, {toKeep->objectId(), toRemove->objectId()}, {toKeep->objType(), toRemove->objType()}, "merge");
+        }
+    
+    // transfer bonds
+    if(Vertex::transferBondsTo(toMerge) != S_OK) 
+        return E_FAIL;
+
+    // destroy vertices
+    if(Vertex::destroy(toRemoveVec) != S_OK) 
+        return E_FAIL;
+
+    if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
+        return E_FAIL;
+
+    return S_OK;
+}
+
 HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
 
     // In common surfaces, just remove; in different surfaces, replace
@@ -798,6 +1367,44 @@ HRESULT Vertex::merge(Vertex *toRemove, const FloatP_t &lenCf) {
 
     if(!Mesh::get()->qualityWorking() && MeshSolver::positionChanged() != S_OK)
         return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT Vertex::merge(const std::vector<std::vector<Vertex*> >& toMerge, const FloatP_t& lenCf) {
+
+    // iterate through "levels" of merged vertices and use Vertex_merge
+    //  E.g., at level "2", loop through all elements of toMerge and construct a vector of pairs targeting the second merged vertex; do this until there are no more iterations
+    int level = 0;
+    int levelMax = 0;
+    for(auto& toMerge_v : toMerge) 
+        levelMax = std::max(levelMax, (int)toMerge_v.size() - 1);
+
+    std::vector<std::vector<std::pair<Vertex*, Vertex*> > > toMergeLevelPool;
+    auto func = [&toMerge, &level, &toMergeLevelPool](int tid) -> void {
+        std::vector<std::pair<Vertex*, Vertex*> >& toMergeLevelThread = toMergeLevelPool[tid];
+        for(int i = tid; i < toMerge.size(); i += ThreadPool::size()) {
+            const std::vector<Vertex*>& toMerge_i = toMerge[i];
+            if(toMerge_i.size() <= level + 1) 
+                continue;
+            auto itrKeep = toMerge_i.begin();
+            toMergeLevelThread.emplace_back(*itrKeep, *(itrKeep + level + 1));
+        }
+    };
+
+    for(; level < levelMax; level++) {
+        toMergeLevelPool = std::vector<std::vector<std::pair<Vertex*, Vertex*> > >(ThreadPool::size());
+        parallel_for(ThreadPool::size(), func);
+        size_t numTargets = 0;
+        for(auto& toMergeLevelThread : toMergeLevelPool) 
+            numTargets += toMergeLevelThread.size();
+        std::vector<std::pair<Vertex*, Vertex*> > toMergeLevel;
+        toMergeLevel.reserve(numTargets);
+        for(auto& toMergeLevelThread : toMergeLevelPool) 
+            for(auto& p : toMergeLevelThread) 
+                toMergeLevel.push_back(p);
+        Vertex_merge(toMergeLevel, lenCf);
+    }
 
     return S_OK;
 }
@@ -1209,7 +1816,7 @@ std::vector<BodyHandle> VertexHandle::getBodies() const {
 
 std::vector<SurfaceHandle> VertexHandle::getSurfaces() const {
     VertexHandle_GETOBJ(o, {});
-    auto surfaces = o->getSurfaces();
+    auto& surfaces = o->getSurfaces();
     std::vector<SurfaceHandle> result;
     result.reserve(surfaces.size());
     for(auto &s : surfaces) 
@@ -1476,7 +2083,7 @@ namespace TissueForge::io {
             TF_IOTOEASY(fileElement, metaData, "pid", ph->getId());
         }
 
-        std::vector<TissueForge::models::vertex::Surface*> surfaces = dataElement->getSurfaces();
+        auto& surfaces = dataElement->getSurfaces();
         std::vector<int> surfaceIds;
         surfaceIds.reserve(surfaces.size());
         for(auto &s : surfaces) 

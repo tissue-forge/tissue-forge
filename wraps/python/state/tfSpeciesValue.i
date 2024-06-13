@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -86,5 +86,13 @@
         @constant.setter
         def constant(self, value: int):
             self.setConstant(value)
+
+        @property
+        def value(self) -> float:
+            return self.getValue()
+
+        @value.setter
+        def value(self, _value: float):
+            self.setValue(_value)
     %}
 }

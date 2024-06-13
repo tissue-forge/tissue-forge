@@ -2,14 +2,23 @@ c_compiler:
   - gcc # [linux]
   - clang # [osx]
 
+c_compiler_version: # [unix]
+  - 12 # [linux]
+  - 14 # [osx]
+
 cxx_compiler:
   - gxx # [linux]
   - clangxx # [osx]
 
+cxx_compiler_version: # [unix]
+  - 12 # [linux]
+  - 14 # [osx]
+
 python:
-  - 3.7
   - 3.8
   - 3.9
+  - 3.10
+  - 3.11
 
 pin_run_as_build:
   python: x.x

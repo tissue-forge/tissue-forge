@@ -1,6 +1,6 @@
 #*******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022, 2023 T.J. Sego
+# Copyright (c) 2022-2024 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -19,26 +19,6 @@
 
 # need 3.20.3 for CUDA fixes
 cmake_minimum_required (VERSION 3.20.3)
-
-
-if(APPLE)
-
-  message("CMAKE_OSX_DEPLOYMENT_TARGET: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
-
-  if("${CMAKE_OSX_DEPLOYMENT_TARGET}" VERSION_GREATER_EQUAL "10.15")
-
-    message("MacOS newer than 10.15, building universal binary")
-
-    set (CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
-    set (CMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH NO)
-
-  else()
-
-    message("MacOS older than 10.15, not building universal binary")
-
-  endif()
-
-endif()
 
 project(TissueForge)
 
@@ -98,27 +78,24 @@ option(TF_ENABLE_AVX2          "Enable AVX2 instructions" OFF)
 option(TF_ENABLE_AVX           "Enable AVX  instructions" ON)
 option(TF_ENABLE_SSE4          "Enable SSE4 instructions" ON)
 
+# Currently controls flux storage size; this will need modified when SIMD instructions are implemented
+set(TF_SIMD_SIZE 8)
 
 if(TF_ENABLE_AVX2)
   set(TF_AVX2 ON)
   set(TF_AVX ON)
   set(TF_SSE42 ON)
-  set(TF_SIMD_SIZE 8)
   add_compile_options(-mavx)
   add_compile_options(-mavx2)
   add_compile_options(-msse4.2)
 elseif(TF_ENABLE_AVX)
   set(TF_AVX ON)
   set(TF_SSE42 ON)
-  set(TF_SIMD_SIZE 8)
   add_compile_options(-mavx)
   add_compile_options(-msse4.2)
 elseif(TF_ENABLE_SSE4)
   set(TF_SSE42 ON)
-  set(TF_SIMD_SIZE 4)
   add_compile_options(-msse4.2)
-else()
-  set(TF_SIMD_SIZE 0)
 endif()
 
 find_package(CUDAToolkit)
@@ -140,7 +117,6 @@ set(TF_RESOURCE_DIR resources/TissueForge)
 set(TF_SHARE_DIR share/cmake/TissueForge)
 
 if(TF_HAVECUDA)
-  enable_language(CUDA)
   set(TF_CUDA_DIR ${TF_RESOURCE_DIR}/cuda)
   set(TF_CUDA_INCLUDE_DIR ${CUDAToolkit_INCLUDE_DIRS})
   option(TF_WITHCUDA             "Enable GPU-accelerated calculations using CUDA" OFF)
@@ -149,6 +125,14 @@ if(TF_HAVECUDA)
     set(TF_WITHCUDA ON)
   endif()
 endif()
+
+if(TF_WITHCUDA)
+  enable_language(CUDA)
+endif()
+
+find_package(glfw3 REQUIRED)
+
+add_library(GLFW::GLFW ALIAS glfw)
 
 # Find assimp before magnum-plugins to avoid fixes that don't seem relevant for current versions
 find_package(assimp REQUIRED)
@@ -209,10 +193,11 @@ if(DEFINED ENV{TFPACKAGECONDA})
 endif()
 
 message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
-message("CMAKE_OSX_DEPLOYMENT_TARGET: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
-message("MACOSX_DEPLOYMENT_TARGET: ${MACOSX_DEPLOYMENT_TARGET}")
-message("CMAKE_OSX_SYSROOT: ${CMAKE_OSX_SYSROOT}")
-message("XCODE_VERSION: ${XCODE_VERSION}")
+if(APPLE)
+  message("CMAKE_OSX_DEPLOYMENT_TARGET: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  message("CMAKE_OSX_SYSROOT: ${CMAKE_OSX_SYSROOT}")
+  message("XCODE_VERSION: ${XCODE_VERSION}")
+endif()
 message("CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 message("CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
 message("CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")
@@ -275,7 +260,7 @@ if(TF_WITH_PYTHON)
   # directory where we build the Tissue Forge python package
   set(TF_PYPKG_DIR ${CMAKE_BINARY_DIR}/TissueForge)
 
-  find_package(Python 3.7.0...3.9.99 REQUIRED COMPONENTS Interpreter Development)
+  find_package(Python 3.8.0...3.11.99 REQUIRED COMPONENTS Interpreter Development)
 
   message("Python_FOUND: ${Python_FOUND}")
   message("Python_Interpeter_FOUND: ${Python_Interpeter_FOUND}")

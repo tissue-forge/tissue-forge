@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -214,6 +214,35 @@ static void check_periodicy(BoundaryCondition *low_bc, BoundaryCondition *high_b
         
         TF_Log(LOG_INFORMATION) << msg.c_str();
     }
+}
+
+void BoundaryConditions::boundedPosition(FVector3& position) {
+    BoundaryConditions& _bc = _Engine.boundary_conditions;
+
+    const FVector3 dim = engine_dimensions();
+    PeriodicFlags perFlags[] = {space_periodic_x, space_periodic_y, space_periodic_z};
+    for(int i = 0; i < 3; i++) {
+        if(position[i] > dim[i]) {
+            if(_bc.periodic & perFlags[i]) {
+                while(position[i] > dim[i]) 
+                    position[i] -= dim[i];
+            } 
+            else position[i] = dim[i];
+        }
+        else if(position[i] < FPTYPE_ZERO) {
+            if(_bc.periodic & perFlags[i]) {
+                while(position[i] < FPTYPE_ZERO) 
+                    position[i] += dim[i];
+            } 
+            else position[i] = FPTYPE_ZERO;
+        }
+    }
+}
+
+FVector3 BoundaryConditions::boundedPosition(const FVector3& position) {
+    FVector3 result(position);
+    boundedPosition(result);
+    return result;
 }
 
 BoundaryConditions::BoundaryConditions(int *cells) {

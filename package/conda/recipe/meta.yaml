@@ -1,3 +1,5 @@
+{% set TF_PYVER = environ.get('TF_PYVER', 0) %}
+
 package:
   name: tissue-forge
   version: {{ environ.get('TF_VERSION', '') }}
@@ -24,16 +26,17 @@ build:
 
 requirements:
   host:
-    - python {{ python }}
+    - python {{ python }}   # [TF_PYVER==0]
+    - python={{ TF_PYVER }} # [TF_PYVER!=0]
     - numpy
     - bzip2
-    - libxml2
+    - libxml2<=2.11
     - assimp=5
     - nlohmann_json
     - eigen
+    - glfw
     - pthreads-win32 # [win]
     - vs2019_win-64<=19.28 # [win]
-    - clang=12 # [win]
     - lld # [win]
     - xorg-libxfixes # [linux]
     - xorg-libxrandr # [linux]
@@ -48,9 +51,8 @@ requirements:
     - git
     - ninja
     - swig>=4
-    - clang=12 # [linux]
-    - clangxx=12 # [linux]
     - lld # [linux]
+    - libcxx=15 # [osx]
     - {{ compiler('c') }} # [linux or osx]
     - {{ compiler('cxx') }} # [linux or osx]
     - {{ cdt('mesa-libgl-devel') }} # [linux]
@@ -68,6 +70,7 @@ requirements:
     - assimp=5
     - nlohmann_json
     - eigen
+    - glfw
     - pthreads-win32 # [win]
 
 test:

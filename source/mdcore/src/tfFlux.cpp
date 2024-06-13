@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -53,8 +53,15 @@ static std::string err_simd_size() {
 }
 
 
-Fluxes *TissueForge::Fluxes::create(FluxKind kind, ParticleType *a, ParticleType *b,
-                           const std::string& name, FPTYPE k, FPTYPE decay, FPTYPE target) 
+Fluxes *TissueForge::Fluxes::create(
+    FluxKind kind, 
+    ParticleType *a, 
+    ParticleType *b,
+    const std::string& name, 
+    FPTYPE k, 
+    FPTYPE decay, 
+    FPTYPE target,
+    FPTYPE cutoff) 
 {
     
     if(!a || !b) {
@@ -84,6 +91,9 @@ Fluxes *TissueForge::Fluxes::create(FluxKind kind, ParticleType *a, ParticleType
         tf_error(E_FAIL, err_type_no_species_name(b->name, name).c_str());
         return NULL;
     }
+
+    if(cutoff <= 0) 
+        cutoff = _Engine.s.cutoff;
     
     Fluxes *fluxes = engine_getfluxes(&_Engine, a->id, b->id);
     
@@ -91,7 +101,7 @@ Fluxes *TissueForge::Fluxes::create(FluxKind kind, ParticleType *a, ParticleType
         fluxes = Fluxes::newFluxes(8);
     }
     
-    fluxes = Fluxes::addFlux(kind, fluxes, a->id, b->id, index_a, index_b, k, decay, target);
+    fluxes = Fluxes::addFlux(kind, fluxes, a->id, b->id, index_a, index_b, k, decay, target, cutoff);
     
     if(engine_addfluxes(&_Engine, fluxes, a->id, b->id) != S_OK) {
         error(MDCERR_engine);
@@ -101,20 +111,50 @@ Fluxes *TissueForge::Fluxes::create(FluxKind kind, ParticleType *a, ParticleType
     return fluxes;
 }
 
-Fluxes *TissueForge::Fluxes::fluxFick(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &decay) {
-    return Fluxes::create(FLUX_FICK, A, B, name, k, decay, 0.f);
+Fluxes *TissueForge::Fluxes::fluxFick(
+    ParticleType *A, 
+    ParticleType *B, 
+    const std::string &name, 
+    const FPTYPE &k, 
+    const FPTYPE &decay, 
+    const FPTYPE &cutoff) 
+{
+    return Fluxes::create(FLUX_FICK, A, B, name, k, decay, FPTYPE_ZERO, cutoff);
 }
 
-Fluxes *TissueForge::Fluxes::flux(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &decay) {
-    return fluxFick(A, B, name, k, decay);
+Fluxes *TissueForge::Fluxes::flux(
+    ParticleType *A, 
+    ParticleType *B, 
+    const std::string &name, 
+    const FPTYPE &k, 
+    const FPTYPE &decay, 
+    const FPTYPE &cutoff) 
+{
+    return fluxFick(A, B, name, k, decay, cutoff);
 }
 
-Fluxes *TissueForge::Fluxes::secrete(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &target, const FPTYPE &decay) {
-    return Fluxes::create(FLUX_SECRETE, A, B, name, k, decay, target);
+Fluxes *TissueForge::Fluxes::secrete(
+    ParticleType *A, 
+    ParticleType *B, 
+    const std::string &name, 
+    const FPTYPE &k, 
+    const FPTYPE &target, 
+    const FPTYPE &decay, 
+    const FPTYPE &cutoff) 
+{
+    return Fluxes::create(FLUX_SECRETE, A, B, name, k, decay, target, cutoff);
 }
 
-Fluxes *TissueForge::Fluxes::uptake(ParticleType *A, ParticleType *B, const std::string &name, const FPTYPE &k, const FPTYPE &target, const FPTYPE &decay) {
-    return Fluxes::create(FLUX_UPTAKE, A, B, name, k, decay, target);
+Fluxes *TissueForge::Fluxes::uptake(
+    ParticleType *A, 
+    ParticleType *B, 
+    const std::string &name, 
+    const FPTYPE &k, 
+    const FPTYPE &target, 
+    const FPTYPE &decay, 
+    const FPTYPE &cutoff) 
+{
+    return Fluxes::create(FLUX_UPTAKE, A, B, name, k, decay, target, cutoff);
 }
 
 std::string TissueForge::Fluxes::toString() {
@@ -136,7 +176,7 @@ static void integrate_statevector(state::StateVector *s, FPTYPE dt) {
     for(int i = 0; i < s->size; ++i) {
         s->species_flags[i] = (uint32_t)s->species->item(i)->flags();
         FPTYPE konst = (s->species_flags[i] & state::SpeciesFlags::SPECIES_KONSTANT) ? 0.f : 1.f;
-        s->fvec[i] += dt * s->q[i] * konst;
+        s->fvec[i] = FPTYPE_FMAX(FPTYPE_ZERO, s->fvec[i] + dt * s->q[i] * konst);
         s->q[i] = 0; // clear flux for next step
     }
 }
@@ -165,10 +205,18 @@ HRESULT TissueForge::Fluxes_integrate(int cellId) {
     return Fluxes_integrate(&_Engine.s.cells[cellId]);
 }
 
-Fluxes *TissueForge::Fluxes::addFlux(FluxKind kind, Fluxes *fluxes,
-                            int16_t typeId_a, int16_t typeId_b,
-                            int32_t index_a, int32_t index_b,
-                            FPTYPE k, FPTYPE decay, FPTYPE target) {
+Fluxes *TissueForge::Fluxes::addFlux(
+    FluxKind kind, 
+    Fluxes *fluxes,
+    int16_t typeId_a, 
+    int16_t typeId_b,
+    int32_t index_a, 
+    int32_t index_b,
+    FPTYPE k, 
+    FPTYPE decay, 
+    FPTYPE target,
+    FPTYPE cutoff) 
+{
     TF_Log(LOG_TRACE);
 
     int i = 0;
@@ -192,6 +240,7 @@ Fluxes *TissueForge::Fluxes::addFlux(FluxKind kind, Fluxes *fluxes,
     flux->coef[i] = k;
     flux->decay_coef[i] = decay;
     flux->target[i] = target;
+    flux->cutoff[i] = cutoff;
     
     return fluxes;
 }
@@ -254,6 +303,7 @@ namespace TissueForge::io {
         std::vector<FPTYPE> coef;
         std::vector<FPTYPE> decay_coef;
         std::vector<FPTYPE> target;
+        std::vector<FPTYPE> cutoff;
 
         for(unsigned int i = 0; i < TF_SIMD_SIZE; i++) {
             kinds.push_back(dataElement.kinds[i]);
@@ -263,6 +313,7 @@ namespace TissueForge::io {
             coef.push_back(dataElement.coef[i]);
             decay_coef.push_back(dataElement.decay_coef[i]);
             target.push_back(dataElement.target[i]);
+            cutoff.push_back(dataElement.cutoff[i]);
         }
 
         TF_IOTOEASY(fileElement, metaData, "kinds", kinds);
@@ -272,6 +323,7 @@ namespace TissueForge::io {
         TF_IOTOEASY(fileElement, metaData, "coef", coef);
         TF_IOTOEASY(fileElement, metaData, "decay_coef", decay_coef);
         TF_IOTOEASY(fileElement, metaData, "target", target);
+        TF_IOTOEASY(fileElement, metaData, "cutoff", cutoff);
 
         fileElement.get()->type = "Flux";
 
@@ -317,6 +369,15 @@ namespace TissueForge::io {
             dataElement->target[i] = target[i];
 
         }
+
+        IOChildMap fec = IOElement::children(fileElement);
+        feItr = fec.find("cutoff");
+        if(feItr != fec.end()) {
+            std::vector<FPTYPE> cutoff;
+            TF_IOFROMEASY(fileElement, metaData, "cutoff", &cutoff);
+            for(unsigned int i = 0; i < std::min(TF_SIMD_SIZE, (int)cutoff.size()); i++) 
+                dataElement->cutoff[i] = cutoff[i];
+        }
         
         return S_OK;
     }
@@ -351,7 +412,7 @@ namespace TissueForge::io {
                                           dataElement, 
                                           flux.type_ids[i].a, flux.type_ids[i].b, 
                                           flux.indices_a[i], flux.indices_b[i], 
-                                          flux.coef[i], flux.decay_coef[i], flux.target[i]);
+                                          flux.coef[i], flux.decay_coef[i], flux.target[i], flux.cutoff[i]);
         }
         
         return S_OK;

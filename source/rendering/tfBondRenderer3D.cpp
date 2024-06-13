@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -79,12 +79,11 @@ void rendering::render_bond3d(
     const int &idx, 
     const fVector3 &pipos, 
     const fVector3 &pjpos, 
-    const Style &s, 
+    const fVector4 &color, 
     const float &radius) 
 {
     fVector3 pjipos = pjpos - pipos;
     float poslen = pjipos.length();
-    Magnum::Vector3 color = s.color;
 
     fMatrix3 rotationMatrix = rendering::vectorFrameRotation(pjipos);
     Magnum::Matrix4 transformationMatrix = Magnum::Matrix4::from(rotationMatrix, pipos)
@@ -93,26 +92,24 @@ void rendering::render_bond3d(
 
     bondData[idx].transformationMatrix = transformationMatrix;
     bondData[idx].normalMatrix = transformationMatrix.normalMatrix();
-    bondData[idx].color = {color[0], color[1], color[2], (float)s.getVisible()};
+    bondData[idx].color = {color[0], color[1], color[2], color[3]};
 }
 
 static inline void _render_bond3d(
     rendering::Bond3DInstanceData* bondData, 
     const int &idx, 
-    const unsigned int &i, 
-    const unsigned int &j, 
-    const rendering::Style &s, 
+    Bond &bond, 
     const float &radius) 
 {
 
-    Particle *pi = _Engine.s.partlist[i];
-    Particle *pj = _Engine.s.partlist[j];
+    Particle *pi = _Engine.s.partlist[bond.i];
+    Particle *pj = _Engine.s.partlist[bond.j];
     
     const fVector3 pjpos = pj->global_position();
     const fVector3 pipos = pjpos + metrics::relativePosition(pi->global_position(), pjpos);
     const float _radius = radius > 0 ? radius : std::min(pi->radius, pj->radius) * 0.5;
 
-    render_bond3d(bondData, idx, pipos, pjpos, s, _radius);
+    render_bond3d(bondData, idx, pipos, pjpos, bond.style->map_color(&bond), _radius);
 }
 
 HRESULT rendering::BondRenderer3D::draw(rendering::ArcBallCamera *camera, const iVector2 &viewportSize, const fMatrix4 &modelViewMat) {
@@ -138,7 +135,7 @@ HRESULT rendering::BondRenderer3D::draw(rendering::ArcBallCamera *camera, const 
         for(int j = 0; j < _Engine.nr_bonds; ++j) {
             Bond *bond = &_Engine.bonds[j];
             if(bond->flags & BOND_ACTIVE) {
-                _render_bond3d(bondData, i, bond->i, bond->j, *bond->style, _radius);
+                _render_bond3d(bondData, i, *bond, _radius);
                 i++;
             }
         }

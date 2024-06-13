@@ -2,7 +2,7 @@
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
  * Coypright (c) 2017 Andy Somogyi (somogyie at indiana dot edu)
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -30,7 +30,7 @@
 #include "tf_platform.h"
 #include <pthread.h>
 #include "tfSpace.h"
-#include "cycle.h"
+#include "tf_cycle.h"
 #include "tfBoundaryConditions.h"
 #include <tfSubEngine.h>
 #include <mutex>
@@ -164,7 +164,7 @@ namespace TissueForge {
 	typedef struct CAPI_EXPORT engine {
 
 		/** Some flags controlling how this engine works. */
-		unsigned int flags;
+		unsigned int flags = 0;
 
 		/**
 		 * Internal flags related to multi-step integrators,

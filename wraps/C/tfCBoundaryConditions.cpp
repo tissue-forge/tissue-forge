@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -209,6 +209,12 @@ HRESULT tfBoundaryConditions_setPotential(struct tfBoundaryConditionsHandle *han
     TFC_PTRCHECK(partHandle); TFC_PTRCHECK(partHandle->tfObj);
     TFC_PTRCHECK(potHandle); TFC_PTRCHECK(potHandle->tfObj);
     bhandle->set_potential((ParticleType*)partHandle->tfObj, (Potential*)potHandle->tfObj);
+    return S_OK;
+}
+
+HRESULT tfBoundaryConditions_boundedPosition(tfFloatP_t* position) {
+    FVector3 _position = FVector3::from(position);
+    BoundaryConditions::boundedPosition(_position);
     return S_OK;
 }
 

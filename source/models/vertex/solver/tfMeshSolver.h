@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -31,7 +31,7 @@
 #include "tfMeshLogger.h"
 
 #include <tfSubEngine.h>
-#include <cycle.h>
+#include <tf_cycle.h>
 
 
 namespace TissueForge::models::vertex { 

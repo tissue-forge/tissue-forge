@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 
 using namespace TissueForge;
@@ -52,7 +51,7 @@ int main(int argc, char const *argv[])
     Simulator::Config config;
     config.setWindowless(true);
     config.universeConfig.cutoff = 3.0;
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     AType *A = new AType();
     BType *B = new BType();
@@ -78,8 +77,7 @@ int main(int argc, char const *argv[])
     A->factory(nr_parts, &pos);
 
     ParticleHandle *a = A->items().item(0);
-    FloatP_t n_dist = 5.0;
-    ParticleList n_list = a->neighbors(&n_dist);
+    ParticleList n_list = a->neighbors(5.0);
     for(int i = 0; i < n_list.nr_parts; i++) 
         n_list.item(i)->become(B);
 

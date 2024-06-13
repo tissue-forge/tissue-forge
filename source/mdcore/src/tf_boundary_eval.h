@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -128,7 +128,7 @@ namespace TissueForge {
         
         if(enforced) {
             for (int k = 0 ; k < 3 ; k++ ) {
-                delta[k] = __builtin_isgreaterequal( p->x[k], h[k] ) - __builtin_isless( p->x[k], 0.0 );
+                delta[k] = std::isgreaterequal( p->x[k], h[k] ) - std::isless( p->x[k], 0.0 );
             }
         }
 

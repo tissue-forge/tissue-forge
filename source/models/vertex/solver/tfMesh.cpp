@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -41,9 +41,14 @@ using namespace TissueForge;
 using namespace TissueForge::models::vertex;
 
 
+#define TF_INVALIDOBJRM_MSG "Invalid mesh object passed for remove."
+#define TF_MESH_OBJCHECK(obj) !(obj) || (obj)->objectId() < 0
+#define TF_MESH_OBJINVSIZECHECK(obj, sz) (obj)->_objId >= (sz)
+
+
 template <typename T> 
 HRESULT Mesh_checkStoredObj(T *obj) {
-    if(!obj || obj->objectId() < 0) {
+    if(TF_MESH_OBJCHECK(obj)) {
         TF_Log(LOG_ERROR);
         return E_FAIL;
     }
@@ -54,7 +59,7 @@ HRESULT Mesh_checkStoredObj(T *obj) {
 
 #define TF_MESH_OBJINVCHECK(obj, sz) \
     { \
-        if(obj->_objId >= sz) { \
+        if(TF_MESH_OBJINVSIZECHECK(obj, sz)) { \
             TF_Log(LOG_ERROR) << "Object with id " << obj->_objId << " exceeds inventory (" << sz << ")"; \
             return E_FAIL; \
         } \
@@ -297,6 +302,66 @@ HRESULT Mesh::allocateBody(Body **obj) {
     return S_OK;
 }
 
+HRESULT Mesh::allocateVertices(Vertex ***objs, const size_t& numObjs) {
+    // Check for available space; reallocate and reassign throughout if necessary
+    const int numNeeded = (int)numObjs - (int)vertexIdsAvail.size();
+    if(numNeeded > 0 && incrementVertices(numNeeded) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    for(unsigned int i = 0; i < numObjs; i++) {
+        std::set<unsigned int>::iterator itr = vertexIdsAvail.begin();
+        int objId = (int)*itr;
+        vertexIdsAvail.erase(itr);
+        auto obj = &(*objs)[i];
+        *obj = &(*vertices)[objId];
+        (*obj)->_objId = objId;
+    }
+    nr_vertices += numObjs;
+    return S_OK;
+}
+
+HRESULT Mesh::allocateSurfaces(Surface ***objs, const size_t& numObjs) {
+    // Check for available space; reallocate and reassign throughout if necessary
+    const int numNeeded = (int)numObjs - (int)surfaceIdsAvail.size();
+    if(numNeeded > 0 && incrementSurfaces(numNeeded) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    for(unsigned int i = 0; i < numObjs; i++) {
+        std::set<unsigned int>::iterator itr = surfaceIdsAvail.begin();
+        int objId = (int)*itr;
+        surfaceIdsAvail.erase(itr);
+        auto obj = &(*objs)[i];
+        *obj = &(*surfaces)[objId];
+        (*obj)->_objId = objId;
+    }
+    nr_surfaces += numObjs;
+    return S_OK;
+}
+
+HRESULT Mesh::allocateBodies(Body ***objs, const size_t& numObjs) {
+    // Check for available space; reallocate and reassign throughout if necessary
+    const int numNeeded = (int)numObjs - (int)bodyIdsAvail.size();
+    if(numNeeded > 0 && incrementBodies(numNeeded) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    for(unsigned int i = 0; i < numObjs; i++) {
+        std::set<unsigned int>::iterator itr = bodyIdsAvail.begin();
+        int objId = (int)*itr;
+        bodyIdsAvail.erase(itr);
+        auto obj = &(*objs)[i];
+        *obj = &(*bodies)[objId];
+        (*obj)->_objId = objId;
+    }
+    nr_bodies++;
+    return S_OK;
+}
+
 HRESULT Mesh::ensureAvailableVertices(const size_t &numAlloc) {
     int nr_diff = vertices->size() - nr_vertices - numAlloc;
     return nr_diff >= 0 ? S_OK : incrementVertices(-nr_diff);
@@ -327,6 +392,23 @@ HRESULT Mesh::create(Vertex **obj, const unsigned int &pid) {
     return S_OK;
 }
 
+HRESULT Mesh::create(Vertex*** objs, const std::vector<unsigned int>& pids) {
+    isDirty = true;
+    if(_solver) 
+        _solver->setDirty(true);
+
+    if(allocateVertices(objs, pids.size()) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    auto pidsItr = pids.begin();
+    for(unsigned int i = 0; i < pids.size(); i++, pidsItr++) 
+        verticesByPID[*pidsItr] = (*objs)[i];
+
+    return S_OK;
+}
+
 HRESULT Mesh::create(Surface **obj){ 
     isDirty = true;
     if(_solver) 
@@ -340,12 +422,38 @@ HRESULT Mesh::create(Surface **obj){
     return S_OK;
 }
 
+HRESULT Mesh::create(Surface*** objs, const size_t& numObjs) {
+    isDirty = true;
+    if(_solver) 
+        _solver->setDirty(true);
+
+    if(allocateSurfaces(objs, numObjs) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    return S_OK;
+}
+
 HRESULT Mesh::create(Body **obj){ 
     isDirty = true;
     if(_solver) 
         _solver->setDirty(true);
 
     if(allocateBody(obj) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    return S_OK;
+}
+
+HRESULT Mesh::create(Body*** objs, const size_t& numObjs) {
+    isDirty = true;
+    if(_solver) 
+        _solver->setDirty(true);
+
+    if(allocateBodies(objs, numObjs) != S_OK) {
         TF_Log(LOG_ERROR);
         return E_FAIL;
     }
@@ -452,12 +560,12 @@ HRESULT Mesh::remove(Vertex *v) {
     isDirty = true;
 
     if(Mesh_checkStoredObj(v) != S_OK) {
-        TF_Log(LOG_ERROR) << "Invalid mesh object passed for remove.";
+        TF_Log(LOG_ERROR) << TF_INVALIDOBJRM_MSG;
         return E_FAIL;
     } 
 
     TF_MESH_OBJINVCHECK(v, vertices->size());
-    std::vector<Surface*> children = v->getSurfaces();
+    auto& children = v->getSurfaces();
     this->vertexIdsAvail.insert(v->_objId);
     if(v->pid >= 0) {
         auto itr = verticesByPID.find(v->pid);
@@ -481,11 +589,99 @@ HRESULT Mesh::remove(Vertex *v) {
     return S_OK;
 }
 
+HRESULT Mesh::remove(Vertex** v, const size_t& numObjs) {
+    isDirty = true;
+
+    // check objects and get children, vertex ids and particle ids
+
+    const size_t nObjs = vertices->size();
+    std::vector<HRESULT> statusPool(ThreadPool::size(), S_OK);
+    std::vector<std::unordered_set<Surface*> > childrenPool(ThreadPool::size());
+    std::vector<std::unordered_set<unsigned int> > idsToMakeAvailPool(ThreadPool::size());
+    std::vector<std::unordered_set<int> > pidsToErasePool(ThreadPool::size());
+    auto& this_verticesByPID = this->verticesByPID;
+    parallel_for(
+        ThreadPool::size(), 
+        [&v, &numObjs, &statusPool, &nObjs, &childrenPool, &idsToMakeAvailPool, &pidsToErasePool, &this_verticesByPID](int tid) -> void {
+            HRESULT& statusThread = statusPool[tid];
+            std::unordered_set<Surface*>& childrenThread = childrenPool[tid];
+            std::unordered_set<unsigned int>& idsToMakeAvailThread = idsToMakeAvailPool[tid];
+            std::unordered_set<int>& pidsToEraseThread = pidsToErasePool[tid];
+            for(int i = tid; i < numObjs; i += ThreadPool::size()) {
+                Vertex* obj = v[i];
+                if(TF_MESH_OBJCHECK(obj) || TF_MESH_OBJINVSIZECHECK(obj, nObjs)) {
+                    statusThread = E_FAIL;
+                    return;
+                }
+                for(auto& c : obj->getSurfaces()) 
+                    childrenThread.insert(c);
+                idsToMakeAvailThread.insert(obj->_objId);
+                auto itr = this_verticesByPID.find(obj->pid);
+                if(itr != this_verticesByPID.end()) 
+                    pidsToEraseThread.insert(obj->pid);
+            }
+        }
+    );
+    for(auto& statusThread : statusPool) 
+        if(statusThread) {
+            TF_Log(LOG_ERROR) << TF_INVALIDOBJRM_MSG;
+            return E_FAIL;
+        }
+
+    size_t numChildren = 0;
+    for(auto& childrenThread : childrenPool) 
+        numChildren += childrenThread.size();
+    std::unordered_set<Surface*> children;
+    children.reserve(numChildren);
+    for(auto& childrenThread : childrenPool) 
+        for(auto& c : childrenThread) 
+            children.insert(c);
+    std::vector<Surface*> childrenVec(children.begin(), children.end());
+
+    // make ids available and remove particle id mappings
+    
+    for(auto& idsToMakeAvailThread : idsToMakeAvailPool) 
+        this->vertexIdsAvail.insert(idsToMakeAvailThread.begin(), idsToMakeAvailThread.end());
+    for(auto& pidsToEraseThread : pidsToErasePool) 
+        for(auto& pid : pidsToEraseThread) 
+            this->verticesByPID.erase(pid);
+
+    // notify quality
+
+    if(_quality) 
+        for(auto& idsToMakeAvailThread : idsToMakeAvailPool) 
+            for(auto& objId : idsToMakeAvailThread) 
+                _quality->includeVertex(objId);
+
+    // clear objects
+
+    auto& this_objs = *(this->vertices);
+    parallel_for(numObjs, [&this_objs, &v](int i) -> void { this_objs[v[i]->_objId] = Vertex(); } );
+    nr_vertices -= numObjs;
+
+    // log
+
+    if(_solver) 
+        for(unsigned int i = 0; i < numObjs; i++) {
+            auto obj = v[i];
+            _solver->log(MeshLogEventType::Destroy, {obj->_objId}, {obj->objType()});
+        }
+
+    // remove children
+
+    if(remove(childrenVec.data(), childrenVec.size()) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    return S_OK;
+}
+
 HRESULT Mesh::remove(Surface *s) {
     isDirty = true;
 
     if(Mesh_checkStoredObj(s) != S_OK) {
-        TF_Log(LOG_ERROR) << "Invalid mesh object passed for remove.";
+        TF_Log(LOG_ERROR) << TF_INVALIDOBJRM_MSG;
         return E_FAIL;
     } 
 
@@ -511,11 +707,122 @@ HRESULT Mesh::remove(Surface *s) {
     return S_OK;
 }
 
+HRESULT Mesh::remove(Surface** s, const size_t& numObjs) {
+    isDirty = true;
+
+    // check objects, get children, ids and surfaces by vertex
+
+    const size_t nObjs = surfaces->size();
+    std::vector<HRESULT> statusPool(ThreadPool::size(), S_OK);
+    std::vector<std::unordered_set<Vertex*> > verticesPool(ThreadPool::size());
+    std::vector<std::unordered_set<Body*> > childrenPool(ThreadPool::size());
+    std::vector<std::unordered_set<unsigned int> > idsToMakeAvailPool(ThreadPool::size());
+    std::vector<std::unordered_map<Vertex*, std::unordered_set<Surface*> > > surfacesByVerticesPool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&s, &numObjs, &nObjs, &statusPool, &verticesPool, &childrenPool, &idsToMakeAvailPool, &surfacesByVerticesPool](int tid) -> void {
+            HRESULT& statusThread = statusPool[tid];
+            std::unordered_set<Vertex*>& verticesThread = verticesPool[tid];
+            std::unordered_set<Body*>& childrenThread = childrenPool[tid];
+            std::unordered_set<unsigned int>& idsToMakeAvailThread = idsToMakeAvailPool[tid];
+            std::unordered_map<Vertex*, std::unordered_set<Surface*> >& surfacesByVerticesThread = surfacesByVerticesPool[tid];
+            for(int i = tid; i < numObjs; i += ThreadPool::size()) {
+                Surface* obj = s[i];
+                if(TF_MESH_OBJCHECK(obj) || TF_MESH_OBJINVSIZECHECK(obj, nObjs)) {
+                    statusThread = E_FAIL;
+                    return;
+                }
+                for(auto& c : obj->getBodies()) 
+                    childrenThread.insert(c);
+                idsToMakeAvailThread.insert(obj->_objId);
+                for(auto& v : obj->getVertices()) {
+                    verticesThread.insert(v);
+                    surfacesByVerticesThread[v].insert(obj);
+                }
+            }
+        }
+    );
+    for(auto& statusThread : statusPool) 
+        if(statusThread != S_OK) {
+            TF_Log(LOG_ERROR) << TF_INVALIDOBJRM_MSG;
+            return E_FAIL;
+        }
+
+    size_t numChildren = 0;
+    for(auto& childrenThread : childrenPool) 
+        numChildren += childrenThread.size();
+    std::unordered_set<Body*> children;
+    children.reserve(numChildren);
+    for(auto& childrenThread : childrenPool) 
+        children.insert(childrenThread.begin(), childrenThread.end());
+    std::vector<Body*> childrenVec(children.begin(), children.end());
+
+    size_t numVertices = 0;
+    for(auto& verticesThread : verticesPool) 
+        numVertices += verticesThread.size();
+    std::unordered_set<Vertex*> vertices;
+    vertices.reserve(numVertices);
+    for(auto& verticesThread : verticesPool) 
+        vertices.insert(verticesThread.begin(), verticesThread.end());
+    std::vector<Vertex*> verticesVec(vertices.begin(), vertices.end());
+
+    std::unordered_map<Vertex*, std::unordered_set<Surface*> > surfacesByVertices;
+    for(auto& surfacesByVerticesThread : surfacesByVerticesPool) 
+        for(auto& p : surfacesByVerticesThread) 
+            surfacesByVertices[p.first].insert(p.second.begin(), p.second.end());
+
+    // remove surfaces from vertices
+
+    parallel_for(
+        verticesVec.size(), 
+        [&verticesVec, &surfacesByVertices](int i) -> void {
+            Vertex* v = verticesVec[i];
+            for(auto& s : surfacesByVertices[v]) 
+                v->remove(s);
+        }
+    );
+
+    // make ids available
+    
+    for(auto& idsToMakeAvailThread : idsToMakeAvailPool) 
+        this->surfaceIdsAvail.insert(idsToMakeAvailThread.begin(), idsToMakeAvailThread.end());
+
+    // notify quality
+
+    if(_quality) 
+        for(auto& idsToMakeAvailThread : idsToMakeAvailPool) 
+            for(auto& objId : idsToMakeAvailThread) 
+                _quality->includeSurface(objId);
+
+    // clear objects
+
+    auto& this_objs = *(this->surfaces);
+    parallel_for(numObjs, [&this_objs, &s](int i) -> void { this_objs[s[i]->_objId] = Surface(); } );
+    nr_surfaces -= numObjs;
+
+    // log
+
+    if(_solver) 
+        for(unsigned int i = 0; i < numObjs; i++) {
+            auto obj = s[i];
+            _solver->log(MeshLogEventType::Destroy, {obj->_objId}, {obj->objType()});
+        }
+
+    // remove children
+
+    if(remove(childrenVec.data(), childrenVec.size()) != S_OK) {
+        TF_Log(LOG_ERROR);
+        return E_FAIL;
+    }
+
+    return S_OK;
+}
+
 HRESULT Mesh::remove(Body *b) {
     isDirty = true;
 
     if(Mesh_checkStoredObj(b) != S_OK) {
-        TF_Log(LOG_ERROR) << "Invalid mesh object passed for remove.";
+        TF_Log(LOG_ERROR) << TF_INVALIDOBJRM_MSG;
         return E_FAIL;
     } 
 
@@ -530,6 +837,97 @@ HRESULT Mesh::remove(Body *b) {
 
     if(_solver)
         _solver->log(MeshLogEventType::Destroy, {b->_objId}, {b->objType()});
+
+    return S_OK;
+}
+
+HRESULT Mesh::remove(Body** b, const size_t& numObjs) {
+    isDirty = true;
+
+    // check objects, get surfaces and bodies by surface
+
+    const size_t nObjs = bodies->size();
+    std::vector<HRESULT> statusPool(ThreadPool::size(), S_OK);
+    std::vector<std::unordered_set<Surface*> > surfacesPool(ThreadPool::size());
+    std::vector<std::unordered_set<unsigned int> > idsToMakeAvailPool(ThreadPool::size());
+    std::vector<std::unordered_map<Surface*, std::unordered_set<Body*> > > bodiesBySurfacePool(ThreadPool::size());
+    parallel_for(
+        ThreadPool::size(), 
+        [&b, &numObjs, &nObjs, &statusPool, &surfacesPool, &idsToMakeAvailPool, &bodiesBySurfacePool](int tid) -> void {
+            HRESULT& statusThread = statusPool[tid];
+            std::unordered_set<Surface*>& surfacesThread = surfacesPool[tid];
+            std::unordered_set<unsigned int>& idsToMakeAvailThread = idsToMakeAvailPool[tid];
+            std::unordered_map<Surface*, std::unordered_set<Body*> >& bodiesBySurfaceThread = bodiesBySurfacePool[tid];
+            for(int i = tid; i < numObjs; i += ThreadPool::size()) {
+                Body* obj = b[i];
+                if(TF_MESH_OBJCHECK(obj) || TF_MESH_OBJINVSIZECHECK(obj, nObjs)) {
+                    statusThread = E_FAIL;
+                    return;
+                }
+                idsToMakeAvailThread.insert(obj->_objId);
+                for(auto& s : obj->getSurfaces()) {
+                    surfacesThread.insert(s);
+                    bodiesBySurfaceThread[s].insert(obj);
+                }
+            }
+        }
+    );
+    for(auto& statusThread : statusPool) 
+        if(statusThread != S_OK) {
+            TF_Log(LOG_ERROR) << TF_INVALIDOBJRM_MSG;
+            return E_FAIL;
+        }
+
+    size_t numSurfaces = 0;
+    for(auto& surfacesThread : surfacesPool) 
+        numSurfaces += surfacesThread.size();
+    std::unordered_set<Surface*> surfaces;
+    surfaces.reserve(numSurfaces);
+    for(auto& surfacesThread : surfacesPool) 
+        surfaces.insert(surfacesThread.begin(), surfacesThread.end());
+    std::vector<Surface*> surfacesVec(surfaces.begin(), surfaces.end());
+
+    std::unordered_map<Surface*, std::unordered_set<Body*> > bodiesBySurface;
+    for(auto& bodiesBySurfaceThread : bodiesBySurfacePool) 
+        for(auto& p : bodiesBySurfaceThread) 
+            bodiesBySurface[p.first].insert(p.second.begin(), p.second.end());
+
+    // remove bodies from surfaces
+
+    parallel_for(
+        surfaces.size(), 
+        [&surfacesVec, &bodiesBySurface](int i) -> void {
+            Surface* s = surfacesVec[i];
+            for(auto& b : bodiesBySurface[s]) 
+                s->remove(b);
+        }
+    );
+
+    // make ids available
+    
+    for(auto& idsToMakeAvailThread : idsToMakeAvailPool) 
+        this->bodyIdsAvail.insert(idsToMakeAvailThread.begin(), idsToMakeAvailThread.end());
+
+    // notify quality
+
+    if(_quality) 
+        for(auto& idsToMakeAvailThread : idsToMakeAvailPool) 
+            for(auto& objId : idsToMakeAvailThread) 
+                _quality->includeBody(objId);
+
+    // clear objects
+
+    auto& this_objs = *(this->bodies);
+    parallel_for(numObjs, [&this_objs, &b](int i) -> void { this_objs[b[i]->_objId] = Body(); } );
+    nr_bodies -= numObjs;
+
+    // log
+
+    if(_solver) 
+        for(unsigned int i = 0; i < numObjs; i++) {
+            auto obj = b[i];
+            _solver->log(MeshLogEventType::Destroy, {obj->_objId}, {obj->objType()});
+        }
 
     return S_OK;
 }

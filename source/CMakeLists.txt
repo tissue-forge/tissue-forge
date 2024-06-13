@@ -1,6 +1,6 @@
 #*******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022, 2023 T.J. Sego
+# Copyright (c) 2022-2024 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -96,6 +96,7 @@ set(
   rendering/tfBondRenderer3D.cpp
   rendering/tfClipPlane.cpp
   rendering/tfColorMapper.cpp
+  rendering/tfColorMaps.cpp
   rendering/tfDihedralRenderer.cpp
   rendering/tfDihedralRenderer3D.cpp
   rendering/tfEglInfo.cpp
@@ -178,6 +179,7 @@ set(
   rendering/tfBondRenderer3D.h
   rendering/tfClipPlane.h
   rendering/tfColorMapper.h
+  rendering/tfColorMaps.h
   rendering/tfDihedralRenderer.h
   rendering/tfDihedralRenderer3D.h
   rendering/tfEglInfo.h
@@ -218,6 +220,11 @@ set(
   types/tfVector3.h
   types/tfVector4.h
 )
+
+if(MSVC) 
+  # Note to refactor tf_metrics.cpp
+  set_source_files_properties(tf_metrics.cpp PROPERTIES COMPILE_OPTIONS "/bigobj")
+endif()
 
 # Python source
 

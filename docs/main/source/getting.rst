@@ -176,8 +176,16 @@ On MacOS
     conda activate $TFENV
     bash ${TFSRCDIR}/package/local/osx/install_all.sh
 
-The default Python version of the installation is 3.7, though Tissue Forge has also been tested
-on Windows, Linux and MacOS for Python versions 3.8 and 3.9.
+Note that Tissue Forge assumes that conda is installed in a typical location on Linux and MacOS. 
+If Tissue Forge has trouble finding the conda script `conda.sh`, then it can be provided during build 
+customization using the environment variable `TFCONDAENV`. 
+
+.. code-block:: bash
+
+    export TFCONDAENV=${HOME}/mambaforge/etc/profile.d/conda.sh
+
+The default Python version of the installation is 3.8, though Tissue Forge has also been tested
+on Windows, Linux and MacOS for Python versions 3.9, 3.10 and 3.11.
 To specify a different version of Python, simply add a call to
 `update the conda environment <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-python.html#updating-or-upgrading-python>`_
 in the previous commands before calling `install_all`.

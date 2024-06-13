@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2010 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -226,7 +226,7 @@ HRESULT TissueForge::space_shuffle(struct space *s) {
 
             p = &(c->parts[pid]);
             for(k = 0 ; k < 3 ; k++)
-                delta[k] = __builtin_isgreaterequal(p->x[k], h[k]) - __builtin_isless(p->x[k], 0.0);
+                delta[k] = std::isgreaterequal(p->x[k], h[k]) - std::isless(p->x[k], 0.0);
 
             /* do we have to move this particle? */
             if((delta[0] != 0) ||(delta[1] != 0) ||(delta[2] != 0)) {
@@ -295,7 +295,7 @@ HRESULT TissueForge::space_shuffle_local(struct space *s) {
 
             p = &(c->parts[pid]);
             for(k = 0 ; k < 3 ; k++)
-                delta[k] = __builtin_isgreaterequal(p->x[k], h[k]) - __builtin_isless(p->x[k], 0.0);
+                delta[k] = std::isgreaterequal(p->x[k], h[k]) - std::isless(p->x[k], 0.0);
 
             /* do we have to move this particle? */
             if((delta[0] != 0) ||(delta[1] != 0) ||(delta[2] != 0)) {
@@ -342,7 +342,7 @@ HRESULT TissueForge::space_shuffle_local(struct space *s) {
 
             Particle *_p = &(_c->parts[_pid]);
             for(_k = 0 ; _k < 3 ; _k++)
-                _delta[_k] = __builtin_isgreaterequal(_p->x[_k], h[_k]) - __builtin_isless(_p->x[_k], 0.0);
+                _delta[_k] = std::isgreaterequal(_p->x[_k], h[_k]) - std::isless(_p->x[_k], 0.0);
 
             /* do we have to move this particle? */
             if((_delta[0] != 0) ||(_delta[1] != 0) ||(_delta[2] != 0)) {

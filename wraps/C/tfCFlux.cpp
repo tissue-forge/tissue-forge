@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -147,6 +147,23 @@ HRESULT tfFlux_setTarget(struct tfFluxHandle *handle, unsigned int index, tfFloa
     return S_OK;
 }
 
+HRESULT tfFlux_getCutoff(struct tfFluxHandle *handle, unsigned int index, tfFloatP_t *cutoff) {
+    TFC_FLUX_GET(handle, flx);
+    TFC_PTRCHECK(cutoff);
+    if(index >= flx->size) 
+        return E_FAIL;
+    *cutoff = flx->cutoff[index];
+    return S_OK;
+}
+
+HRESULT tfFlux_setCutoff(struct tfFluxHandle *handle, unsigned int index, tfFloatP_t cutoff) {
+    TFC_FLUX_GET(handle, flx);
+    if(index >= flx->size) 
+        return E_FAIL;
+    flx->cutoff[index] = cutoff;
+    return S_OK;
+}
+
 
 ////////////
 // Fluxes //
@@ -180,13 +197,14 @@ HRESULT tfFluxes_fluxFick(
     struct tfParticleTypeHandle *B, 
     const char *name, 
     tfFloatP_t k, 
-    tfFloatP_t decay) 
+    tfFloatP_t decay,
+    tfFloatP_t cutoff) 
 {
     TFC_PTRCHECK(handle);
     TFC_PTRCHECK(A); TFC_PTRCHECK(A->tfObj);
     TFC_PTRCHECK(B); TFC_PTRCHECK(B->tfObj);
     TFC_PTRCHECK(name);
-    Fluxes *flxs = Fluxes::fluxFick((ParticleType*)A->tfObj, (ParticleType*)B->tfObj, name, k, decay);
+    Fluxes *flxs = Fluxes::fluxFick((ParticleType*)A->tfObj, (ParticleType*)B->tfObj, name, k, decay, cutoff);
     TFC_PTRCHECK(flxs);
     handle->tfObj = (void*)flxs;
     return S_OK;
@@ -199,13 +217,14 @@ HRESULT tfFluxes_secrete(
     const char *name, 
     tfFloatP_t k, 
     tfFloatP_t target, 
-    tfFloatP_t decay) 
+    tfFloatP_t decay, 
+    tfFloatP_t cutoff) 
 {
     TFC_PTRCHECK(handle);
     TFC_PTRCHECK(A); TFC_PTRCHECK(A->tfObj);
     TFC_PTRCHECK(B); TFC_PTRCHECK(B->tfObj);
     TFC_PTRCHECK(name);
-    Fluxes *flxs = Fluxes::secrete((ParticleType*)A->tfObj, (ParticleType*)B->tfObj, name, k, target, decay);
+    Fluxes *flxs = Fluxes::secrete((ParticleType*)A->tfObj, (ParticleType*)B->tfObj, name, k, target, decay, cutoff);
     TFC_PTRCHECK(flxs);
     handle->tfObj = (void*)flxs;
     return S_OK;
@@ -218,13 +237,14 @@ HRESULT tfFluxes_uptake(
     const char *name, 
     tfFloatP_t k, 
     tfFloatP_t target, 
-    tfFloatP_t decay) 
+    tfFloatP_t decay, 
+    tfFloatP_t cutoff) 
 {
     TFC_PTRCHECK(handle);
     TFC_PTRCHECK(A); TFC_PTRCHECK(A->tfObj);
     TFC_PTRCHECK(B); TFC_PTRCHECK(B->tfObj);
     TFC_PTRCHECK(name);
-    Fluxes *flxs = Fluxes::uptake((ParticleType*)A->tfObj, (ParticleType*)B->tfObj, name, k, target, decay);
+    Fluxes *flxs = Fluxes::uptake((ParticleType*)A->tfObj, (ParticleType*)B->tfObj, name, k, target, decay, cutoff);
     TFC_PTRCHECK(flxs);
     handle->tfObj = (void*)flxs;
     return S_OK;

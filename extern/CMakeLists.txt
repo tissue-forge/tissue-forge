@@ -91,62 +91,7 @@ install(
   COMPONENT libSBML
 )
 
-# build glfw here, set up variables so magnum does not try to find it
-
 set(WITH_PNGIMPORTER OFF CACHE BOOL "build PNG importer"    FORCE)
-
-
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "stuff" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "stuff" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "stuff" FORCE)
-set(GLFW_INSTALL ON CACHE BOOL "stuff" FORCE)
-
-add_subdirectory(glfw)
-
-
-# glfw does not set it's target include directories, but it turns out we
-# can set them after the glfw subproject is processed.
-# This approach enables us to simply target_link_libraries(MyProgram glfw), and
-# all the glfw include directories automatically get added to the MyProgram.
-target_include_directories(
-  glfw PUBLIC 
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glfw/include/GLFW> 
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glfw/deps>
-)
-
-if(APPLE)
-  set_property(TARGET glfw PROPERTY INSTALL_NAME_DIR )
-endif()
-
-# magnum likes these names:
-#  GLFW::GLFW               - GLFW imported target
-#  GLFW_LIBRARY             - GLFW library
-#  GLFW_INCLUDE_DIR         - Root include dir
-#
-add_library(GLFW::GLFW ALIAS glfw)
-
-set(GLFW_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/extern/glfw/include/GLFW)
-set(GLFW_FOUND TRUE)
-
-
-message("GLFW_VERSION_MAJOR: ${GLFW_VERSION_MAJOR}")
-message("GLFW_VERSION_MINOR: ${GLFW_VERSION_MINOR}")
-message("GLFW_VERSION_PATCH: ${GLFW_VERSION_PATCH}")
-message("GLFW_VERSION: ${GLFW_VERSION}")
-
-
-message("GLFW_INCLUDE_DIR: ${GLFW_INCLUDE_DIR}")
-message("GLFW_LIBRARY: ${GLFW_LIBRARY}")
-
-if(TARGET glfw)
-  message("glfw is a target")
-  get_target_property(GLFW_VERSION glfw VERSION)
-  message("GLFW_VERSION: ${GLFW_VERSION}")
-
-else()
-  message("glfw is NOT a target")
-endif()
-
 
 # magnum / corrade want this
 # stop messaging about global weak symbols.

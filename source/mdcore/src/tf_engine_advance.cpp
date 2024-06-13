@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -168,7 +168,7 @@ static inline void cell_advance_forward_euler(const FPTYPE dt, const FPTYPE h[3]
                 FPTYPE v = mask[k] * (p->v[k] + dt * p->f[k] * p->imass);
                 p->v[k] = v * v <= maxv2[k] ? v : v / abs(v) * maxv[k];
                 p->x[k] += dt * p->v[k];
-                delta[k] = __builtin_isgreaterequal(p->x[k], h[k]) - __builtin_isless(p->x[k], 0.0);
+                delta[k] = std::isgreaterequal(p->x[k], h[k]) - std::isless(p->x[k], 0.0);
             }
         }
         else {
@@ -177,7 +177,7 @@ static inline void cell_advance_forward_euler(const FPTYPE dt, const FPTYPE h[3]
                 dx = dx * dx <= maxx2[k] ? dx : dx / abs(dx) * maxx[k];
                 p->v[k] = dx / dt;
                 p->x[k] += dx;
-                delta[k] = __builtin_isgreaterequal(p->x[k], h[k]) - __builtin_isless(p->x[k], 0.0);
+                delta[k] = std::isgreaterequal(p->x[k], h[k]) - std::isless(p->x[k], 0.0);
             }
         }
         
@@ -256,7 +256,7 @@ static inline void cell_advance_forward_euler_cluster(const FPTYPE h[3], int cid
             
             int delta[3];
             for(int k = 0 ; k < 3 ; k++) {
-                delta[k] = __builtin_isgreaterequal(p->x[k], h[k]) - __builtin_isless(p->x[k], 0.0);
+                delta[k] = std::isgreaterequal(p->x[k], h[k]) - std::isless(p->x[k], 0.0);
             }
             
             /* do we have to move this particle? */
@@ -699,7 +699,7 @@ HRESULT engine_advance_runge_kutta_4(struct engine *e) {
                     p->position = p->p0 + (dt/6.) * (p->xk[0] + 2*p->xk[1] + 2 * p->xk[2] + p->xk[3]);
 
                     for(int k = 0; k < 3; ++k) {
-                        delta[k] = __builtin_isgreaterequal(p->x[k], h[k]) - __builtin_isless(p->x[k], 0.0);
+                        delta[k] = std::isgreaterequal(p->x[k], h[k]) - std::isless(p->x[k], 0.0);
                         toofast = toofast || (p->x[k] >= h2[k] || p->x[k] <= -h[k]);
                     }
 

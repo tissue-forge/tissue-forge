@@ -1,7 +1,7 @@
 /*******************************************************************************
  * This file is part of mdcore.
  * Coypright (c) 2012 Pedro Gonnet (pedro.gonnet@durham.ac.uk)
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -44,7 +44,7 @@
 #include <cuda_runtime.h>
 
 /* include local headers */
-#include <cycle.h>
+#include <tf_cycle.h>
 #include <tf_errs.h>
 #include <tf_fptype.h>
 #include <tf_lock.h>

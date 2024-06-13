@@ -1,6 +1,6 @@
 #*******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022, 2023 T.J. Sego
+# Copyright (c) 2022-2024 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -20,7 +20,15 @@
 find_package(CUDAToolkit)
 find_package(assimp REQUIRED)
 find_package(glfw3 REQUIRED)
-find_package(libsbml-static REQUIRED)
+if(UNIX OR CYGWIN)
+    find_package(sbml-static REQUIRED)
+else()
+  if(MINGW)
+    find_package(sbml-static REQUIRED)
+  else()
+    find_package(libsbml-static REQUIRED)
+  endif()
+endif()
 find_package(TissueForge REQUIRED COMPONENTS CLib)
 
 set(tfCTest_LIBS TissueForge::TissueForge_c)
@@ -32,6 +40,7 @@ set(tfCTest_INCLUDES ${TISSUEFORGE_C_INCLUDE_DIRS})
 
 macro(tfCTest_Build src_name)
     add_executable(${src_name} ${src_name}.c)
+    target_compile_definitions(${src_name} PRIVATE TFTEST_LOG)
     target_link_libraries(${src_name} ${tfCTest_LIBS})
     target_include_directories(${src_name} PUBLIC ${tfCTest_INCLUDES})
 endmacro()

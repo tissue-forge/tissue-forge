@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -41,12 +41,13 @@ namespace TissueForge {
          */
         struct CAPI_EXPORT SpeciesValue
         {
-            FloatP_t value;
             struct TissueForge::state::StateVector *state_vector;
             uint32_t index;
 
             TissueForge::state::Species *species();
 
+            FloatP_t getValue() const;
+            void setValue(const FloatP_t &_value);
             bool getBoundaryCondition();
             int setBoundaryCondition(const int &value);
             FloatP_t getInitialAmount();
@@ -74,8 +75,7 @@ namespace TissueForge {
              */
             FloatP_t secrete(const FloatP_t &amount, const FloatP_t &distance);
 
-            SpeciesValue(const FloatP_t &value);
-            SpeciesValue(const FloatP_t &value, struct TissueForge::state::StateVector *state_vector, uint32_t index);
+            SpeciesValue(struct TissueForge::state::StateVector *state_vector, uint32_t index);
         };
 
 }}

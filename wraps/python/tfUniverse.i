@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -144,7 +144,7 @@
             Performs a single time step of the universe if no arguments are 
             given. Optionally runs until ``until``.
             
-            :param until: runs the timestep for this length of time, optional.
+            :param until: period to execute, in units of simulation time (default executes one time step).
             """
             return _tfUniverse.step(until, 0)
 

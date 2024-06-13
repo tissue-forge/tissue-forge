@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -28,8 +28,10 @@
 #include <tfParticleList.h>
 #include <tfParticleTypeList.h>
 #include <state/tfSpeciesList.h>
+#include <rendering/tfColorMapper.h>
 #include <rendering/tfStyle.h>
 #include <tfEngine.h>
+#include <tf_util.h>
 
 
 using namespace TissueForge;
@@ -68,6 +70,10 @@ namespace TissueForge {
     ParticleType *ptype = TissueForge::castC<ParticleType, tfParticleTypeHandle>(handle); \
     TFC_PTRCHECK(ptype);
 
+#define TFC_PTYPEHANDLE_GETN(handle, name) \
+    ParticleType *name = TissueForge::castC<ParticleType, tfParticleTypeHandle>(handle); \
+    TFC_PTRCHECK(name);
+
 #define TFC_PARTICLELIST_GET(handle) \
     ParticleList *plist = TissueForge::castC<ParticleList, tfParticleListHandle>(handle); \
     TFC_PTRCHECK(plist);
@@ -75,6 +81,19 @@ namespace TissueForge {
 #define TFC_PARTICLETYPELIST_GET(handle) \
     ParticleTypeList *ptlist = TissueForge::castC<ParticleTypeList, tfParticleTypeListHandle>(handle); \
     TFC_PTRCHECK(ptlist);
+
+
+//////////////////////////////
+// tfMappedParticleDataEnum //
+//////////////////////////////
+
+
+struct tfMappedParticleDataEnum tfMappedParticleDataEnum_init() {
+    struct tfMappedParticleDataEnum mappedParticleDataEnum = {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    };
+    return mappedParticleDataEnum;
+}
 
 
 ////////////////////////
@@ -115,7 +134,8 @@ struct tfParticleTypeStyleSpec tfParticleTypeStyleSpec_init() {
         NULL, 
         "rainbow", 
         0.0, 
-        1.0
+        1.0,
+        tfMappedParticleDataEnum_init().MAPPEDPARTICLEDATA_NONE
     };
     return particleTypeStyleSpec;
 }
@@ -197,10 +217,40 @@ HRESULT tfParticleHandle_split(struct tfParticleHandleHandle *handle, struct tfP
     TFC_PARTICLEHANDLE_GET(handle);
     TFC_PTRCHECK(newParticleHandle);
 
-    auto nphandle = phandle->fission();
+    auto nphandle = phandle->split();
     TFC_PTRCHECK(nphandle);
 
     newParticleHandle->tfObj = (void*)nphandle;
+
+    return S_OK;
+}
+
+HRESULT tfParticleHandle_splitTypes(
+    struct tfParticleHandleHandle* handle, 
+    struct tfParticleHandleHandle* newParticleHandle,
+    struct tfParticleTypeHandle* parentTypeHandle, 
+    struct tfParticleTypeHandle* childTypeHandle
+) {
+    TFC_PARTICLEHANDLE_GETN(handle, parentParticle);
+    TFC_PTRCHECK(newParticleHandle);
+
+    ParticleType* parentType = NULL;
+    ParticleType* childType = NULL;
+    if(parentTypeHandle) {
+        TFC_PTYPEHANDLE_GETN(parentTypeHandle, _parentType);
+        parentType = _parentType;
+    }
+    if(childTypeHandle) {
+        TFC_PTYPEHANDLE_GETN(childTypeHandle, _childType);
+        childType = _childType;
+    }
+
+    FVector3 direction = randomUnitVector();
+
+    auto childParticle = parentParticle->split(randomUnitVector(), FPTYPE_ONE / FPTYPE_TWO, parentType, childType);
+    TFC_PTRCHECK(childParticle);
+
+    newParticleHandle->tfObj = (void*)childParticle;
 
     return S_OK;
 }
@@ -633,9 +683,47 @@ HRESULT tfParticleType_initD(struct tfParticleTypeHandle *handle, struct tfParti
     if(pdef.style) {
         if(pdef.style->color) 
             ptype->style->setColor(pdef.style->color);
-        else if(pdef.style->speciesName) 
-            ptype->style->newColorMapper(ptype, pdef.style->speciesName, pdef.style->speciesMapName, pdef.style->speciesMapMin, pdef.style->speciesMapMax);
         ptype->style->setVisible(pdef.style->visible);
+
+        tfMappedParticleDataEnum mappedParticleData = tfMappedParticleDataEnum_init();
+        if(pdef.style->mappedParticleData != mappedParticleData.MAPPEDPARTICLEDATA_NONE) {
+            ptype->style->mapper = new rendering::ColorMapper();
+            if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_POSITION_X) {
+                ptype->style->mapper->setMapParticlePositionX();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_POSITION_Y) {
+                ptype->style->mapper->setMapParticlePositionY();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_POSITION_Z) {
+                ptype->style->mapper->setMapParticlePositionZ();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_X) {
+                ptype->style->mapper->setMapParticleVelocityX();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_Y) {
+                ptype->style->mapper->setMapParticleVelocityY();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_Z) {
+                ptype->style->mapper->setMapParticleVelocityZ();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_VELOCITY_SPEED) {
+                ptype->style->mapper->setMapParticleSpeed();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_SPECIES) {
+                if(pdef.style->speciesName) {
+                    ptype->style->mapper->setMapParticleSpecies(ptype, pdef.style->speciesName);
+                }
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_FORCE_X) {
+                ptype->style->mapper->setMapParticleForceX();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_FORCE_Y) {
+                ptype->style->mapper->setMapParticleForceY();
+            }
+            else if(pdef.style->mappedParticleData == mappedParticleData.MAPPEDPARTICLEDATA_FORCE_Z) {
+                ptype->style->mapper->setMapParticleForceZ();
+            }
+        }
     }
 
     return S_OK;
@@ -1250,6 +1338,32 @@ HRESULT tfParticleList_sphericalPositionsO(struct tfParticleListHandle *handle, 
     return TissueForge::capi::copyVecVecs3_2Arr(plist->sphericalPositions(&_origin), coordinates);
 }
 
+HRESULT tfParticleList_getOwnsData(struct tfParticleListHandle *handle, bool* result) {
+    TFC_PARTICLELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = plist->getOwnsData();
+    return S_OK;
+}
+
+HRESULT tfParticleList_setOwnsData(struct tfParticleListHandle *handle, bool flag) {
+    TFC_PARTICLELIST_GET(handle);
+    plist->setOwnsData(flag);
+    return S_OK;
+}
+
+HRESULT tfParticleList_getMutable(struct tfParticleListHandle *handle, bool* result) {
+    TFC_PARTICLELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = plist->getMutable();
+    return S_OK;
+}
+
+HRESULT tfParticleList_setMutable(struct tfParticleListHandle *handle, bool flag) {
+    TFC_PARTICLELIST_GET(handle);
+    plist->setMutable(flag);
+    return S_OK;
+}
+
 HRESULT tfParticleList_toString(struct tfParticleListHandle *handle, char **str, unsigned int *numChars) {
     TFC_PARTICLELIST_GET(handle);
     return TissueForge::capi::str2Char(plist->toString(), str, numChars);
@@ -1457,6 +1571,32 @@ HRESULT tfParticleTypeList_sphericalPositionsO(struct tfParticleTypeListHandle *
     TFC_PTRCHECK(origin);
     FVector3 _origin = FVector3::from(origin);
     return TissueForge::capi::copyVecVecs3_2Arr(ptlist->sphericalPositions(&_origin), coordinates);
+}
+
+HRESULT tfParticleTypeList_getOwnsData(struct tfParticleTypeListHandle *handle, bool* result) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = ptlist->getOwnsData();
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_setOwnsData(struct tfParticleTypeListHandle *handle, bool flag) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    ptlist->setOwnsData(flag);
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_getMutable(struct tfParticleTypeListHandle *handle, bool* result) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    TFC_PTRCHECK(result);
+    *result = ptlist->getMutable();
+    return S_OK;
+}
+
+HRESULT tfParticleTypeList_setMutable(struct tfParticleTypeListHandle *handle, bool flag) {
+    TFC_PARTICLETYPELIST_GET(handle);
+    ptlist->setMutable(flag);
+    return S_OK;
 }
 
 HRESULT tfParticleTypeList_getParticles(struct tfParticleTypeListHandle *handle, struct tfParticleListHandle *plist) {

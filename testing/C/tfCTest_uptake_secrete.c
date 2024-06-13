@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfSimulatorConfig_getUniverseConfig(&config, &uconfig));
     TFC_TEST_CHECK(tfUniverseConfig_setDim(&uconfig, dim));
     TFC_TEST_CHECK(tfUniverseConfig_setBoundaryConditions(&uconfig, &bargs));
-    TFC_TEST_CHECK(tfInitC(&config, NULL, 0));
+    TFC_TEST_CHECK(tfTest_initC(&config));
 
     struct tfParticleTypeStyleSpec ATypeStyleDef = tfParticleTypeStyleSpec_init();
     struct tfParticleTypeStyleSpec ProducerTypeStyleDef = tfParticleTypeStyleSpec_init();
@@ -83,9 +83,9 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfParticleType_registerType(&ConsumerType));
 
     struct tfFluxesHandle fluxAA, fluxPA, fluxAC;
-    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxAA, &AType, &AType, "S1", 1.0, 0.0));
-    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxPA, &ProducerType, &AType, "S1", 1.0, 0.0));
-    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxAC, &AType, &ConsumerType, "S1", 2.0, 10.0));
+    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxAA, &AType, &AType, "S1", 1.0, 0.0, -1));
+    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxPA, &ProducerType, &AType, "S1", 1.0, 0.0, -1));
+    TFC_TEST_CHECK(tfFluxes_fluxFick(&fluxAC, &AType, &ConsumerType, "S1", 2.0, 10.0, -1));
 
     tfFloatP_t *posP = (tfFloatP_t*)malloc(3 * sizeof(tfFloatP_t));
     tfFloatP_t *posC = (tfFloatP_t*)malloc(3 * sizeof(tfFloatP_t));

@@ -1,7 +1,7 @@
 #*******************************************************************************
 # This file is part of mdcore.
 # Coypright (c) 2010 Pedro Gonnet (gonnet@maths.ox.ac.uk)
-# Copyright (c) 2022, 2023 T.J. Sego
+# Copyright (c) 2022-2024 T.J. Sego
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -25,6 +25,7 @@ set(
   PUBLIC_HEADERS
   "${MDCORE_SOURCE_DIR}/include/cycle.h"
   "${MDCORE_SOURCE_DIR}/include/mdcore_config.h"
+  "${MDCORE_SOURCE_DIR}/include/tf_cycle.h"
   "${MDCORE_SOURCE_DIR}/include/tf_errs.h"
   "${MDCORE_SOURCE_DIR}/include/tf_fptype.h"
   "${MDCORE_SOURCE_DIR}/include/tf_lock.h"

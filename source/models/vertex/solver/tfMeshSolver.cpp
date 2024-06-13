@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego and Tien Comlekoglu
+ * Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -608,7 +608,7 @@ bool MeshSolver::_isDirtyInst() const {
 }
 
 bool MeshSolver::isDirty() {
-    TF_MESHSOLVER_CHECKINIT
+    TF_MESHSOLVER_CHECKINIT_RET(false);
 
     return _solver->_isDirtyInst();
 }

@@ -1,6 +1,6 @@
 # ******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022, 2023 T.J. Sego
+# Copyright (c) 2022-2024 T.J. Sego
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -20,6 +20,7 @@
 from tissue_forge.tissue_forge import _rendering_ArrowData
 from tissue_forge.tissue_forge import _rendering_ClipPlane
 from tissue_forge.tissue_forge import _rendering_ClipPlanes
+from tissue_forge.tissue_forge import _rendering_ColorMapper
 from tissue_forge.tissue_forge import _rendering_Style
 from tissue_forge.tissue_forge import _rendering_pollEvents as pollEvents
 from tissue_forge.tissue_forge import _rendering_waitEvents as waitEvents
@@ -33,6 +34,9 @@ class ClipPlane(_rendering_ClipPlane):
     pass
 
 class ClipPlanes(_rendering_ClipPlanes):
+    pass
+
+class ColorMapper(_rendering_ColorMapper):
     pass
 
 class Style(_rendering_Style):

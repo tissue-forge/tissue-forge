@@ -1,6 +1,6 @@
 # ******************************************************************************
 # This file is part of Tissue Forge.
-# Copyright (c) 2022, 2023, 2023 T.J. Sego and Tien Comlekoglu
+# Copyright (c) 2022-2024 T.J. Sego and Tien Comlekoglu
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
@@ -43,9 +43,7 @@ mesh_import.translateTo(tf.Universe.center)
 mesh_import.rotate(tf.FMatrix4.rotationX(np.pi / 2).rotation())
 
 # Create the mesh surfaces and sew them
-for io_surf in mesh_import.faces:
-    ctype(face_data=io_surf)
-tfv.Surface.sew(surfs=ctype.instances)
+ctype(face_data=mesh_import.faces, safe_face_data=False)
 
 # Run it!
 tf.show()

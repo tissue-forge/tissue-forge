@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of mdcore.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -183,6 +183,11 @@ TissueForge::ClusterParticleType::ClusterParticleType(const bool &noReg) :
     ParticleType(noReg) 
 {
     this->particle_flags |= PARTICLE_CLUSTER;
+    this->types.flags &= ~PARTICLELIST_OWNDATA;
+}
+
+TissueForge::ClusterParticleType::~ClusterParticleType() {
+    this->types.free();
 }
 
 std::string TissueForge::ClusterParticleType::str() const {

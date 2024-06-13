@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "tfTest.h"
-#include <TissueForge.h>
 
 #include <string>
 
@@ -37,7 +36,8 @@ struct BeadType : ParticleType {
         radius = 3.0;
         species = new state::SpeciesList();
         species->insert("S1");
-        style->newColorMapper(this, "S1");
+        style->mapper = new rendering::ColorMapper();
+        style->mapper->setMapParticleSpecies(this, "S1");
         registerType();
     };
 
@@ -67,7 +67,7 @@ int main(int argc, char const *argv[])
 {
     Simulator::Config config;
     config.setWindowless(true);
-    TF_TEST_CHECK(init(config));
+    TF_TEST_CHECK(tfTest_init(config));
 
     BeadType *Bead = new BeadType();
     Bead = (BeadType*)Bead->get();

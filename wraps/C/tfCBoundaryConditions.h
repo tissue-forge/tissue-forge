@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of Tissue Forge.
- * Copyright (c) 2022, 2023 T.J. Sego
+ * Copyright (c) 2022-2024 T.J. Sego
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -266,6 +266,14 @@ CAPI_FUNC(HRESULT) tfBoundaryConditions_getBack(struct tfBoundaryConditionsHandl
  * @return S_OK on success
  */
 CAPI_FUNC(HRESULT) tfBoundaryConditions_setPotential(struct tfBoundaryConditionsHandle *handle, struct tfParticleTypeHandle *partHandle, struct tfPotentialHandle *potHandle);
+
+/**
+ * @brief Enforce boundary conditions on a position
+ * 
+ * @param position a position to bound
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfBoundaryConditions_boundedPosition(tfFloatP_t* position);
 
 
 /////////////////////////////////////

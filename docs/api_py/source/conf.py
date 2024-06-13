@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Tissue Forge'
-copyright = '2022 T.J. Sego, James A. Glazier, Herbert Sauro'
+copyright = '2022-2024 T.J. Sego, James A. Glazier, Herbert Sauro'
 author = 'T.J. Sego'
 
 # The version info for the project you're documenting, acts as replacement for
