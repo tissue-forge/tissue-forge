@@ -25,7 +25,8 @@
 #include "tf_platform.h"
 
 #if (defined(_MSC_VER) && !defined(__GNUC__))
-#include <winnt.h>
+// #include <winnt.h>
+#include <intrin.h>
 #endif
 
 
