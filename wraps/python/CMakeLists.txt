@@ -59,6 +59,7 @@ set(TissueForge_py_LIBS
   MagnumPlugins::StbImageConverter
   TgaImageConverter
   assimp::assimp
+  Threads::Threads
 )
 
 if(TF_WITHCUDA)
