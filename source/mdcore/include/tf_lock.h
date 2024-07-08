@@ -27,10 +27,10 @@
 #if (defined(_MSC_VER) && !defined(__GNUC__))
 #if defined(PTHREAD_LOCK)
 #include <pthread.h>
-#else
+#endif
+
 // #include <winnt.h>
 #include <intrin.h>
-#endif
 #endif
 
 #if (defined(_MSC_VER) && !defined(__GNUC__))
