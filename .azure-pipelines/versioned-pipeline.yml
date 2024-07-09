@@ -72,7 +72,7 @@ stages:
   - stage: TissueForgeBuildMacLocal
     displayName: Local build for Mac
     pool: 
-      vmImage: 'macOS-11'
+      vmImage: 'macOS-12'
     dependsOn: []
     jobs:
       - ${{ each py_minor_version in parameters.py_minor_versions_osx }}:
@@ -130,7 +130,7 @@ stages:
   - stage: TissueForgeBuildMacConda
     displayName: Conda build for Mac
     pool:
-      vmImage: 'macOS-11'
+      vmImage: 'macOS-12'
     dependsOn: []
     jobs:
       - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
