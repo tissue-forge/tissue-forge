@@ -20,7 +20,7 @@
 #include "tf_systemPy.h"
 #include <tf_system.h>
 #include <rendering/tfApplication.h>
-
+#include <rendering/tfWidgetRenderer.h>
 
 using namespace TissueForge;
 
@@ -340,3 +340,80 @@ std::pair<int, rendering::ArrowData*> py::add_render_arrow(const FVector3 &pos, 
 HRESULT py::remove_render_arrow(const int &arrowId) { return system::removeRenderArrow(arrowId); }
 
 rendering::ArrowData *py::get_render_arrow(const int &arrowId) { return system::getRenderArrow(arrowId); }
+
+static void _pyVoidFunction(PyObject* callable) {
+    TF_Log(LOG_TRACE);
+
+    PyObject* result = PyObject_CallObject(callable, NULL);
+
+    if(result == NULL) {
+        PyObject* err = PyErr_Occurred();
+        TF_Log(LOG_CRITICAL) << py::pyerror_str();
+        PyErr_Clear();
+        return;
+    }
+    Py_DECREF(result);
+}
+
+template <typename T> 
+void _pyTFunction(PyObject* callable, const T& arg) {
+    TF_Log(LOG_TRACE);
+
+    PyObject* pyarg = cast<T, PyObject*>(arg);
+    PyObject* pyargs = PyTuple_Pack(1, pyarg);
+    PyObject* result = PyObject_CallObject(callable, pyargs);
+
+    if(result == NULL) {
+        PyObject* err = PyErr_Occurred();
+        TF_Log(LOG_CRITICAL) << py::pyerror_str();
+        PyErr_Clear();
+        return;
+    }
+    if(result) Py_CLEAR(result);
+}
+
+int py::add_widget_button(PyObject* cb, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    return renderer->addButton(std::bind(_pyVoidFunction, cb), label);
+}
+
+HRESULT py::show_widget_time() { return system::showWidgetTime(); }
+
+HRESULT py::show_widget_particle_number() { return system::showWidgetParticleNumber(); }
+
+HRESULT py::show_widget_bond_number() { return system::showWidgetBondNumber(); }
+
+HRESULT py::show_widget_dihedral_number() { return system::showWidgetDihedralNumber(); }
+
+HRESULT py::show_widget_angle_number() { return system::showWidgetAngleNumber(); }
+
+int py::add_widget_output_int(const int& val, const std::string& label) { return system::addWidgetOutputInt(val, label); }
+int py::add_widget_output_float(const float& val, const std::string& label) { return system::addWidgetOutputFloat(val, label); }
+int py::add_widget_output_string(const std::string& val, const std::string& label) { return system::addWidgetOutputString(val, label); }
+
+template <typename T> 
+int _add_input_T(PyObject* cb, const T& val, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    Py_IncRef(cb);
+    return renderer->addInputField(std::bind(_pyTFunction<T>, cb, std::placeholders::_1), val, label);
+}
+
+int py::add_widget_input_int(PyObject* cb, const int& val, const std::string& label) { return _add_input_T(cb, val, label); }
+int py::add_widget_input_float(PyObject* cb, const float& val, const std::string& label) { return _add_input_T(cb, val, label); }
+int py::add_widget_input_string(PyObject* cb, const std::string& val, const std::string& label) { return _add_input_T(cb, val, label); }
+
+HRESULT py::set_widget_output_int(const unsigned int& idx, const int& val) { return system::setWidgetOutputInt(idx, val); }
+HRESULT py::set_widget_output_float(const unsigned int& idx, const float& val) { return system::setWidgetOutputFloat(idx, val); }
+HRESULT py::set_widget_output_string(const unsigned int& idx, const std::string& val) { return system::setWidgetOutputString(idx, val); }
+
+HRESULT py::set_widget_font_size(const float size) { return system::setWidgetFontSize(size); }
+HRESULT py::set_widget_text_color(const std::string& colorName) { return system::setWidgetTextColor(colorName); }
+HRESULT py::set_widget_text_color(float r, float g, float b, float a) { return system::setWidgetTextColor(r, g, b, a); }
+HRESULT py::set_widget_text_color(const TissueForge::FVector3&  color) { return system::setWidgetTextColor(color); }
+HRESULT py::set_widget_text_color(const TissueForge::FVector4&  color) { return system::setWidgetTextColor(color); }
+HRESULT py::set_widget_background_color(const std::string& colorName) { return system::setWidgetBackgroundColor(colorName); }
+HRESULT py::set_widget_background_color(float r, float g, float b, float a) { return system::setWidgetBackgroundColor(r, g, b, a); }
+HRESULT py::set_widget_background_color(const TissueForge::FVector3&  color) { return system::setWidgetBackgroundColor(color); }
+HRESULT py::set_widget_background_color(const TissueForge::FVector4&  color) { return system::setWidgetBackgroundColor(color); }

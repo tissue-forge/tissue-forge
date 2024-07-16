@@ -36,6 +36,18 @@
 
 namespace TissueForge::system {
 
+    using CallbackVoidOutput = void(*)();
+    using CallbackInputInt = void(*)(const int&);
+    using CallbackInputFloat = void(*)(const float&);
+    using CallbackInputDouble = void(*)(const double&);
+    using CallbackInputString = void(*)(const std::string&);
+
+    using CallbackVoidOutput = void(*)();
+    using CallbackInputInt = void(*)(const int&);
+    using CallbackInputFloat = void(*)(const float&);
+    using CallbackInputDouble = void(*)(const double&);
+    using CallbackInputString = void(*)(const std::string&);
+
 
     CPPAPI_FUNC(void) printPerformanceCounters();
 
@@ -731,6 +743,64 @@ namespace TissueForge::system {
      */
     CPPAPI_FUNC(rendering::ArrowData*) getRenderArrow(const int &arrowId);
 
+
+    CPPAPI_FUNC(int) addButton(CallbackVoidOutput& cb, const std::string& label);
+    CPPAPI_FUNC(HRESULT) showTime();
+    CPPAPI_FUNC(HRESULT) showParticleNumber();
+
+    CPPAPI_FUNC(int) addOutputInt(const int& val, const std::string& label);
+    CPPAPI_FUNC(int) addOutputFloat(const float& val, const std::string& label);
+    CPPAPI_FUNC(int) addOutputDouble(const double& val, const std::string& label);
+    CPPAPI_FUNC(int) addOutputString(const std::string& val, const std::string& label);
+
+    CPPAPI_FUNC(int) addInputInt(CallbackInputInt& cb, const int& val, const std::string& label);
+    CPPAPI_FUNC(int) addInputFloat(CallbackInputFloat& cb, const float& val, const std::string& label);
+    CPPAPI_FUNC(int) addInputDouble(CallbackInputDouble& cb, const double& val, const std::string& label);
+    CPPAPI_FUNC(int) addInputString(CallbackInputString& cb, const std::string& val, const std::string& label);
+
+    CPPAPI_FUNC(HRESULT) setOutputInt(const unsigned int& idx, const int& val);
+    CPPAPI_FUNC(HRESULT) setOutputFloat(const unsigned int& idx, const float& val);
+    CPPAPI_FUNC(HRESULT) setOutputDouble(const unsigned int& idx, const double& val);
+    CPPAPI_FUNC(HRESULT) setOutputString(const unsigned int& idx, const std::string& val);
+
+
+    CPPAPI_FUNC(int) addWidgetButton(CallbackVoidOutput& cb, const std::string& label);
+    CPPAPI_FUNC(HRESULT) showWidgetTime();
+    CPPAPI_FUNC(HRESULT) showWidgetParticleNumber();
+    CPPAPI_FUNC(HRESULT) showWidgetBondNumber();
+    CPPAPI_FUNC(HRESULT) showWidgetDihedralNumber();
+    CPPAPI_FUNC(HRESULT) showWidgetAngleNumber();
+
+    CPPAPI_FUNC(int) addWidgetOutputInt(const int& val, const std::string& label);
+    CPPAPI_FUNC(int) addWidgetOutputFloat(const float& val, const std::string& label);
+    CPPAPI_FUNC(int) addWidgetOutputDouble(const double& val, const std::string& label);
+    CPPAPI_FUNC(int) addWidgetOutputString(const std::string& val, const std::string& label);
+
+    CPPAPI_FUNC(int) addWidgetInputInt(CallbackInputInt& cb, const int& val, const std::string& label);
+    CPPAPI_FUNC(int) addWidgetInputFloat(CallbackInputFloat& cb, const float& val, const std::string& label);
+    CPPAPI_FUNC(int) addWidgetInputDouble(CallbackInputDouble& cb, const double& val, const std::string& label);
+    CPPAPI_FUNC(int) addWidgetInputString(CallbackInputString& cb, const std::string& val, const std::string& label);
+
+    CPPAPI_FUNC(HRESULT) setWidgetOutputInt(const unsigned int& idx, const int& val);
+    CPPAPI_FUNC(HRESULT) setWidgetOutputFloat(const unsigned int& idx, const float& val);
+    CPPAPI_FUNC(HRESULT) setWidgetOutputDouble(const unsigned int& idx, const double& val);
+    CPPAPI_FUNC(HRESULT) setWidgetOutputString(const unsigned int& idx, const std::string& val);
+
+    CPPAPI_FUNC(HRESULT) setWidgetFontSize(const float size);
+    CPPAPI_FUNC(HRESULT) setWidgetTextColor(const std::string& colorName);
+    CPPAPI_FUNC(HRESULT) setWidgetBackgroundColor(const std::string& colorName);
+
+    CPPAPI_FUNC(HRESULT) setWidgetTextColor(float r, float g, float b, float a = 1.0f);
+    CPPAPI_FUNC(HRESULT) setWidgetTextColor(const TissueForge::FVector3& color);
+    CPPAPI_FUNC(HRESULT) setWidgetTextColor(const TissueForge::FVector4& color);
+
+    CPPAPI_FUNC(HRESULT) setWidgetBackgroundColor(float r, float g, float b, float a = 1.0f);
+    CPPAPI_FUNC(HRESULT) setWidgetBackgroundColor(const TissueForge::FVector3& color);
+    CPPAPI_FUNC(HRESULT) setWidgetBackgroundColor(const TissueForge::FVector4& color);
+
+    CPPAPI_FUNC(float) getWidgetFontSize();
+    CPPAPI_FUNC(TissueForge::FVector4) getWidgetTextColor();
+    CPPAPI_FUNC(TissueForge::FVector4) getWidgetBackgroundColor();
 };
 
 #endif // _SOURCE_TF_SYSTEM_H_
