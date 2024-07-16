@@ -10,3 +10,7 @@
 [submodule "extern/libsbml"]
 	path = extern/libsbml
 	url = https://github.com/sbmlteam/libsbml.git
+[submodule "extern/magnum-extras"]
+	path = extern/magnum-extras
+	url = https://github.com/mosra/magnum-extras.git
+	hexsha = 5db4c155f818b03ebe443663c048fa820a256c9f
