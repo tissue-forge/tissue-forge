@@ -58,6 +58,8 @@ set(TissueForge_py_LIBS
   Magnum::MeshTools
   MagnumPlugins::StbImageConverter
   TgaImageConverter
+  MagnumPlugins::StbTrueTypeFont 
+  MagnumExtras::Ui
   assimp::assimp
 )
 

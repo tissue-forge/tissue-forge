@@ -677,11 +677,11 @@ HRESULT TissueForge::rendering::WidgetRenderer::setTextColor(Magnum::Ui::Type ty
 
     if (_checkColorValues(color) != S_OK) {
         tf_error(E_FAIL, "Text Color is out of acceptable range. (i.e., Enter a string or RGB value or vector3f/4f.)");
-        std::cout << "Problematic input: r = " << color.r() << ", g = " << color.g() << ", b = " << color.b() << ", a = " << color.a() << "\n";
+        
         return E_FAIL; // One of the color values was out of range
     }
     
-    std::cout << "Setting text color to: r = " << color.r() << ", g = " << color.g() << ", b = " << color.b() << ", a = " << color.a() << "\n";
+    
     textColor = color;
     // Magnum::Color4 test = normalizeColor(color.r(), color.g(), color.b(), color.a());
     // std::cout << "Normalized text color to: r = " << test.r() << ", g = " << test.g() << ", b = " << test.b() << ", a = " << test.a() << "\n";
@@ -698,13 +698,13 @@ HRESULT TissueForge::rendering::WidgetRenderer::setBackgroundColor(Magnum::Ui::T
     //std::cout << "Inside setBackgroundColor with values: r = " << color.r() << ", g = " << color.g() << ", b = " << color.b() << ", a = " << color.a() << "\n";
 
     if (_checkColorValues(color) != S_OK) {
-        std::cout << "Inside if-statement: Background Color is out of acceptable range.\n";
+        
         TF_Log(LOG_ERROR) << "Problematic input: " << color.r() << ", " << color.g() << ", " << color.b() << ", " << color.a() << " " <<
                             "Background Color is out of acceptable range. (i.e., Enter a string or RGB value or vector3f/4f.)";
         return E_FAIL; // One of the color values was out of range
     }
     backgroundColor = color;
-    std::cout << "Setting background color to: r = " << color.r() << ", g = " << color.g() << ", b = " << color.b() << ", a = " << color.a() << "\n";
+    
     ui->setBackgroundColor(type, style, state, color);
     return S_OK;
 }
@@ -752,10 +752,9 @@ HRESULT rendering::WidgetRenderer::setTextColor(const TissueForge::FVector4& col
 HRESULT rendering::WidgetRenderer::setBackgroundColor(const std::string &colorName)
 {
     Magnum::Color3 color = util::Color3_Parse(colorName); 
-    std::cout << "Parsed color: " << colorName << " -> r = " << color.r() << ", g = " << color.g() << ", b = " << color.b() << "\n";
 
     Magnum::Color4 color4 = Magnum::Color4(color, 1.0f); 
-    std::cout << "Setting background color to: r = " << color4.r() << ", g = " << color4.g() << ", b = " << color4.b() << ", a = " << color4.a() << "\n";
+    
     setBackgroundColor(type, style, states, color4);
     
     return S_OK;

@@ -156,7 +156,6 @@ tf.system.add_widget_input_int(set_part_incr, part_incr, 'Part incr.')
 
 
 def add_parts():
-    print("here")
     for _ in range(part_incr):
         [A, B][0 if random.random() < 0.5 else 1]()
 

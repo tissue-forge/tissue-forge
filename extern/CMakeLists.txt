@@ -137,4 +137,10 @@ add_subdirectory(magnum)
 
 set(WITH_STBIMAGECONVERTER ON CACHE BOOL "Build Stb Image Converter" FORCE)
 
+set(WITH_STBTRUETYPEFONT ON CACHE BOOL "Build Stb True Type Font" FORCE)
+
 add_subdirectory(magnum-plugins EXCLUDE_FROM_ALL)
+
+set(WITH_UI ON CACHE BOOL "Ui support" FORCE)
+
+add_subdirectory(magnum-extras EXCLUD_FROM_ALL)

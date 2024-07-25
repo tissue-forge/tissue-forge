@@ -108,7 +108,8 @@ namespace TissueForge {
             SUBRENDERER_ARROW           = 1 << 1,
             SUBRENDERER_BOND            = 1 << 2,
             SUBRENDERER_DIHEDRAL        = 1 << 3, 
-            SUBRENDERER_ORIENTATION     = 1 << 4
+            SUBRENDERER_ORIENTATION     = 1 << 4,
+            SUBRENDERER_WIDGET          = 1 << 5
         } SubRendererFlag;
 
 
@@ -381,6 +382,7 @@ namespace TissueForge {
             * @param event 
             */
             void keyPressEvent(Platform::GlfwApplication::KeyEvent& event);
+            void keyReleaseEvent(Platform::GlfwApplication::KeyEvent& event);
             void mousePressEvent(Platform::GlfwApplication::MouseEvent& event);
             void mouseReleaseEvent(Platform::GlfwApplication::MouseEvent& event);
 
@@ -397,6 +399,7 @@ namespace TissueForge {
             */
             void mouseMoveEvent(Platform::GlfwApplication::MouseMoveEvent& event);
             void mouseScrollEvent(Platform::GlfwApplication::MouseScrollEvent& event);
+            void textInputEvent(Platform::GlfwApplication::TextInputEvent& event);
 
             SubRenderer *getSubRenderer(const SubRendererFlag &flag);
             HRESULT registerSubRenderer(SubRenderer *subrenderer);
