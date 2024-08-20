@@ -14,24 +14,13 @@ To capture and preserve their simulation environment, Tissue Forge provides save
 
 Background Color Changer Tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. image:: background_colorpalette.png
-    :width: 30%
-    :alt: Color palette for background color
+.. figure:: background_color_changers.png
+    :width: 100%
+    :alt: Tissue Forge save widget demonstration
+    :align: center
+    :figclass: align-center
 
-.. image:: background_slider.png
-    :width: 30%
-    :alt: Slider for background color
-
-.. image:: background_text.png
-    :width: 30%
-    :alt: Text input for background color
-
-.. raw:: html
-
-  <div style="text-align: center; margin-top: 30px;">
     Tissue Forge models demonstrating user ability to modify background color using a color palette, f-vector text box, and f-vector slider.
-  </div>
-
 
 Tissue Forge supports three different widgets to change the background color of simulations run in Jupyter Notebook environments, depending on the user's preferences. 
 Should the user wish to change the background color using a color palette, a color palette can be called using the method :meth:`colorPicker_set_background`. 
@@ -105,7 +94,7 @@ Currently, these grid color changer tools cannot be linked by default. This feat
 Particle Modifier Widgets
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 .. figure:: particle_modifier.png
-    :width: 100%
+    :width: 50%
     :alt: Color picker widget changing particle color
     :align: center
     :figclass: align-center
