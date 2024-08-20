@@ -1,7 +1,6 @@
 import tissue_forge as tf
 import numpy as np
 import ipywidgets as widgets
-from IPython.display import display
 from background_widgets import default_color_picker
 
 def colorConverter(s):

@@ -1,8 +1,5 @@
 import tissue_forge as tf
 import ipywidgets as widgets
-# from IPython.display import display
-from ipyfilechooser import FileChooser
-import os
 
 def colorConverter(s):
     h = s.lstrip('#')
@@ -21,7 +18,6 @@ def default_fvector_text(value=None):
             value= value,
             min=0,
             max=1,
-            # description='First fVector value',
             disabled=False,
             continuous_update=True,
             orientation='horizontal',
@@ -34,7 +30,6 @@ def default_fvector_slider(value=None):
                 value = value,
                 min=0,
                 max=1,
-                # description='First fVector value',
                 disabled=False,
                 continuous_update=True,
                 msg_throttle =0.05,
@@ -50,7 +45,6 @@ def colorPicker_set_background():
         tf.system.set_background_color(color=tf.FVector3(colorConverter(_change.new))/255)
         tf.system.context_release()
     color_picker.observe(backgroundUpdate, names='value')
-    print("New background has been set!")
     return color_picker
 
 def fvectorText_set_background():
@@ -95,7 +89,6 @@ def colorPicker_set_grid():
         tf.system.set_grid_color(color=tf.FVector3(colorConverter(_change.new))/255)
         tf.system.context_release()
     color_picker.observe(grid_update, names='value')
-    print("New grid has been set!")
     return color_picker
 
 def fvectorText_set_grid():
@@ -140,7 +133,6 @@ def colorPicker_set_boarders():
         tf.system.set_scene_box_color(color=tf.FVector3(colorConverter(_change.new))/255)
         tf.system.context_release()
     color_picker.observe(border_update, names='value')
-    print('New border has been set!')
     return color_picker
 
 def fvectorText_set_boarders():
