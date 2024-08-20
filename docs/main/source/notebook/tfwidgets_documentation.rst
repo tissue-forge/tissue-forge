@@ -15,15 +15,15 @@ To capture and preserve their simulation environment, Tissue Forge provides save
 Background Color Changer Tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. image:: background_colorpalette.png
-    :width: 32.5%
+    :width: 30%
     :alt: Color palette for background color
 
 .. image:: background_slider.png
-    :width: 32.5%
+    :width: 30%
     :alt: Slider for background color
 
 .. image:: background_text.png
-    :width: 32.5%
+    :width: 30%
     :alt: Text input for background color
 
 .. raw:: html
@@ -105,7 +105,7 @@ Currently, these grid color changer tools cannot be linked by default. This feat
 Particle Modifier Widgets
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 .. figure:: particle_modifier.png
-    :width: 300px
+    :width: 100%
     :alt: Color picker widget changing particle color
     :align: center
     :figclass: align-center
