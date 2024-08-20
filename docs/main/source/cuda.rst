@@ -45,7 +45,7 @@ Each GPU-accelerated simulation feature has its own runtime control interface fo
 deploying on a GPU. GPU runtime control of simulation modules can be accessed directly from
 :py:attr:`Simulator`, ::
 
-    cuda_config_sim: tf.cuda.SimulatorConfig = tf.Simulator.getCUDAConfig()
+    cuda_config_sim: tf.cuda.SimulatorConfig = tf.Simulator.cuda_config
 
 The returned :py:class:`cuda.SimulatorCUDAConfig` (``cuda::SimulatorConfig`` in C++) provides
 convenient access to all current GPU-accelerated simulation features.
@@ -59,7 +59,7 @@ All runtime controls of engine GPU acceleration are available on :py:class:`cuda
 (``cuda::EngineConfig`` in C++), which is an attribute with name ``engine``
 on :py:class:`cuda.SimulatorConfig`, ::
 
-    cuda_config_engine = tf.Simulator.getCUDAConfig().engine  # Get engine cuda runtime interface
+    cuda_config_engine = tf.Simulator.cuda_config.engine  # Get engine cuda runtime interface
 
 Engine GPU acceleration can be enabled, disabled and customized during simulation according to hardware
 capabilities and simulation state, ::
@@ -106,7 +106,7 @@ All runtime controls of bond GPU acceleration are available on :py:class:`cuda.B
 (``cuda::BondConfig`` in C++), which is an attribute with name ``bonds``
 on :py:class:`cuda.SimulatorConfig`, ::
 
-    cuda_config_bonds = tf.Simulator.getCUDAConfig().bonds    # Get bond cuda runtime interface
+    cuda_config_bonds = tf.Simulator.cuda_config.bonds    # Get bond cuda runtime interface
 
 The bond GPU acceleration runtime control interface is very similar to that of engine GPU acceleration.
 Bond GPU acceleration can be enabled, disabled and customized at any point in simulation, ::
@@ -142,7 +142,7 @@ The angle GPU acceleration runtime control interface is accessible on :py:class:
 (``cuda::AngleConfig`` in C++), which is available as an attribute with name ``angles``
 on :py:class:`cuda.SimulatorConfig`, ::
 
-    cuda_config_angles = tf.Simulator.getCUDAConfig().angles  # Get angle cuda runtime interface
+    cuda_config_angles = tf.Simulator.cuda_config.angles  # Get angle cuda runtime interface
 
 Refer to the :ref:`Tissue Forge API Reference <api_reference>` for which operations automatically
 update bond and angle data on a GPU.

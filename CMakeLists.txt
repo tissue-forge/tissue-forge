@@ -130,6 +130,27 @@ if(TF_WITHCUDA)
   enable_language(CUDA)
 endif()
 
+set(TF_HAVEPTHREADS FALSE)
+if(DEFINED PThreads_ROOT)
+
+  find_library(
+    PThreads 
+    NAMES pthreads pthreadsVSE2 
+    HINTS ${PThreads_ROOT} 
+    REQUIRED 
+  )
+  message("PThreads path: ${PThreads}")
+  add_library(pthreads UNKNOWN IMPORTED GLOBAL)
+  target_include_directories(pthreads INTERFACE ${PThreads_ROOT}/include)
+  set_target_properties(pthreads PROPERTIES IMPORTED_LOCATION ${PThreads})
+  add_library(Threads::Threads ALIAS pthreads)
+  set(TF_HAVEPTHREADS TRUE)
+
+else()
+  # use standard unix pthreads, creates Threads::Threads target
+  find_package(Threads REQUIRED)
+endif()
+
 find_package(glfw3 REQUIRED)
 
 add_library(GLFW::GLFW ALIAS glfw)
@@ -201,27 +222,6 @@ endif()
 message("CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 message("CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
 message("CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")
-
-set(TF_HAVEPTHREADS FALSE)
-if(DEFINED PThreads_ROOT)
-
-  find_library(
-    PThreads 
-    NAMES pthreads pthreadsVSE2 
-    HINTS ${PThreads_ROOT} 
-    REQUIRED 
-  )
-  message("PThreads path: ${PThreads}")
-  add_library(pthreads UNKNOWN IMPORTED GLOBAL)
-  target_include_directories(pthreads INTERFACE ${PThreads_ROOT}/include)
-  set_target_properties(pthreads PROPERTIES IMPORTED_LOCATION ${PThreads})
-  add_library(Threads::Threads ALIAS pthreads)
-  set(TF_HAVEPTHREADS TRUE)
-
-else()
-  # use standard unix pthreads, creates Threads::Threads target
-  find_package(Threads REQUIRED)
-endif()
 
 # Install options
 
