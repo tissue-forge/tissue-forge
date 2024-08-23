@@ -1,170 +1,245 @@
+from IPython.display import display
+import ipywidgets as ipw
+from typing import Any, Dict
+
 import tissue_forge as tf
-import ipywidgets as widgets
-
-def colorConverter(s):
-    h = s.lstrip('#')
-    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-
-def default_color_picker(concise=False, description='Pick a color', value='blue', disabled=False, continuous_update=True):
-    return widgets.ColorPicker(
-                concise=concise,
-                description=description,
-                value=value,
-                disabled=disabled,
-                continuous_update=continuous_update)
-
-def default_fvector_text(value=None):
-    return widgets.FloatText(
-            value= value,
-            min=0,
-            max=1,
-            disabled=False,
-            continuous_update=True,
-            orientation='horizontal',
-            readout=True,
-            readout_format='.1f',
-            layout={'width': '25%'})
-
-def default_fvector_slider(value=None):
-    return widgets.FloatSlider(
-                value = value,
-                min=0,
-                max=1,
-                disabled=False,
-                continuous_update=True,
-                msg_throttle =0.05,
-                orientation='horizontal',
-                readout=True,
-                readout_format='.1f',
-                layout={'width': '25%'})
-
-def colorPicker_set_background():
-    color_picker= default_color_picker()
-    def backgroundUpdate(_change):
-        tf.system.context_make_current()
-        tf.system.set_background_color(color=tf.FVector3(colorConverter(_change.new))/255)
-        tf.system.context_release()
-    color_picker.observe(backgroundUpdate, names='value')
-    return color_picker
-
-def fvectorText_set_background():
-    fVector1 = default_fvector_text(value = 0.3499999940395355)
-    fVector2 = default_fvector_text(value = 0.3499999940395355)
-    fVector3 = default_fvector_text(value = 0.3499999940395355)
-    style = {'description_width': 'initial'}
-    hbox = widgets.HBox([widgets.Label('Input your fVectors:', style=style), fVector1, fVector2, fVector3])
-
-    def fVector_update(change):
-        tf.system.context_make_current()
-        tf.system.set_background_color(color=tf.FVector3([fVector1.value, fVector2.value, fVector3.value]))
-        tf.system.context_release()
-    fVector1.observe(fVector_update, names='value')
-    fVector2.observe(fVector_update, names='value')
-    fVector3.observe(fVector_update, names='value')
-    return hbox
-
-def fvectorSlider_set_background():
-    fVector1 = default_fvector_slider(value = 0.3499999940395355)
-    fVector2 = default_fvector_slider(value = 0.3499999940395355)
-    fVector3 = default_fvector_slider(value = 0.3499999940395355)
-    style = {'description_width': 'initial'}
-    hbox = widgets.HBox([widgets.Label('Input your fVectors:', style=style), fVector1, fVector2, fVector3])
-
-    throttle_interval = 0.05
-
-    def fVector_update(_change):
-        tf.system.context_make_current()
-        tf.system.set_background_color(color=tf.FVector3([fVector1.value, fVector2.value, fVector3.value]))
-        tf.system.context_release()
-    fVector1.observe(fVector_update, names='value')
-    fVector2.observe(fVector_update, names='value')
-    fVector3.observe(fVector_update, names='value')
-    return hbox
+from . import widgets as tfnw
 
 
-def colorPicker_set_grid():
-    color_picker= default_color_picker()
-    def grid_update(_change):
-        tf.system.context_make_current()
-        tf.system.set_grid_color(color=tf.FVector3(colorConverter(_change.new))/255)
-        tf.system.context_release()
-    color_picker.observe(grid_update, names='value')
-    return color_picker
-
-def fvectorText_set_grid():
-    fVector1 = default_fvector_text(value= 1)
-    fVector2 = default_fvector_text(value= 1)
-    fVector3 = default_fvector_text(value= 1)
-    style = {'description_width': 'initial'}
-    hbox = widgets.HBox([widgets.Label('Input your fVectors:', style=style), fVector1, fVector2, fVector3])
-
-    def fVector_update(change):
-        tf.system.context_make_current()
-        tf.system.set_grid_color(color=tf.FVector3([fVector1.value, fVector2.value, fVector3.value]))
-        tf.system.context_release()
-    fVector1.observe(fVector_update, names='value')
-    fVector2.observe(fVector_update, names='value')
-    fVector3.observe(fVector_update, names='value')
-    return hbox
-
-def fvectorSlider_set_grid():
-    fVector1 = default_fvector_slider(value= 1)
-    fVector2 = default_fvector_slider(value= 1)
-    fVector3 = default_fvector_slider(value= 1)
-    style = {'description_width': 'initial'}
-    hbox = widgets.HBox([widgets.Label('Input your fVectors:', style=style), fVector1, fVector2, fVector3])
-    throttle_interval = 0.05
-
-    def fVector_update(_change):
-        tf.system.context_make_current()
-        tf.system.set_grid_color(color=tf.FVector3([fVector1.value, fVector2.value, fVector3.value]))
-        tf.system.context_release()
-    fVector1.observe(fVector_update, names='value')
-    fVector2.observe(fVector_update, names='value')
-    fVector3.observe(fVector_update, names='value')
-    return hbox
+LABELTEXT_BACKGROUND = 'Background:'
+LABELTEXT_BORDER = 'Borders:'
+LABELTEXT_GRID = 'Grid:'
 
 
+def _background_update(color: tf.FVector3):
+    tf.system.context_make_current()
+    tf.system.set_background_color(color=color)
+    tf.system.context_release()
 
-def colorPicker_set_boarders():
-    color_picker= default_color_picker()
-    def border_update(_change):
-        tf.system.context_make_current()
-        tf.system.set_scene_box_color(color=tf.FVector3(colorConverter(_change.new))/255)
-        tf.system.context_release()
-    color_picker.observe(border_update, names='value')
-    return color_picker
 
-def fvectorText_set_boarders():
-    fVector1 = default_fvector_text(value= 1)
-    fVector2 = default_fvector_text(value= 1)
-    fVector3 = default_fvector_text(value= 0)
-    style = {'description_width': 'initial'}
-    hbox = widgets.HBox([widgets.Label('Input your fVectors:', style=style), fVector1, fVector2, fVector3])
+def _grid_update(color: tf.FVector3):
+    tf.system.context_make_current()
+    tf.system.set_grid_color(color=color)
+    tf.system.context_release()
 
-    def fVector_update(change):
-        tf.system.context_make_current()
-        tf.system.set_scene_box_color(color=tf.FVector3([fVector1.value, fVector2.value, fVector3.value]))
-        tf.system.context_release()
-    fVector1.observe(fVector_update, names='value')
-    fVector2.observe(fVector_update, names='value')
-    fVector3.observe(fVector_update, names='value')
-    return hbox
 
-def fvectorSlider_set_boarders():
-    fVector1 = default_fvector_slider(value= 1)
-    fVector2 = default_fvector_slider(value= 1)
-    fVector3 = default_fvector_slider(value= 0)
-    style = {'description_width': 'initial'}
-    hbox = widgets.HBox([widgets.Label('Input your fVectors:', style=style), fVector1, fVector2, fVector3])
+def _border_update(color: tf.FVector3):
+    tf.system.context_make_current()
+    tf.system.set_scene_box_color(color=color)
+    tf.system.context_release()
 
-    throttle_interval = 0.05
 
-    def fVector_update(_change):
-        tf.system.context_make_current()
-        tf.system.set_scene_box_color(color=tf.FVector3([fVector1.value, fVector2.value, fVector3.value]))
-        tf.system.context_release()
-    fVector1.observe(fVector_update, names='value')
-    fVector2.observe(fVector_update, names='value')
-    fVector3.observe(fVector_update, names='value')
-    return hbox
+def set_background_picker(show=False,
+                          **kwargs):
+    def_kwargs = dict(
+        value=tfnw.color_inverter(*tf.system.get_background_color().as_list())
+    )
+    def_kwargs.update(kwargs)
+    widget = tfnw.color_picker(_background_update, **def_kwargs)
+    if show:
+        display(widget)
+    return widget
+
+
+def set_background_text(show=False,
+                        label_kwargs: Dict[str, Any] = None,
+                        field_kwargs: Dict[int, Dict[str, Any]] = None):
+    def_label_kwargs = dict(
+        style=dict(
+            description_width='initial'
+        )
+    )
+    if label_kwargs is not None:
+        def_label_kwargs.update(label_kwargs)
+    def_field_kwargs = {i: dict(
+        min=0.0,
+        max=1.0,
+        step=0.01
+    ) for i in range(3)}
+    if field_kwargs is not None:
+        for k, v in field_kwargs.items():
+            def_field_kwargs[k].update(v)
+    label = ipw.Label(LABELTEXT_BACKGROUND, **def_label_kwargs)
+    box, widgets = tfnw.vector_textb(ndim=3,
+                                     dtype=float,
+                                     callback=_background_update,
+                                     initial_values=tf.system.get_background_color().as_list(),
+                                     label=label,
+                                     field_kwargs=def_field_kwargs)
+    if show:
+        display(box)
+    return box, *widgets
+
+
+def set_background_slider(show=False,
+                          label_kwargs: Dict[str, Any] = None,
+                          field_kwargs: Dict[int, Dict[str, Any]] = None):
+    def_label_kwargs = dict(
+        style=dict(
+            description_width='initial'
+        )
+    )
+    if label_kwargs is not None:
+        def_label_kwargs.update(label_kwargs)
+    def_field_kwargs = {i: dict(
+        min=0.0,
+        max=1.0,
+        step=0.01
+    ) for i in range(3)}
+    if field_kwargs is not None:
+        for k, v in field_kwargs.items():
+            def_field_kwargs[k].update(v)
+    label = ipw.Label(LABELTEXT_BACKGROUND, **def_label_kwargs)
+    box, widgets = tfnw.vector_slider(ndim=3,
+                                      dtype=float,
+                                      callback=_background_update,
+                                      initial_values=tf.system.get_background_color().as_list(),
+                                      label=label,
+                                      field_kwargs=def_field_kwargs)
+    if show:
+        display(box)
+    return box, *widgets
+
+
+def set_grid_picker(show=False,
+                    **kwargs):
+    def_kwargs = dict(
+        value=tfnw.color_inverter(*tf.system.get_grid_color().as_list())
+    )
+    def_kwargs.update(kwargs)
+    widget = tfnw.color_picker(_grid_update, **def_kwargs)
+    if show:
+        display(widget)
+    return widget
+
+
+def set_grid_text(show=False,
+                  label_kwargs: Dict[str, Any] = None,
+                  field_kwargs: Dict[int, Dict[str, Any]] = None):
+    def_label_kwargs = dict(
+        style=dict(
+            description_width='initial'
+        )
+    )
+    if label_kwargs is not None:
+        def_label_kwargs.update(label_kwargs)
+    def_field_kwargs = {i: dict(
+        min=0.0,
+        max=1.0,
+        step=0.01
+    ) for i in range(3)}
+    if field_kwargs is not None:
+        for k, v in field_kwargs.items():
+            def_field_kwargs[k].update(v)
+    label = ipw.Label(LABELTEXT_GRID, **def_label_kwargs)
+    box, widgets = tfnw.vector_textb(ndim=3,
+                                     dtype=float,
+                                     callback=_grid_update,
+                                     initial_values=tf.system.get_grid_color().as_list(),
+                                     label=label,
+                                     field_kwargs=def_field_kwargs)
+    if show:
+        display(box)
+    return box, *widgets
+
+
+def set_grid_slider(show=False,
+                    label_kwargs: Dict[str, Any] = None,
+                    field_kwargs: Dict[int, Dict[str, Any]] = None):
+    def_label_kwargs = dict(
+        style=dict(
+            description_width='initial'
+        )
+    )
+    if label_kwargs is not None:
+        def_label_kwargs.update(label_kwargs)
+    def_field_kwargs = {i: dict(
+        min=0.0,
+        max=1.0,
+        step=0.01
+    ) for i in range(3)}
+    if field_kwargs is not None:
+        for k, v in field_kwargs.items():
+            def_field_kwargs[k].update(v)
+    label = ipw.Label(LABELTEXT_GRID, **def_label_kwargs)
+    box, widgets = tfnw.vector_slider(ndim=3,
+                                      dtype=float,
+                                      callback=_grid_update,
+                                      initial_values=tf.system.get_grid_color().as_list(),
+                                      label=label,
+                                      field_kwargs=def_field_kwargs)
+    if show:
+        display(box)
+    return box, *widgets
+
+
+def set_borders_picker(show=False,
+                       **kwargs):
+    def_kwargs = dict(
+        value=tfnw.color_inverter(*tf.system.get_scene_box_color().as_list())
+    )
+    def_kwargs.update(kwargs)
+    widget = tfnw.color_picker(_border_update, **def_kwargs)
+    if show:
+        display(widget)
+    return widget
+
+
+def set_borders_text(show=False,
+                     label_kwargs: Dict[str, Any] = None,
+                     field_kwargs: Dict[int, Dict[str, Any]] = None):
+    def_label_kwargs = dict(
+        style=dict(
+            description_width='initial'
+        )
+    )
+    if label_kwargs is not None:
+        def_label_kwargs.update(label_kwargs)
+    def_field_kwargs = {i: dict(
+        min=0.0,
+        max=1.0,
+        step=0.01
+    ) for i in range(3)}
+    if field_kwargs is not None:
+        for k, v in field_kwargs.items():
+            def_field_kwargs[k].update(v)
+    label = ipw.Label(LABELTEXT_BORDER, **def_label_kwargs)
+    box, widgets = tfnw.vector_textb(ndim=3,
+                                     dtype=float,
+                                     callback=_border_update,
+                                     initial_values=tf.system.get_scene_box_color().as_list(),
+                                     label=label,
+                                     field_kwargs=def_field_kwargs)
+    if show:
+        display(box)
+    return box, *widgets
+
+
+def set_borders_slider(show=False,
+                       label_kwargs: Dict[str, Any] = None,
+                       field_kwargs: Dict[int, Dict[str, Any]] = None):
+    def_label_kwargs = dict(
+        style=dict(
+            description_width='initial'
+        )
+    )
+    if label_kwargs is not None:
+        def_label_kwargs.update(label_kwargs)
+    def_field_kwargs = {i: dict(
+        min=0.0,
+        max=1.0,
+        step=0.01
+    ) for i in range(3)}
+    if field_kwargs is not None:
+        for k, v in field_kwargs.items():
+            def_field_kwargs[k].update(v)
+    label = ipw.Label(LABELTEXT_BORDER, **def_label_kwargs)
+    box, widgets = tfnw.vector_slider(ndim=3,
+                                      dtype=float,
+                                      callback=_border_update,
+                                      initial_values=tf.system.get_scene_box_color().as_list(),
+                                      label=label,
+                                      field_kwargs=def_field_kwargs)
+    if show:
+        display(box)
+    return box, *widgets
