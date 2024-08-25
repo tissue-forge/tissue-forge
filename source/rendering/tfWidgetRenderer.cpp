@@ -673,11 +673,9 @@ HRESULT rendering::WidgetRenderer::setFontSize(const float size) {
 
 HRESULT TissueForge::rendering::WidgetRenderer::setTextColor(Magnum::Ui::Type type, Magnum::Ui::Style style, Magnum::Ui::State state, const Magnum::Color4 &color)
 {
-    WIDGETRENDERER_GETUI(ui, E_FAIL);
-
     if (_checkColorValues(color) != S_OK) {
         tf_error(E_FAIL, "Text Color is out of acceptable range. (i.e., Enter a string or RGB value or vector3f/4f.)");
-        
+        // std::cout << "Here\n";
         return E_FAIL; // One of the color values was out of range
     }
     
@@ -685,7 +683,7 @@ HRESULT TissueForge::rendering::WidgetRenderer::setTextColor(Magnum::Ui::Type ty
     textColor = color;
     // Magnum::Color4 test = normalizeColor(color.r(), color.g(), color.b(), color.a());
     // std::cout << "Normalized text color to: r = " << test.r() << ", g = " << test.g() << ", b = " << test.b() << ", a = " << test.a() << "\n";
-    
+    WIDGETRENDERER_GETUI(ui, E_FAIL);
     ui->setTextColor(type, style, state, color);
     return S_OK;
 }
@@ -696,11 +694,11 @@ HRESULT TissueForge::rendering::WidgetRenderer::setBackgroundColor(Magnum::Ui::T
     WIDGETRENDERER_GETUI(ui, E_FAIL);
 
     //std::cout << "Inside setBackgroundColor with values: r = " << color.r() << ", g = " << color.g() << ", b = " << color.b() << ", a = " << color.a() << "\n";
-
     if (_checkColorValues(color) != S_OK) {
         
         TF_Log(LOG_ERROR) << "Problematic input: " << color.r() << ", " << color.g() << ", " << color.b() << ", " << color.a() << " " <<
                             "Background Color is out of acceptable range. (i.e., Enter a string or RGB value or vector3f/4f.)";
+        // std::cout << "HERE/n";
         return E_FAIL; // One of the color values was out of range
     }
     backgroundColor = color;
@@ -715,10 +713,8 @@ HRESULT TissueForge::rendering::WidgetRenderer::setTextColor(const std::string &
     Magnum::Color3 color = util::Color3_Parse(colorName); // Convert color name to Magnum::Color3
 
     Magnum::Color4 color4 = Magnum::Color4(color, 1.0f); // Convert to Color4 if necessary
-    setTextColor(type, style, states, color4);
     
-
-    return S_OK;
+    return setTextColor(type, style, states, color4);;
 }
 
 HRESULT TissueForge::rendering::WidgetRenderer::setTextColor(float r, float g, float b, float a)
@@ -727,8 +723,8 @@ HRESULT TissueForge::rendering::WidgetRenderer::setTextColor(float r, float g, f
     Magnum::Color4 color(r, g, b, a);
 
     // Call the original setTextColor function with the constructed color
-    setTextColor(type, style, states, color);
-    return S_OK;
+    
+    return setTextColor(type, style, states, color);;
 }
 
 // Function to set text color with Magnum::Vector3 (RGB)
@@ -737,16 +733,16 @@ HRESULT rendering::WidgetRenderer::setTextColor(const TissueForge::FVector3& col
     Magnum::Math::Vector4<float> color4(color[0], color[1], color[2], 1.0f);
     
     // Proceed with setting the color
-    setTextColor(color4);
-    return S_OK;
+
+    return setTextColor(color4);;
 }
 
 // Function to set text color with Magnum::Vector4 (RGBA)
 HRESULT rendering::WidgetRenderer::setTextColor(const TissueForge::FVector4& color) {
     
     Magnum::Math::Vector4<float> color4(color[0], color[1], color[2], color[3]);
-    setTextColor(color4);
-    return S_OK;
+    
+    return setTextColor(color4);;
 }
 
 HRESULT rendering::WidgetRenderer::setBackgroundColor(const std::string &colorName)
@@ -755,9 +751,7 @@ HRESULT rendering::WidgetRenderer::setBackgroundColor(const std::string &colorNa
 
     Magnum::Color4 color4 = Magnum::Color4(color, 1.0f); 
     
-    setBackgroundColor(type, style, states, color4);
-    
-    return S_OK;
+    return setBackgroundColor(type, style, states, color4);
 }
 
 
@@ -767,26 +761,21 @@ HRESULT TissueForge::rendering::WidgetRenderer::setBackgroundColor(float r, floa
     
     Magnum::Color4 color(r , g , b , a);
 
-    setBackgroundColor(type, style, states, color);
-    return S_OK;
+    return setBackgroundColor(type, style, states, color);
 }
 
 HRESULT rendering::WidgetRenderer::setBackgroundColor(const TissueForge::FVector3& color) {
     
     Magnum::Math::Vector4<float> color4(color[0], color[1], color[2], 1.0f);
 
-    setBackgroundColor(color4);
-    
-    return S_OK;
+    return setBackgroundColor(color4);
 }
 
 HRESULT rendering::WidgetRenderer::setBackgroundColor(const TissueForge::FVector4& color) {
 
     Magnum::Math::Vector4<float> color4(color[0], color[1], color[2], color[3]);
 
-    setBackgroundColor(color4);
-
-    return S_OK;
+    return setBackgroundColor(color4);;
 }
 
 // Getters

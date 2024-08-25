@@ -118,7 +118,7 @@ tf.bind.force(rforce, B)
 
 tf.system.show_widget_time()
 tf.system.show_widget_particle_number()
-tf.system.show_widget_bond_number()
+# tf.system.show_widget_bond_number()
 
 idx_noise = tf.system.add_widget_output_float(rforce.std, 'Noise')
 
@@ -177,6 +177,5 @@ tf.system.set_widget_font_size(15)
 tf.Logger.enableConsoleLogging(tf.Logger.ERROR)
 
 tf.system.set_widget_text_color('RED')
-tf.system.set_widget_background_color("BLUE")
- 
+tf.system.set_widget_background_color("blue")
 tf.run()

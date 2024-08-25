@@ -1773,5 +1773,5 @@ TissueForge::FVector4 system::getWidgetBackgroundColor()
      TF_Log(LOG_ERROR) << "The renderer is not avaible.";
      return TissueForge::FVector4();
     }
-    return renderer->getTextColor();
+    return renderer->getBackgroundColor();
 }
