@@ -19,7 +19,7 @@ Tissue Forge is a native compiled C++ shared library that's designed to be used 
 and simulation specification in compiled C++ code. Tissue Forge includes extensive C, C++ and 
 Python APIs and additional support for interactive model and simulation specification in 
 an IPython console and a Jupyter Notebook. 
-Tissue Forge currently supports installations on 64-bit Windows, Linux and MacOS systems. 
+Tissue Forge currently supports installations on 64-bit Windows, Linux and MacOS, and arm64 MacOS. 
 
 ## Build Status ##
 

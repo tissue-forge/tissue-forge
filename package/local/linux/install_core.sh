@@ -1,8 +1,10 @@
 #!/bin/bash
 
-if [[ ! -d "${TFENV}" ]]; then
+if [ ! -d "${TFENV}" ]; then
+    echo "Environment not found (TFENV=${TFENV})"
     exit 1
-elif [[ ! -d "${TFSRCDIR}" ]]; then
+elif [ ! -d "${TFSRCDIR}" ]; then
+    echo "Source not found (TFSRCDIR=${TFSRCDIR})"
     exit 2
 fi
 

@@ -13,7 +13,7 @@ about:
   doc_url: https://tissue-forge.readthedocs.io/en/latest/
 
 extra:
-  maintainers: T.J. Sego
+  maintainers: tjsego
 
 source:
   path: ../../../

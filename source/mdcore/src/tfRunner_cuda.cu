@@ -33,9 +33,6 @@
 #include <limits.h>
 #include <unordered_map>
 
-/* Include headers for overloaded vector functions. */
-#include "cutil_math.h"
-
 #include <cuda_runtime.h>
 
 /* Include some conditional headers. */

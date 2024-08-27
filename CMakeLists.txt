@@ -353,9 +353,9 @@ add_subdirectory(package)
 
 set(
   TF_INFO_FILES
-  README.md 
+  README.md
+  CONTRIBUTORS.md
   COPYING.txt 
-  COPYING.LESSER.txt
   LICENSE.txt 
   VERSION.txt 
 )

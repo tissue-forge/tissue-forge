@@ -14,6 +14,11 @@ fi
 
 source ${this_dir}/${subdir}/install_vars.sh
 
+if [ ! -d "${TFSRCDIR}" ]; then 
+    echo "Source directory not found (TFSRCDIR=${TFSRCDIR})"
+    exit 1
+fi
+
 bash ${TFSRCDIR}/package/local/${subdir}/install_env.sh
 
 source ${TFCONDAENV}
