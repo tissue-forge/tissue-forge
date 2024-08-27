@@ -4,7 +4,10 @@ set current_dir=%cd%
 
 call %~dp0win\install_vars
 
-if not exist "%TFSRCDIR%" exit 1
+if not exist "%TFSRCDIR%" (
+    echo Source directory not found (TFSRCDIR="%TFSRCDIR%")
+    exit 1
+)
 
 call %TFSRCDIR%\package\local\win\install_env
 

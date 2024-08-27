@@ -1,8 +1,10 @@
 #!/bin/bash
 
-if [[ ! -d "${TFENV}" ]]; then
+if [ ! -d "${TFENV}" ]; then
+    echo "Environment not found (TFENV=${TFENV})"
     exit 1
-elif [[ ! -d "${TFSRCDIR}" ]]; then
+elif [ ! -d "${TFSRCDIR}" ]; then
+    echo "Source not found (TFSRCDIR=${TFSRCDIR})"
     exit 2
 fi
 
@@ -16,12 +18,13 @@ cd ${TFBUILDDIR}
 export MACOSX_DEPLOYMENT_TARGET=${TFOSX_SYSROOT}
 export CONDA_BUILD_SYSROOT="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${TFOSX_SYSROOT}.sdk"
 
-if [[ ! -d "${CONDA_BUILD_SYSROOT}" ]]; then
+if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
     export CONDA_BUILD_SYSROOT="$(xcrun --sdk macosx${TFOSX_SYSROOT} --show-sdk-path)"
 fi
 
-if [[ ! -d "${CONDA_BUILD_SYSROOT}" ]]; then
+if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
     echo "SDK not found"
+    echo "Likely, TFOSX_SYSROOT was not correctly set"
     exit 3
 fi
 
@@ -35,6 +38,7 @@ CMAKE_CONFIG_ARGS+=(-DPython_EXECUTABLE:PATH=${TFENV}/bin/python)
 CMAKE_CONFIG_ARGS+=(-DLIBXML_INCLUDE_DIR:PATH=${TFENV}/include/libxml2)
 
 if [[ $(uname -m) == 'arm64' ]]; then
+    CMAKE_CONFIG_ARGS+=(-DCMAKE_APPLE_SILICON_PROCESSOR:STRING=arm64)
     CMAKE_CONFIG_ARGS+=(-DTF_ENABLE_AVX:BOOL=OFF)
     CMAKE_CONFIG_ARGS+=(-DTF_ENABLE_SSE4:BOOL=OFF)
 fi

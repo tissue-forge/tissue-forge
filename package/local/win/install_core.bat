@@ -1,7 +1,12 @@
 @echo off
 
-if not exist "%TFSRCDIR%" exit 1
-if not exist "%TFENV%" exit 2
+if not exist "%TFENV%" (
+      echo "Environment not found (TFENV=%TFENV%)"
+      exit 1
+) else if not exist "%TFSRCDIR%" (
+      echo "Source not found (TFSRCDIR=%TFSRCDIR%)"
+      exit 2
+)
 
 set current_dir=%cd%
 

@@ -27,8 +27,6 @@
 #include <tf_cuda.h>
 #include <tfTaskScheduler.h>
 
-#include "cutil_math.h"
-
 
 using namespace TissueForge;
 
