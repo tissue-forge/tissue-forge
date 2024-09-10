@@ -60,12 +60,24 @@ size = 100
 
 # uniform random cube
 positions = np.random.uniform(low=0, high=10, size=(size, 3))
-velocities = np.random.normal(0, 0.1, size=(size,3))
+velocities = np.random.normal(0, 0.1, size=(size, 3))
 
 for (pos, vel) in zip(positions, velocities):
     # calling the particle constructor implicitly adds
     # the particle to the universe
     Argon(pos, vel)
+
+
+# Add interactive control of temperature
+@tf.event.on_keypress
+def key_cb(e: tf.event.KeyEvent):
+    if e.key_name == '+':
+        tf.Universe.temperature += 1
+        print('Temperature:', tf.Universe.temperature)
+    elif e.key_name == '-':
+        tf.Universe.temperature = max(tf.Universe.temperature - 1, 1E-6)
+        print('Temperature:', tf.Universe.temperature)
+
 
 # run the simulator interactive
 tf.run()

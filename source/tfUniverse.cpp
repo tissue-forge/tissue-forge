@@ -262,6 +262,12 @@ FloatP_t Universe::getTemperature() {
     TF_UNIVERSE_FINALLY(0);
 }
 
+HRESULT Universe::setTemperature(const FloatP_t& _temp) {
+    TF_UNIVERSE_TRY();
+    return engine_set_temperature(&_Engine, _temp);
+    TF_UNIVERSE_FINALLY(0);
+}
+
 FloatP_t Universe::getTime() {
     TF_UNIVERSE_TRY();
     return _Engine.time * _Engine.dt;

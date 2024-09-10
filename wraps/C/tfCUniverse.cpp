@@ -181,6 +181,12 @@ HRESULT tfUniverse_getTemperature(tfFloatP_t *temperature) {
     return S_OK;
 }
 
+HRESULT tfUniverse_setTemperature(tfFloatP_t temperature) {
+    TFC_UNIVERSE_STATIC_GET()
+    univ->setTemperature(temperature);
+    return S_OK;
+}
+
 HRESULT tfUniverse_getTime(tfFloatP_t *time) {
     TFC_UNIVERSE_STATIC_GET()
     TFC_PTRCHECK(time);

@@ -1929,6 +1929,17 @@ FPTYPE TissueForge::engine_temperature(struct engine *e)
     return e->temperature;
 }
 
+HRESULT TissueForge::engine_set_temperature(struct engine *e, FPTYPE t) 
+{
+	if (t <= FPTYPE_ZERO) {
+		return error(MDCERR_range);
+	}
+
+	e->temperature = t;
+
+	return S_OK;
+}
+
 HRESULT TissueForge::engine_addpart(struct engine *e, struct Particle *p, FPTYPE *x,
         struct Particle **result)
 {
