@@ -1046,6 +1046,10 @@ namespace TissueForge {
 
 	CAPI_FUNC(HRESULT) engine_set_temperature(struct engine *e, FPTYPE t);
 
+	CAPI_FUNC(FPTYPE) engine_boltzmann(struct engine* e);
+
+	CAPI_FUNC(HRESULT) engine_set_boltzmann(struct engine* e, FPTYPE k);
+
 	#ifdef WITH_MPI
 
 	/**

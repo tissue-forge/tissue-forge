@@ -268,6 +268,18 @@ HRESULT Universe::setTemperature(const FloatP_t& _temp) {
     TF_UNIVERSE_FINALLY(0);
 }
 
+FloatP_t Universe::getBoltzmann() {
+    TF_UNIVERSE_TRY();
+    return engine_boltzmann(&_Engine);
+    TF_UNIVERSE_FINALLY(0);
+}
+
+HRESULT Universe::setBoltzmann(const FloatP_t& k) {
+    TF_UNIVERSE_TRY();
+    return engine_set_boltzmann(&_Engine, k);
+    TF_UNIVERSE_FINALLY(0);
+}
+
 FloatP_t Universe::getTime() {
     TF_UNIVERSE_TRY();
     return _Engine.time * _Engine.dt;

@@ -1940,6 +1940,22 @@ HRESULT TissueForge::engine_set_temperature(struct engine *e, FPTYPE t)
 	return S_OK;
 }
 
+FPTYPE TissueForge::engine_boltzmann(struct engine* e) 
+{
+	return e->K;
+}
+
+HRESULT TissueForge::engine_set_boltzmann(struct engine* e, FPTYPE k) 
+{
+	if (k <= FPTYPE_ZERO) {
+		return error(MDCERR_range);
+	}
+
+	e->K = k;
+
+	return S_OK;
+}
+
 HRESULT TissueForge::engine_addpart(struct engine *e, struct Particle *p, FPTYPE *x,
         struct Particle **result)
 {

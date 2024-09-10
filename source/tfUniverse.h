@@ -190,6 +190,18 @@ namespace TissueForge {
         static HRESULT setTemperature(const FloatP_t& _temp);
 
         /**
+         * @brief Get the Boltzmann constant
+         */
+        static FloatP_t getBoltzmann();
+
+        /**
+         * @brief Set the Boltzmann constant
+         * 
+         * @param k Boltzmann constant; must be greater than zero
+         */
+        static HRESULT setBoltzmann(const FloatP_t& k);
+
+        /**
          * @brief Get the current time
          */
         static FloatP_t getTime();
