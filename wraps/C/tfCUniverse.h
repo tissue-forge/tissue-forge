@@ -198,6 +198,14 @@ CAPI_FUNC(HRESULT) tfUniverse_resetSpecies();
 CAPI_FUNC(HRESULT) tfUniverse_getTemperature(tfFloatP_t *temperature);
 
 /**
+ * @brief Set the universe temperature. 
+ * 
+ * @param temperature temperature; must be greater than zero
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverse_setTemperature(tfFloatP_t temperature);
+
+/**
  * @brief Get the current time
  * 
  * @param time 

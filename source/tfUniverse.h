@@ -183,6 +183,13 @@ namespace TissueForge {
         static FloatP_t getTemperature();
 
         /**
+         * @brief Set the universe temperature
+         * 
+         * @param _temp temperature; must be greater than zero
+         */
+        static HRESULT setTemperature(const FloatP_t& _temp);
+
+        /**
          * @brief Get the current time
          */
         static FloatP_t getTime();

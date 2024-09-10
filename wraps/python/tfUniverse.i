@@ -42,6 +42,10 @@
             """
             return _tfUniverse.getTemperature()
 
+        @temperature.setter
+        def temperature(self, _val: float):
+            _tfUniverse.setTemperature(_val)
+
         @property
         def time(self):
             """
