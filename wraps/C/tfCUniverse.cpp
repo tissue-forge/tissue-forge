@@ -183,8 +183,19 @@ HRESULT tfUniverse_getTemperature(tfFloatP_t *temperature) {
 
 HRESULT tfUniverse_setTemperature(tfFloatP_t temperature) {
     TFC_UNIVERSE_STATIC_GET()
-    univ->setTemperature(temperature);
+    return univ->setTemperature(temperature);;
+}
+
+HRESULT tfUniverse_getBoltzmann(tfFloatP_t* k) {
+    TFC_UNIVERSE_STATIC_GET()
+    TFC_PTRCHECK(k);
+    *k = univ->getBoltzmann();
     return S_OK;
+}
+
+HRESULT tfUniverse_setBoltzmann(tfFloatP_t k) {
+    TFC_UNIVERSE_STATIC_GET()
+    return univ->setBoltzmann(k);
 }
 
 HRESULT tfUniverse_getTime(tfFloatP_t *time) {

@@ -47,6 +47,17 @@
             _tfUniverse.setTemperature(_val)
 
         @property
+        def boltzmann(self):
+            """
+            Boltzmann constant
+            """
+            return _tfUniverse.getBoltzmann()
+
+        @boltzmann.setter
+        def boltzmann(self, _val: float):
+            _tfUniverse.setBoltzmann(_val)
+
+        @property
         def time(self):
             """
             Current time

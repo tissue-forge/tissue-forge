@@ -206,6 +206,22 @@ CAPI_FUNC(HRESULT) tfUniverse_getTemperature(tfFloatP_t *temperature);
 CAPI_FUNC(HRESULT) tfUniverse_setTemperature(tfFloatP_t temperature);
 
 /**
+ * @brief Get the Boltzmann constant
+ * 
+ * @param k
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverse_getBoltzmann(tfFloatP_t* k);
+
+/**
+ * @brief Set the Boltzmann constant
+ * 
+ * @param k Boltzmann constant; must be greater than zero
+ * @return S_OK on success
+ */
+CAPI_FUNC(HRESULT) tfUniverse_setBoltzmann(tfFloatP_t k);
+
+/**
  * @brief Get the current time
  * 
  * @param time 
