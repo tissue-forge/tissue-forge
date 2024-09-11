@@ -44,7 +44,12 @@ if(NOT UNIX AND NOT CYGWIN)
     set(MISC_PREFIX "./share/sbml" PARENT_SCOPE)
   endfunction()
 
-  variable_watch(MISC_PREFIX libsbml_doc_change)
+  # Watching LIBSBML_LIBRARY instead of MISC_PREFIX, since variable_watch incorrectly 
+  # interprets escape characters and libsbml sets LIBSBML_LIBRARY after setting MISC_PREFIX.
+  # For more information, see https://gitlab.kitware.com/cmake/cmake/-/issues/20891.
+  # When updating libsbml, ensure that changes to the build don't make this hack obsolete. 
+  # variable_watch(MISC_PREFIX libsbml_doc_change)
+  variable_watch(LIBSBML_LIBRARY libsbml_doc_change)
 endif()
 
 add_subdirectory(libsbml)
