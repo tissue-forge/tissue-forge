@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfBindForce(&force_rnd_base, &BeadType));
 
     unsigned int numBeads = 80;
-    tfFloatP_t xx[numBeads];
+    tfFloatP_t xx[80];
     xx[0] = 4.0;
     for(unsigned int i = 1; i < numBeads; i++) {
         xx[i] = xx[i - 1] + 0.15;
