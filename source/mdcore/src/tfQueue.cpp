@@ -48,7 +48,9 @@
 #include <tfQueue.h>
 #include <tfError.h>
 
+#if !defined(_MSC_VER)
 #pragma clang diagnostic ignored "-Wwritable-strings"
+#endif
 
 
 using namespace TissueForge;

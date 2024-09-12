@@ -26,7 +26,9 @@
 #include <string.h>
 #include <math.h>
 
+#if !defined(_MSC_VER)
 #pragma clang diagnostic ignored "-Wwritable-strings"
+#endif
 
 
 /* macro to algin memory sizes to a multiple of cell_partalign. */

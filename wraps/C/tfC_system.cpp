@@ -37,7 +37,7 @@ HRESULT tfSystem_imageData(char **imgData, size_t *imgSize) {
 }
 
 HRESULT tfSystem_screenshot(const char *filePath) {
-    return tfSystem_screenshot(filePath);
+    return system::screenshot(filePath);
 }
 
 HRESULT tfSystem_screenshotS(const char *filePath, bool decorate, float *bgcolor) {

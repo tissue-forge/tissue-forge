@@ -125,7 +125,7 @@ std::string Universe::getName() {
     TF_UNIVERSE_FINALLY("");
 }
 
-FMatrix3 *Universe::virial(FVector3 *origin, FloatP_t *radius, std::vector<ParticleType*> *types) {
+FMatrix3 Universe::virial(FVector3 *origin, FloatP_t *radius, std::vector<ParticleType*> *types) {
     try {
         FVector3 _origin = origin ? *origin : Universe::getCenter();
         FloatP_t _radius = radius ? *radius : 2 * _origin.max();
@@ -142,15 +142,15 @@ FMatrix3 *Universe::virial(FVector3 *origin, FloatP_t *radius, std::vector<Parti
                 typeIds.insert(i);
         }
 
-        FMatrix3 *m;
-        if(SUCCEEDED(metrics::calculateVirial(_origin.data(), _radius, typeIds, m->data()))) {
+        FMatrix3 m;
+        if(SUCCEEDED(metrics::calculateVirial(_origin.data(), _radius, typeIds, m.data()))) {
             return m;
         }
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
     }
-    return NULL;
+    return FMatrix3();
 }
 
 HRESULT Universe::step(const FloatP_t &until, const FloatP_t &dt) {

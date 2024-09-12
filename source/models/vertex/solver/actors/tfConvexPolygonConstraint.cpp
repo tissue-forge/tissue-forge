@@ -64,7 +64,7 @@ static inline bool ConvexPolygonConstraint_acts(const Vertex *vc, const Surface 
 }
 
 FloatP_t ConvexPolygonConstraint::energy(const Surface *source, const Vertex *target) {
-    FloatP_t e;
+    FloatP_t e = 0.0;
     FVector3 rel_c2ab;
     if(ConvexPolygonConstraint_acts(target, source, rel_c2ab)) 
         e += target->getCachedParticleMass() / _Engine.dt * lam / 2.0 * rel_c2ab.dot();

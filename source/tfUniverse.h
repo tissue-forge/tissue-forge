@@ -101,7 +101,7 @@ namespace TissueForge {
          * @param radius An optional number specifying the size of the region to compute the virial tensor for. Defaults to the entire simulation domain.
          * @param types An optional list of :class:`Particle` types to include in the calculation. Defaults to every particle type.
          */
-        static FMatrix3 *virial(FVector3 *origin=NULL, FloatP_t *radius=NULL, std::vector<ParticleType*> *types=NULL);
+        static FMatrix3 virial(FVector3 *origin=NULL, FloatP_t *radius=NULL, std::vector<ParticleType*> *types=NULL);
 
         /** Center of the universe */
         static FVector3 getCenter();
