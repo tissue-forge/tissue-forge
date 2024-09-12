@@ -36,9 +36,19 @@ set(LIBSBML_ROOT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libsbml" CACHE PATH "Pa
 
 set(LIBSBML_ROOT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libsbml" CACHE PATH "Path to the libSBML root build directory" FORCE)
 
-set(LIBSBML_SKIP_SHARED_LIBRARY "ON")
+set(LIBSBML_SKIP_SHARED_LIBRARY ON)
 
 set(LIBSBML_SKIP_STATIC_LIBRARY OFF)
+
+# Force libraries produced by libsbml
+function(libsbml_lib_shared_overwrite variable access value current stack)
+  set(LIBSBML_SKIP_SHARED_LIBRARY ON PARENT_SCOPE)
+endfunction()
+function(libsbml_lib_static_overwrite variable access value current stack)
+  set(LIBSBML_SKIP_STATIC_LIBRARY OFF PARENT_SCOPE)
+endfunction()
+variable_watch(LIBSBML_SKIP_SHARED_LIBRARY libsbml_lib_shared_overwrite)
+variable_watch(LIBSBML_SKIP_STATIC_LIBRARY libsbml_lib_static_overwrite)
 
 # If necessary, confine doc files to share, rather than in install root
 if(NOT UNIX AND NOT CYGWIN)
