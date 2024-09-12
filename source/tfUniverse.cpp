@@ -92,6 +92,13 @@ struct engine* TissueForge::engine_get()
         tf_exp(e); return retval; \
     }
 
+
+#define TF_UNIVERSE_FINALLY_VOID() \
+    } \
+    catch(const std::exception &e) { \
+        tf_exp(e); return ; \
+    }
+
 UniverseConfig::UniverseConfig() :
     dim {10, 10, 10},
     spaceGridSize {4, 4, 4},
@@ -206,7 +213,7 @@ void Universe::resetSpecies() {
     // redraw, state changed. 
     Simulator::get()->redraw();
     
-    TF_UNIVERSE_FINALLY();
+    TF_UNIVERSE_FINALLY_VOID();
 }
 
 std::vector<std::vector<std::vector<ParticleList> > > Universe::grid(iVector3 shape) {
