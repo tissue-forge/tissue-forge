@@ -33,7 +33,9 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
-source ${TFCONDAENV}
+if [ ! "${TFENVNEEDSCONDA+x}" ]; then
+    source ${TFCONDAENV}
+fi
 
 # Install CUDA support if requested
 if [ -z "${TF_WITHCUDA+x}" ]; then
