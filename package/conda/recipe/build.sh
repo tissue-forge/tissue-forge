@@ -1,9 +1,34 @@
 #!/bin/bash
 
+if [[ $(uname) == Darwin ]]; then
+    echo "*TF* *******************************************"
+    echo "*TF* Launching Tissue Forge conda build for OSX"
+    echo "*TF* *******************************************"
+else
+    echo "*TF* ********************************************"
+    echo "*TF* Launching Tissue Forge conda build for Linux"
+    echo "*TF* ********************************************"
+fi
+
 TFBUILD_CONFIG=Release
 
 export TFPACKAGELOCALOFF=1
 export TFPACKAGECONDA=1
+
+echo "*TF* Executing Tissue Forge local build with the following parameters "
+echo "*TF* TFBUILD_CONFIG ${TFBUILD_CONFIG}"
+echo "*TF* TFPACKAGELOCALOFF ${TFPACKAGELOCALOFF}"
+echo "*TF* TFPACKAGECONDA ${TFPACKAGECONDA}"
+echo "*TF* PREFIX ${PREFIX}"
+echo "*TF* SRC_DIR ${SRC_DIR}"
+if [[ $(uname) == Darwin ]]; then
+  echo "*TF* TFOSX_SYSROOT ${TFOSX_SYSROOT}"
+  echo "*TF* CONDA_BUILD_SYSROOT ${CONDA_BUILD_SYSROOT}"
+  echo "*TF* TF_OSXARM64 ${TF_OSXARM64}"
+else 
+  echo "*TF* CONDA_PREFIX ${CONDA_PREFIX}"
+fi
+echo "*TF* ****************************************************************"
 
 mkdir -p -v tf_build_conda
 cd tf_build_conda
@@ -36,8 +61,18 @@ else
   export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}
 fi
 
+echo "*TF* ****************************************************************"
+
 cmake -G "Ninja" \
       "${CMAKE_CONFIG_ARGS[@]}" \
       "${SRC_DIR}"
+if [ $? -ne 0 ]; then 
+    echo "*TF* Something went wrong with configuring the build ($?)."
+    exit $?
+fi
 
 cmake --build . --config ${TFBUILD_CONFIG} --target install
+if [ $? -ne 0 ]; then 
+    echo "*TF* Something went wrong with the build ($?)."
+    exit $?
+fi

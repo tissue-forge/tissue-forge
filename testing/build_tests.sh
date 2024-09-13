@@ -1,12 +1,24 @@
 #!/bin/bash
 
+if [[ $(uname) == Darwin ]]; then
+    echo "*TF* *******************************************"
+    echo "*TF* Launching Tissue Forge tests build for OSX"
+    echo "*TF* *******************************************"
+else
+    echo "*TF* ********************************************"
+    echo "*TF* Launching Tissue Forge tests build for Linux"
+    echo "*TF* ********************************************"
+fi
+
 current_dir=$(pwd)
 
 this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" ; pwd -P )"
 
-if [[ ! -d "${TFENV}" ]]; then
+if [ ! -d "${TFENV}" ]; then
+    echo "*TF* Environment not found (TFENV=${TFENV})"
     exit 1
-elif [[ ! -d "${TFINSTALLDIR}" ]]; then
+elif [ ! -d "${TFINSTALLDIR}" ]; then
+    echo "*TF* Installation not found (TFINSTALLDIR=${TFINSTALLDIR})"
     exit 1
 fi
 
@@ -33,7 +45,15 @@ cmake -G "Ninja" \
       "${CMAKE_CONFIG_ARGS[@]}" \
       -S . \
       -B "${TFTESTS_BUILDDIR}"
+if [ $? -ne 0 ]; then 
+    echo "*TF* Something went wrong with configuring the build ($?)."
+    exit $?
+fi
 
 cmake --build "${TFTESTS_BUILDDIR}" --config ${TFBUILD_CONFIG}
+if [ $? -ne 0 ]; then 
+    echo "*TF* Something went wrong with the build ($?)."
+    exit $?
+fi
 
 cd ${current_dir}
