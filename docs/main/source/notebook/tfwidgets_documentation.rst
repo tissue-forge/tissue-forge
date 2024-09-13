@@ -38,7 +38,7 @@ Currently, these background color changer tools cannot be linked by default. Thi
     tf.notebook.set_background_slider(show=True)
 
     # Create a Jupyter widget to modify the background color using text boxes and constraint permissible colors
-    tf.notebook.fvectorText_set_background(show=True, field_kwargs={0: dict(min=0.5)})
+    tf.notebook.set_background_text(show=True, field_kwargs={0: dict(min=0.5)})
 
 
 .. _gridcolorchangertools:
