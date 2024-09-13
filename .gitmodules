@@ -13,4 +13,4 @@
 [submodule "extern/libsbml"]
 	path = extern/libsbml
 	url = https://github.com/sbmlteam/libsbml.git
-	hexsha = 118ffbf11f1a5245cc544c1eac71019d979ecb20
+	hexsha = eb2ded9ef39d2e810bab4041e6ef5e21be076362

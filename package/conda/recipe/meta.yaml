@@ -30,7 +30,7 @@ requirements:
     - python={{ TF_PYVER }} # [TF_PYVER!=0]
     - numpy
     - bzip2
-    - libxml2<=2.11
+    - libxml2
     - assimp=5
     - nlohmann_json
     - eigen

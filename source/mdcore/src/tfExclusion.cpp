@@ -50,7 +50,9 @@
 #include <tfEngine.h>
 #include <tfExclusion.h>
 
+#if !defined(_MSC_VER)
 #pragma clang diagnostic ignored "-Wwritable-strings"
+#endif
 
 
 using namespace TissueForge;

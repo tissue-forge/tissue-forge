@@ -36,7 +36,19 @@ set(LIBSBML_ROOT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libsbml" CACHE PATH "Pa
 
 set(LIBSBML_ROOT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libsbml" CACHE PATH "Path to the libSBML root build directory" FORCE)
 
-set(LIBSBML_SKIP_SHARED_LIBRARY "ON")
+set(LIBSBML_SKIP_SHARED_LIBRARY ON)
+
+set(LIBSBML_SKIP_STATIC_LIBRARY OFF)
+
+# Force libraries produced by libsbml
+function(libsbml_lib_shared_overwrite variable access value current stack)
+  set(LIBSBML_SKIP_SHARED_LIBRARY ON PARENT_SCOPE)
+endfunction()
+function(libsbml_lib_static_overwrite variable access value current stack)
+  set(LIBSBML_SKIP_STATIC_LIBRARY OFF PARENT_SCOPE)
+endfunction()
+variable_watch(LIBSBML_SKIP_SHARED_LIBRARY libsbml_lib_shared_overwrite)
+variable_watch(LIBSBML_SKIP_STATIC_LIBRARY libsbml_lib_static_overwrite)
 
 # If necessary, confine doc files to share, rather than in install root
 if(NOT UNIX AND NOT CYGWIN)
@@ -44,7 +56,12 @@ if(NOT UNIX AND NOT CYGWIN)
     set(MISC_PREFIX "./share/sbml" PARENT_SCOPE)
   endfunction()
 
-  variable_watch(MISC_PREFIX libsbml_doc_change)
+  # Watching LIBSBML_LIBRARY instead of MISC_PREFIX, since variable_watch incorrectly 
+  # interprets escape characters and libsbml sets LIBSBML_LIBRARY after setting MISC_PREFIX.
+  # For more information, see https://gitlab.kitware.com/cmake/cmake/-/issues/20891.
+  # When updating libsbml, ensure that changes to the build don't make this hack obsolete. 
+  # variable_watch(MISC_PREFIX libsbml_doc_change)
+  variable_watch(LIBSBML_LIBRARY libsbml_doc_change)
 endif()
 
 add_subdirectory(libsbml)

@@ -74,7 +74,9 @@
 #include <tfError.h>
 #include <iostream>
 
+#if !defined(_MSC_VER)
 #pragma clang diagnostic ignored "-Wwritable-strings"
+#endif
 
 
 using namespace TissueForge;
@@ -255,7 +257,7 @@ HRESULT TissueForge::engine_verlet_update(struct engine *e) {
 		std::vector<FPTYPE> wmaxdx(s->nr_real);
 		auto func = [&](int _cid) {
 			wmaxdx[_cid] = 0;
-			FPTYPE _dx;
+			FPTYPE _dx = 0.0;
             space_cell *_c = &(s->cells[s->cid_real[_cid]]);
             for(int _pid = 0 ; _pid < _c->count ; _pid++) {
                 Particle *_p = &(_c->parts[_pid]);
