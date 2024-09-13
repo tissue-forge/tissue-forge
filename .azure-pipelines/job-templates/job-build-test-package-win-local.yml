@@ -52,7 +52,6 @@ jobs:
           call $(SOURCE_DIR)\package\local\win\install_vars
           call activate %TFENV%
           conda install -y pytest
-          call conda list
           call $(SOURCE_DIR)\testing\build_tests
           call $(INSTALL_DIR)\etc\vars
           call $(SOURCE_DIR)\testing\run_tests
