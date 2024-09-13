@@ -38,7 +38,8 @@ if has_cuda:
 
 if system.is_jupyter_notebook():
     from . import jwidget
-    __all__.append('jwidget')
+    from . import notebook
+    __all__.extend(['jwidget', 'notebook'])
     show = jwidget.show
 
 if system.is_terminal_interactive():
