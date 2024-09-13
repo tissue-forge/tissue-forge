@@ -35,7 +35,7 @@ jobs:
           conda create --yes --prefix %TFENV%
           conda env update --prefix %TFENV% --file %TFSRCDIR%\package\local\win\env.yml
           call activate %TFENV%
-          conda install -y python=$(PY_VERSION_DEC)
+          conda install -y pytest python=$(PY_VERSION_DEC)
         displayName: Conda setup
       
       # Build
@@ -51,7 +51,6 @@ jobs:
       - script: |
           call $(SOURCE_DIR)\package\local\win\install_vars
           call activate %TFENV%
-          conda install -y pytest
           call $(SOURCE_DIR)\testing\build_tests
           call $(INSTALL_DIR)\etc\vars
           call $(SOURCE_DIR)\testing\run_tests
