@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "${TFENVNEEDSCONDA+x}" ]; then
+if [ ! -z "${TFENVNEEDSCONDA+x}" ]; then
     echo "*TF* Using conda at ${TFCONDAENV}"
 
     source ${TFCONDAENV}

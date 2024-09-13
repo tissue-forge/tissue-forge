@@ -33,7 +33,7 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
-if [ ! "${TFENVNEEDSCONDA+x}" ]; then
+if [ ! -z "${TFENVNEEDSCONDA+x}" ]; then
     source ${TFCONDAENV}
 fi
 
