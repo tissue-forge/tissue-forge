@@ -17,9 +17,19 @@
 # 
 #*******************************************************************************
 
+# Cross-compiling needs some flexibility concerning whether to rely on CMAKE_FIND_ROOT_PATH, so provide flexibility here. 
+if(DEFINED ENV{JSON_INCLUDE_DIRS})
+  set(JSON_INCLUDE_DIRS "$ENV{JSON_INCLUDE_DIRS}" CACHE STRING "")
+endif()
+if(NOT DEFINED JSON_INCLUDE_DIRS) 
+  set(JSON_INCLUDE_DIRS ${CMAKE_FIND_ROOT_PATH}/include)
+endif()
+message("JSON include: ${JSON_INCLUDE_DIRS}")
+
 find_package(CUDAToolkit)
 find_package(assimp REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(OpenGL REQUIRED)
 if(UNIX OR CYGWIN)
     find_package(sbml-static REQUIRED)
 else()
@@ -36,7 +46,18 @@ if(UNIX)
     list(APPEND tfCTest_LIBS m)
 endif()
 
-set(tfCTest_INCLUDES ${TISSUEFORGE_C_INCLUDE_DIRS})
+set(
+  tfCTest_INCLUDES 
+  ${TISSUEFORGE_C_INCLUDE_DIRS} 
+  ${ASSIMP_INCLUDE_DIRS}
+  ${JSON_INCLUDE_DIRS}
+)
+
+include_directories(${OPENGL_INCLUDE_DIR})
+
+if(${TISSUEFORGE_HAS_CUDA})
+  list(APPEND tfTest_INCLUDES ${CUDAToolkit_INCLUDE_DIRS})
+endif()
 
 macro(tfCTest_Build src_name)
     add_executable(${src_name} ${src_name}.c)

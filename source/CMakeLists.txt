@@ -396,23 +396,25 @@ set(TF_LIBDEPS_PRIVATE
   TissueForge::MagnumLibs
 )
 set(TF_INCLUDES_PUBLIC
+  $<INSTALL_INTERFACE:${TF_INCLUDE_DIR}> 
+  $<INSTALL_INTERFACE:${TF_PRIVATE_INCLUDE_DIR}>
+)
+set(TF_INCLUDES_PRIVATE 
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  ${ASSIMP_INCLUDE_DIRS}
-  ${JSON_INCLUDE_DIRS}
-  $<INSTALL_INTERFACE:${TF_INCLUDE_DIR}> 
-  $<INSTALL_INTERFACE:${TF_PRIVATE_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${ASSIMP_INCLUDE_DIRS}>
+  $<BUILD_INTERFACE:${JSON_INCLUDE_DIRS}>
 )
 
 if(TF_WITH_PYTHON)
-  list(APPEND TF_INCLUDES_PUBLIC ${Python_INCLUDE_DIRS})
-  list(APPEND TF_LIBDEPS_PUBLIC ${Python_LIBRARY_RELEASE})
+  list(APPEND TF_INCLUDES_PRIVATE ${Python_INCLUDE_DIRS})
+  list(APPEND TF_LIBDEPS_PRIVATE ${Python_LIBRARY_RELEASE})
 endif()
 
 if(TF_WITHCUDA)
-  list(APPEND TF_INCLUDES_PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+  list(APPEND TF_INCLUDES_PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
   list(APPEND TF_LIBDEPS_PUBLIC CUDA::cudart CUDA::cuda_driver CUDA::nvrtc)
 endif()
 
@@ -430,6 +432,7 @@ set_target_properties(TissueForge_static
   VISIBILITY_INLINES_HIDDEN 1
   OUTPUT_NAME tissue-forge-static
 )
+target_include_directories(TissueForge_static PRIVATE ${TF_INCLUDES_PRIVATE})
 target_include_directories(TissueForge_static PUBLIC ${TF_INCLUDES_PUBLIC})
 target_link_libraries(TissueForge_static PRIVATE ${TF_LIBDEPS_PRIVATE})
 target_link_libraries(TissueForge_static PUBLIC ${TF_LIBDEPS_PUBLIC})
@@ -443,7 +446,7 @@ endif()
 
 if(TF_WITH_PYTHON)
   # weird bug with CMake / clang on windows, need to add link dir here
-  target_link_directories(TissueForge_static PUBLIC ${Python_LIBRARY_DIRS})
+  target_link_directories(TissueForge_static PRIVATE ${Python_LIBRARY_DIRS})
 endif()
 
 
@@ -461,6 +464,7 @@ set_target_properties(TissueForge_shared
   VISIBILITY_INLINES_HIDDEN 1
   OUTPUT_NAME tissue-forge
 )
+target_include_directories(TissueForge_shared PRIVATE ${TF_INCLUDES_PRIVATE})
 target_include_directories(TissueForge_shared PUBLIC ${TF_INCLUDES_PUBLIC})
 target_link_libraries(TissueForge_shared PRIVATE ${TF_LIBDEPS_PRIVATE})
 target_link_libraries(TissueForge_shared PUBLIC ${TF_LIBDEPS_PUBLIC})
@@ -474,7 +478,7 @@ endif()
 
 if(TF_WITH_PYTHON)
   # weird bug with CMake / clang on windows, need to add link dir here
-  target_link_directories(TissueForge_shared PUBLIC ${Python_LIBRARY_DIRS})
+  target_link_directories(TissueForge_shared PRIVATE ${Python_LIBRARY_DIRS})
 endif()
 
 if(APPLE)
