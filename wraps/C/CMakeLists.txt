@@ -95,14 +95,22 @@ set_target_properties(
 )
 
 target_include_directories(
-  TissueForge_c PUBLIC 
+  TissueForge_c PRIVATE 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
+target_include_directories(
+  TissueForge_c PUBLIC 
   $<INSTALL_INTERFACE:${TF_WRAPS_C_INSTALL_PREFIX}>
 )
 
+if(TF_WITH_PYTHON)
+  # weird bug with CMake / clang on windows, need to add link dir here
+  target_link_directories(TissueForge_c PRIVATE ${Python_LIBRARY_DIRS})
+endif()
+
 if(TF_WITHCUDA)
   target_include_directories(
-    TissueForge_c PUBLIC
+    TissueForge_c PRIVATE
     ${CUDAToolkit_INCLUDE_DIRS}
   )
   set_target_properties(
