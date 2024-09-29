@@ -109,14 +109,14 @@ namespace TissueForge::rendering {
         //overloads for text Color
         HRESULT setTextColor(const std::string& colorName);
         HRESULT setTextColor(float r, float g, float b, float a = 1.0f);
-        HRESULT rendering::WidgetRenderer::setTextColor(const TissueForge::FVector3& color);
-        HRESULT rendering::WidgetRenderer::setTextColor(const TissueForge::FVector4& color);
+        HRESULT setTextColor(const TissueForge::FVector3& color);
+        HRESULT setTextColor(const TissueForge::FVector4& color);
 
         //overloads for background Color
         HRESULT setBackgroundColor(const std::string& colorName);
         HRESULT setBackgroundColor(float r, float g, float b, float a = 1.0f);
-        HRESULT rendering::WidgetRenderer::setBackgroundColor(const TissueForge::FVector3& color);
-        HRESULT rendering::WidgetRenderer::setBackgroundColor(const TissueForge::FVector4& color);
+        HRESULT setBackgroundColor(const TissueForge::FVector3& color);
+        HRESULT setBackgroundColor(const TissueForge::FVector4& color);
 
         //getters
         float getFontSize() const;
