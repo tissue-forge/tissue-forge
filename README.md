@@ -292,11 +292,11 @@ conda install -c conda-forge ipython
 ```
 
 To enable interactive Tissue Forge in a Jupyter Notebook, activate the installed 
-environment as previously described and install the `notebook`, `ipywidgets` and 
-`ipyevents` packages from the conda-forge channel, 
+environment as previously described and install the `notebook`, `ipywidgets`, 
+`ipyevents` and `ipyfilechooser` packages from the conda-forge channel, 
 
 ```bash
-conda install -c conda-forge notebook ipywidgets ipyevents
+conda install -c conda-forge notebook ipywidgets ipyevents ipyfilechooser
 ```
 
 ## Citing ##

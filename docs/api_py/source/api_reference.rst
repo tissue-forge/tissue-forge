@@ -85,4 +85,6 @@ This is the API Reference page for the module: :mod:`tissue_forge`
 
 .. include:: api_io.rst
 
+.. include:: api_notebook.rst
+
 .. include:: api_cuda.rst
