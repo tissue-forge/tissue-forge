@@ -24,6 +24,7 @@ Concepts
     style
     controls
     rendering
+    widget_renderer
     file_io
     logging_and_errors
     numerical_details
