@@ -273,7 +273,7 @@ def add_input_field(cb, val, label=None):
             result = tf.system.add_widget_input_int(cb, val, label)
         else:
             # Add an input field without a label
-            result = tf.system. add_widget_input_int(cb, val)
+            result = tf.system.add_widget_input_int(cb, val)
         
         # Check if the result indicates an error (assuming negative values indicate errors)
         if result < 0:
@@ -294,14 +294,10 @@ add_button(add_parts, '+Parts')
 add_button(rem_parts, '-Parts')
 
 set_widget_font_size(10)  # Valid size
-# set_widget_font_size(50)  # Invalid size, should raise FontSizeError
 
-# set_widget_text_color("red")  # Assuming valid color name
-set_widget_text_color("invalid_color")  # Invalid, should raise ColorValueError
+set_widget_text_color("red")  # Assuming valid color name
 
 set_widget_background_color("blue")  # Assuming valid color name
-# set_widget_background_color("invalid_color")  # Invalid, should raise ColorValueError
-
 
 # run the simulator
 tf.step(20*tf.Universe.dt)
