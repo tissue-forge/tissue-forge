@@ -72,7 +72,7 @@ HRESULT tfUniverse_getName(char **name, unsigned int *numChars) {
 HRESULT tfUniverse_getVirial(tfFloatP_t **virial) {
     TFC_UNIVERSE_STATIC_GET()
     TFC_PTRCHECK(virial);
-    auto _virial = *univ->virial();
+    auto _virial = univ->virial();
     TFC_MATRIX3_COPYFROM(_virial, (*virial));
     return S_OK;
 }
@@ -88,7 +88,7 @@ HRESULT tfUniverse_getVirialT(struct tfParticleTypeHandle **phandles, unsigned i
         TFC_PTRCHECK(ph); TFC_PTRCHECK(ph->tfObj);
         ptypes.push_back((ParticleType*)ph->tfObj);
     }
-    auto _virial = *univ->virial(NULL, NULL, &ptypes);
+    auto _virial = univ->virial(NULL, NULL, &ptypes);
     TFC_MATRIX3_COPYFROM(_virial, (*virial));
     return S_OK;
 }
@@ -99,7 +99,7 @@ HRESULT tfUniverse_getVirialO(tfFloatP_t *origin, tfFloatP_t radius, tfFloatP_t 
     TFC_PTRCHECK(virial);
     FVector3 _origin = FVector3::from(origin);
     tfFloatP_t _radius = radius;
-    auto _virial = *univ->virial(&_origin, &_radius);
+    auto _virial = univ->virial(&_origin, &_radius);
     TFC_MATRIX3_COPYFROM(_virial, (*virial));
     return S_OK;
 }
@@ -118,7 +118,7 @@ HRESULT tfUniverse_getVirialOT(struct tfParticleTypeHandle **phandles, unsigned 
     }
     FVector3 _origin = FVector3::from(origin);
     tfFloatP_t _radius = radius;
-    auto _virial = *univ->virial(&_origin, &_radius, &ptypes);
+    auto _virial = univ->virial(&_origin, &_radius, &ptypes);
     TFC_MATRIX3_COPYFROM(_virial, (*virial));
     return S_OK;
 }
@@ -179,6 +179,23 @@ HRESULT tfUniverse_getTemperature(tfFloatP_t *temperature) {
     TFC_PTRCHECK(temperature);
     *temperature = univ->getTemperature();
     return S_OK;
+}
+
+HRESULT tfUniverse_setTemperature(tfFloatP_t temperature) {
+    TFC_UNIVERSE_STATIC_GET()
+    return univ->setTemperature(temperature);;
+}
+
+HRESULT tfUniverse_getBoltzmann(tfFloatP_t* k) {
+    TFC_UNIVERSE_STATIC_GET()
+    TFC_PTRCHECK(k);
+    *k = univ->getBoltzmann();
+    return S_OK;
+}
+
+HRESULT tfUniverse_setBoltzmann(tfFloatP_t k) {
+    TFC_UNIVERSE_STATIC_GET()
+    return univ->setBoltzmann(k);
 }
 
 HRESULT tfUniverse_getTime(tfFloatP_t *time) {

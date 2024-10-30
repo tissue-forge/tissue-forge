@@ -3219,7 +3219,7 @@ int TissueForge::Potential::getIntervals() {
 }
 
 bool TissueForge::Potential::getBound() {
-    return (bool)flags & POTENTIAL_BOUND;
+    return flags & POTENTIAL_BOUND;
 }
 
 void TissueForge::Potential::setBound(const bool &_bound) {
@@ -3236,15 +3236,15 @@ void TissueForge::Potential::setR0(const FPTYPE &_r0) {
 }
 
 bool TissueForge::Potential::getShifted() {
-    return (bool)flags & POTENTIAL_SHIFTED;
+    return flags & POTENTIAL_SHIFTED;
 }
 
 bool TissueForge::Potential::getPeriodic() {
-	return (bool) flags & POTENTIAL_PERIODIC;
+	return flags & POTENTIAL_PERIODIC;
 }
 
 bool TissueForge::Potential::getRSquare() {
-    return (bool)flags & POTENTIAL_R2;
+    return flags & POTENTIAL_R2;
 }
 
 

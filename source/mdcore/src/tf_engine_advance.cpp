@@ -32,7 +32,11 @@
 #include <math.h>
 
 #include <sstream>
+
+#if !defined(_MSC_VER)
 #pragma clang diagnostic ignored "-Wwritable-strings"
+#endif
+
 #include <iostream>
 
 #ifdef WITH_MPI

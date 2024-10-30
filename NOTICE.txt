@@ -1,0 +1,7 @@
+=======================================================================
+  Third-party software under extern
+=======================================================================
+
+Software libraries under extern are provided as GitHub submodule
+links. Their content is not part of the Tissue Forge codebase. Their
+licences can be found under the respective software repositories.

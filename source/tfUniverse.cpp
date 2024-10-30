@@ -92,6 +92,13 @@ struct engine* TissueForge::engine_get()
         tf_exp(e); return retval; \
     }
 
+
+#define TF_UNIVERSE_FINALLY_VOID() \
+    } \
+    catch(const std::exception &e) { \
+        tf_exp(e); return ; \
+    }
+
 UniverseConfig::UniverseConfig() :
     dim {10, 10, 10},
     spaceGridSize {4, 4, 4},
@@ -118,7 +125,7 @@ std::string Universe::getName() {
     TF_UNIVERSE_FINALLY("");
 }
 
-FMatrix3 *Universe::virial(FVector3 *origin, FloatP_t *radius, std::vector<ParticleType*> *types) {
+FMatrix3 Universe::virial(FVector3 *origin, FloatP_t *radius, std::vector<ParticleType*> *types) {
     try {
         FVector3 _origin = origin ? *origin : Universe::getCenter();
         FloatP_t _radius = radius ? *radius : 2 * _origin.max();
@@ -135,15 +142,15 @@ FMatrix3 *Universe::virial(FVector3 *origin, FloatP_t *radius, std::vector<Parti
                 typeIds.insert(i);
         }
 
-        FMatrix3 *m;
-        if(SUCCEEDED(metrics::calculateVirial(_origin.data(), _radius, typeIds, m->data()))) {
+        FMatrix3 m;
+        if(SUCCEEDED(metrics::calculateVirial(_origin.data(), _radius, typeIds, m.data()))) {
             return m;
         }
     }
     catch(const std::exception &e) {
-        TF_RETURN_EXP(e);
+        tf_exp(e);
     }
-    return NULL;
+    return FMatrix3();
 }
 
 HRESULT Universe::step(const FloatP_t &until, const FloatP_t &dt) {
@@ -206,7 +213,7 @@ void Universe::resetSpecies() {
     // redraw, state changed. 
     Simulator::get()->redraw();
     
-    TF_UNIVERSE_FINALLY();
+    TF_UNIVERSE_FINALLY_VOID();
 }
 
 std::vector<std::vector<std::vector<ParticleList> > > Universe::grid(iVector3 shape) {
@@ -259,6 +266,24 @@ std::vector<DihedralHandle> Universe::dihedrals() {
 FloatP_t Universe::getTemperature() {
     TF_UNIVERSE_TRY();
     return engine_temperature(&_Engine);
+    TF_UNIVERSE_FINALLY(0);
+}
+
+HRESULT Universe::setTemperature(const FloatP_t& _temp) {
+    TF_UNIVERSE_TRY();
+    return engine_set_temperature(&_Engine, _temp);
+    TF_UNIVERSE_FINALLY(0);
+}
+
+FloatP_t Universe::getBoltzmann() {
+    TF_UNIVERSE_TRY();
+    return engine_boltzmann(&_Engine);
+    TF_UNIVERSE_FINALLY(0);
+}
+
+HRESULT Universe::setBoltzmann(const FloatP_t& k) {
+    TF_UNIVERSE_TRY();
+    return engine_set_boltzmann(&_Engine, k);
     TF_UNIVERSE_FINALLY(0);
 }
 

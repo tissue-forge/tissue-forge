@@ -1326,14 +1326,12 @@ HRESULT tfIoFIOModule_load(struct tfIoFIOModuleHandle *handle) {
 
 
 HRESULT tfIoFIO_getIORootElement(struct tfIoIOElementHandle *handle) {
-    io::IOElement *rootElement;
+    TFC_PTRCHECK(handle);
+    io::IOElement *rootElement = (io::IOElement*)handle->tfObj;
     if(!io::FIO::hasImport()) 
         io::FIO::generateIORootElement();
     io::FIO::getCurrentIORootElement(rootElement);
-    if(!rootElement) 
-        return E_FAIL;
-    handle->tfObj = (void*)rootElement;
-    return S_OK;
+    return rootElement ? S_OK : E_FAIL;
 }
 
 HRESULT tfIoFIO_releaseIORootElement() {

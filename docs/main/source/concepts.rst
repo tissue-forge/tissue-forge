@@ -28,4 +28,5 @@ Concepts
     file_io
     logging_and_errors
     numerical_details
+    notebook/tfwidgets_documentation
     cuda

@@ -19,7 +19,7 @@ Tissue Forge is a native compiled C++ shared library that's designed to be used 
 and simulation specification in compiled C++ code. Tissue Forge includes extensive C, C++ and 
 Python APIs and additional support for interactive model and simulation specification in 
 an IPython console and a Jupyter Notebook. 
-Tissue Forge currently supports installations on 64-bit Windows, Linux and MacOS systems. 
+Tissue Forge currently supports installations on 64-bit Windows, Linux and MacOS, and arm64 MacOS. 
 
 ## Build Status ##
 
@@ -265,11 +265,12 @@ conda activate $TFENV
 bash ${TFSRCDIR}/package/local/osx/install_all.sh
 ```
 
-Note that Tissue Forge assumes that conda is installed in a typical location on Linux and MacOS. 
-If Tissue Forge has trouble finding the conda script `conda.sh`, then it can be provided during build 
-customization using the environment variable `TFCONDAENV`. 
+Note that Tissue Forge assumes that conda is available by default and if not, is installed in a typical location on Linux and MacOS. 
+If Tissue Forge has trouble finding conda, the conda script `conda.sh` can be provided during build 
+customization using the environment variables `TFCONDAENV` and `TFENVNEEDSCONDA`. 
 
 ```bash
+export TFENVNEEDSCONDA=1
 export TFCONDAENV=${HOME}/mambaforge/etc/profile.d/conda.sh
 ```
 
@@ -291,11 +292,11 @@ conda install -c conda-forge ipython
 ```
 
 To enable interactive Tissue Forge in a Jupyter Notebook, activate the installed 
-environment as previously described and install the `notebook`, `ipywidgets` and 
-`ipyevents` packages from the conda-forge channel, 
+environment as previously described and install the `notebook`, `ipywidgets`, 
+`ipyevents` and `ipyfilechooser` packages from the conda-forge channel, 
 
 ```bash
-conda install -c conda-forge notebook ipywidgets ipyevents
+conda install -c conda-forge notebook ipywidgets ipyevents ipyfilechooser
 ```
 
 ## Citing ##

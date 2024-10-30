@@ -408,7 +408,7 @@ HRESULT TissueForge::bond_evalf(struct Bond *bonds, int N, struct engine *e, FPT
             continue;
             
         /* Get the potential. */
-        if((pot = b->potential) == NULL)
+        if((potb = b->potential) == NULL)
             continue;
     
         /* get the distance between both particles */

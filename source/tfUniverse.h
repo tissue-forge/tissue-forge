@@ -101,7 +101,7 @@ namespace TissueForge {
          * @param radius An optional number specifying the size of the region to compute the virial tensor for. Defaults to the entire simulation domain.
          * @param types An optional list of :class:`Particle` types to include in the calculation. Defaults to every particle type.
          */
-        static FMatrix3 *virial(FVector3 *origin=NULL, FloatP_t *radius=NULL, std::vector<ParticleType*> *types=NULL);
+        static FMatrix3 virial(FVector3 *origin=NULL, FloatP_t *radius=NULL, std::vector<ParticleType*> *types=NULL);
 
         /** Center of the universe */
         static FVector3 getCenter();
@@ -181,6 +181,25 @@ namespace TissueForge {
          * attempting to set the temperature yields an error. 
          */
         static FloatP_t getTemperature();
+
+        /**
+         * @brief Set the universe temperature
+         * 
+         * @param _temp temperature; must be greater than zero
+         */
+        static HRESULT setTemperature(const FloatP_t& _temp);
+
+        /**
+         * @brief Get the Boltzmann constant
+         */
+        static FloatP_t getBoltzmann();
+
+        /**
+         * @brief Set the Boltzmann constant
+         * 
+         * @param k Boltzmann constant; must be greater than zero
+         */
+        static HRESULT setBoltzmann(const FloatP_t& k);
 
         /**
          * @brief Get the current time

@@ -74,7 +74,9 @@
 #include <tfError.h>
 #include <iostream>
 
+#if !defined(_MSC_VER)
 #pragma clang diagnostic ignored "-Wwritable-strings"
+#endif
 
 
 using namespace TissueForge;
@@ -255,7 +257,7 @@ HRESULT TissueForge::engine_verlet_update(struct engine *e) {
 		std::vector<FPTYPE> wmaxdx(s->nr_real);
 		auto func = [&](int _cid) {
 			wmaxdx[_cid] = 0;
-			FPTYPE _dx;
+			FPTYPE _dx = 0.0;
             space_cell *_c = &(s->cells[s->cid_real[_cid]]);
             for(int _pid = 0 ; _pid < _c->count ; _pid++) {
                 Particle *_p = &(_c->parts[_pid]);
@@ -1927,6 +1929,33 @@ FPTYPE TissueForge::engine_kinetic_energy(struct engine *e)
 FPTYPE TissueForge::engine_temperature(struct engine *e)
 {
     return e->temperature;
+}
+
+HRESULT TissueForge::engine_set_temperature(struct engine *e, FPTYPE t) 
+{
+	if (t <= FPTYPE_ZERO) {
+		return error(MDCERR_range);
+	}
+
+	e->temperature = t;
+
+	return S_OK;
+}
+
+FPTYPE TissueForge::engine_boltzmann(struct engine* e) 
+{
+	return e->K;
+}
+
+HRESULT TissueForge::engine_set_boltzmann(struct engine* e, FPTYPE k) 
+{
+	if (k <= FPTYPE_ZERO) {
+		return error(MDCERR_range);
+	}
+
+	e->K = k;
+
+	return S_OK;
 }
 
 HRESULT TissueForge::engine_addpart(struct engine *e, struct Particle *p, FPTYPE *x,

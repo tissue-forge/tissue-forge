@@ -320,9 +320,11 @@ add_definitions(-DCX3D_SUPPORT_OPENGL)
 
 include_directories(${OPENGL_INCLUDE_DIR})
 
+# Cross-compiling needs some flexibility concerning whether to rely on CMAKE_FIND_ROOT_PATH, so provide flexibility here. 
 if(DEFINED ENV{JSON_INCLUDE_DIRS})
   set(JSON_INCLUDE_DIRS "$ENV{JSON_INCLUDE_DIRS}" CACHE STRING "")
-else()
+endif()
+if(NOT DEFINED JSON_INCLUDE_DIRS) 
   set(JSON_INCLUDE_DIRS ${CMAKE_FIND_ROOT_PATH}/include)
 endif()
 message("JSON include: ${JSON_INCLUDE_DIRS}")
@@ -353,9 +355,9 @@ add_subdirectory(package)
 
 set(
   TF_INFO_FILES
-  README.md 
+  README.md
+  CONTRIBUTORS.md
   COPYING.txt 
-  COPYING.LESSER.txt
   LICENSE.txt 
   VERSION.txt 
 )
