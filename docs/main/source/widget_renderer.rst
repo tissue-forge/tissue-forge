@@ -71,7 +71,7 @@ Register this callback to be called at each simulation step:
 .. code-block:: python
 
     # Register the callback to update the noise display on each simulation step
-    tf.event.on_simulation_step(update_display_noise)
+    tf.event.on_time(period=0, invoke_method=lambda e: update_display_noise())
 
 This ensures that the widget displaying the noise level (`std` of `rforce`) is updated automatically during the simulation.
 

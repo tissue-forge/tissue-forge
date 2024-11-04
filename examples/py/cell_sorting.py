@@ -27,7 +27,7 @@ B_count = 5000
 # potential cutoff distance
 cutoff = 3
 
-# dimensions of universe
+# dimensions of universe 
 dim = [20., 20., 20.]
 
 # new simulator
