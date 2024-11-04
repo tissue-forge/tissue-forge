@@ -19,11 +19,13 @@
 
 #include "tf_system.h"
 #include "tfSimulator.h"
+#include "event/tfEvent.h"
 #include "rendering/tfWindowlessApplication.h"
 #include "rendering/tfWindowless.h"
 #include "rendering/tfApplication.h"
 #include "rendering/tfGlfwApplication.h"
 #include "rendering/tfClipPlane.h"
+#include "rendering/tfWidgetRenderer.h"
 #include "tfLogger.h"
 #include "tfError.h"
 #include "tf_test.h"
@@ -1492,4 +1494,284 @@ rendering::ArrowData *system::getRenderArrow(const int &arrowId) {
     rendering::ArrowRenderer *renderer = rendering::ArrowRenderer::get(); 
     if(!renderer) return NULL;
     return renderer->getArrow(arrowId);
+}
+
+int system::addWidgetButton(CallbackVoidOutput& cb, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    return renderer->addButton(cb, label);
+}
+
+struct ShowTimeEvent : event::EventBase {
+
+    unsigned int idx;
+
+    ShowTimeEvent(const unsigned int& _idx) : event::EventBase(), idx{_idx} {}
+
+    HRESULT predicate() override { return 1; }
+
+    HRESULT invoke() override {
+        rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+        if(!renderer) return E_FAIL;
+
+        renderer->setOutputFloat(idx, (float)Universe::getTime());
+        return S_OK;
+    }
+};
+
+HRESULT system::showWidgetTime() {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+
+    ShowTimeEvent* e = new ShowTimeEvent(renderer->addOutputField((float)Universe::getTime(), "Time"));
+    Universe::get()->events->addEvent(e);
+    return S_OK;
+}
+
+struct ShowParticleNumberEvent : event::EventBase {
+
+    unsigned int idx;
+
+    ShowParticleNumberEvent(const unsigned int& _idx) : event::EventBase(), idx{_idx} {}
+
+    HRESULT predicate() override { return 1; }
+
+    HRESULT invoke() override {
+        rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+        if(!renderer) return E_FAIL;
+
+        renderer->setOutputInt(idx, Universe::particles().nr_parts);
+        return S_OK;
+    }
+
+};
+
+HRESULT system::showWidgetParticleNumber() {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+
+    ShowParticleNumberEvent* e = new ShowParticleNumberEvent(renderer->addOutputField(Universe::particles().nr_parts, "# particles"));
+    Universe::get()->events->addEvent(e);
+    return S_OK;
+}
+
+struct ShowBondNumberEvent : event::EventBase {
+    unsigned int idx;
+
+    ShowBondNumberEvent(const unsigned int& _idx) : event::EventBase(), idx{_idx} {}
+
+    HRESULT predicate() override { return 1; }
+
+    HRESULT invoke() override {
+        rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+        if(!renderer) return E_FAIL;
+
+        // Retrieve the number of bonds from the Universe and update the widget
+        renderer->setOutputInt(idx, Universe::bonds().size());
+        return S_OK;
+    }
+};
+
+HRESULT system::showWidgetBondNumber() {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+
+    // Create a new event for showing the number of bonds
+    ShowBondNumberEvent* e = new ShowBondNumberEvent(renderer->addOutputField(static_cast<int>(Universe::bonds().size()), "# bonds"));
+    Universe::get()->events->addEvent(e);
+    return S_OK;
+}
+
+struct ShowDihedralNumberEvent : event::EventBase {
+    unsigned int idx;
+
+    ShowDihedralNumberEvent(const unsigned int& _idx) : event::EventBase(), idx{_idx} {}
+
+    HRESULT predicate() override { return 1; }
+
+    HRESULT invoke() override {
+        rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+        if(!renderer) return E_FAIL;
+
+        // Retrieve the number of bonds from the Universe and update the widget
+        renderer->setOutputInt(idx, Universe::dihedrals().size());
+        return S_OK;
+    }
+};
+
+HRESULT system::showWidgetDihedralNumber() {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+
+    // Create a new event for showing the number of bonds
+    ShowDihedralNumberEvent* e = new ShowDihedralNumberEvent(renderer->addOutputField(static_cast<int>(Universe::dihedrals().size()), "# dihedrals"));
+    Universe::get()->events->addEvent(e);
+    return S_OK;
+}
+
+struct ShowAngleNumberEvent : event::EventBase {
+    unsigned int idx;
+
+    ShowAngleNumberEvent(const unsigned int& _idx) : event::EventBase(), idx{_idx} {}
+
+    HRESULT predicate() override { return 1; }
+
+    HRESULT invoke() override {
+        rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+        if(!renderer) return E_FAIL;
+
+        // Retrieve the number of bonds from the Universe and update the widget
+        renderer->setOutputInt(idx, Universe::angles().size());
+        return S_OK;
+    }
+};
+
+HRESULT system::showWidgetAngleNumber() {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+
+    // Create a new event for showing the number of bonds
+    ShowAngleNumberEvent* e = new ShowAngleNumberEvent(renderer->addOutputField(static_cast<int>(Universe::angles().size()), "# angles"));
+    Universe::get()->events->addEvent(e);
+    return S_OK;
+}
+
+
+template <typename T> 
+int _addOutput(const T& val, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return -1;
+    return renderer->addOutputField(val, label);
+}
+
+int system::addWidgetOutputInt(const int& val, const std::string& label) { return _addOutput(val, label); }
+int system::addWidgetOutputFloat(const float& val, const std::string& label) { return _addOutput(val, label); }
+int system::addWidgetOutputDouble(const double& val, const std::string& label) { return _addOutput(val, label); }
+int system::addWidgetOutputString(const std::string& val, const std::string& label) { return _addOutput(val, label); }
+
+template <typename T> 
+int _addInput(rendering::WidgetRenderer::CallbackInput<T>& cb, const T& val, const std::string& label) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->addInputField(cb, val, label);
+}
+
+int system::addWidgetInputInt(CallbackInputInt& cb, const int& val, const std::string& label) { return _addInput(cb, val, label); }
+int system::addWidgetInputFloat(CallbackInputFloat& cb, const float& val, const std::string& label) { return _addInput(cb, val, label); }
+int system::addWidgetInputDouble(CallbackInputDouble& cb, const double& val, const std::string& label) { return _addInput(cb, val, label); }
+int system::addWidgetInputString(CallbackInputString& cb, const std::string& val, const std::string& label) { return _addInput(cb, val, label); }
+
+HRESULT system::setWidgetOutputInt(const unsigned int& idx, const int& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputInt(idx, val);
+}
+
+HRESULT system::setWidgetOutputFloat(const unsigned int& idx, const float& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputFloat(idx, val);
+}
+
+HRESULT system::setWidgetOutputDouble(const unsigned int& idx, const double& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputDouble(idx, val);
+}
+
+HRESULT system::setWidgetOutputString(const unsigned int& idx, const std::string& val) {
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setOutputString(idx, val);
+}
+
+HRESULT system::setWidgetFontSize(const float size){
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setFontSize(size);
+}
+
+HRESULT system::setWidgetTextColor(const std::string& colorName)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setTextColor(colorName);
+}
+
+HRESULT system::setWidgetTextColor(float r, float g, float b, float a)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setTextColor(r, g, b, a);
+}
+
+HRESULT system::setWidgetTextColor(const TissueForge::FVector3& color)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setTextColor(color);
+}
+
+HRESULT system::setWidgetTextColor(const TissueForge::FVector4& color)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setTextColor(color);
+}
+
+HRESULT system::setWidgetBackgroundColor(const std::string& colorName)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setBackgroundColor(colorName);
+}
+
+HRESULT system::setWidgetBackgroundColor(float r, float g, float b, float a)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setBackgroundColor(r, g, b, a);
+}
+
+HRESULT system::setWidgetBackgroundColor(const TissueForge::FVector3& color)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setTextColor(color);
+}
+
+HRESULT system::setWidgetBackgroundColor(const TissueForge::FVector4& color)
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) return E_FAIL;
+    return renderer->setTextColor(color);
+}
+
+float system::getWidgetFontSize() 
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) {
+     TF_Log(LOG_ERROR) << "The rendere is not avaible.";
+     return 0;
+    }
+    return renderer->getFontSize();
+}
+
+TissueForge::FVector4 system::getWidgetTextColor() 
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) {
+     TF_Log(LOG_ERROR) << "The renderer is not avaible.";
+     return TissueForge::FVector4();
+    }
+    return renderer->getTextColor();
+}
+TissueForge::FVector4 system::getWidgetBackgroundColor() 
+{
+    rendering::WidgetRenderer* renderer = rendering::WidgetRenderer::get();
+    if(!renderer) {
+     TF_Log(LOG_ERROR) << "The renderer is not avaible.";
+     return TissueForge::FVector4();
+    }
+    return renderer->getBackgroundColor();
 }

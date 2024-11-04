@@ -748,6 +748,34 @@ namespace TissueForge::py {
     */
    CPPAPI_FUNC(rendering::ArrowData*) get_render_arrow(const int &arrowId);
 
+   CPPAPI_FUNC(int) add_widget_button(PyObject* cb, const std::string& label);
+   CPPAPI_FUNC(HRESULT) show_widget_time();
+   CPPAPI_FUNC(HRESULT) show_widget_particle_number();
+   CPPAPI_FUNC(HRESULT) show_widget_bond_number();
+   CPPAPI_FUNC(HRESULT) show_widget_dihedral_number();
+   CPPAPI_FUNC(HRESULT) show_widget_angle_number();
+
+   CPPAPI_FUNC(int) add_widget_output_int(const int& val, const std::string& label);
+   CPPAPI_FUNC(int) add_widget_output_float(const float& val, const std::string& label);
+   CPPAPI_FUNC(int) add_widget_output_string(const std::string& val, const std::string& label);
+
+   CPPAPI_FUNC(int) add_widget_input_int(PyObject* cb, const int& val, const std::string& label);
+   CPPAPI_FUNC(int) add_widget_input_float(PyObject* cb, const float& val, const std::string& label);
+   CPPAPI_FUNC(int) add_widget_input_string(PyObject* cb, const std::string& val, const std::string& label);
+
+   CPPAPI_FUNC(HRESULT) set_widget_output_int(const unsigned int& idx, const int& val);
+   CPPAPI_FUNC(HRESULT) set_widget_output_float(const unsigned int& idx, const float& val);
+   CPPAPI_FUNC(HRESULT) set_widget_output_string(const unsigned int& idx, const std::string& val);
+
+   CPPAPI_FUNC(HRESULT) set_widget_font_size(const float size);
+   CPPAPI_FUNC(HRESULT) set_widget_text_color(const std::string& colorName);
+   CPPAPI_FUNC(HRESULT) set_widget_text_color(float r, float g, float b, float a);
+   CPPAPI_FUNC(HRESULT) set_widget_text_color(const TissueForge::FVector3& color);
+   CPPAPI_FUNC(HRESULT) set_widget_text_color(const TissueForge::FVector4& color);
+   CPPAPI_FUNC(HRESULT) set_widget_background_color(const std::string& colorName);
+   CPPAPI_FUNC(HRESULT) set_widget_background_color(float r, float g, float b, float a);
+   CPPAPI_FUNC(HRESULT) set_widget_background_color(const TissueForge::FVector3& color);
+   CPPAPI_FUNC(HRESULT) set_widget_background_color(const TissueForge::FVector4&  color);
 };
 
 #endif // _SOURCE_LANGS_PY_TF_SYSTEMPY_H_
