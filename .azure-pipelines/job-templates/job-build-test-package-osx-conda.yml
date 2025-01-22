@@ -28,13 +28,12 @@ jobs:
       BUILD_SYSROOT: ${{ format('$(BUILD_ROOT)/{0}', variables.BASENAME_SYSROOT) }}
     workspace:
       clean: all
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
 
       # Setup
-      - bash: echo "##vso[task.prependpath]$CONDA/bin"
-        displayName: Add conda to path
-      - bash: sudo chown -R $USER $CONDA
-        displayName: Take ownership of conda installation
       - script: |
           mkdir $(BUILD_ROOT)
           mkdir $(BUILD_OUTPUT)
@@ -45,6 +44,11 @@ jobs:
         displayName: Get source
       - script: rm -rf $(SOURCE_DIR)/docs
         displayName: Clean source
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          channels: conda-forge
+        displayName: Conda install
       - script: conda create -p $(ENV_DIR) conda-build conda-verify -y
         displayName: Conda setup
       - script: |

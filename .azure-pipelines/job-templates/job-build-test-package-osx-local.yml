@@ -20,19 +20,23 @@ jobs:
       EXEC_PYTHON: '$(INSTALL_DIR)/env/bin/python'
     workspace:
       clean: all
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       
       # Setup
-      - bash: echo "##vso[task.prependpath]$CONDA/bin"
-        displayName: Add conda to path
-      - bash: sudo chown -R $USER $CONDA
-        displayName: Take ownership of conda installation
       - checkout: self
         submodules: recursive
         path: tissue-forge
         displayName: Get source
       - script: conda config --add channels conda-forge
         displayName: Conda setup
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          channels: conda-forge
+        displayName: Conda install
       
       # Build
       - script: |
