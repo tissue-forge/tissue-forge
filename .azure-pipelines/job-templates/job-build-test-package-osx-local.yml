@@ -38,7 +38,10 @@ jobs:
         submodules: recursive
         path: tissue-forge
         displayName: Get source
-      - script: conda config --add channels conda-forge
+      - script: |
+          conda config --add channels conda-forge
+          conda config --set channel_priority strict
+          conda config --show channels
         displayName: Conda setup
       
       # Build
