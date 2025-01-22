@@ -114,6 +114,11 @@ set(WITH_PNGIMPORTER OFF CACHE BOOL "build PNG importer"    FORCE)
 # stop messaging about global weak symbols.
 set(BUILD_STATIC_UNIQUE_GLOBALS OFF CACHE BOOL "Do something with symbols to make them work on Windows" FORCE)
 
+set_directory_properties(PROPERTIES
+  CORRADE_CXX_STANDARD 11 
+  CORRADE_USE_PEDANTIC_FLAGS ON
+)
+
 add_subdirectory(corrade)
 
 # set magnum options

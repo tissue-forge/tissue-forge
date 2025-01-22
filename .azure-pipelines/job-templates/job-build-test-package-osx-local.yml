@@ -52,7 +52,6 @@ jobs:
           conda install -y python=$(PY_VERSION_DEC)
           conda list
           export TFBUILDQUAL=${{ parameters.tf_buildqual }}
-          export TFOSX_SYSROOT=14.2
           bash $(SOURCE_DIR)/package/local/osx/install_all.sh
         displayName: Execute build
       
