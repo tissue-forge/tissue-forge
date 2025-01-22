@@ -52,8 +52,8 @@ jobs:
           conda install -y python=$(PY_VERSION_DEC)
           conda list
           export TFBUILDQUAL=${{ parameters.tf_buildqual }}
-          export CC=/usr/local/bin/gcc-14
-          export CXX=/usr/local/bin/g++-14
+          export CC=/usr/local/bin/gcc-13
+          export CXX=/usr/local/bin/g++-13
           bash $(SOURCE_DIR)/package/local/osx/install_all.sh
         displayName: Execute build
       
