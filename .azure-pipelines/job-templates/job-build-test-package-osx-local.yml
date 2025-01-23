@@ -39,6 +39,9 @@ jobs:
         displayName: Add conda to path
       - bash: sudo chown -R $USER $(CONDA_INSTALL)
         displayName: Take ownership of conda installation
+      - script: |
+          mkdir $(BUILD_ROOT)
+        displayName: Create working directories
       - checkout: self
         submodules: recursive
         path: tissue-forge
@@ -48,6 +51,11 @@ jobs:
           conda config --set channel_priority strict
           conda config --show channels
         displayName: Conda setup
+      - script: |
+          cd $(BUILD_ROOT)
+          curl -L -O $(SOURCE_SYSROOT)
+          tar -xf $(BASENAMEDL_SYSROOT) -C $(BUILD_ROOT)
+        displayName: Get sysroot
       
       # Build
       - script: |
