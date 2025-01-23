@@ -19,11 +19,8 @@ jobs:
       SOURCE_DIR: '$(ROOT_DIR)/tissue-forge'
       INSTALL_DIR: '$(ROOT_DIR)/tissue-forge_install'
       EXEC_PYTHON: '$(INSTALL_DIR)/env/bin/python'
-      OSX_SYSROOT: '10.11'
-      BASENAME_SYSROOT: ${{ format('MacOSX{0}.sdk', variables.OSX_SYSROOT) }}
-      BASENAMEDL_SYSROOT: ${{ format('{0}.tar.xz', variables.BASENAME_SYSROOT) }}
-      SOURCE_SYSROOT: ${{ format('https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/{0}', variables.BASENAMEDL_SYSROOT) }}
-      BUILD_SYSROOT: ${{ format('$(ROOT_DIR)/{0}', variables.BASENAME_SYSROOT) }}
+      OSX_SYSROOT: '13.0'
+      DEPLOYMENT_TARGET: '12.0'
     workspace:
       clean: all
     steps:
@@ -48,10 +45,14 @@ jobs:
           conda config --set channel_priority strict
           conda config --show channels
         displayName: Conda setup
-      - script: |
-          curl -L -O $(SOURCE_SYSROOT)
-          tar -xf $(BASENAMEDL_SYSROOT) -C $(ROOT_DIR)
-        displayName: Get sysroot
+      - script: | 
+          echo "Current developer directory: $(xcode-select -p)"
+          echo "SDKs:"
+          ls /Applications/Xcode_14.1.app/Contents/Developer/SDKs
+          sdk_path = "/Applications/Xcode_14.1.app/Contents/Developer/SDKs/MacOSX$(OSX_SYSROOT).sdk"
+          echo "Selecting SDK: ${sdk_path}"
+          sudo sudo xcode-select -s ${sdk_path}
+        displayName: Select SDK
       
       # Build
       - script: |
@@ -61,8 +62,8 @@ jobs:
           conda install -y python=$(PY_VERSION_DEC)
           conda list
           export TFBUILDQUAL=${{ parameters.tf_buildqual }}
-          export TFOSX_SYSROOT=$(OSX_SYSROOT)
-          export TF_BUILD_SYSROOT=$(BUILD_SYSROOT)
+          export TF_OSX_DEPLOYMENT_TARGET=$(DEPLOYMENT_TARGET)
+          xcode-select 
           bash $(SOURCE_DIR)/package/local/osx/install_all.sh
         displayName: Execute build
       

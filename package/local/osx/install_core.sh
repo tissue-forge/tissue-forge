@@ -10,8 +10,8 @@ echo "*TF* TFENV ${TFENV}"
 echo "*TF* TFBUILDQUAL ${TFBUILDQUAL}"
 echo "*TF* TFENVNEEDSCONDA ${TFENVNEEDSCONDA}"
 echo "*TF* TFCONDAENV ${TFCONDAENV}"
-echo "*TF* TFOSX_SYSROOT ${TFOSX_SYSROOT}"
 echo "*TF* TF_BUILD_SYSROOT ${TF_BUILD_SYSROOT}"
+echo "*TF* TF_OSX_DEPLOYMENT_TARGET ${TF_OSX_DEPLOYMENT_TARGET}"
 echo "*TF* TFPACKAGELOCALOFF ${TFPACKAGELOCALOFF}"
 echo "*TF* TFPACKAGECONDA ${TFPACKAGECONDA}"
 echo "*TF* JSON_INCLUDE_DIRS ${JSON_INCLUDE_DIRS}"
@@ -32,40 +32,32 @@ mkdir -p -v ${TFINSTALLDIR}
 
 cd ${TFBUILDDIR}
 
-export MACOSX_DEPLOYMENT_TARGET=${TFOSX_SYSROOT}
-
-if [ -n "${TF_BUILD_SYSROOT+x}" ]; then
-  echo "*TF* Using externally specified SDK"
-
-  export CONDA_BUILD_SYSROOT="${TF_BUILD_SYSROOT}"
-  xcode-select --switch "${CONDA_BUILD_SYSROOT}"
-else
-  export CONDA_BUILD_SYSROOT="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${TFOSX_SYSROOT}.sdk"
-
-  if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
-      echo "*TF* Trying xcrun"
-
-      export CONDA_BUILD_SYSROOT="$(xcrun --sdk macosx${TFOSX_SYSROOT} --show-sdk-path)"
-  fi
-fi
-
-echo "*TF* CONDA_BUILD_SYSROOT ${CONDA_BUILD_SYSROOT}"
-
-if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
-    echo "*TF* SDK not found"
-    echo "*TF* Likely, TFOSX_SYSROOT was not correctly set"
-    exit 1
-fi
-
 declare -a CMAKE_CONFIG_ARGS
 
 CMAKE_CONFIG_ARGS+=(-DCMAKE_BUILD_TYPE:STRING=${TFBUILD_CONFIG})
 CMAKE_CONFIG_ARGS+=(-DCMAKE_PREFIX_PATH:PATH=${TFENV})
 CMAKE_CONFIG_ARGS+=(-DCMAKE_FIND_ROOT_PATH:PATH=${TFENV})
 CMAKE_CONFIG_ARGS+=(-DCMAKE_INSTALL_PREFIX:PATH=${TFINSTALLDIR})
-CMAKE_CONFIG_ARGS+=(-DCMAKE_OSX_SYSROOT:PATH=${CONDA_BUILD_SYSROOT})
 CMAKE_CONFIG_ARGS+=(-DPython_EXECUTABLE:PATH=${TFENV}/bin/python)
 CMAKE_CONFIG_ARGS+=(-DLIBXML_INCLUDE_DIR:PATH=${TFENV}/include/libxml2)
+
+if [ -n "${TF_OSX_DEPLOYMENT_TARGET+x}" ]; then
+  echo "*TF* Using externally specified deployment target"
+
+  CMAKE_CONFIG_ARGS+=(-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${TF_OSX_DEPLOYMENT_TARGET})
+fi
+
+if [ -n "${TF_BUILD_SYSROOT+x}" ]; then
+  echo "*TF* Using externally specified SDK"
+
+  if [ ! -d "${TF_BUILD_SYSROOT}" ]; then
+      echo "*TF* SDK not found"
+
+      exit 1
+  fi
+
+  CMAKE_CONFIG_ARGS+=(-DCMAKE_OSX_SYSROOT:PATH=${TF_BUILD_SYSROOT})
+fi
 
 if [[ $(uname -m) == 'arm64' ]]; then
     echo "*TF* Detected arm64"
