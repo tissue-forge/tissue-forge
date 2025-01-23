@@ -33,18 +33,20 @@ mkdir -p -v ${TFINSTALLDIR}
 cd ${TFBUILDDIR}
 
 export MACOSX_DEPLOYMENT_TARGET=${TFOSX_SYSROOT}
-export CONDA_BUILD_SYSROOT="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${TFOSX_SYSROOT}.sdk"
-
-if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
-    echo "*TF* Trying xcrun"
-
-    export CONDA_BUILD_SYSROOT="$(xcrun --sdk macosx${TFOSX_SYSROOT} --show-sdk-path)"
-fi
 
 if [ -n "${TF_BUILD_SYSROOT+x}" ]; then
   echo "*TF* Using externally specified SDK"
 
   export CONDA_BUILD_SYSROOT="${TF_BUILD_SYSROOT}"
+  xcode-select --switch "${CONDA_BUILD_SYSROOT}"
+else
+  export CONDA_BUILD_SYSROOT="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${TFOSX_SYSROOT}.sdk"
+
+  if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
+      echo "*TF* Trying xcrun"
+
+      export CONDA_BUILD_SYSROOT="$(xcrun --sdk macosx${TFOSX_SYSROOT} --show-sdk-path)"
+  fi
 fi
 
 echo "*TF* CONDA_BUILD_SYSROOT ${CONDA_BUILD_SYSROOT}"
