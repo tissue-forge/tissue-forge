@@ -40,6 +40,10 @@ if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
     export CONDA_BUILD_SYSROOT="$(xcrun --sdk macosx${TFOSX_SYSROOT} --show-sdk-path)"
 fi
 
+if [ -z "${TF_BUILD_SYSROOT+x}" ]; then
+  export CONDA_BUILD_SYSROOT="${TF_BUILD_SYSROOT}"
+fi
+
 echo "*TF* CONDA_BUILD_SYSROOT ${CONDA_BUILD_SYSROOT}"
 
 if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
