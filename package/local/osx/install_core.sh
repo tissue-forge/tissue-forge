@@ -41,7 +41,9 @@ if [ ! -d "${CONDA_BUILD_SYSROOT}" ]; then
     export CONDA_BUILD_SYSROOT="$(xcrun --sdk macosx${TFOSX_SYSROOT} --show-sdk-path)"
 fi
 
-if [ -z "${TF_BUILD_SYSROOT+x}" ]; then
+if [ -n "${TF_BUILD_SYSROOT+x}" ]; then
+  echo "*TF* Using externally specified SDK"
+
   export CONDA_BUILD_SYSROOT="${TF_BUILD_SYSROOT}"
 fi
 
