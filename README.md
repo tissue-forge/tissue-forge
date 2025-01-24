@@ -180,13 +180,8 @@ On Windows
 ```bash
 call tissue-forge/package/local/install
 ```
-On Linux
+On Linux and MacOS
 ```bash
-bash tissue-forge/package/local/install.sh
-```
-On MacOS, specify the installed MacOS SDK (*e.g.*, for 10.9)  
-```bash
-export TFOSX_SYSROOT=10.9
 bash tissue-forge/package/local/install.sh
 ```
 

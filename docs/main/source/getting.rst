@@ -75,17 +75,10 @@ On Windows
 
     call tissue-forge/package/local/install
 
-On Linux
+On Linux and MacOS
 
 .. code-block:: bash
 
-    bash tissue-forge/package/local/install.sh
-
-On MacOS, specify the installed MacOS SDK (*e.g.*, for 10.9)
-
-.. code-block:: bash
-
-    export TFOSX_SYSROOT=10.9
     bash tissue-forge/package/local/install.sh
 
 The standard installation will create the directories `tissue-forge_build` and
