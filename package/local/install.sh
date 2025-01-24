@@ -33,15 +33,15 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
-if [ ! -z "${TFENVNEEDSCONDA+x}" ]; then
+if [ -n "${TFENVNEEDSCONDA+x}" ]; then
     source ${TFCONDAENV}
 fi
 
 # Install CUDA support if requested
-if [ -z "${TF_WITHCUDA+x}" ]; then
+if [ -n "${TF_WITHCUDA+x}" ]; then
     if [ ${TF_WITHCUDA} -eq 1 ]; then 
         # Validate specified compute capability
-        if [ ! -z "${CUDAARCHS+x}" ]; then
+        if [ -z "${CUDAARCHS+x}" ]; then
             echo "*TF* No compute capability specified"
             exit 1
         fi

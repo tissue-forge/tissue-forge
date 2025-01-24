@@ -55,7 +55,7 @@ stages:
   - stage: TissueForgeBuildMacLocal
     displayName: Local build for Mac
     pool: 
-      vmImage: 'macOS-12'
+      vmImage: 'macOS-13'
     dependsOn: []
     jobs:
       - template: job-templates/job-build-test-package-osx-local.yml
