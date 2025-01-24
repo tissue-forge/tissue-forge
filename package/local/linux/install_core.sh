@@ -27,6 +27,9 @@ elif [ ! -d "${TFSRCDIR}" ]; then
     exit 1
 fi
 
+# Helping corrade rc find the right libstdc++
+export LD_LIBRARY_PATH=${TFENV}/lib:${LD_LIBRARY_PATH}
+
 current_dir=$(pwd)
 
 mkdir -p -v ${TFBUILDDIR}

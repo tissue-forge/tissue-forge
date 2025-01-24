@@ -72,7 +72,7 @@ stages:
   - stage: TissueForgeBuildMacLocal
     displayName: Local build for Mac
     pool: 
-      vmImage: 'macOS-12'
+      vmImage: 'macOS-13'
     dependsOn: []
     jobs:
       - ${{ each py_minor_version in parameters.py_minor_versions_osx }}:
