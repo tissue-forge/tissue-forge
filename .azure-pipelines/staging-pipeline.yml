@@ -54,7 +54,7 @@ stages:
   - stage: TissueForgeBuildLinuxLocal
     displayName: Local build for Linux
     pool:
-      vmImage: 'ubuntu-20.04'
+      vmImage: 'ubuntu-22.04'
     dependsOn: []
     jobs:
       - ${{ each py_minor_version in parameters.py_minor_versions_linux }}:
@@ -110,7 +110,7 @@ stages:
   - stage: TissueForgeBuildLinuxConda
     displayName: Conda build for Linux
     pool:
-      vmImage: 'ubuntu-20.04'
+      vmImage: 'ubuntu-22.04'
     dependsOn: []
     jobs:
       - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
