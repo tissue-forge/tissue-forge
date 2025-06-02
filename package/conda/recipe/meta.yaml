@@ -13,7 +13,7 @@ about:
   doc_url: https://tissue-forge.readthedocs.io/en/latest/
 
 extra:
-  maintainers: T.J. Sego
+  maintainers: tjsego
 
 source:
   path: ../../../
@@ -28,7 +28,7 @@ requirements:
   host:
     - python {{ python }}   # [TF_PYVER==0]
     - python={{ TF_PYVER }} # [TF_PYVER!=0]
-    - numpy
+    - {{ pin_compatible('numpy') }}
     - bzip2
     - libxml2<=2.11
     - assimp<=5.3.1
