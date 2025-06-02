@@ -34,7 +34,7 @@ jobs:
         displayName: Install conda
       - bash: echo "##vso[task.prependpath]$(CONDA_INSTALL)/bin"
         displayName: Add conda to path
-      - bash: sudo chown -R $USER $CONDA
+      - bash: sudo chown -R $USER $(CONDA_INSTALL)
         displayName: Take ownership of conda installation
       - checkout: self
         submodules: recursive
