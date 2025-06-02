@@ -2,7 +2,7 @@ parameters:
   name: ''
   platform_name: 'linux64'
   tf_buildqual: ''
-  py_minor_version: 8
+  py_minor_version: 9
   working_dir: ''
   staging_dir: ''
 

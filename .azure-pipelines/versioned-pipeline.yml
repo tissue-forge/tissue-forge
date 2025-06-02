@@ -18,16 +18,16 @@ variables:
 parameters:
 - name: py_minor_versions_win
   type: object
-  default: [8, 9, 10, 11]
+  default: [9, 10, 11, 12]
 - name: py_minor_versions_linux
   type: object
-  default: [8, 9, 10, 11]
+  default: [9, 10, 11, 12]
 - name: py_minor_versions_osx
   type: object
-  default: [8, 9, 10]
+  default: [9, 10, 11, 12]
 - name: py_minor_versions_conda
   type: object
-  default: [8, 9, 10, 11]
+  default: [9, 10, 11, 12]
 
 stages:
 
