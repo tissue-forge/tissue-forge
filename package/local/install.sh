@@ -18,11 +18,15 @@ bash ${TFSRCDIR}/package/local/${subdir}/install_env.sh
 
 source ${TFCONDAENV}
 
+if [ -n "${TFENVNEEDSCONDA+x}" ]; then
+    source ${TFCONDAENV}
+fi
+
 # Install CUDA support if requested
-if [ -z "${TF_WITHCUDA+x}" ]; then
+if [ -n "${TF_WITHCUDA+x}" ]; then
     if [ ${TF_WITHCUDA} -eq 1 ]; then 
         # Validate specified compute capability
-        if [ ! -z "${CUDAARCHS+x}" ]; then
+        if [ -z "${CUDAARCHS+x}" ]; then
             echo "No compute capability specified"
             exit 1
         fi

@@ -18,6 +18,7 @@ jobs:
       PY_VERSION_LAB: ${{ format('py3{0}', parameters.py_minor_version) }}
       ROOT_DIR: '${{ parameters.working_dir }}'
       SOURCE_DIR: '$(ROOT_DIR)/tissue-forge'
+      CONDA_INSTALL: '$(ROOT_DIR)/miniconda'
       BUILD_ROOT: '$(ROOT_DIR)/tf_condabuild'
       ENV_DIR: '$(BUILD_ROOT)/buildenv'
       BUILD_OUTPUT: '$(BUILD_ROOT)/result'
@@ -31,9 +32,15 @@ jobs:
     steps:
 
       # Setup
-      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+      - script: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O ~/miniconda.sh
+          bash ~/miniconda.sh -b -p $(CONDA_INSTALL)
+          source $(CONDA_INSTALL)/bin/activate
+          conda init --all
+        displayName: Install conda
+      - bash: echo "##vso[task.prependpath]$(CONDA_INSTALL)/bin"
         displayName: Add conda to path
-      - bash: sudo chown -R $USER $CONDA
+      - bash: sudo chown -R $USER ($CONDA_INSTALL)
         displayName: Take ownership of conda installation
       - script: |
           mkdir $(BUILD_ROOT)
