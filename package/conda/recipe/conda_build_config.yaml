@@ -3,7 +3,7 @@ c_compiler:
   - clang # [osx]
 
 c_compiler_version: # [unix]
-  - 12 # [linux]
+  - 12.3 # [linux]
   - 14 # [osx]
 
 cxx_compiler:
@@ -11,7 +11,7 @@ cxx_compiler:
   - clangxx # [osx]
 
 cxx_compiler_version: # [unix]
-  - 12 # [linux]
+  - 12.3 # [linux]
   - 14 # [osx]
 
 python:
