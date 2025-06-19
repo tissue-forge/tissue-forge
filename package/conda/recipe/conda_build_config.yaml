@@ -4,7 +4,7 @@ c_compiler:
   - vs2022 # [win]
 
 c_compiler_version: # [unix]
-  - 12.3 # [linux]
+  - 12.2 # [linux]
   - 14 # [osx]
 
 cxx_compiler:
@@ -13,7 +13,7 @@ cxx_compiler:
   - vs2022 # [win]
 
 cxx_compiler_version: # [unix]
-  - 12.3 # [linux]
+  - 12.2 # [linux]
   - 14 # [osx]
 
 python:
