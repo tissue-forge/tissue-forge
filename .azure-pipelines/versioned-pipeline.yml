@@ -36,7 +36,7 @@ stages:
   - stage: TissueForgeBuildWindowsLocal
     displayName: Local build for Windows
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022'
     dependsOn: []
     jobs:
       - ${{ each py_minor_version in parameters.py_minor_versions_win }}:
@@ -90,7 +90,7 @@ stages:
   - stage: TissueForgeBuildWindowsConda
     displayName: Conda build for Windows
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022'
     dependsOn: []
     jobs:
       - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:

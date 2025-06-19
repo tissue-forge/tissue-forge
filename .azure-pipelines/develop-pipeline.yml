@@ -21,7 +21,7 @@ stages:
   - stage: TissueForgeBuildWindowsLocal
     displayName: Local build for Windows
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022
     dependsOn: []
     jobs:
       - template: job-templates/job-build-test-package-win-local.yml
