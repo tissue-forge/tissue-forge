@@ -36,7 +36,6 @@ requirements:
     - eigen
     - glfw
     - pthreads-win32 # [win]
-    - vs2019_win-64<=19.28 # [win]
     - lld # [win]
     - xorg-libxfixes # [linux]
     - xorg-libxrandr # [linux]
@@ -53,8 +52,8 @@ requirements:
     - swig>=4
     - lld # [linux]
     - libcxx=15 # [osx]
-    - {{ compiler('c') }} # [linux or osx]
-    - {{ compiler('cxx') }} # [linux or osx]
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - {{ cdt('mesa-libgl-devel') }} # [linux]
     - {{ cdt('mesa-libegl-devel') }} # [linux]
     - {{ cdt('mesa-dri-drivers') }} # [linux]
