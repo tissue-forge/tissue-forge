@@ -10,6 +10,9 @@ mkdir %TFINSTALLDIR%
 
 cd %TFBUILDDIR%
 
+set CC=clang-cl
+set CXX=clang-cl
+
 cmake -DCMAKE_BUILD_TYPE:STRING=%TFBUILD_CONFIG% ^
       -G "Ninja" ^
       -DCMAKE_PREFIX_PATH:PATH=%TFENV% ^

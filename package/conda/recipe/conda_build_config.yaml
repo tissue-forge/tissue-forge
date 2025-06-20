@@ -1,30 +1,30 @@
 c_compiler:
   - gcc # [linux]
   - clang # [osx]
-  - vs2022 # [win]
+  - clang # [win]
 
-c_compiler_version: # [unix]
+c_compiler_version:
   - 12.2 # [linux]
   - 14 # [osx]
+  - 18 # [win]
 
 cxx_compiler:
   - gxx # [linux]
   - clangxx # [osx]
-  - vs2022 # [win]
+  - clangxx # [win]
 
-cxx_compiler_version: # [unix]
+cxx_compiler_version:
   - 12.2 # [linux]
   - 14 # [osx]
+  - 18 # [win]
 
-c_stdlib:
+c_stdlib: # [unix]
   - sysroot # [linux]
   - macosx_deployment_target # [osx]
-  - vs # [win]
 
-c_stdlib_version:
+c_stdlib_version: # [unix]
   - 2.17 # [linux]
   - 10.11 # [osx]
-  - 2022 # [win]
 
 python:
   - 3.9

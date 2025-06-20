@@ -22,11 +22,6 @@ if(TF_APPLE)
   include_directories(${CMAKE_FIND_ROOT_PATH}/include)
 endif()
 
-if (MSVC)
-    # avoiding inevitable updates
-    add_compile_options(/permissive)
-endif()
-
 # build libsbml
 
 set(LIBSBML_SHARED_VERSION OFF CACHE BOOL "dont build shared libsbml")
