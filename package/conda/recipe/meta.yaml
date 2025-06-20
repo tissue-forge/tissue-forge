@@ -62,6 +62,7 @@ requirements:
     - {{ cdt('libxdamage') }} # [linux]
     - {{ cdt('libxxf86vm') }} # [linux]
     - {{ cdt('libxext') }} # [linux]
+    - {{ cdt('xorg-x11-proto-devel') }} # [linux]
 
   run:
     - python
