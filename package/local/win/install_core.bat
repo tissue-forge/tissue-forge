@@ -10,8 +10,8 @@ mkdir %TFINSTALLDIR%
 
 cd %TFBUILDDIR%
 
-set CC=%TFENV%/Library/bin/clang-cl
-set CXX=%TFENV%/Library/bin/clang-cl
+set CC=%TFENV%/Library/bin/clang-cl.exe
+set CXX=%TFENV%/Library/bin/clang-cl.exe
 
 cmake -DCMAKE_BUILD_TYPE:STRING=%TFBUILD_CONFIG% ^
       -G "Ninja" ^
