@@ -6,8 +6,8 @@ set TFPACKAGECONDA=1
 mkdir tf_build_conda
 cd tf_build_conda
 
-set CC=clang-cl
-set CXX=clang-cl
+set CC=%LIBRARY_PREFIX%/bin/clang-cl
+set CXX=%LIBRARY_PREFIX%/bin/clang-cl
 
 cmake -DCMAKE_BUILD_TYPE:STRING="%TFBUILD_CONFIG%" ^
       -G "Ninja" ^
