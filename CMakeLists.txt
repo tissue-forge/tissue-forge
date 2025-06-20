@@ -260,7 +260,7 @@ if(TF_WITH_PYTHON)
   # directory where we build the Tissue Forge python package
   set(TF_PYPKG_DIR ${CMAKE_BINARY_DIR}/TissueForge)
 
-  find_package(Python 3.8.0...3.12.99 REQUIRED COMPONENTS Interpreter Development)
+  find_package(Python 3.9.0...3.12.99 REQUIRED COMPONENTS Interpreter Development)
 
   message("Python_FOUND: ${Python_FOUND}")
   message("Python_Interpeter_FOUND: ${Python_Interpeter_FOUND}")
