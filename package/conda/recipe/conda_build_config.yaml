@@ -18,9 +18,10 @@ cxx_compiler_version:
   - 14 # [osx]
   - 18 # [win]
 
-c_stdlib: # [unix]
+c_stdlib:
   - sysroot # [linux]
   - macosx_deployment_target # [osx]
+  - vs # [win]
 
 c_stdlib_version: # [unix]
   - 2.17 # [linux]

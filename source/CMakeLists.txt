@@ -389,6 +389,7 @@ set(TF_LIBDEPS_PUBLIC
   GLFW::GLFW 
   ${GLFW_LIBRARIES} 
   LibSBML::LibSBML
+  Threads::Threads
   assimp::assimp
 )
 set(TF_LIBDEPS_PRIVATE
