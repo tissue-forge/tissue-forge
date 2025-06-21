@@ -36,7 +36,6 @@ requirements:
     - eigen
     - glfw
     - pthreads-win32 # [win]
-    - lld # [win]
     - xorg-libxfixes # [linux]
     - xorg-libxrandr # [linux]
     - xorg-libxcursor # [linux]
@@ -50,7 +49,7 @@ requirements:
     - git
     - ninja
     - swig>=4
-    - lld # [linux]
+    - lld # [linux or win]
     - libcxx=15 # [osx]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}

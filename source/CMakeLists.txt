@@ -358,6 +358,7 @@ target_link_libraries(
   GLFW::GLFW 
   ${GLFW_LIBRARIES} 
   LibSBML::LibSBML
+  Threads::Threads
   assimp::assimp
   ${OPENGL_LIBRARIES}
 )
