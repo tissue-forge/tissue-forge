@@ -20,6 +20,7 @@ cmake -DCMAKE_BUILD_TYPE:STRING=%TFBUILD_CONFIG% ^
       -DCMAKE_FIND_ROOT_PATH:PATH=%TFENV%\Library ^
       -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld ^
       -DPython_EXECUTABLE:PATH=%TFENV%\python.exe ^
+      -DPThreads_ROOT:PATH=%TFENV%\Library ^
       -S . ^
       -B "%TFTESTS_BUILDDIR%"
 if errorlevel 1 exit 2

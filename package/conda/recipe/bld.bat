@@ -16,6 +16,7 @@ cmake -DCMAKE_BUILD_TYPE:STRING="%TFBUILD_CONFIG%" ^
       -DTF_INSTALL_PREFIX_PYTHON:PATH="%SP_DIR%" ^
       -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld ^
       -DPython_EXECUTABLE=%PYTHON% ^
+      -DPThreads_ROOT:PATH="%LIBRARY_PREFIX%" ^
       -DLIBXML_INCLUDE_DIR:PATH="%LIBRARY_PREFIX%\include\libxml2" ^
       "%SRC_DIR%"
 if errorlevel 1 exit 1
