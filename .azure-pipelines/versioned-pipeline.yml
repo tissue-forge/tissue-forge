@@ -28,6 +28,9 @@ parameters:
 - name: py_minor_versions_conda
   type: object
   default: [9, 10, 11, 12]
+- name: py_minor_versions_conda_win
+  type: object
+  default: [10, 11, 12]
 
 stages:
 
@@ -93,7 +96,7 @@ stages:
       vmImage: 'windows-2022'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions_conda_win }}:
         - template: job-templates/job-build-test-package-win-conda.yml
           parameters:
             name: ${{ format('TissueForgeBuildWindowsConda_Python_3_{0}', py_minor_version) }}

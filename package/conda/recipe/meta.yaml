@@ -32,6 +32,7 @@ requirements:
     - bzip2
     - libxml2
     - assimp<=5.3.1
+    - libzlib=1
     - nlohmann_json
     - eigen
     - glfw
@@ -71,6 +72,8 @@ requirements:
     - nlohmann_json
     - eigen
     - glfw
+    - assimp<=5.3.1
+    - libzlib=1
     - pthreads-win32 # [win]
 
 test:
