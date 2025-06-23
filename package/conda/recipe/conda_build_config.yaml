@@ -25,14 +25,15 @@ c_stdlib:
 
 c_stdlib_version:
   - 2.17 # [linux]
-  - 10.11 # [osx]
+  - 10.11 # [osx and not arm64]
+  - 11.0 # [osx and arm64]
   - '2022' # [win]
 
 python:
-  - 3.9
+  - 3.9 # [not win]
   - 3.10
   - 3.11
-  - 3.12
+  - 3.12 # [not osx or not arm64]
 
 pin_run_as_build:
   python: x.x

@@ -28,6 +28,12 @@ parameters:
 - name: py_minor_versions_conda
   type: object
   default: [9, 10, 11, 12]
+- name: py_minor_versions_conda_osx64
+  type: object
+  default: [9, 10, 11, 12]
+- name: py_minor_versions_conda_osxarm64
+  type: object
+  default: [9, 10, 11]
 - name: py_minor_versions_conda_win
   type: object
   default: [10, 11, 12]
@@ -136,7 +142,7 @@ stages:
       vmImage: 'macOS-13'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions_conda_osx64 }}:
         - template: job-templates/job-build-test-package-osx-conda.yml
           parameters:
             name: ${{ format('TissueForgeBuildMacConda_Python_3_{0}', py_minor_version) }}
