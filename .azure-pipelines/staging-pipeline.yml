@@ -18,7 +18,7 @@ variables:
 parameters:
 - name: py_minor_versions_win
   type: object
-  default: [9, 10, 11, 12]
+  default: [10, 11, 12]
 - name: py_minor_versions_linux
   type: object
   default: [9, 10, 11, 12]

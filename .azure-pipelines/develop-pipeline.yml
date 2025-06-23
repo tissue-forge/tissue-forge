@@ -11,7 +11,7 @@ pr:
     - develop
 
 variables:
-  py_minor_version: 9
+  py_minor_version: 10
   tf_buildqual: 'develop'
 
 stages:
