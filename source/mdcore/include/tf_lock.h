@@ -25,9 +25,13 @@
 #include "tf_platform.h"
 
 #if (defined(_MSC_VER) && !defined(__GNUC__))
-#include <winnt.h>
+#if defined(PTHREAD_LOCK)
+#include <pthread.h>
 #endif
 
+// #include <winnt.h>
+#include <intrin.h>
+#endif
 
 #if (defined(_MSC_VER) && !defined(__GNUC__))
 

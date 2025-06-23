@@ -2,7 +2,7 @@ parameters:
   name: ''
   platform_name: 'win64'
   tf_buildqual: ''
-  py_minor_version: 8
+  py_minor_version: 9
   working_dir: ''
   staging_dir: ''
 
@@ -35,7 +35,7 @@ jobs:
           conda create --yes --prefix %TFENV%
           conda env update --prefix %TFENV% --file %TFSRCDIR%\package\local\win\env.yml
           call activate %TFENV%
-          conda install -y python=$(PY_VERSION_DEC)
+          conda install -y pytest python=$(PY_VERSION_DEC)
         displayName: Conda setup
       
       # Build
@@ -51,8 +51,6 @@ jobs:
       - script: |
           call $(SOURCE_DIR)\package\local\win\install_vars
           call activate %TFENV%
-          conda install -y pytest
-          call conda list
           call $(SOURCE_DIR)\testing\build_tests
           call $(INSTALL_DIR)\etc\vars
           call $(SOURCE_DIR)\testing\run_tests

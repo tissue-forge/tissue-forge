@@ -130,6 +130,27 @@ if(TF_WITHCUDA)
   enable_language(CUDA)
 endif()
 
+set(TF_HAVEPTHREADS FALSE)
+if(DEFINED PThreads_ROOT)
+
+  find_library(
+    PThreads 
+    NAMES pthreads pthreadsVSE2 
+    HINTS ${PThreads_ROOT} 
+    REQUIRED 
+  )
+  message("PThreads path: ${PThreads}")
+  add_library(pthreads UNKNOWN IMPORTED GLOBAL)
+  target_include_directories(pthreads INTERFACE ${PThreads_ROOT}/include)
+  set_target_properties(pthreads PROPERTIES IMPORTED_LOCATION ${PThreads})
+  add_library(Threads::Threads ALIAS pthreads)
+  set(TF_HAVEPTHREADS TRUE)
+
+else()
+  # use standard unix pthreads, creates Threads::Threads target
+  find_package(Threads REQUIRED)
+endif()
+
 find_package(glfw3 REQUIRED)
 
 add_library(GLFW::GLFW ALIAS glfw)
@@ -202,27 +223,6 @@ message("CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 message("CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
 message("CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")
 
-set(TF_HAVEPTHREADS FALSE)
-if(DEFINED PThreads_ROOT)
-
-  find_library(
-    PThreads 
-    NAMES pthreads pthreadsVSE2 
-    HINTS ${PThreads_ROOT} 
-    REQUIRED 
-  )
-  message("PThreads path: ${PThreads}")
-  add_library(pthreads UNKNOWN IMPORTED GLOBAL)
-  target_include_directories(pthreads INTERFACE ${PThreads_ROOT}/include)
-  set_target_properties(pthreads PROPERTIES IMPORTED_LOCATION ${PThreads})
-  add_library(Threads::Threads ALIAS pthreads)
-  set(TF_HAVEPTHREADS TRUE)
-
-else()
-  # use standard unix pthreads, creates Threads::Threads target
-  find_package(Threads REQUIRED)
-endif()
-
 # Install options
 
 set(CMAKE_INSTALL_PREFIX  "$ENV{HOME}/local/TissueForge"  CACHE PATH  "Install location for Tissue Forge")
@@ -260,7 +260,7 @@ if(TF_WITH_PYTHON)
   # directory where we build the Tissue Forge python package
   set(TF_PYPKG_DIR ${CMAKE_BINARY_DIR}/TissueForge)
 
-  find_package(Python 3.8.0...3.11.99 REQUIRED COMPONENTS Interpreter Development)
+  find_package(Python 3.9.0...3.12.99 REQUIRED COMPONENTS Interpreter Development)
 
   message("Python_FOUND: ${Python_FOUND}")
   message("Python_Interpeter_FOUND: ${Python_Interpeter_FOUND}")

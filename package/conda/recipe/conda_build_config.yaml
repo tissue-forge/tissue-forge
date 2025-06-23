@@ -1,24 +1,39 @@
 c_compiler:
   - gcc # [linux]
   - clang # [osx]
+  - clang # [win]
 
-c_compiler_version: # [unix]
-  - 12 # [linux]
+c_compiler_version:
+  - 12.2 # [linux]
   - 14 # [osx]
+  - 18 # [win]
 
 cxx_compiler:
   - gxx # [linux]
   - clangxx # [osx]
+  - clangxx # [win]
 
-cxx_compiler_version: # [unix]
-  - 12 # [linux]
+cxx_compiler_version:
+  - 12.2 # [linux]
   - 14 # [osx]
+  - 18 # [win]
+
+c_stdlib:
+  - sysroot # [linux]
+  - macosx_deployment_target # [osx]
+  - vs # [win]
+
+c_stdlib_version:
+  - 2.17 # [linux]
+  - 10.11 # [osx and not arm64]
+  - 11.0 # [osx and arm64]
+  - '2022' # [win]
 
 python:
-  - 3.8
-  - 3.9
+  - 3.9 # [not win]
   - 3.10
   - 3.11
+  - 3.12 # [not osx or not arm64]
 
 pin_run_as_build:
   python: x.x

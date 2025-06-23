@@ -13,7 +13,7 @@ about:
   doc_url: https://tissue-forge.readthedocs.io/en/latest/
 
 extra:
-  maintainers: T.J. Sego
+  maintainers: tjsego
 
 source:
   path: ../../../
@@ -28,16 +28,14 @@ requirements:
   host:
     - python {{ python }}   # [TF_PYVER==0]
     - python={{ TF_PYVER }} # [TF_PYVER!=0]
-    - numpy
+    - {{ pin_compatible('numpy') }}
     - bzip2
-    - libxml2<=2.11
-    - assimp=5
+    - libxml2
+    - assimp<=5.3.1
     - nlohmann_json
     - eigen
     - glfw
     - pthreads-win32 # [win]
-    - vs2019_win-64<=19.28 # [win]
-    - lld # [win]
     - xorg-libxfixes # [linux]
     - xorg-libxrandr # [linux]
     - xorg-libxcursor # [linux]
@@ -47,14 +45,15 @@ requirements:
     - xorg-libxdmcp # [linux]
 
   build:
-    - cmake>=3.20.3
+    - cmake>=3.20.3,<3.31
     - git
     - ninja
     - swig>=4
-    - lld # [linux]
+    - lld # [linux or win]
     - libcxx=15 # [osx]
-    - {{ compiler('c') }} # [linux or osx]
-    - {{ compiler('cxx') }} # [linux or osx]
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
     - {{ cdt('mesa-libgl-devel') }} # [linux]
     - {{ cdt('mesa-libegl-devel') }} # [linux]
     - {{ cdt('mesa-dri-drivers') }} # [linux]
@@ -62,15 +61,17 @@ requirements:
     - {{ cdt('libxdamage') }} # [linux]
     - {{ cdt('libxxf86vm') }} # [linux]
     - {{ cdt('libxext') }} # [linux]
+    - {{ cdt('xorg-x11-proto-devel') }} # [linux]
 
   run:
     - python
     - {{ pin_compatible('numpy') }}
     - matplotlib
-    - assimp=5
+    - assimp<=5.3.1
     - nlohmann_json
     - eigen
     - glfw
+    - assimp<=5.3.1
     - pthreads-win32 # [win]
 
 test:

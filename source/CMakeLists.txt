@@ -358,6 +358,7 @@ target_link_libraries(
   GLFW::GLFW 
   ${GLFW_LIBRARIES} 
   LibSBML::LibSBML
+  Threads::Threads
   assimp::assimp
   ${OPENGL_LIBRARIES}
 )
@@ -389,6 +390,7 @@ set(TF_LIBDEPS_PUBLIC
   GLFW::GLFW 
   ${GLFW_LIBRARIES} 
   LibSBML::LibSBML
+  Threads::Threads
   assimp::assimp
 )
 set(TF_LIBDEPS_PRIVATE
