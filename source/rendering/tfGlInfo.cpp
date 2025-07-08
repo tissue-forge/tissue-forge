@@ -192,21 +192,21 @@ std::string rendering::gl_info() {
 
     GL::Context& c = GL::Context::current();
     
-    os << "vendor: " << c.vendorString();
+    os << "vendor: " << c.vendorString().data();
     
-    os << "version: " <<  c.versionString();
+    os << "version: " <<  c.versionString().data();
     
-    os << "renderer: " <<  c.rendererString();
+    os << "renderer: " <<  c.rendererString().data();
     
-    os << "shading_language_version: " <<  c.shadingLanguageVersionString();
+    os << "shading_language_version: " <<  c.shadingLanguageVersionString().data();
     
     {
-        std::vector<std::string> extensions = c.extensionStrings();
+        auto extensions = c.extensionStrings();
         
         os << "extensions: ";
         
         for (int i = 0; i < extensions.size(); ++i) {
-            os << "\t  (" << i << ") " << extensions[i];
+            os << "\t  (" << i << ") " << extensions[i].data();
         }
     }
 

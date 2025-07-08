@@ -1439,7 +1439,7 @@ HRESULT system::LoggerCallbackImpl(LogEvent, std::ostream *os) {
         magnum_error = new Magnum::Error(os);
     }
     else {
-        magnum_error = new Magnum::Error(NULL);
+        magnum_error = new Magnum::Error(std::nullptr_t());
     }
     
     if(Logger::getLevel() >= LOG_WARNING) {
@@ -1447,7 +1447,7 @@ HRESULT system::LoggerCallbackImpl(LogEvent, std::ostream *os) {
         magnum_warning = new Magnum::Warning(os);
     }
     else {
-        magnum_warning = new Magnum::Warning(NULL);
+        magnum_warning = new Magnum::Warning(std::nullptr_t());
     }
     
     if(Logger::getLevel() >= LOG_DEBUG) {
@@ -1455,7 +1455,7 @@ HRESULT system::LoggerCallbackImpl(LogEvent, std::ostream *os) {
         magnum_debug = new Magnum::Debug(os);
     }
     else {
-        magnum_debug = new Magnum::Debug(NULL);
+        magnum_debug = new Magnum::Debug(std::nullptr_t());
     }
     
     return S_OK;

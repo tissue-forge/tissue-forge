@@ -38,48 +38,6 @@
 #include "access_private.hpp"
 
 
-
-namespace {
-    namespace private_access_detail {
-      /* Tag type, used to declare different get funcitons for different
-       * members
-       */
-      struct PrivateAccessTag8 {};
-      /* Explicit instantiation */
-      template struct private_access<decltype(&Magnum::Platform::WindowlessApplication::_context), &Magnum::Platform::WindowlessApplication::_context,
-                                     PrivateAccessTag8>;
-      /* We can build the PtrType only with two aliases */
-      /* E.g. using PtrType = int(int) *; would be illformed */
-      using Alias_PrivateAccessTag8 = Corrade::Containers::Pointer<Magnum::Platform::GLContext>;
-      using PtrType_PrivateAccessTag8 =
-          Alias_PrivateAccessTag8 Magnum::Platform::WindowlessApplication::*;
-      /* Declare the friend function, now it is visible in namespace scope.
-       * Note,
-       * we could declare it inside the Tag type too, in that case ADL would
-       * find
-       * the declaration. By choosing to declare it here, the Tag type remains
-       * a
-       * simple tag type, it has no other responsibilities. */
-      PtrType_PrivateAccessTag8 get(PrivateAccessTag8);
-    }
-  }
-  namespace {
-    namespace access_private {
-      Corrade::Containers::Pointer<Magnum::Platform::GLContext> &_context(Magnum::Platform::WindowlessApplication &&t) { return t.*get(private_access_detail::PrivateAccessTag8{}); }
-      Corrade::Containers::Pointer<Magnum::Platform::GLContext> &_context(Magnum::Platform::WindowlessApplication &t) { return t.*get(private_access_detail::PrivateAccessTag8{}); }
-      /* The following usings are here to avoid duplicate const qualifier
-       * warnings
-       */
-      using XPrivateAccessTag8 = Corrade::Containers::Pointer<Magnum::Platform::GLContext>;
-      using YPrivateAccessTag8 =
-          const XPrivateAccessTag8;
-      YPrivateAccessTag8 & _context(const Magnum::Platform::WindowlessApplication &t) {
-        return t.*get(private_access_detail::PrivateAccessTag8{});
-      }
-    }
-  }
-
-
 ACCESS_PRIVATE_FIELD(Magnum::Platform::WindowlessApplication, Magnum::Platform::WindowlessGLContext, _glContext);
 
 
@@ -135,8 +93,7 @@ HRESULT rendering::WindowlessApplication::createContext(const Simulator::Config 
     
     Magnum::Platform::WindowlessApplication &app = *this;
     Magnum::Platform::WindowlessGLContext &glContext = access_private::_glContext(app);
-    Corrade::Containers::Pointer<Magnum::Platform::GLContext> &context = access_private::_context(app);
-    
+    _context = &GL::Context::current();
     
     
 #if defined(TF_APPLE)
@@ -151,7 +108,6 @@ HRESULT rendering::WindowlessApplication::createContext(const Simulator::Config 
 
     TF_Log(LOG_INFORMATION) << "created windowless context, " << cname << glContext.glContext();
     TF_Log(LOG_INFORMATION) << "GL Info: " << gl_info();
-    
     
     Vector2i size = conf.windowSize();
 
@@ -277,11 +233,8 @@ bool rendering::WindowlessApplication::contextMakeCurrent()
 
     Magnum::Platform::WindowlessGLContext &glContext = access_private::_glContext(app);
 
-    Corrade::Containers::Pointer<Magnum::Platform::GLContext> &context = access_private::_context(app);
-
     if(glContext.makeCurrent()) {
-        Magnum::Platform::GLContext *p = context.get();
-        Magnum::GL::Context::makeCurrent(p);
+        Magnum::GL::Context::makeCurrent(_context);
         return true;
     }
 

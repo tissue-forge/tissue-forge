@@ -167,6 +167,10 @@ namespace TissueForge::rendering {
         bool contextHasCurrent() override;
         
         bool contextRelease() override;
+
+    private:
+
+        Magnum::GL::Context* _context;
     };
 
 }

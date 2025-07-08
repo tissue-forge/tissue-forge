@@ -65,8 +65,6 @@ Derived from Magnum with the following notice:
 
 #include <iostream>
 
-#include "Magnum/Shaders/Implementation/CreateCompatibilityShader.h"
-
 
 using namespace Magnum;
 
@@ -104,8 +102,8 @@ Phong::Phong(Flags flags, unsigned lightCount, unsigned clipPlaneCount):
     const GL::Version version = GL::Context::current().supportedVersion({GL::Version::GLES300, GL::Version::GLES200});
     #endif
 
-    GL::Shader vert = Magnum::Shaders::Implementation::createCompatibilityShader(rs, version, GL::Shader::Type::Vertex);
-    GL::Shader frag = Magnum::Shaders::Implementation::createCompatibilityShader(rs, version, GL::Shader::Type::Fragment);
+    GL::Shader vert(version, GL::Shader::Type::Vertex);
+    GL::Shader frag(version, GL::Shader::Type::Fragment);
 
     #ifndef MAGNUM_TARGET_GLES
     std::string lightInitializerVertex, lightInitializerFragment;
@@ -158,7 +156,8 @@ Phong::Phong(Flags flags, unsigned lightCount, unsigned clipPlaneCount):
     }
     #endif
 
-    vert.addSource(flags & (Flag::AmbientTexture|Flag::DiffuseTexture|Flag::SpecularTexture|Flag::NormalTexture) ? "#define TEXTURED\n" : "")
+    vert.addSource(rs.getString("compatibility.glsl"))
+        .addSource(flags & (Flag::AmbientTexture|Flag::DiffuseTexture|Flag::SpecularTexture|Flag::NormalTexture) ? "#define TEXTURED\n" : "")
         .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
         .addSource(flags & Flag::Bitangent ? "#define BITANGENT\n" : "")
         .addSource(flags & Flag::VertexColor ? "#define VERTEX_COLOR\n" : "")
@@ -174,9 +173,10 @@ Phong::Phong(Flags flags, unsigned lightCount, unsigned clipPlaneCount):
     #ifndef MAGNUM_TARGET_GLES
     if(lightCount) vert.addSource(std::move(lightInitializerVertex));
     #endif
-    vert.addSource(rs.get("generic.glsl"))
-        .addSource(rs.get("tfPhong.vert"));
-    frag.addSource(flags & Flag::AmbientTexture ? "#define AMBIENT_TEXTURE\n" : "")
+    vert.addSource(rs.getString("generic.glsl"))
+        .addSource(rs.getString("tfPhong.vert"));
+    frag.addSource(rs.getString("compatibility.glsl"))
+        .addSource(flags & Flag::AmbientTexture ? "#define AMBIENT_TEXTURE\n" : "")
         .addSource(flags & Flag::DiffuseTexture ? "#define DIFFUSE_TEXTURE\n" : "")
         .addSource(flags & Flag::SpecularTexture ? "#define SPECULAR_TEXTURE\n" : "")
         .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
@@ -200,15 +200,15 @@ Phong::Phong(Flags flags, unsigned lightCount, unsigned clipPlaneCount):
     #ifndef MAGNUM_TARGET_GLES
     if(lightCount) frag.addSource(std::move(lightInitializerFragment));
     #endif
-    frag.addSource(rs.get("generic.glsl"))
-        .addSource(rs.get("tfPhong.frag"));
+    frag.addSource(rs.getString("generic.glsl"))
+        .addSource(rs.getString("tfPhong.frag"));
           
                      
      if(TissueForge::Logger::getLevel() >= TissueForge::LOG_TRACE) {
          std::stringstream ss;
          
          for(auto s : vert.sources()) {
-             ss << s << std::endl;
+             ss << s.data() << std::endl;
          }
          
          TF_Log(TissueForge::LOG_DEBUG) << "creating vertex shader: " << std::endl << ss.str();
@@ -217,7 +217,7 @@ Phong::Phong(Flags flags, unsigned lightCount, unsigned clipPlaneCount):
          
          
          for(auto s : frag.sources()) {
-             ss << s << std::endl;
+             ss << s.data() << std::endl;
          }
          
          TF_Log(TissueForge::LOG_TRACE) << "creating fragment shader: " << std::endl << ss.str();
