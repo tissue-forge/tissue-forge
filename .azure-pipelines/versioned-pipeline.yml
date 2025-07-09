@@ -12,31 +12,31 @@ pr:
 
 variables:
   tf_version: '0.2.1'
-  tf_buildnum: 1
+  tf_buildnum: 0
   tf_buildqual: 'release'
 
 parameters:
 - name: py_minor_versions_win
   type: object
-  default: [10, 11, 12]
+  default: [9, 10, 11, 12, 13]
 - name: py_minor_versions_linux
   type: object
-  default: [9, 10, 11, 12]
+  default: [9, 10, 11, 12, 13]
 - name: py_minor_versions_osx
   type: object
-  default: [9, 10, 11, 12]
+  default: [9, 10, 11, 12, 13]
 - name: py_minor_versions_conda
   type: object
-  default: [9, 10, 11, 12]
+  default: [9, 10, 11, 12, 13]
 - name: py_minor_versions_conda_osx64
   type: object
-  default: [9, 10, 11, 12]
+  default: [9, 10, 11, 12, 13]
 - name: py_minor_versions_conda_osxarm64
   type: object
-  default: [9, 10, 11]
+  default: [9, 10, 11, 12, 13]
 - name: py_minor_versions_conda_win
   type: object
-  default: [10, 11, 12]
+  default: [9, 10, 11, 12, 13]
 
 stages:
 

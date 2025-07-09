@@ -28,10 +28,11 @@ c_stdlib_version:
   - 2022 # [win]
 
 python:
-  - 3.9 # [not win]
+  - 3.9
   - 3.10
   - 3.11
-  - 3.12 # [not osx or not arm64]
+  - 3.12
+  - 3.13
 
 pin_run_as_build:
   python: x.x
