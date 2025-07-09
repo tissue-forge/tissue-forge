@@ -1,12 +1,16 @@
 [submodule "extern/magnum"]
 	path = extern/magnum
 	url = https://github.com/mosra/magnum.git
+	hexsha = be38d5e2bbd03cab4f31707d8a012a4ce119fc40
 [submodule "extern/magnum-plugins"]
 	path = extern/magnum-plugins
 	url = https://github.com/mosra/magnum-plugins.git
+	hexsha = 9f31cf5a0a6a44a63e320924141513d473586760
 [submodule "extern/corrade"]
 	path = extern/corrade
 	url = https://github.com/mosra/corrade.git
+	hexsha = 6cfb9801c3ec7e7e7ad321c3e72965f7249ee939
 [submodule "extern/libsbml"]
 	path = extern/libsbml
 	url = https://github.com/sbmlteam/libsbml.git
+	hexsha = eb2ded9ef39d2e810bab4041e6ef5e21be076362

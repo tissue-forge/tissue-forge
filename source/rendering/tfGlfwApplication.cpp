@@ -56,13 +56,9 @@
   #include <GLFW/glfw3native.h>
 #endif
 
-#include "access_private.hpp"
-
 
 using namespace TissueForge;
 
-
-ACCESS_PRIVATE_FIELD(Magnum::Platform::GlfwApplication, Containers::Pointer<Platform::GLContext>, _context);
 
 #define TF_GLFW_ERROR() { \
         const char* glfwErrorDesc = NULL; \
@@ -231,6 +227,8 @@ HRESULT rendering::GlfwApplication::createContext(const Simulator::Config &conf)
         TF_Log(LOG_DEBUG) << "tryCreate failed";
         return E_FAIL;
     }
+
+    _context = &GL::Context::current();
 
     _win = new rendering::GlfwWindow(this->window());
 
@@ -579,13 +577,7 @@ bool rendering::GlfwApplication::contextMakeCurrent()
     glfwMakeContextCurrent(_win->_window);
 
     // tell Magnum to set it's context
-    Magnum::Platform::GlfwApplication &app = *this;
-
-    Containers::Pointer<Platform::GLContext> &context = access_private::_context(app);
-
-    Platform::GLContext *p = context.get();
-
-    Magnum::GL::Context::makeCurrent(p);
+    Magnum::GL::Context::makeCurrent(_context);
 
     return true;
 }

@@ -17,7 +17,7 @@
 # 
 #*******************************************************************************
 
-find_package(Python 3.9.0...3.12.99 REQUIRED COMPONENTS Interpreter)
+find_package(Python 3.9.0...3.13.99 REQUIRED COMPONENTS Interpreter)
 
 macro(tfPyTest_Test src_name src_path)
     add_test(

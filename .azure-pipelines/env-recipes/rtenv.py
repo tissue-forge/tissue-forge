@@ -4,7 +4,7 @@ Configures a conda recipe for runtime dependencies on a platform with a python v
 The generated script is deposited next to this script, and is named 'rtenv.yml'
 
 command line arguments are the python version and platform
-    - valid python versions -v/--version: 3.8, 3.9, 3.10, 3.11
+    - valid python versions -v/--version: 3.9, 3.10, 3.11, 3.12, 3.13
     - valid platforms -p/--platform: win64, linux64, osx64, osxarm64
 """
 
@@ -13,7 +13,7 @@ import os
 import sys
 from typing import List
 
-supported_py_version = ['3.9', '3.10', '3.11', '3.12']
+supported_py_version = ['3.9', '3.10', '3.11', '3.12', '3.13']
 supported_platform = ['win64', 'linux64', 'osx64', 'osxarm64']
 this_dir = os.path.dirname(os.path.abspath(__file__))
 py_version_token = '@PYTHON_VERSION@'
@@ -29,10 +29,10 @@ class RTEnvParser:
         parser = argparse.ArgumentParser(description='Tissue Forge runtime environment configuration')
 
         parser.add_argument('-v', '--version', required=True, type=str, dest='py_version',
-                            help='Python version (3.9, 3.10, 3.11, 3.12)',
+                            help=f'Python version: {supported_py_version}',
                             choices=supported_py_version)
         parser.add_argument('-p', '--platform', required=True, type=str, dest='platform',
-                            help='Target platform',
+                            help=f'Target platform: {supported_platform}',
                             choices=supported_platform)
 
         self.parsed_args = parser.parse_args(argv)

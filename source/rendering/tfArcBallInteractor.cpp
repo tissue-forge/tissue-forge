@@ -113,7 +113,7 @@ Magnum::Matrix4 rendering::ArcBallInteractor::rotation() const
 
 void rendering::ArcBallInteractor::setWindowSize(int width, int height)
 {
-    center = {{width / 2.f, height / 2.f}};
+    center = Magnum::Vector2(width / 2.f, height / 2.f);
     radius = center.length() / 2.;
 }
 
@@ -160,7 +160,7 @@ void rendering::ArcBallInteractor::mouseDown(int x, int y)
     // move the mouse to the center, change from screen coordinates.
     y = (int) floor(2.0 * center[1] - y);
 
-    down_pt = {{ (float)x, (float) y }};
+    down_pt = Magnum::Vector2((float)x, (float) y);
     is_mouse_down = true;
 
     q_increment   = Magnum::Quaternion(Magnum::Math::IdentityInit);

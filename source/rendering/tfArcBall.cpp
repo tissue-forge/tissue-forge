@@ -49,6 +49,7 @@ Derived from Magnum, with the following notice:
 
 #include "tfArcBall.h"
 
+#include <Corrade/Utility/Assert.h>
 #include <Magnum/Math/Matrix3.h>
 
 
