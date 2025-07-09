@@ -28,7 +28,7 @@ requirements:
   host:
     - python {{ python }}   # [TF_PYVER==0]
     - python={{ TF_PYVER }} # [TF_PYVER!=0]
-    - {{ pin_compatible('numpy') }}
+    - numpy
     - bzip2
     - libxml2
     - assimp<=5.3.1
@@ -65,13 +65,12 @@ requirements:
 
   run:
     - python
-    - {{ pin_compatible('numpy') }}
+    - numpy
     - matplotlib
     - assimp<=5.3.1
     - nlohmann_json
     - eigen
     - glfw
-    - assimp<=5.3.1
     - pthreads-win32 # [win]
 
 test:

@@ -13,7 +13,7 @@ import os
 import sys
 from typing import List
 
-supported_py_version = ['3.9', '3.10', '3.11', '3.12, 3.13']
+supported_py_version = ['3.9', '3.10', '3.11', '3.12', '3.13']
 supported_platform = ['win64', 'linux64', 'osx64', 'osxarm64']
 this_dir = os.path.dirname(os.path.abspath(__file__))
 py_version_token = '@PYTHON_VERSION@'
