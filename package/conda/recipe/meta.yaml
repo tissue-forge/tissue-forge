@@ -28,6 +28,7 @@ requirements:
   host:
     - python {{ python }}   # [TF_PYVER==0]
     - python={{ TF_PYVER }} # [TF_PYVER!=0]
+    - python-abi3
     - bzip2
     - libxml2
     - assimp<=5.3.1
