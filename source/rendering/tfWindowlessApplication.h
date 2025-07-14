@@ -173,6 +173,8 @@ namespace TissueForge {
 
         private:
             virtual int exec() override { return 0; };
+
+            Magnum::GL::Context* _context;
             
             // the drawing buffer
             Magnum::GL::Renderbuffer renderBuffer;

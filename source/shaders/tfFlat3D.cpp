@@ -57,8 +57,6 @@ Derived from Magnum with the following notice:
 #include "Magnum/Math/Matrix3.h"
 #include "Magnum/Math/Matrix4.h"
 
-#include "Magnum/Shaders/Implementation/CreateCompatibilityShader.h"
-
 
 using namespace Magnum;
 
@@ -86,10 +84,11 @@ namespace TissueForge::shaders {
         const GL::Version version = GL::Context::current().supportedVersion({GL::Version::GLES300, GL::Version::GLES200});
         #endif
 
-        GL::Shader vert = Magnum::Shaders::Implementation::createCompatibilityShader(rs, version, GL::Shader::Type::Vertex);
-        GL::Shader frag = Magnum::Shaders::Implementation::createCompatibilityShader(rs, version, GL::Shader::Type::Fragment);
+        GL::Shader vert(version, GL::Shader::Type::Vertex);
+        GL::Shader frag(version, GL::Shader::Type::Fragment);
 
-        vert.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
+        vert.addSource(rs.getString("compatibility.glsl"))
+            .addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
             .addSource(flags & Flag::VertexColor ? "#define VERTEX_COLOR\n" : "")
             .addSource(flags & Flag::TextureTransformation ? "#define TEXTURE_TRANSFORMATION\n" : "")
             .addSource(Utility::formatString("#define CLIP_PLANE_COUNT {}\n", clipPlaneCount))
@@ -99,17 +98,18 @@ namespace TissueForge::shaders {
             #endif
             .addSource(flags & Flag::InstancedTransformation ? "#define INSTANCED_TRANSFORMATION\n" : "")
             .addSource(flags >= Flag::InstancedTextureOffset ? "#define INSTANCED_TEXTURE_OFFSET\n" : "")
-            .addSource(rs.get("generic.glsl"))
-            .addSource(rs.get("tfFlat3D.vert"));
-        frag.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
+            .addSource(rs.getString("generic.glsl"))
+            .addSource(rs.getString("tfFlat3D.vert"));
+        frag.addSource(rs.getString("compatibility.glsl"))
+            .addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
             .addSource(flags & Flag::AlphaMask ? "#define ALPHA_MASK\n" : "")
             .addSource(flags & Flag::VertexColor ? "#define VERTEX_COLOR\n" : "")
             #ifndef MAGNUM_TARGET_GLES2
             .addSource(flags & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
             .addSource(flags >= Flag::InstancedObjectId ? "#define INSTANCED_OBJECT_ID\n" : "")
             #endif
-            .addSource(rs.get("generic.glsl"))
-            .addSource(rs.get("tfFlat3D.frag"));
+            .addSource(rs.getString("generic.glsl"))
+            .addSource(rs.getString("tfFlat3D.frag"));
 
         CORRADE_INTERNAL_ASSERT_OUTPUT(GL::Shader::compile({vert, frag}));
 

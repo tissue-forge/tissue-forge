@@ -119,7 +119,7 @@ std::tuple<char*, size_t> rendering::framebufferImageData() {
 HRESULT rendering::screenshot(const std::string &filePath) {
     TF_Log(LOG_TRACE);
 
-    std::string filePath_l = Utility::String::lowercase(filePath);
+    std::string filePath_l = Utility::String::lowercase(Containers::StringView(filePath));
 
     imgGen_t imgGen;
 

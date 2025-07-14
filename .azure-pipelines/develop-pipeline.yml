@@ -11,7 +11,7 @@ pr:
     - develop
 
 variables:
-  py_minor_version: 8
+  py_minor_version: 10
   tf_buildqual: 'develop'
 
 stages:
@@ -21,7 +21,7 @@ stages:
   - stage: TissueForgeBuildWindowsLocal
     displayName: Local build for Windows
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022
     dependsOn: []
     jobs:
       - template: job-templates/job-build-test-package-win-local.yml
@@ -38,7 +38,7 @@ stages:
   - stage: TissueForgeBuildLinuxLocal
     displayName: Local build for Linux
     pool: 
-      vmImage: 'ubuntu-20.04'
+      vmImage: 'ubuntu-22.04'
     dependsOn: []
     jobs:
       - template: job-templates/job-build-test-package-linux-local.yml
@@ -55,7 +55,7 @@ stages:
   - stage: TissueForgeBuildMacLocal
     displayName: Local build for Mac
     pool: 
-      vmImage: 'macOS-11'
+      vmImage: 'macOS-13'
     dependsOn: []
     jobs:
       - template: job-templates/job-build-test-package-osx-local.yml

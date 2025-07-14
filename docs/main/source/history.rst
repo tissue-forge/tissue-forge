@@ -3,6 +3,17 @@
 History
 ========
 
+Version 0.2.1 Hotfix 0
+----------------------
+* Pins assimp
+* Upgrades corrade
+* Updates libsbml
+* Upgrades magnum
+* Updates magnum-plugins
+* Upgrades CI/CD VMs
+* Upgrades default python version to 3.10 for local builds
+* Expands python matrix for conda builds to 3.9 through 3.13
+
 Version 0.2.1
 -------------
 * Added new particle split overloads

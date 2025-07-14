@@ -19,6 +19,8 @@
 
 #include "tfCTest.h"
 
+#define numBeads 80
+
 
 int main(int argc, char** argv) {
     tfFloatP_t cutoff = 8.0;
@@ -66,7 +68,6 @@ int main(int argc, char** argv) {
     TFC_TEST_CHECK(tfGaussian_toBase(&force_rnd, &force_rnd_base));
     TFC_TEST_CHECK(tfBindForce(&force_rnd_base, &BeadType));
 
-    unsigned int numBeads = 80;
     tfFloatP_t xx[numBeads];
     xx[0] = 4.0;
     for(unsigned int i = 1; i < numBeads; i++) {

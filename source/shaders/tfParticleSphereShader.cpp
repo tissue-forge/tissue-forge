@@ -61,12 +61,12 @@ namespace TissueForge::shaders {
 
         Utility::Resource rs("tfMeshShaderProgram");
 
-        std::string s = rs.get("tfParticleSphereShader.vert");
+        auto s = rs.getString("tfParticleSphereShader.vert");
 
         GL::Shader vertShader{GL::Version::GL330, GL::Shader::Type::Vertex};
         GL::Shader fragShader{GL::Version::GL330, GL::Shader::Type::Fragment};
-        vertShader.addSource(rs.get("tfParticleSphereShader.vert"));
-        fragShader.addSource(rs.get("tfParticleSphereShader.frag"));
+        vertShader.addSource(rs.getString("tfParticleSphereShader.vert"));
+        fragShader.addSource(rs.getString("tfParticleSphereShader.frag"));
 
         CORRADE_INTERNAL_ASSERT(GL::Shader::compile({vertShader, fragShader}));
         attachShaders({vertShader, fragShader});

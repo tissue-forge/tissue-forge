@@ -12,22 +12,13 @@ pr:
 
 variables:
   tf_version: '0.2.1.s'
-  tf_buildnum: 0
+  tf_buildnum: 1
   tf_buildqual: 'staging'
 
 parameters:
-- name: py_minor_versions_win
+- name: py_minor_versions
   type: object
-  default: [8, 9, 10, 11]
-- name: py_minor_versions_linux
-  type: object
-  default: [8, 9, 10, 11]
-- name: py_minor_versions_osx
-  type: object
-  default: [8, 9, 10]
-- name: py_minor_versions_conda
-  type: object
-  default: [8, 9, 10, 11]
+  default: [9, 10, 11, 12, 13]
 
 stages:
 
@@ -36,10 +27,10 @@ stages:
   - stage: TissueForgeBuildWindowsLocal
     displayName: Local build for Windows
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_win }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions }}:
         - template: job-templates/job-build-test-package-win-local.yml
           parameters:
             name: ${{ format('TissueForgeBuildWindowsLocal_Python_3_{0}', py_minor_version) }}
@@ -54,10 +45,10 @@ stages:
   - stage: TissueForgeBuildLinuxLocal
     displayName: Local build for Linux
     pool:
-      vmImage: 'ubuntu-20.04'
+      vmImage: 'ubuntu-22.04'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_linux }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions }}:
         - template: job-templates/job-build-test-package-linux-local.yml
           parameters:
             name: ${{ format('TissueForgeBuildLinuxLocal_Python_3_{0}', py_minor_version) }}
@@ -72,10 +63,10 @@ stages:
   - stage: TissueForgeBuildMacLocal
     displayName: Local build for Mac
     pool:
-      vmImage: 'macOS-11'
+      vmImage: 'macOS-13'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_osx }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions }}:
         - template: job-templates/job-build-test-package-osx-local.yml
           parameters:
             name: ${{ format('TissueForgeBuildMacLocal_Python_3_{0}', py_minor_version) }}
@@ -90,10 +81,10 @@ stages:
   - stage: TissueForgeBuildWindowsConda
     displayName: Conda build for Windows
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions }}:
         - template: job-templates/job-build-test-package-win-conda.yml
           parameters:
             name: ${{ format('TissueForgeBuildWindowsConda_Python_3_{0}', py_minor_version) }}
@@ -110,10 +101,10 @@ stages:
   - stage: TissueForgeBuildLinuxConda
     displayName: Conda build for Linux
     pool:
-      vmImage: 'ubuntu-20.04'
+      vmImage: 'ubuntu-22.04'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions }}:
         - template: job-templates/job-build-test-package-linux-conda.yml
           parameters:
             name: ${{ format('TissueForgeBuildLinuxConda_Python_3_{0}', py_minor_version) }}
@@ -130,10 +121,10 @@ stages:
   - stage: TissueForgeBuildMacConda
     displayName: Conda build for Mac
     pool:
-      vmImage: 'macOS-11'
+      vmImage: 'macOS-13'
     dependsOn: []
     jobs:
-      - ${{ each py_minor_version in parameters.py_minor_versions_conda }}:
+      - ${{ each py_minor_version in parameters.py_minor_versions }}:
         - template: job-templates/job-build-test-package-osx-conda.yml
           parameters:
             name: ${{ format('TissueForgeBuildMacConda_Python_3_{0}', py_minor_version) }}

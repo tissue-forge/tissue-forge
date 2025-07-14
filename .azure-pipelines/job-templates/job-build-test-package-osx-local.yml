@@ -2,7 +2,7 @@ parameters:
   name: ''
   platform_name: 'osx64'
   tf_buildqual: ''
-  py_minor_version: 8
+  py_minor_version: 10
   working_dir: ''
   staging_dir: ''
 
@@ -15,24 +15,42 @@ jobs:
       PY_VERSION_DEC: ${{ format('3.{0}', parameters.py_minor_version) }}
       PY_VERSION_LAB: ${{ format('py3{0}', parameters.py_minor_version) }}
       ROOT_DIR: '${{ parameters.working_dir }}'
+      CONDA_INSTALL: '$(ROOT_DIR)/miniconda'
       SOURCE_DIR: '$(ROOT_DIR)/tissue-forge'
       INSTALL_DIR: '$(ROOT_DIR)/tissue-forge_install'
       EXEC_PYTHON: '$(INSTALL_DIR)/env/bin/python'
+      OSX_SYSROOT: '14.1'
+      DEPLOYMENT_TARGET: '12.5'
     workspace:
       clean: all
     steps:
       
       # Setup
-      - bash: echo "##vso[task.prependpath]$CONDA/bin"
+      - script: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O ~/miniconda.sh
+          bash ~/miniconda.sh -b -p $(CONDA_INSTALL)
+          source $(CONDA_INSTALL)/bin/activate
+          conda init --all
+        displayName: Install conda
+      - bash: echo "##vso[task.prependpath]$(CONDA_INSTALL)/bin"
         displayName: Add conda to path
-      - bash: sudo chown -R $USER $CONDA
+      - bash: sudo chown -R $USER $(CONDA_INSTALL)
         displayName: Take ownership of conda installation
       - checkout: self
         submodules: recursive
         path: tissue-forge
         displayName: Get source
-      - script: conda config --add channels conda-forge
+      - script: |
+          conda config --add channels conda-forge
+          conda config --set channel_priority strict
+          conda config --show channels
         displayName: Conda setup
+      - script: | 
+          echo "Current developer directory: $(xcode-select -p)"
+          sdk_path=/Applications/Xcode_$(OSX_SYSROOT).app/Contents/Developer
+          echo "Selecting SDK: ${sdk_path}"
+          sudo xcode-select --switch ${sdk_path}
+        displayName: Select SDK
       
       # Build
       - script: |
@@ -42,6 +60,7 @@ jobs:
           conda install -y python=$(PY_VERSION_DEC)
           conda list
           export TFBUILDQUAL=${{ parameters.tf_buildqual }}
+          export TF_OSX_DEPLOYMENT_TARGET=$(DEPLOYMENT_TARGET)
           bash $(SOURCE_DIR)/package/local/osx/install_all.sh
         displayName: Execute build
       

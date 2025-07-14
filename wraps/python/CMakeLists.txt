@@ -49,6 +49,7 @@ set(TissueForge_py_LIBS
   glfw 
   ${GLFW_LIBRARIES} 
   LibSBML::LibSBML 
+  Threads::Threads
   Magnum::Application
   Magnum::Magnum
   Magnum::Shaders

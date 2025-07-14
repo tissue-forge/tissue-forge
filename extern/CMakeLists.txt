@@ -36,7 +36,19 @@ set(LIBSBML_ROOT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libsbml" CACHE PATH "Pa
 
 set(LIBSBML_ROOT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libsbml" CACHE PATH "Path to the libSBML root build directory" FORCE)
 
-set(LIBSBML_SKIP_SHARED_LIBRARY "ON")
+set(LIBSBML_SKIP_SHARED_LIBRARY ON)
+
+set(LIBSBML_SKIP_STATIC_LIBRARY OFF)
+
+# Force libraries produced by libsbml
+function(libsbml_lib_shared_overwrite variable access value current stack)
+  set(LIBSBML_SKIP_SHARED_LIBRARY ON PARENT_SCOPE)
+endfunction()
+function(libsbml_lib_static_overwrite variable access value current stack)
+  set(LIBSBML_SKIP_STATIC_LIBRARY OFF PARENT_SCOPE)
+endfunction()
+variable_watch(LIBSBML_SKIP_SHARED_LIBRARY libsbml_lib_shared_overwrite)
+variable_watch(LIBSBML_SKIP_STATIC_LIBRARY libsbml_lib_static_overwrite)
 
 # If necessary, confine doc files to share, rather than in install root
 if(NOT UNIX AND NOT CYGWIN)
@@ -44,7 +56,12 @@ if(NOT UNIX AND NOT CYGWIN)
     set(MISC_PREFIX "./share/sbml" PARENT_SCOPE)
   endfunction()
 
-  variable_watch(MISC_PREFIX libsbml_doc_change)
+  # Watching LIBSBML_LIBRARY instead of MISC_PREFIX, since variable_watch incorrectly 
+  # interprets escape characters and libsbml sets LIBSBML_LIBRARY after setting MISC_PREFIX.
+  # For more information, see https://gitlab.kitware.com/cmake/cmake/-/issues/20891.
+  # When updating libsbml, ensure that changes to the build don't make this hack obsolete. 
+  # variable_watch(MISC_PREFIX libsbml_doc_change)
+  variable_watch(LIBSBML_LIBRARY libsbml_doc_change)
 endif()
 
 add_subdirectory(libsbml)
@@ -91,50 +108,50 @@ install(
   COMPONENT libSBML
 )
 
-set(WITH_PNGIMPORTER OFF CACHE BOOL "build PNG importer"    FORCE)
+set(MAGNUM_WITH_PNGIMPORTER OFF CACHE BOOL "build PNG importer"    FORCE)
 
 # magnum / corrade want this
 # stop messaging about global weak symbols.
-set(BUILD_STATIC_UNIQUE_GLOBALS OFF CACHE BOOL "Do something with symbols to make them work on Windows" FORCE)
+set(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS OFF CACHE BOOL "Do something with symbols to make them work on Windows" FORCE)
 
 add_subdirectory(corrade)
 
 # set magnum options
-set(WITH_GLFWAPPLICATION ON CACHE BOOL "build magnum with glfw" FORCE)
-set(BUILD_STATIC ON CACHE BOOL "build as static libraries for now..." FORCE)
+set(MAGNUM_WITH_GLFWAPPLICATION ON CACHE BOOL "build magnum with glfw" FORCE)
+set(MAGNUM_BUILD_STATIC ON CACHE BOOL "build as static libraries for now..." FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "build as static libraries for now..." FORCE)
-set(BUILD_PLUGINS_STATIC ON CACHE BOOL "build as static libraries for now..." FORCE)
-set(BUILD_TESTS OFF CACHE BOOL "build as static libraries for now..." FORCE)
-set(BUILD_GL_TESTS OFF CACHE BOOL "build as static libraries for now..." FORCE)
+set(MAGNUM_BUILD_PLUGINS_STATIC ON CACHE BOOL "build as static libraries for now..." FORCE)
+set(MAGNUM_BUILD_TESTS OFF CACHE BOOL "build as static libraries for now..." FORCE)
+set(MAGNUM_BUILD_GL_TESTS OFF CACHE BOOL "build as static libraries for now..." FORCE)
 
 # magnum plugins for mesh import testing
-set(WITH_ASSIMPIMPORTER    OFF CACHE BOOL "build Assimp importer" FORCE)
-set(WITH_OBJIMPORTER       OFF CACHE BOOL "build Assimp importer" FORCE)
-set(WITH_OPENGEXIMPORTER   OFF CACHE BOOL "build Assimp importer" FORCE)
-set(WITH_ANYIMAGECONVERTER OFF CACHE BOOL "build Assimp importer" FORCE)
-set(WITH_AUDIO             OFF CACHE BOOL "build Assimp importer" FORCE)
-set(WITH_ANYSCENEIMPORTER  OFF CACHE BOOL "build Assimp importer" FORCE)
-set(WITH_PNGIMPORTER       OFF CACHE BOOL "build PNG importer"    FORCE)
+set(MAGNUM_WITH_ASSIMPIMPORTER    OFF CACHE BOOL "build Assimp importer" FORCE)
+set(MAGNUM_WITH_OBJIMPORTER       OFF CACHE BOOL "build Assimp importer" FORCE)
+set(MAGNUM_WITH_OPENGEXIMPORTER   OFF CACHE BOOL "build Assimp importer" FORCE)
+set(MAGNUM_WITH_ANYIMAGECONVERTER OFF CACHE BOOL "build Assimp importer" FORCE)
+set(MAGNUM_WITH_AUDIO             OFF CACHE BOOL "build Assimp importer" FORCE)
+set(MAGNUM_WITH_ANYSCENEIMPORTER  OFF CACHE BOOL "build Assimp importer" FORCE)
+set(MAGNUM_WITH_PNGIMPORTER       OFF CACHE BOOL "build PNG importer"    FORCE)
 
 if(APPLE)
-  set(WITH_CGLCONTEXT ON CACHE BOOL "Build CglContext library" FORCE)
+  set(MAGNUM_WITH_CGLCONTEXT ON CACHE BOOL "Build CglContext library" FORCE)
 
-  set(WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "Build WindowlessCglApplication library" FORCE)
+  set(MAGNUM_WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "Build WindowlessCglApplication library" FORCE)
 
 elseif(UNIX AND NOT APPLE)
-  set(WITH_WINDOWLESSEGLAPPLICATION ON CACHE BOOL "Build WindowlessEglApplication library" FORCE)
+  set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION ON CACHE BOOL "Build WindowlessEglApplication library" FORCE)
 
-  set(WITH_WINDOWLESSGLXAPPLICATION ON CACHE BOOL "Build WindowlessGlxApplication library" FORCE)
+  set(MAGNUM_WITH_WINDOWLESSGLXAPPLICATION ON CACHE BOOL "Build WindowlessGlxApplication library" FORCE)
 
 elseif(WIN32)
-  set(WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "Build WindowlessWglApplication library" FORCE)
+  set(MAGNUM_WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "Build WindowlessWglApplication library" FORCE)
 
 endif()
 
-set(WITH_TGAIMAGECONVERTER ON CACHE BOOL "Build TGA Image Converter" FORCE)
+set(MAGNUM_WITH_TGAIMAGECONVERTER ON CACHE BOOL "Build TGA Image Converter" FORCE)
 
 add_subdirectory(magnum)
 
-set(WITH_STBIMAGECONVERTER ON CACHE BOOL "Build Stb Image Converter" FORCE)
+set(MAGNUM_WITH_STBIMAGECONVERTER ON CACHE BOOL "Build Stb Image Converter" FORCE)
 
 add_subdirectory(magnum-plugins EXCLUDE_FROM_ALL)
