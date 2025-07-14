@@ -1,0 +1,19 @@
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: mambaforge-22.9
+  apt_packages:
+    - libgl1-mesa-dev
+    - libegl1-mesa-dev
+
+conda:
+  environment: docs/environment.yml
+
+submodules:
+  include: all
+  recursive: true
+
+sphinx:
+  configuration: docs/api_py/source/conf.py
